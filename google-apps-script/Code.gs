@@ -26,7 +26,7 @@ var TAXIAPP_RAW_KEYS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N',
 function taxiappOpenMenu() {
  SpreadsheetApp.getUi().createMenu('TAXIAPP 印刷')
   .addItem('初期設定・接続キーを確認', 'setupTAXIAPP')
-  .addItem('選択乗務を補助簿へ反映', 'applySelectedPrintShift')
+  .addItem('印刷対象とメーター売上を確認', 'applySelectedPrintShift')
   .addToUi();
 }
 
@@ -271,79 +271,38 @@ function numericOrBlank_(value) {
 }
 
 /** On the PC only; intentionally does NOT run when the phone uploads data. */
+/**
+ * Print sheets are now driven directly by the chosen shift ID in
+ * TAXIAPP_印刷操作!B17. No legacy RAW/日報/チケット/まとめ2 content is copied
+ * or changed; changing the dropdown automatically changes the printed data.
+ */
 function applySelectedPrintShift() {
- var lock=LockService.getScriptLock();
- if(!lock.tryLock(25000))throw Error('別の処理を実行中です');
- try {
-  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
-  var operation=ss.getSheetByName('TAXIAPP_印刷操作');
-  if(!operation)throw Error('印刷操作シートがありません');
-  var id=String(operation.getRange('B17').getDisplayValue()||'').trim();
-  if(!id)throw Error('B17で印刷対象の乗務IDを選択してください');
-  var shift=loadShift_(ss,id);
-  if(!Array.isArray(shift.records)||shift.records.length>60)
-   throw Error('営業データを確認してください');
-  // Preserve pre-switch legacy test data in hidden copies, once.
-  snapshotLegacy_(ss,'入力_RAW_実車','旧テスト控え_RAW');
-  snapshotLegacy_(ss,'日報','旧テスト控え_日報');
-  var rawSheet=ss.getSheetByName('入力_RAW_実車');
-  var report=ss.getSheetByName('日報');
-  if(!rawSheet||!report)throw Error('原本の参照シートがありません');
-  // 44-column source sheet drives all later-ride XLOOKUPs.
-  // Clearing the previous 124 rows prevents stale trips when switching shifts.
-  rawSheet.getRange(2,1,124,44).clearContent();
-  var rides=(shift.records||[]).filter(function(r){
-   return r&&r.status==='complete';
-  }).sort(function(a,b){return numeric_(a.raw&&a.raw.A)-numeric_(b.raw&&b.raw.A)});
-  var rawRows = rides.map(function(r){
-   return TAXIAPP_RAW_KEYS.map(function(k){
-    var v=(r.raw||{})[k];
-    return safeCell_(v);
-   });
-  });
-  if(rawRows.length)rawSheet.getRange(2,1,rawRows.length,44).setValues(rawRows);
-  // Rows 4-25 are legacy typed values; row 26 onward contains XLOOKUP
-  // formulas. Never overwrite those formulas or their styling.
-  report.getRange('E4:P25').clearContent();
-  var byNumber={};
-  rides.forEach(function(r){byNumber[String(r.raw&&r.raw.A)]=r;});
-  var first = Array.from({length:22},function(_,i){
-   var r=byNumber[String(i+1)];
-   if(!r)return Array(12).fill('');
-   var x=r.raw||{};
-   return [timeFraction_(x.C),x.AL||x.D||'',x.E||'',
-    numericOrBlank_(x.F),timeFraction_(x.G),x.AM||x.H||'',
-    numericOrBlank_(x.I),numericOrBlank_(x.J),numericOrBlank_(x.K),
-    numericOrBlank_(x.L),timeFraction_(x.M),x.N||''].map(safeCell_);
-  });
-  if(first.length)report.getRange(4,5,first.length,12).setValues(first);
-  var d=String(shift.date||'').split('-').map(Number);
-  if(d.length===3&&d.every(Number.isFinite))report.getRange('B1')
-   .setValue(new Date(d[0],d[1]-1,d[2],12,0,0));
-  report.getRange('C2').setValue(timeFraction_(shift.startedAt));
-  ['補助簿印刷用','補助簿印刷用_2頁'].forEach(function(name){
-   var page=ss.getSheetByName(name);
-   if(!page)return;
-   page.getRange('D4').setValue(safeCell_(shift.driverNo||''));
-   page.getRange('D5').setValue(safeCell_(shift.driver||''));
-   page.getRange('J4').setValue(safeCell_(shift.vehicle||''));
-  });
-  SpreadsheetApp.flush();
-  operation.getRange('B18').setValue(id+' / '+String(shift.date));
-  operation.getRange('B19').setValue('反映済み（印刷前に金額・用紙位置を確認）');
-  operation.getRange('B3').setValue('印刷用データを反映しました。2枚の補助簿を確認してください');
-  operation.getRange('B4').setValue('乗務 '+String(shift.date)+' / 営業 '+rides.length+'件');
-  SpreadsheetApp.getUi().alert('反映しました',
-   '乗務：'+shift.date+' / '+rides.length+'件\n補助簿印刷用と補助簿印刷用_2頁を確認して印刷してください。',
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var operation=ss.getSheetByName('TAXIAPP_印刷操作');
+ if(!operation)throw Error('印刷操作シートがありません');
+ var id=String(operation.getRange('B17').getDisplayValue()||'').trim();
+ if(!id)throw Error('B17で印刷対象の乗務IDを選択してください');
+ var shift=loadShift_(ss,id);
+ if(!Array.isArray(shift.records)||shift.records.length>60)
+  throw Error('営業データを確認してください');
+ var first=ss.getSheetByName('補助簿印刷用');
+ var second=ss.getSheetByName('補助簿印刷用_2頁');
+ if(!first||!second)throw Error('補助簿の印刷用シートがありません');
+ SpreadsheetApp.flush();
+ var expected=shift.records.reduce(function(sum,r) {
+  return sum + (r.status==='complete'&&r.kind==='ride'?numeric_(r.raw&&r.raw.K):0);
+ },0);
+ var actual=Number(first.getRange('X23').getValue()||0);
+ if (Math.abs(expected-actual)>0.01)
+  throw Error('集計表のメーター売上が一致しません。B17を再選択してください。');
+ operation.getRange('B18').setValue(id+' / '+String(shift.date));
+ operation.getRange('B19').setValue('受信データと売上照合済み。用紙はPCで確認してから印刷');
+ operation.getRange('B3').setValue('印刷対象はB17の選択に連動します。旧「日報」等は使いません');
+ operation.getRange('B4').setValue('乗務 '+String(shift.date)+' / 営業 '+shift.records.length+'件');
+ try{
+  SpreadsheetApp.getUi().alert('補助簿の確認',
+   '乗務：'+shift.date+' / '+shift.records.length+'件\nメーター売上：'+expected+'円' +
+   '\n両方の「補助簿印刷用」を確認し、PCから印刷してください。',
    SpreadsheetApp.getUi().ButtonSet.OK);
- } finally {
-  lock.releaseLock();
- }
-}
-function snapshotLegacy_(ss,sourceName,backupName){
- if(ss.getSheetByName(backupName))return;
- var original=ss.getSheetByName(sourceName);
- if(!original)throw Error('参照シート '+sourceName+' がありません');
- var backup=original.copyTo(ss).setName(backupName);
- backup.hideSheet();
+ }catch(uiError){Logger.log('乗務 '+shift.date+' / メーター '+expected+' 円、照合済み');}
 }
