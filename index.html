@@ -687,7 +687,7 @@ function nearestWaitName(geo){
   const a=Number(other.lat)*Math.PI/180,b=Number(other.lng)*Math.PI/180;
   const d=Math.sin((a-lat)/2)**2+Math.cos(lat)*Math.cos(a)*Math.sin((b-lon)/2)**2;
   const meters=12742000*Math.asin(Math.min(1,Math.sqrt(d)));
-  if(meters<=50&&(!nearest||meters<nearest.meters))nearest={name,meters};
+  if(meters<=100&&(!nearest||meters<nearest.meters))nearest={name,meters};
  }
  return nearest;
 }
