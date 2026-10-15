@@ -918,7 +918,7 @@ function historyRecordDetails(record,shift){
  const paymentBlock=isCancel?'<p class="helper">キャンセルは0円で記録。売上・納金には加算しません。</p>':
   tender.length?`<div class="table-wrap"><table class="data-table history-payment-table"><thead><tr><th>支払方法</th><th>受取額</th><th>会社納金対象</th></tr></thead><tbody>${cashRows}</tbody><tfoot><tr><th>合計</th><th>${money(tender.reduce((a,x)=>a+x.received,0))}</th><th>${money(tender.reduce((a,x)=>a+x.company,0))}</th></tr></tfoot></table></div>`:'<p class="helper">決済内訳は未記録です。</p>';
  const note=record.meta?.dispatchNote?item('配車・迎車メモ',record.meta.dispatchNote):'';
- return `<details class="details history-record-detail"><summary>№${safeText(raw.A)}　${safeText(prettyTag(record))}　${safeText(historyRecordTime(record))}　${money(p.printedDetail)}　<small>詳しく見る</small></summary><div class="inner">
+ return `<details class="details history-record-detail" data-record-detail="${safeText(record.id)}"><summary>№${safeText(raw.A)}　${safeText(prettyTag(record))}　${safeText(historyRecordTime(record))}　${money(p.printedDetail)}　<small>詳しく見る</small></summary><div class="inner">
   <h3 class="subsection">営業内容</h3>
   <div class="history-fact-grid">
   ${item('営業番号',raw.A)}${item('配車区分',prettyTag(record))}
@@ -945,7 +945,7 @@ function historyRecordDetails(record,shift){
 function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp();return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}
 <section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。</span></section>${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
-<div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${shortTime(r.raw.G)}—${shortTime(r.raw.M)}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(r.meta.splitPayment.second):''}</td><td><div class="record-actions">${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み'}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み'}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div>
 ${shift.records.length?`<section class="card history-detail-section"><h2 class="h2">営業明細（タップして確認）</h2><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</section>`:''}`}`;}
 // One navigation item contains two independent collapsible reports.
 // Business status is expanded initially; daily summary is collapsed initially.
@@ -1365,6 +1365,12 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
   newRecord.startingOdo=odometer;newRecord.endingOdo='';
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
   save();render();toast('出庫距離を保存し、乗務を開始しました。');return;
+ }
+ if(action==='showRecordDetails'){
+  const details=[...appEl.querySelectorAll('[data-record-detail]')].find(el=>el.dataset.recordDetail===id);
+  if(details){details.open=true;details.scrollIntoView({behavior:'smooth',block:'center'});}
+  else toast('この営業の詳細が見つかりません',true);
+  return;
  }
  if(action==='undoEndShift'){
   const target=model.shifts.find(s=>s.id===id);
