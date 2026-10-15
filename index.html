@@ -985,6 +985,130 @@ function exportFileName(kind,shift){
  const unique=pattern.includes('{type}')?stem:safeFilenamePart(stem+'_'+kind);
  return unique+(kind==='全データ'?'.json':'.csv');
 }
+// Google Apps Script bridge: local save is independent of cloud delivery.
+// The device-local key is never added to model.prefs or exported in JSON backups.
+const TAXIAPP_CLOUD_KEY='taxiapp-google-access-v1';
+let cloudStatus='接続設定待ち',cloudTimer=null,cloudRunning=false,cloudLastDigest=new Map();
+function googleWriteKey(){try{return localStorage.getItem(TAXIAPP_CLOUD_KEY)||'';}catch{return '';}}
+function setGoogleWriteKey(value){
+ try{localStorage.setItem(TAXIAPP_CLOUD_KEY,String(value||'').trim());return true;}
+ catch{toast('この端末に接続キーを保存できません',true);return false;}
+}
+function googleWebAppUrl(value){
+ try{
+  const url=new URL(String(value||'').trim());
+  return url.protocol==='https:'&&url.hostname==='script.google.com'&&
+    /^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname)?url.href:'';
+ }catch{return '';}
+}
+function googleIsConfigured(){return Boolean(googleWebAppUrl(sheetTargetPrefs().webAppUrl)&&googleWriteKey().length>=24);}
+function setGoogleStatus(message){
+ cloudStatus=String(message);
+ const el=appEl.querySelector('[data-cloud-status]');
+ if(el)el.textContent=cloudStatus;
+}
+function googleShiftPacket(shift){
+ const records=(shift.records||[]).map(record=>{
+  const item={...record,raw:deriveRaw(record,shift.settings)};
+  item.amounts=pricing(record,shift.settings,shift.date);
+  if(record.kind==='ride'&&record.status==='complete')
+   item.payments=settledTenderAmounts(record,shift.settings,shift.date).items.map(t=>({
+    type:t.type,received:t.received,company:t.company
+   }));
+  else item.payments=[];
+  return item;
+ });
+ return {kind:'TAXIAPP_SHIFT_V1',shift:{...shift,records},summary:totals(shift.records,shift.settings,shift.date)};
+}
+// POST through a hidden form avoids browser CORS restrictions on Apps Script Web Apps.
+// The receiver returns an HTML acknowledgement via postMessage; opaque fetch success
+// is NEVER treated as evidence that records reached Google Sheets.
+function googlePostShift(packet){
+ const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
+ if(!endpoint||key.length<24)return Promise.reject(Error('WebアプリURLと接続キーを設定してください'));
+ const nonce='tx-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+ return new Promise((resolve,reject)=>{
+  const iframe=document.createElement('iframe'),form=document.createElement('form');
+  iframe.name='taxi_sync_'+nonce.replace(/[^A-Za-z0-9_]/g,'');
+  iframe.style.display='none';iframe.setAttribute('aria-hidden','true');
+  form.method='POST';form.action=endpoint;form.target=iframe.name;
+  form.style.display='none';form.acceptCharset='UTF-8';
+  const add=(field,value)=>{
+   const item=document.createElement('input');item.type='hidden';
+   item.name=field;item.value=String(value);form.appendChild(item);
+  };
+  add('action','sync');add('key',key);add('nonce',nonce);add('payload',JSON.stringify(packet));
+  let settled=false;
+  function done(error,message){
+   if(settled)return;
+   settled=true;clearTimeout(timeout);window.removeEventListener('message',onMessage);
+   form.remove();iframe.remove();
+   if(error)reject(error);else resolve(message);
+  }
+  function onMessage(event){
+   const origin=String(event.origin||'');
+   let trusted=false;
+   try{
+    const url=new URL(origin),hostname=url.hostname;
+    trusted=url.protocol==='https:'&&(hostname==='script.google.com'||
+      hostname==='script.googleusercontent.com'||hostname.endsWith('.googleusercontent.com'));
+   }catch{}
+   if(!trusted)return;
+   const data=event.data;
+   if(!data||data.type!=='TAXIAPP_SYNC_RESULT'||data.nonce!==nonce)return;
+   if(data.ok)done(null,String(data.message||'受信完了'));
+   else done(Error(String(data.message||'Google側の受信エラー')));
+  }
+  const timeout=setTimeout(()=>done(Error('Googleの受信確認が時間切れです。接続とWebアプリの公開設定を確認してください')),45000);
+  window.addEventListener('message',onMessage);
+  document.body.appendChild(iframe);document.body.appendChild(form);
+  try{form.submit();}catch(error){done(error);}
+ });
+}
+async function googleSendShift(shift,manual=false){
+ if(!shift){if(manual)toast('送信する乗務データがありません',true);return false;}
+ if(!googleIsConfigured()){if(manual)toast('先にWebアプリURLと接続キーを設定してください',true);return false;}
+ if(cloudRunning){if(manual)toast('送信中です。完了後に再試行してください');return false;}
+ cloudRunning=true;
+ try{
+  const packet=googleShiftPacket(shift),digest=JSON.stringify(packet);
+  if(!manual&&cloudLastDigest.get(shift.id)===digest)return true;
+  setGoogleStatus('Googleへ送信中：'+shift.date);
+  const message=await googlePostShift(packet);
+  cloudLastDigest.set(shift.id,digest);
+  setGoogleStatus('受信確認済み：'+shift.date+'　'+message);
+  if(manual)toast('Googleスプレッドシートへの保存を確認しました');
+  return true;
+ }catch(error){
+  setGoogleStatus('送信未確認：'+String(error?.message||error));
+  if(manual)toast('Google送信エラー：'+String(error?.message||error),true);
+  return false;
+ }finally{cloudRunning=false;}
+}
+function scheduleGoogleSync(){
+ if(sheetTargetPrefs().mode!=='auto'||!googleIsConfigured())return;
+ clearTimeout(cloudTimer);
+ cloudTimer=setTimeout(()=>{
+  const current=getShift()||selectedShift();
+  if(!current)return;
+  if(cloudRunning){scheduleGoogleSync();return;}
+  googleSendShift(current,false);
+ },3000);
+}
+async function googleSendAllShifts(){
+ if(!googleIsConfigured()){toast('Googleの接続設定を完了してください',true);return;}
+ const shifts=[...(model.shifts||[])];
+ if(!shifts.length){toast('送信する乗務データがありません',true);return;}
+ if(!confirm(shifts.length+'乗務をGoogleシートへ送信しますか？'))return;
+ let successful=0;
+ for(const shift of shifts){
+  while(cloudRunning)await new Promise(done=>setTimeout(done,300));
+  if(await googleSendShift(shift,false))successful++;
+ }
+ setGoogleStatus('まとめて送信：'+successful+'/'+shifts.length+'乗務を確認');
+ toast(successful+'/'+shifts.length+'乗務の受信を確認しました',successful!==shifts.length);
+}
+
 function renderSheetTargetSettings(){const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl);const latest=selectedShift();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}" aria-label="${key==='mode'?'スプレッドシートへの保存方法':'印刷帳票への反映方法'}">${options.map(([v,l])=>`<option value="${v}" ${p[key]===v?'selected':''}>${l}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシート・保存設定</h2>
