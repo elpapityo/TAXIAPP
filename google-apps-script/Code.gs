@@ -1,6 +1,7 @@
 /**
  * TAXIAPP -> Google Sheets bridge.
- * Install in Extensions > Apps Script on this spreadsheet, and deploy a Web App
+ * ADD as a new .gs file in Extensions > Apps Script; do not replace any old
+ * scripts or macros. Then deploy a Web App
  * ("Execute as: Me", "Who has access: Anyone"). A separate random shared key is
  * required for EVERY POST, so the /exec URL alone cannot write to this sheet.
  * No web credentials belong in public GitHub code.
@@ -21,7 +22,8 @@ var TAXIAPP_RAW_KEYS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N',
  'Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH',
  'AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR'];
 
-function onOpen() {
+// Unique menu handler: the original spreadsheet's onOpen() and macros remain intact.
+function taxiappOpenMenu() {
  SpreadsheetApp.getUi().createMenu('TAXIAPP 印刷')
   .addItem('初期設定・接続キーを確認', 'setupTAXIAPP')
   .addItem('選択乗務を補助簿へ反映', 'applySelectedPrintShift')
@@ -39,6 +41,11 @@ function setupTAXIAPP() {
  }
  var ss = SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  ensureStorageSheets_(ss);
+ // Keep all existing macros. Install only our independent on-open trigger once.
+ if (!ScriptApp.getProjectTriggers().some(function(trigger) {
+  return trigger.getHandlerFunction() === 'taxiappOpenMenu';
+ })) ScriptApp.newTrigger('taxiappOpenMenu').forSpreadsheet(ss).onOpen().create();
+ taxiappOpenMenu();
  var page = ss.getSheetByName('TAXIAPP_印刷操作');
  if (page) {
   page.getRange('A17').setValue('印刷対象の乗務ID');
