@@ -262,9 +262,17 @@ function savePacket_(data) {
     numeric_(p.received)-numeric_(p.company),
     p.type===raw.N?'主金種':'複合決済']);
   });
-  print.push([id,num,raw.E||'',raw.N||'',raw.K||'',raw.G||'',raw.M||'',
+  // Cancellation is its own completed entry: display the cancellation fee
+  // and dispatch/cancellation times, not the previous trip's meter/times.
+  // The fee remains separately classified in the totals (not meter sales).
+  var isCancellation=record.kind==='cancel'&&record.status==='complete';
+  var meta=record.meta||{};
+  print.push([id,num,raw.E||'',isCancellation?'キャンセル':raw.N||'',
+   isCancellation?numeric_(amounts.cancellation):raw.K||'',
+   isCancellation?(meta.dispatchAt||raw.C||''):raw.G||'',
+   isCancellation?(meta.cancelAt||''):raw.M||'',
    raw.AL||'',raw.AM||'',raw.AQ||'',raw.W||'',raw.AI||'',raw.AR||'',
-   (record.meta&&record.meta.settledIso)||'']);
+   meta.settledIso||'']);
  });
  replaceRowsForShift_(ss,'TAXIAPP_乗務保管',id,storage,19);
  replaceRowsForShift_(ss,'TAXIAPP_決済内訳',id,payments,11);
