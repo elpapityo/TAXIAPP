@@ -49,7 +49,7 @@ function setupTAXIAPP() {
  try { taxiappOpenMenu(); } catch(menuError) { Logger.log('メニュー表示はシートを再読み込みして確認: '+menuError); }
  var page = ss.getSheetByName('TAXIAPP_印刷操作');
  if (page) {
-  page.getRange('A17').setValue('印刷対象の乗務ID');
+  page.getRange('A17').setValue('印刷対象の乗務（出庫日時・件数）');
   page.getRange('A18').setValue('最後に反映した乗務');
   page.getRange('A19').setValue('印刷帳票の確認');
   var ids = ss.getSheetByName('TAXIAPP_乗務一覧');
@@ -57,6 +57,10 @@ function setupTAXIAPP() {
    .requireValueInRange(ids.getRange('T2:T1200'), true)
    .setAllowInvalid(true).build();
   page.getRange('B17').setDataValidation(rule);
+  page.getRange('A15').setValue('最新乗務を表示（チェックで切替）');
+  // Do not force B15 back to false: the user may want follow-latest mode.
+  var flag=page.getRange('B15');
+  flag.setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
  }
  Logger.log('TAXIAPP 接続キー（他人には見せない）: ' + token);
  Logger.log('このキーとデプロイ後の /exec URLをスマホTAXIAPPの設定へ入力してください。');
