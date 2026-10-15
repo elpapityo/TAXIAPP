@@ -26,6 +26,7 @@ var TAXIAPP_RAW_KEYS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N',
 function taxiappOpenMenu() {
  SpreadsheetApp.getUi().createMenu('TAXIAPP 印刷')
   .addItem('初期設定・接続キーを確認', 'setupTAXIAPP')
+  .addItem('最新乗務を選択', 'selectLatestTAXIAPPShift')
   .addItem('印刷対象とメーター売上を確認', 'applySelectedPrintShift')
   .addToUi();
 }
@@ -53,7 +54,7 @@ function setupTAXIAPP() {
   page.getRange('A19').setValue('印刷帳票の確認');
   var ids = ss.getSheetByName('TAXIAPP_乗務一覧');
   var rule = SpreadsheetApp.newDataValidation()
-   .requireValueInRange(ids.getRange('A2:A1200'), true)
+   .requireValueInRange(ids.getRange('T2:T1200'), true)
    .setAllowInvalid(true).build();
   page.getRange('B17').setDataValidation(rule);
  }
@@ -170,6 +171,14 @@ function replaceRowsForShift_(ss, sheetName, id, incoming, width) {
   var padded = row.concat(Array(Math.max(0, width - row.length)).fill('')).slice(0, width);
   return padded.map(safeCell_);
  }));
+ // Keep the most recently departed shift at the top of the shift list.
+ if (sheetName === 'TAXIAPP_乗務一覧') {
+  all.sort(function(a,b) {
+   var aId = String(a[0]||'').match(/^shift-(\d+)/);
+   var bId = String(b[0]||'').match(/^shift-(\d+)/);
+   return Number(bId?bId[1]:0)-Number(aId?aId[1]:0);
+  });
+ }
  if (sheet.getMaxRows() < all.length + 1)
   sheet.insertRowsAfter(sheet.getMaxRows(), all.length + 1 - sheet.getMaxRows());
  if (count) sheet.getRange(2, 1, count, width).clearContent();
@@ -180,6 +189,8 @@ function safeCell_(item) {
  if (item === null || item === undefined) return '';
  if (typeof item === 'boolean') return item;
  if (typeof item === 'number') return Number.isFinite(item) ? item : '';
+ if (Object.prototype.toString.call(item)==='[object Date]')
+  return Number.isFinite(item.getTime()) ? item : '';
  if (typeof item !== 'string') item = JSON.stringify(item);
  // Do not interpret passenger-entered strings as executable spreadsheet formulas.
  return /^[=+@]/.test(item) ? "'" + item : item;
@@ -190,6 +201,31 @@ function numeric_(v) {
  return Number.isFinite(n) ? n : 0;
 }
 
+function shiftTimestamp_(iso, localDate, localTime) {
+ if (iso) {
+  var exact=new Date(String(iso));
+  if(Number.isFinite(exact.getTime()))return exact;
+ }
+ if (/^\d{4}-\d{2}-\d{2}$/.test(String(localDate||'')) &&
+     /^\d{1,2}:\d{2}/.test(String(localTime||''))) {
+  var day=String(localDate).split('-').map(Number);
+  var parts=String(localTime).split(':').map(Number);
+  return new Date(Date.UTC(day[0],day[1]-1,day[2],parts[0]-9,parts[1],parts[2]||0));
+ }
+ return '';
+}
+// Google Sheets displays native Date cells in the spreadsheet's Asia/Tokyo time zone.
+function selectLatestTAXIAPPShift() {
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var operation=ss.getSheetByName('TAXIAPP_印刷操作');
+ var latest=ss.getSheetByName('TAXIAPP_乗務一覧').getRange('T2').getDisplayValue();
+ if(!latest)throw Error('まだ受信した乗務がありません');
+ operation.getRange('B17').setValue(latest);
+ operation.getRange('B15').setValue(false);
+ SpreadsheetApp.flush();
+ try {SpreadsheetApp.getUi().alert('最新乗務を選択しました',latest,SpreadsheetApp.getUi().ButtonSet.OK);}
+ catch(e){Logger.log('最新乗務を選択: '+latest);}
+}
 function savePacket_(data) {
  var ss = SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  ensureStorageSheets_(ss);
@@ -197,8 +233,8 @@ function savePacket_(data) {
  var summary = data.summary || {};
  var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
  var records = shift.records || [];
- var shiftRows = [[id,shift.date,shift.startedIso||shift.startedAt||'',
-  shift.endedIso||shift.endedAt||'',shift.driver||'',shift.driverNo||'',
+ var shiftRows = [[id,shift.date,shiftTimestamp_(shift.startedIso,shift.date,shift.startedAt),
+  shiftTimestamp_(shift.endedIso,shift.date,shift.endedAt),shift.driver||'',shift.driverNo||'',
   shift.vehicle||'',records.length,numeric_(summary.meter),numeric_(summary.discount),
   numeric_(summary.goFee),numeric_(summary.uberSurcharge),
   numeric_(summary.cashRemittance),numeric_(summary.etcRemittance),
@@ -280,8 +316,8 @@ function applySelectedPrintShift() {
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var operation=ss.getSheetByName('TAXIAPP_印刷操作');
  if(!operation)throw Error('印刷操作シートがありません');
- var id=String(operation.getRange('B17').getDisplayValue()||'').trim();
- if(!id)throw Error('B17で印刷対象の乗務IDを選択してください');
+ var id=String(operation.getRange('C17').getDisplayValue()||'').trim();
+ if(!id)throw Error('B17で印刷対象の乗務を選択してください');
  var shift=loadShift_(ss,id);
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');
