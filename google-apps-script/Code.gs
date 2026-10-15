@@ -96,7 +96,7 @@ function replyToPhone_(nonce, success, detail) {
  };
  var json = JSON.stringify(reply).replace(/</g, '\\u003c');
  var html = '<!doctype html><html><body><script>' +
-  'window.parent.postMessage(' + json + ',' +
+  'window.top.postMessage(' + json + ',' +
   JSON.stringify(TAXIAPP_ORIGIN) + ');' +
   '</scr' + 'ipt></body></html>';
  return HtmlService.createHtmlOutput(html)
@@ -109,7 +109,7 @@ function validatePacket_(packet) {
  var shift = packet.shift;
  if (!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(shift.id || '')))
   throw Error('乗務IDが不正です');
- if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(shift.date || '')))
+ if (!/^\d{4}-\d{2}-\d{2}$/.test(String(shift.date || '')))
   throw Error('乗務日が不正です');
  if (!Array.isArray(shift.records) || shift.records.length > TAXIAPP_MAX_RECORDS)
   throw Error('営業件数が不正です');
@@ -228,7 +228,7 @@ function savePacket_(data) {
   chunks.push(json.slice(start,start+TAXIAPP_CHUNK_SIZE));
  if (chunks.length > TAXIAPP_MAX_CHUNKS) throw Error('乗務データが大きすぎます');
  var originals = [id,now,chunks.length].concat(chunks);
- replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],originals.length);
+ replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
  return '保存完了：' + shift.date + ' / ' + records.length + '件';
 }
 
@@ -247,7 +247,7 @@ function loadShift_(ss,id) {
 }
 
 function timeFraction_(value) {
- var match=String(value||'').match(/^(\\d{1,2}):(\\d{2})/);
+ var match=String(value||'').match(/^(\d{1,2}):(\d{2})/);
  if(!match)return '';
  var h=Number(match[1]),m=Number(match[2]);
  return h<=23&&m<=59?(h*60+m)/1440:'';
@@ -293,7 +293,11 @@ function applySelectedPrintShift() {
   // Rows 4-25 are legacy typed values; row 26 onward contains XLOOKUP
   // formulas. Never overwrite those formulas or their styling.
   report.getRange('E4:P25').clearContent();
-  var first = rides.slice(0,22).map(function(r){
+  var byNumber={};
+  rides.forEach(function(r){byNumber[String(r.raw&&r.raw.A)]=r;});
+  var first = Array.from({length:22},function(_,i){
+   var r=byNumber[String(i+1)];
+   if(!r)return Array(12).fill('');
    var x=r.raw||{};
    return [timeFraction_(x.C),x.AL||x.D||'',x.E||'',
     numericOrBlank_(x.F),timeFraction_(x.G),x.AM||x.H||'',
