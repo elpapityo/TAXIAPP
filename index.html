@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・ブラウザ公開版">
-<title>TAXIAPP v0.3.14 — 乗務日報</title>
+<title>TAXIAPP v0.3.15 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -653,6 +653,44 @@ function renderInputChoice(key,choices){const value=inputPrefs()[key];return `<d
 function numberInputMode(kind){return inputPrefs().keyboard==='system'?(kind==='distance'?'decimal':'numeric'):'none';}
 function applyInputKeyboardMode(){for(const input of appEl.querySelectorAll('[data-number-kind]'))input.inputMode=numberInputMode(input.dataset.numberKind);}
 function waitingPlaces(){return Array.isArray(model.prefs?.waitPlaces)?model.prefs.waitPlaces.filter(v=>typeof v==='string'&&v.trim()).slice(0,30):[];}
+function normalizeWaitName(value){return String(value??'').replace(/\s+/g,' ').trim();}
+function usableWaitGeo(geo){return geo&&Number.isFinite(Number(geo.lat))&&Number.isFinite(Number(geo.lng))&&Math.abs(Number(geo.lat))<=90&&Math.abs(Number(geo.lng))<=180;}
+function registerWaitName(name,geo){
+ const place=normalizeWaitName(name);
+ if(!place||place.length>60)return false;
+ const places=waitingPlaces();
+ if(!places.includes(place)){
+  if(places.length>=30)return false;
+  model.prefs.waitPlaces=[...places,place];
+ }
+ if(usableWaitGeo(geo)){
+  model.prefs.waitPlaceCoords??={};
+  model.prefs.waitPlaceCoords[place]={lat:Number(geo.lat),lng:Number(geo.lng),recordedAt:geo.recordedAt||new Date().toISOString()};
+ }
+ return true;
+}
+function waitNameGeo(name){
+ const stored=model.prefs?.waitPlaceCoords?.[name];
+ if(usableWaitGeo(stored))return stored;
+ for(const shift of [...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))){
+  const history=[...(shift.waitSegments||[]),...(shift.waiting?[shift.waiting]:[])];
+  for(let i=history.length-1;i>=0;i--)if(history[i]?.place===name&&usableWaitGeo(history[i].geo))return history[i].geo;
+ }
+ return null;
+}
+function nearestWaitName(geo){
+ if(!usableWaitGeo(geo)||Number(geo.accuracy)>100)return null;
+ const lat=Number(geo.lat)*Math.PI/180,lon=Number(geo.lng)*Math.PI/180;
+ let nearest=null;
+ for(const name of waitingPlaces()){
+  const other=waitNameGeo(name);if(!other)continue;
+  const a=Number(other.lat)*Math.PI/180,b=Number(other.lng)*Math.PI/180;
+  const d=Math.sin((a-lat)/2)**2+Math.cos(lat)*Math.cos(a)*Math.sin((b-lon)/2)**2;
+  const meters=12742000*Math.asin(Math.min(1,Math.sqrt(d)));
+  if(meters<=200&&(!nearest||meters<nearest.meters))nearest={name,meters};
+ }
+ return nearest;
+}
 function addWaitingPlace(name){
  const place=String(name??'').replace(/\s+/g,' ').trim();
  if(!place){toast('待機場所を入力してください',true);return false;}
@@ -681,7 +719,7 @@ function moveWaitingPlace(index,direction){
 function renderWaitPlaceSettings(){
  const items=waitingPlaces();
  const entries=items.map((name,i)=>`<div class="wait-place-item"><span class="wait-place-name">${safeText(name)}</span><button class="wait-place-move" type="button" data-wait-move="${i}" data-wait-direction="up" ${i===0?'disabled':''} aria-label="${safeText(name)}を上に移動" title="上へ">↑</button><button class="wait-place-move" type="button" data-wait-move="${i}" data-wait-direction="down" ${i===items.length-1?'disabled':''} aria-label="${safeText(name)}を下に移動" title="下へ">↓</button><button class="wait-place-remove" type="button" data-wait-remove="${i}" aria-label="${safeText(name)}を候補から削除" title="候補から削除">×</button></div>`).join('');
- return `<section class="card" aria-label="待機場所の設定"><h2 class="h2">待機場所の登録・並び替え</h2><p class="helper">駅・空港・乗り場などを登録できます。↑ ↓ で並び替えると、待機開始時の選択一覧にも同じ順番で表示します。</p><div class="wait-place-settings"><input class="control" id="newWaitPlace" maxlength="60" placeholder="例：大阪空港／○○駅タクシー乗り場" aria-label="新しい待機場所"><button class="btn primary" type="button" data-action="addWaitPlace">＋ 追加</button></div>${items.length?`<div class="wait-place-list">${entries}</div>`:'<p class="caption-note">登録済みの場所はありません。</p>'}<p class="footnote">順番の変更や候補の削除をしても、記録済みの待機履歴は変更されません。</p></section>`;
+ return `<section class="card" aria-label="待機場所の設定"><h2 class="h2">待機場所の登録・並び替え</h2><p class="helper">駅・空港・乗り場などを登録できます。待機中に新しい場所名を入力すると自動登録します。↑ ↓ で候補の順番を変更できます。</p><div class="wait-place-settings"><input class="control" id="newWaitPlace" maxlength="60" placeholder="例：大阪空港／○○駅タクシー乗り場" aria-label="新しい待機場所"><button class="btn primary" type="button" data-action="addWaitPlace">＋ 追加</button></div>${items.length?`<div class="wait-place-list">${entries}</div>`:'<p class="caption-note">登録済みの場所はありません。</p>'}<p class="footnote">順番の変更や候補の削除をしても、記録済みの待機履歴は変更されません。</p></section>`;
 }
 function displayPrefs(){const provided=model.prefs?.ui||{};return Object.fromEntries(Object.entries(UI_DEFAULTS).map(([k,def])=>[k,UI_OPTIONS[k].includes(provided[k])?provided[k]:def]));}
 function applyUi(){const settings=displayPrefs();for(const [k,value] of Object.entries(settings))document.documentElement.dataset['ui'+k[0].toUpperCase()+k.slice(1)]=value;document.documentElement.style.colorScheme=settings.theme==='night'?'dark':'light';}
@@ -791,10 +829,8 @@ const t=totals(active.records,active.settings,active.date);
 
 function renderNewAction(shift){const count=shift.records.length,waiting=shift.waiting;
  const places=waitingPlaces();
- const waitPlaceOptions=[...places];
- if(waiting?.place&&!places.includes(waiting.place))waitPlaceOptions.unshift(waiting.place);
- const placeSelect=`<select class="control" data-wait-field="place" aria-label="待機場所"><option value="">待機場所を選択</option>${waitPlaceOptions.map(p=>`<option value="${safeText(p)}" ${waiting?.place===p?'selected':''}>${safeText(p)}</option>`).join('')}</select>`;
- const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（設定から選択）</span>${placeSelect}${places.length?'':'<span class="caption-note">先に「表示設定」で待機場所を登録してください。</span>'}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地を取得</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
+ const placeSelect=`<input class="control" type="text" list="waitPlaceCandidates" data-wait-field="place" aria-label="待機場所" maxlength="60" autocomplete="off" value="${safeText(waiting?.place||'')}" placeholder="現在地で入力／名前を直接入力"><datalist id="waitPlaceCandidates">${places.map(p=>`<option value="${safeText(p)}"></option>`).join('')}</datalist>`;
+ const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地を取得</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
  return `<section class="card hero"><div class="eyebrow">次の記録 / № ${count+1}</div><h2 class="hero-heading" data-mobility>${waiting?'現在：待機中':'現在：空車・流し'}</h2>${waitInfo}<div class="action-grid" style="margin-top:18px"><button class="btn primary big" data-action="beginRide" ${count>=MAX_RECORDS?'disabled':''}>🚕 乗車</button><button class="btn teal big" data-action="beginDispatch" ${count>=MAX_RECORDS?'disabled':''}>📲 アプリ迎車</button>${!waiting?`<button class="btn big" data-action="beginWait">🅿 待機開始</button>`:''}<button class="btn" data-tab="history">▤ 営業履歴</button></div><p class="footnote">待機中の場所・距離は入力した時点で自動保存します。待機中に乗車すると乗車情報に引き継ぎ、必要なら修正できます。流し中のボタン操作は不要です。</p>${count>=MAX_RECORDS?'<div class="warn">60件に達しました。</div>':''}</section>`;
 }
 function renderDraft(shift){const d=shift.draft,r=d.raw,editing=Boolean(d.editId);const heading=d.kind==='dispatch'?'迎車中 / お迎え先の確認':d.kind==='ride'?(d.status==='alighted'?'降車・精算入力':'実車中 / 乗車情報'):d.kind==='empty'?'空車高速の記録':'迎車キャンセルの記録';return `<section class="card hero"><div class="section-heading"><div><div class="eyebrow">${editing?'営業履歴の修正':`営業№ ${r.A}`}</div><h2 class="hero-heading">${heading}</h2></div><span class="pill ${d.kind==='empty'?'mint':d.kind==='cancel'||d.kind==='dispatch'?'amber':''}">${d.kind==='ride'?(d.status==='alighted'?'精算待ち':'実車中'):prettyTag(d)}</span></div>${d.kind==='dispatch'?renderDispatchForm(shift,d):d.kind==='ride'?renderRideForm(shift,d):d.kind==='empty'?renderEmptyForm(shift,d):renderCancelForm(shift,d)}<div class="actions"><button class="btn red" data-action="discardDraft">${d.kind==='dispatch'?'迎車入力を取り消す（営業記録なし）':'入力を取り消す'}</button></div></section>`;}
@@ -1012,11 +1048,13 @@ function waitRecord(shiftId,waitId){
  return active.waitSegments?.find(w=>w.id===waitId)||null;
 }
 function refreshWaitView(waitId){
- const s=getShift(),w=s?.waiting;
- if(!w||w.id!==waitId||s.draft||tab!=='drive')return;
+ const shift=getShift(),wait=shift?.waiting;
+ if(!wait||wait.id!==waitId||shift.draft||tab!=='drive')return;
  const input=appEl.querySelector('[data-wait-field="place"]');
- if(input&&document.activeElement!==input&&input.value!==(w.place||''))input.value=w.place||'';
- const status=appEl.querySelector('[data-wait-gps-status]');if(status)status.textContent=w.gpsStatus||'位置未取得';
+ if(input&&document.activeElement!==input&&input.value!==(wait.place||''))input.value=wait.place||'';
+ const choices=appEl.querySelector('#waitPlaceCandidates');
+ if(choices)choices.innerHTML=waitingPlaces().map(p=>`<option value="${safeText(p)}"></option>`).join('');
+ const status=appEl.querySelector('[data-wait-gps-status]');if(status)status.textContent=wait.gpsStatus||'位置未取得';
 }
 async function getWaitGps(shift,waiting){
  const shiftId=shift.id,waitId=waiting.id;
@@ -1030,10 +1068,32 @@ async function getWaitGps(shift,waiting){
   const target=waitRecord(shiftId,waitId);if(!target)return;
   const geo={lat:position.coords.latitude,lng:position.coords.longitude,accuracy:position.coords.accuracy,recordedAt:new Date().toISOString()};
   target.geo=geo;
-  // GPS is recorded independently; it must never overwrite a user-chosen waiting place.
-  target.gpsStatus='位置取得済み（待機場所は一覧から選択）';await save();refreshWaitView(waitId);
-  // No reverse geocoding required for a preset waiting place.
-
+  if(target.place&&target.placeSource!=='gps'){
+   if(waitingPlaces().includes(target.place))registerWaitName(target.place,geo);
+   target.gpsStatus='位置取得済み';
+   await save();refreshWaitView(waitId);return;
+  }
+  const nearest=nearestWaitName(geo);
+  if(nearest){
+   target.place=nearest.name;target.placeSource='gps';
+   target.gpsStatus='近くの登録済み待機場所を入力しました';
+   await save();refreshWaitView(waitId);return;
+  }
+  target.gpsStatus='現在地の町名を確認中…';
+  await save();refreshWaitView(waitId);
+  try{
+   const address=await reverseAddress(geo);
+   const latest=waitRecord(shiftId,waitId);
+   if(!latest||latest.geo?.recordedAt!==geo.recordedAt)return;
+   if(!latest.place||latest.placeSource==='gps'){latest.place=address;latest.placeSource='gps';}
+   latest.gpsStatus='現在地の町名を入力しました';
+   await save();refreshWaitView(waitId);
+  }catch(err){
+   const latest=waitRecord(shiftId,waitId);
+   if(!latest||latest.geo?.recordedAt!==geo.recordedAt)return;
+   latest.gpsStatus='位置取得済み（町名は入力してください）';
+   await save();refreshWaitView(waitId);
+  }
  },error=>{const latest=waitRecord(shiftId,waitId);if(latest){latest.gpsStatus=gpsMessage(error);saveLater();refreshWaitView(waitId);}},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 function updateElapsedTimer(){
@@ -1212,7 +1272,16 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
   const key=target.dataset.waitField;if(!['place','odometer'].includes(key))return;
   if(key==='odometer'&&target.value!==''&&(number(target.value)===null||number(target.value)<0)){toast('走行距離は0以上の数値を入力してください',true);return;}
-  s.waiting[key]=target.value;saveLater();return;
+  if(key==='place'){
+   const name=normalizeWaitName(target.value);
+   s.waiting.place=name;s.waiting.placeSource='manual';
+   if(e.type==='change'&&name){
+    if(name.length>60){toast('待機場所は60文字以内にしてください',true);return;}
+    if(!registerWaitName(name,s.waiting.geo))toast('登録候補は30件までです（待機履歴には保存されます）',true);
+    else {target.value=name;refreshWaitView(s.waiting.id);}
+   }
+  }else{s.waiting[key]=target.value;}
+  saveLater();return;
  }
  if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false;s.draft.raw[col]=target.value;if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';}if(col==='M'&&s.draft.kind==='ride'){
   if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';}
