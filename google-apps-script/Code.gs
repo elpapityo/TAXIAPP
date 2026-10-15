@@ -239,15 +239,33 @@ function savePacket_(data) {
  // Ignore legacy 700-yen cancel fee values from older app versions.
  // A cancelled dispatch is recorded, but always has zero fare and zero revenue.
  var submitted=data.shift;
+ var restoredGoCash=0,restoredGoPayments=0;
  var shift={...submitted,records:(submitted.records||[]).map(function(record){
-  if(record.kind!=='cancel')return record;
-  return {...record,raw:{...(record.raw||{}),K:0},
-   amounts:{...(record.amounts||{}),meter:0,cancellation:0,goFee:0,
-    uberSurcharge:0,reservation:0,tip:0,customerBill:0,printedDetail:0,
-    uberCommissionBase:0}};
+  if(record.kind==='cancel'){
+   return {...record,raw:{...(record.raw||{}),K:0},
+    amounts:{...(record.amounts||{}),meter:0,cancellation:0,goFee:0,
+     uberSurcharge:0,reservation:0,tip:0,customerBill:0,printedDetail:0,
+     uberCommissionBase:0}};
+  }
+  // Older TAXIAPP clients wrongly deducted the 200-yen GO collection fee
+  // from the company portion of the tender. Restore it even on resends.
+  if(record.kind==='ride'&&record.status==='complete'&&record.raw&&record.raw.E==='G'&&numeric_(record.amounts&&record.amounts.goFee)>0){
+   return {...record,payments:(record.payments||[]).map(function(p){
+    var paid=numeric_(p.received),prior=numeric_(p.company);
+    var missing=Math.max(0,paid-prior);
+    restoredGoPayments+=missing;
+    if(p.type==='現')restoredGoCash+=missing;
+    return {...p,company:paid};
+   })};
+  }
+  return record;
  })};
  var id=String(shift.id);
  var summary={...(data.summary||{}),cancellation:0};
+ summary.cashRemittance=numeric_(summary.cashRemittance)+restoredGoCash;
+ summary.paymentAllocated=numeric_(summary.paymentAllocated)+restoredGoPayments;
+ // GO fees already belong to the tender received; do not add them twice.
+ summary.totalRemittance=summary.cashRemittance+numeric_(summary.etcRemittance);
  var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
  var records = shift.records || [];
  var shiftRows = [[id,shift.date,shiftTimestamp_(shift.startedIso,shift.date,shift.startedAt),
