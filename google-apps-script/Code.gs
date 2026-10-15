@@ -236,8 +236,18 @@ function selectLatestTAXIAPPShift() {
 function savePacket_(data) {
  var ss = SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  ensureStorageSheets_(ss);
- var shift = data.shift, id = String(shift.id);
- var summary = data.summary || {};
+ // Ignore legacy 700-yen cancel fee values from older app versions.
+ // A cancelled dispatch is recorded, but always has zero fare and zero revenue.
+ var submitted=data.shift;
+ var shift={...submitted,records:(submitted.records||[]).map(function(record){
+  if(record.kind!=='cancel')return record;
+  return {...record,raw:{...(record.raw||{}),K:0},
+   amounts:{...(record.amounts||{}),meter:0,cancellation:0,goFee:0,
+    uberSurcharge:0,reservation:0,tip:0,customerBill:0,printedDetail:0,
+    uberCommissionBase:0}};
+ })};
+ var id=String(shift.id);
+ var summary={...(data.summary||{}),cancellation:0};
  var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
  var records = shift.records || [];
  var shiftRows = [[id,shift.date,shiftTimestamp_(shift.startedIso,shift.date,shift.startedAt),
@@ -262,13 +272,12 @@ function savePacket_(data) {
     numeric_(p.received)-numeric_(p.company),
     p.type===raw.N?'主金種':'複合決済']);
   });
-  // Cancellation is its own completed entry: display the cancellation fee
-  // and dispatch/cancellation times, not the previous trip's meter/times.
-  // The fee remains separately classified in the totals (not meter sales).
+  // Cancellation is always a 0-yen operational event. Keep its time and label,
+  // but do not include any fare in the printed or aggregate sales.
   var isCancellation=record.kind==='cancel'&&record.status==='complete';
   var meta=record.meta||{};
   print.push([id,num,raw.E||'',isCancellation?'キャンセル':raw.N||'',
-   isCancellation?numeric_(amounts.cancellation):raw.K||'',
+   isCancellation?0:raw.K||'',
    isCancellation?(meta.dispatchAt||raw.C||''):raw.G||'',
    isCancellation?(meta.cancelAt||''):raw.M||'',
    raw.AL||'',raw.AM||'',raw.AQ||'',raw.W||'',raw.AI||'',raw.AR||'',
