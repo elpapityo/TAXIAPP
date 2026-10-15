@@ -45,7 +45,7 @@ function setupTAXIAPP() {
  if (!ScriptApp.getProjectTriggers().some(function(trigger) {
   return trigger.getHandlerFunction() === 'taxiappOpenMenu';
  })) ScriptApp.newTrigger('taxiappOpenMenu').forSpreadsheet(ss).onOpen().create();
- taxiappOpenMenu();
+ try { taxiappOpenMenu(); } catch(menuError) { Logger.log('メニュー表示はシートを再読み込みして確認: '+menuError); }
  var page = ss.getSheetByName('TAXIAPP_印刷操作');
  if (page) {
   page.getRange('A17').setValue('印刷対象の乗務ID');
@@ -57,12 +57,17 @@ function setupTAXIAPP() {
    .setAllowInvalid(true).build();
   page.getRange('B17').setDataValidation(rule);
  }
- SpreadsheetApp.getUi().alert(
-  'TAXIAPP 接続キー（外部へ公開しないでください）',
-  'このキーをスマホの「設定 → Googleスプレッドシート」に入力してください。\n\n' +
-   token + '\n\n' +
-   'Webアプリをデプロイ後、表示された /exec のURLも入力してください。',
-  SpreadsheetApp.getUi().ButtonSet.OK);
+ Logger.log('TAXIAPP 接続キー（他人には見せない）: ' + token);
+ Logger.log('このキーとデプロイ後の /exec URLをスマホTAXIAPPの設定へ入力してください。');
+ try {
+  SpreadsheetApp.getUi().alert(
+   'TAXIAPP 接続キー（外部へ公開しないでください）',
+   '接続キー：\n\n' + token + '\n\n' +
+    'Webアプリの /exec URLと一緒にTAXIAPPの設定へ入力してください。',
+   SpreadsheetApp.getUi().ButtonSet.OK);
+ } catch(uiError) {
+  Logger.log('画面のダイアログを開けない場合は上の実行ログからキーを控えてください。');
+ }
 }
 
 function doGet(e) {
