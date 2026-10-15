@@ -1653,6 +1653,9 @@ if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheet
 if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
 await load();if(upgradeWaitingHistory())await save();render();
+if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
+window.addEventListener('online',()=>{if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
 
 })().catch(function (err) {
   console.error('TAXIAPP startup error:',err);
