@@ -222,10 +222,13 @@ function shiftTimestamp_(iso, localDate, localTime) {
 function selectLatestTAXIAPPShift() {
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var operation=ss.getSheetByName('TAXIAPP_印刷操作');
+ if(!operation)throw Error('印刷操作シートがありません');
  var latest=ss.getSheetByName('TAXIAPP_乗務一覧').getRange('T2').getDisplayValue();
  if(!latest)throw Error('まだ受信した乗務がありません');
- operation.getRange('B17').setValue(latest);
- operation.getRange('B15').setValue(false);
+ // The visible selector must contain the friendly label, never shift-... IDs.
+ // Follow-latest mode keeps working after new shifts arrive.
+ operation.getRange('B15').setValue(true);
+ operation.getRange('B17').setFormula('=IFERROR(\'TAXIAPP_乗務一覧\'!$T$2,"")');
  SpreadsheetApp.flush();
  try {SpreadsheetApp.getUi().alert('最新乗務を選択しました',latest,SpreadsheetApp.getUi().ButtonSet.OK);}
  catch(e){Logger.log('最新乗務を選択: '+latest);}
@@ -316,12 +319,42 @@ function numericOrBlank_(value) {
  * TAXIAPP_印刷操作!B17. No legacy RAW/日報/チケット/まとめ2 content is copied
  * or changed; changing the dropdown automatically changes the printed data.
  */
+function resolvePrintShiftId_(ss,operation) {
+ var index=ss.getSheetByName('TAXIAPP_乗務一覧');
+ var originals=ss.getSheetByName('TAXIAPP_同期原本');
+ if(!index||!originals)throw Error('TAXIAPPの保存用シートがありません');
+ var choice=String(operation.getRange('B17').getDisplayValue()||'').trim();
+ var derived=String(operation.getRange('C17').getDisplayValue()||'').trim();
+ var followLatest=operation.getRange('B15').getValue()===true;
+ var length=Math.max(0,index.getLastRow()-1);
+ if(!length)return '';
+ var rows=index.getRange(2,1,length,21).getDisplayValues();
+ // Never select a nonexistent ID merely because an old formula still shows it.
+ var savedIds=new Set(originals.getRange(2,1,Math.max(1,originals.getLastRow()-1),1)
+  .getDisplayValues().map(function(r){return String(r[0]||'').trim();}));
+ if(followLatest) {
+  var latest=String(rows[0]&&rows[0][0]||'').trim();
+  return savedIds.has(latest)?latest:'';
+ }
+ // C17 may be blank due to an old B17 dropdown value or stale calculations.
+ if(derived&&savedIds.has(derived))return derived;
+ for(var i=0;i<rows.length;i++){
+  var id=String(rows[i][0]||'').trim();
+  // Column T is sorted friendly labels; U is row-aligned friendly text.
+  if(savedIds.has(id)&&(choice===id||choice===String(rows[i][20]||'').trim()))
+   return id;
+ }
+ return '';
+}
 function applySelectedPrintShift() {
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var operation=ss.getSheetByName('TAXIAPP_印刷操作');
  if(!operation)throw Error('印刷操作シートがありません');
- var id=String(operation.getRange('C17').getDisplayValue()||'').trim();
- if(!id)throw Error('B17で印刷対象の乗務を選択してください');
+ // C17 is an internal ID formula; B17 is the human-readable shift label.
+ // Resolve the ID against saved source data so older scripts that wrote
+ // raw shift IDs directly to B17 cannot trigger false "not found" errors.
+ var id=resolvePrintShiftId_(ss,operation);
+ if(!id)throw Error('印刷対象が見つかりません。B15にチェックを入れるか、B17から乗務を選んでください');
  var shift=loadShift_(ss,id);
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');
@@ -335,10 +368,8 @@ function applySelectedPrintShift() {
  var actual=Number(first.getRange('X23').getValue()||0);
  if (Math.abs(expected-actual)>0.01)
   throw Error('集計表のメーター売上が一致しません。B17を再選択してください。');
- operation.getRange('B18').setValue(id+' / '+String(shift.date));
- operation.getRange('B19').setValue('受信データと売上照合済み。用紙はPCで確認してから印刷');
- operation.getRange('B3').setValue('印刷対象はB17の選択に連動します。旧「日報」等は使いません');
- operation.getRange('B4').setValue('乗務 '+String(shift.date)+' / 営業 '+shift.records.length+'件');
+ // Preserve live status and selection formulas in B18, B19, B3 and B4.
+ // These formulas update automatically as soon as the dropdown changes.
  try{
   SpreadsheetApp.getUi().alert('補助簿の確認',
    '乗務：'+shift.date+' / '+shift.records.length+'件\nメーター売上：'+expected+'円' +
