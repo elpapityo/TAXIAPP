@@ -18,6 +18,9 @@ async function run(){
   document={body:{dataset:{}},visibilityState:'visible',
    getElementById:id=>elems.get(id),createElement:tag=>fakeElement(tag),
    addEventListener:(type,fn)=>{events['document:'+type]=fn;}};
+ // Respect the initial disabled attributes on both Google buttons in map.html.
+ elems.get('googleSearchBtn').disabled=true;
+ elems.get('googleRouteBtn').disabled=true;
  const calls=[],storage=new Map();
  const record={id:'ride-1',kind:'ride',status:'complete',
   raw:{A:1,AL:'甲町',AM:'乙町',D:'35.0,135.0',H:'35.02,135.02'},meta:{}};
