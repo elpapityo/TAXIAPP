@@ -6,7 +6,7 @@
 'use strict';
 function factory(deps){
  const engine=root.TAXIAPP_GPS_TRIP;
- let watchId=null,watchShift='',lastLocalSave=0;
+ let watchId=null,watchShift='',lastLocalSave=0,watchGeneration=0;
  const {getShift,persist,render,toast,gpsMessage,number,safeText}=deps;
  const rootEl=()=>document.getElementById('app');
  const fmt=km=>(Math.round((Number(km)||0)*10)/10).toFixed(1);
@@ -69,6 +69,8 @@ function factory(deps){
   }
  }
  function clearWatch(){
+  // Invalidate callbacks queued by an old session, even for the same shift.
+  watchGeneration++;
   if(watchId!==null&&navigator.geolocation)try{navigator.geolocation.clearWatch(watchId);}catch(e){}
   watchId=null;watchShift='';
  }
@@ -85,7 +87,8 @@ function factory(deps){
   if(draft?.kind==='dispatch'&&!draft.raw.F)draft.raw.F=km;
   if(draft?.kind==='ride'&&!draft.raw.M&&!draft.editId)draft.raw.L=km;
  }
- function onPosition(shiftId,position){
+ function onPosition(shiftId,generation,position){
+  if(generation!==watchGeneration)return;
   const shift=getShift();
   if(!shift||shift.id!==shiftId||!active(shift)||document.visibilityState!=='visible')return;
   const r=engine.ingest(shift.gpsTrip,position);
@@ -99,9 +102,10 @@ function factory(deps){
    missing(shift,'GPS不可：HTTPSと位置情報の許可が必要');return;
   }
   clearWatch();
-  const id=shift.id;watchShift=id;
+  const id=shift.id,generation=watchGeneration;watchShift=id;
   try{
-   watchId=navigator.geolocation.watchPosition(pos=>onPosition(id,pos),err=>{
+   watchId=navigator.geolocation.watchPosition(pos=>onPosition(id,generation,pos),err=>{
+    if(generation!==watchGeneration)return;
     const current=getShift();if(!current||current.id!==id||!active(current))return;
     missing(current,gpsMessage(err));
     if(err.code===1){clearWatch();engine.stop(current.gpsTrip);persist(true);render();}
@@ -121,7 +125,11 @@ function factory(deps){
     if(Number.isFinite(start)&&Date.now()-start>120000)
       engine.miss(shift.gpsTrip,'乗務途中のGPS開始：車両トリップで補正してください');
   }
-  if(reloading&&shift.gpsTrip.enabled)engine.miss(shift.gpsTrip,'アプリ再起動の間の移動は未計測');
+  if(reloading&&shift.gpsTrip.enabled)
+    engine.miss(shift.gpsTrip,'アプリ再起動の間の移動は未計測');
+  // Manual stop / restart must not silently count the untracked time as measured.
+  if(!shift.gpsTrip.enabled&&shift.gpsTrip.lastStopIso)
+    engine.miss(shift.gpsTrip,'GPS停止中の移動は未計測：車両トリップで確認・補正してください');
   engine.resume(shift.gpsTrip);
   engine.mode(shift.gpsTrip,modeForShift(shift));
   startWatch(shift);persist(false);render();
