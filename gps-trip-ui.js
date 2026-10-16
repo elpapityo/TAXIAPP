@@ -107,7 +107,7 @@ function factory(deps){
   // Only reflect already-validated auto values; never replace a manual reading.
   for(const [key,value] of [
    ['[data-shift-odo="end"]',shift.gpsAutoEndingOdo?.km===shift.endingOdo?shift.endingOdo:null],
-   ['[data-wait-field="odometer"]',shift.waiting?.gpsAutoOdometer?.km===shift.waiting?.odometer?shift.waiting.odometer:null],
+   ['[data-wait-field="odometer"]',shift.waiting?.gpsAutoOdometer&&shift.waiting.gpsAutoOdometer.km===shift.waiting.odometer?shift.waiting.odometer:null],
    ['[data-col="L"]',shift.draft?.kind==='ride'&&shift.draft?.meta?.gpsFilledFields?.L?.km===shift.draft.raw.L?shift.draft.raw.L:null]]){
    const input=ui.querySelector(key);
    if(input&&value!==null&&value!==undefined&&document.activeElement!==input)input.value=String(value);
