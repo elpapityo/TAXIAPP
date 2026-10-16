@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "TAXIAPP-GpsPrototype"
-include(":core", ":app")
+include(":core", ":app", ":dailyapp")
