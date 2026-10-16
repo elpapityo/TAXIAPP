@@ -11,12 +11,17 @@ function factory(deps){
  const rootEl=()=>document.getElementById('app');
  const fmt=km=>(Math.round((Number(km)||0)*10)/10).toFixed(1);
  const active=shift=>Boolean(engine&&shift?.gpsTrip?.enabled&&!shift.endedAt);
+ // Do not automatically certify an estimate until we have a recent valid fix
+ // AND any prior missed interval was corrected using the vehicle trip meter.
+ const trusted=shift=>Boolean(active(shift)&&shift.gpsTrip.lastFix&&
+   shift.gpsTrip.status==='tracking'&&!shift.gpsTrip.unresolvedGap);
  function status(shift){
   const s=shift?.gpsTrip;
   if(!s)return '未開始（距離は従来どおり手入力できます）';
   if(!s.enabled)return 'GPS停止中：補正履歴は保存しています';
   if(document.visibilityState!=='visible')return '非表示：計測中断（未計測区間あり）';
   if(s.status==='gap')return '計測中断：'+(s.lastError||'トリップで確認してください');
+  if(s.unresolvedGap)return '未計測区間があります。車両トリップの実測値へ補正するまで距離欄への自動転記を停止します';
   if(!s.lastSeenMs)return '最初の有効なGPS測位を待っています';
   const seconds=Math.max(0,Math.floor((Date.now()-s.lastSeenMs)/1000));
   if(seconds>60)return 'GPS更新停止の可能性：最後の測位から'+seconds+'秒';
@@ -82,7 +87,7 @@ function factory(deps){
   const shift=getShift();
   if(!shift||shift.id!==shiftId||!active(shift)||document.visibilityState!=='visible')return;
   const r=engine.ingest(shift.gpsTrip,position);
-  if(r.accepted)fill(shift);
+  if(r.accepted&&trusted(shift))fill(shift);
   paint(shift);
   if(Date.now()-lastLocalSave>12000){lastLocalSave=Date.now();persist(false);}
  }
@@ -108,7 +113,12 @@ function factory(deps){
   if(!shift||shift.endedAt)return;
   if(!engine){toast('GPS計測ファイルを読み込めませんでした。再読み込みしてください。',true);return;}
   if(!root.isSecureContext||!navigator.geolocation){toast('HTTPSと位置情報の許可が必要です。',true);return;}
-  if(!shift.gpsTrip)shift.gpsTrip=engine.create(number(shift.startingOdo)||0);
+  if(!shift.gpsTrip){
+    shift.gpsTrip=engine.create(number(shift.startingOdo)||0);
+    const start=Date.parse(shift.startedIso||'');
+    if(Number.isFinite(start)&&Date.now()-start>120000)
+      engine.miss(shift.gpsTrip,'乗務途中のGPS開始：車両トリップで補正してください');
+  }
   if(reloading&&shift.gpsTrip.enabled)engine.miss(shift.gpsTrip,'アプリ再起動の間の移動は未計測');
   engine.resume(shift.gpsTrip);
   engine.mode(shift.gpsTrip,modeForShift(shift));
@@ -128,19 +138,22 @@ function factory(deps){
  function board(shift,record){
   if(!active(shift)||!record||record.editId)return;
   const s=shift.gpsTrip;
-  record.raw.F=fmt(s.tripKm);
+  if(trusted(shift))record.raw.F=fmt(s.tripKm);
   record.meta??={};
-  record.meta.gpsDistance={boardTripKm:s.tripKm,boardRealKm:s.realKm,boardEmptyKm:s.emptyKm,boardGapCount:s.gapCount,boardedIso:new Date().toISOString()};
+  record.meta.gpsDistance={boardTripKm:s.tripKm,boardRealKm:s.realKm,boardEmptyKm:s.emptyKm,
+    boardGapCount:s.gapCount,boardQuality:trusted(shift)?'valid':'needs_correction',
+    boardedIso:new Date().toISOString()};
   changeMode(shift,'real');
  }
  function alight(shift,record){
   if(!active(shift)||!record||record.kind!=='ride'||record.editId||record.meta?.gpsDistance?.alightedIso)return;
   const s=shift.gpsTrip;
-  record.raw.L=fmt(s.tripKm);
+  if(trusted(shift))record.raw.L=fmt(s.tripKm);
   record.meta??={};record.meta.gpsDistance??={};
   const meta=record.meta.gpsDistance;
   meta.alightTripKm=s.tripKm;meta.alightRealKm=s.realKm;
   meta.alightGapCount=s.gapCount;
+  meta.alightQuality=trusted(shift)?'valid':'needs_correction';
   meta.realRouteKm=Math.max(0,Math.round((s.realKm-(meta.boardRealKm??s.realKm))*10000)/10000);
   meta.alightedIso=new Date().toISOString();
   changeMode(shift,'empty');
@@ -175,7 +188,7 @@ function factory(deps){
   correct(shift,value,source||('距離欄'+column));
  }
  return {panel,status,paint,start,stop,mode:changeMode,board,alight,correct,hidden,tick,
-         atInputDistance,active,fill,clearWatch,fmt};
+         atInputDistance,active,trusted,fill,clearWatch,fmt};
 }
 root.TAXIAPP_GPS_UI=factory;
 })(typeof window!=='undefined'?window:globalThis);
