@@ -705,7 +705,7 @@ function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
 const appEl=document.getElementById('app'), noticeEl=document.getElementById('notice');
-const labels={drive:['🚕','乗務入力'],live:['◴','営業・集計'],history:['▤','営業履歴'],highway:['🛣','高速一覧'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],settings:['⚙','設定']};
+const labels={drive:['🚕','乗務入力'],live:['◴','営業・集計'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],settings:['⚙','設定']};
 const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE','AF','AG','AH','AI','AJ','AK','AN','AO','AP','AQ','AR']);
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
 let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab='drive',db=null,persistTimer=0,toastTimer=0;
@@ -1061,7 +1061,7 @@ function historyRecordDetails(record,shift){
   <p class="footnote">受取額は各決済で預かった金額、会社納金対象はアプリ内の精算計算による金額です。手数料の控除を区別して表示します。金額0円の決済方法は省略しています。</p>
  </div></details>`;
 }
-function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp();return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}
+function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp();return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
 <section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。</span></section>${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
 ${shift.gpsTrip?gpsDistanceSummary(shift):''}${dailyReferenceDetails(shift,dailyReferenceFor(shift))}<div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み'}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div>
@@ -1070,7 +1070,7 @@ ${shift.records.length?`<section class="card history-detail-section"><h2 class="
 // Business status is expanded initially; daily summary is collapsed initially.
 function renderOperations(shift){
  const part=(key,title,body)=>`<details class="details operations-fold" data-operation-panel="${key}" ${operationPanelOpen[key]?'open':''}><summary>${title}</summary><div class="inner">${body}</div></details>`;
- return `${titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。')}
+ return `${titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。')}<div class="actions"><button type="button" class="btn teal" data-tab="highway">🛣 高速道路利用一覧（明細・合計）</button></div>
  ${part('live','営業状況',renderLiveStatus(shift,true))}
  ${part('summary','日報集計',renderSummary(shift,true))}`;
 }
@@ -1138,6 +1138,7 @@ function renderHighwayReport(){
    '</article>';
  }).join('');
  return head+
+  '<div class="actions"><button type="button" class="btn" data-tab="history">← 営業履歴へ戻る</button></div>'+
   '<section class="card"><label class="field"><span class="field-label">乗務日を選択</span><select class="control" id="highwayShiftSelect">'+
    shifts.map(s=>'<option value="'+safeText(s.id)+'" '+(s.id===selected.id?'selected':'')+'>'+safeText(s.date)+'　出庫 '+shortTime(s.startedAt)+' ／ '+safeText(s.vehicle||'車番未設定')+'</option>').join('')+
    '</select></label><p class="caption-note">保存済みの営業記録を表示します。閲覧専用のためデータは変更されません。</p></section>'+
