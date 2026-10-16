@@ -50,7 +50,7 @@ const ctx={
 vm.createContext(ctx);
 vm.runInContext(html.slice(start,end),ctx);
 const displayed=ctx.renderDataManagement();
-assert.ok(displayed.includes('データ管理'));
+assert.ok(displayed.includes('端末に保存された乗務'));
 assert.ok(displayed.includes('shift-closed'));
 assert.ok(displayed.includes('shift-open'));
 assert.ok(displayed.includes('6,400円'));
