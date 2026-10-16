@@ -15,6 +15,8 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.IBinder
+import android.os.CancellationSignal
+import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import jp.taxiapp.gps.Fix
@@ -40,26 +42,109 @@ class GpsTrackingService : Service() {
     private lateinit var manager: LocationManager
     private lateinit var engine: TripAccumulator
     private var listening = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingAlight = false
+    private var alightRequestedAtMs = 0L
+    private var alightTimeout: Runnable? = null
+    private var alightCancellation: CancellationSignal? = null
+    private var alightOneShot: LocationListener? = null
+
+    // All LocationManager callbacks and service actions are serialized on
+    // the main looper; a late fix cannot switch an already-completed ride.
+    private fun acceptLocation(location: Location): Boolean {
+        val sample = Fix(
+            latitude = location.latitude,
+            longitude = location.longitude,
+            accuracyMeters = if (location.hasAccuracy()) location.accuracy.toDouble() else Double.NaN,
+            elapsedRealtimeMs = location.elapsedRealtimeNanos / 1000000L,
+            speedMetersPerSecond = if (location.hasSpeed()) location.speed.toDouble() else null
+        )
+        GpsStore.noteGpsCallback(this)
+        val result = engine.ingest(sample, SystemClock.elapsedRealtime())
+        GpsStore.save(this, engine.snapshot())
+        updateNotification()
+        return result.status in setOf("距離加算", "基準点取得", "停止中", "小移動・保留")
+    }
+
+    private fun acceptedNewAlightFix(location: Location, valid: Boolean): Boolean =
+        valid && location.elapsedRealtimeNanos / 1000000L >= alightRequestedAtMs - 1000L
 
     private val listener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
-            val sample = Fix(
-                latitude = location.latitude,
-                longitude = location.longitude,
-                accuracyMeters = location.accuracy.toDouble(),
-                elapsedRealtimeMs = location.elapsedRealtimeNanos / 1000000L,
-                speedMetersPerSecond = if (location.hasSpeed()) location.speed.toDouble() else null
-            )
-            GpsStore.noteGpsCallback(this@GpsTrackingService)
-            engine.ingest(sample, SystemClock.elapsedRealtime())
-            GpsStore.save(this@GpsTrackingService, engine.snapshot())
-            updateNotification()
+            val valid = acceptLocation(location)
+            if (pendingAlight && acceptedNewAlightFix(location, valid)) finishAlight(true)
         }
 
         override fun onProviderDisabled(provider: String) {
+            if (pendingAlight) finishAlight(false)
             engine.interrupted("GPSが無効になりました")
             GpsStore.save(this@GpsTrackingService, engine.snapshot())
             updateNotification()
+        }
+    }
+
+    private fun clearAlightRequests() {
+        pendingAlight = false
+        alightTimeout?.let { mainHandler.removeCallbacks(it) }
+        alightTimeout = null
+        alightCancellation?.cancel()
+        alightCancellation = null
+        alightOneShot?.let { single ->
+            runCatching { manager.removeUpdates(single) }
+        }
+        alightOneShot = null
+    }
+
+    private fun finishAlight(fresh: Boolean) {
+        if (!pendingAlight) return
+        clearAlightRequests()
+        if (!engine.snapshot().running || engine.snapshot().mode != TripMode.REAL) return
+        engine.switchMode(TripMode.EMPTY)
+        if (!fresh) engine.interrupted("降車時のGPS未受信：車両トリップで確認してください")
+        GpsStore.save(this, engine.snapshot())
+        updateNotification()
+    }
+
+    private fun beginAlight() {
+        if (pendingAlight || !engine.snapshot().running ||
+            engine.snapshot().mode != TripMode.REAL) return
+        pendingAlight = true
+        alightRequestedAtMs = SystemClock.elapsedRealtime()
+        alightTimeout = Runnable { finishAlight(false) }.also {
+            mainHandler.postDelayed(it, 8000L)
+        }
+        updateNotification()
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                alightCancellation = CancellationSignal().also { signal ->
+                    manager.getCurrentLocation(
+                        LocationManager.GPS_PROVIDER, signal, mainExecutor
+                    ) { location ->
+                        if (!pendingAlight || location == null) return@getCurrentLocation
+                        val valid = acceptLocation(location)
+                        if (acceptedNewAlightFix(location, valid)) finishAlight(true)
+                        // An older cached fix is insufficient: the continuous GPS
+                        // listener may still supply a fresh fix before the timeout.
+                    }
+                }
+            } else {
+                val oneShot = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        if (!pendingAlight) return
+                        val valid = acceptLocation(location)
+                        if (acceptedNewAlightFix(location, valid)) finishAlight(true)
+                    }
+                }
+                alightOneShot = oneShot
+                @Suppress("DEPRECATION")
+                manager.requestSingleUpdate(
+                    LocationManager.GPS_PROVIDER, oneShot, Looper.getMainLooper()
+                )
+            }
+        } catch (_: SecurityException) {
+            // The timeout completes the alighting even if GPS permission changes.
+        } catch (_: IllegalArgumentException) {
+            // No valid provider: do not invent the final leg.
         }
     }
 
@@ -83,6 +168,7 @@ class GpsTrackingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                clearAlightRequests()
                 stopListening()
                 engine.stop()
                 GpsStore.save(this, engine.snapshot())
@@ -92,9 +178,13 @@ class GpsTrackingService : Service() {
             }
             ACTION_REAL, ACTION_EMPTY -> {
                 if (engine.snapshot().running) {
-                    engine.switchMode(if (intent.action == ACTION_REAL) TripMode.REAL else TripMode.EMPTY)
-                    GpsStore.save(this, engine.snapshot())
-                    updateNotification()
+                    if (intent.action == ACTION_EMPTY) {
+                        beginAlight() // Capture a current endpoint before REAL -> EMPTY.
+                    } else if (!pendingAlight) {
+                        engine.switchMode(TripMode.REAL)
+                        GpsStore.save(this, engine.snapshot())
+                        updateNotification()
+                    }
                 }
                 return START_NOT_STICKY
             }
@@ -169,7 +259,7 @@ class GpsTrackingService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val s = engine.snapshot()
-        val label = if (s.mode == TripMode.REAL) "実車" else "空車"
+        val label = if (pendingAlight) "降車GPS確認中" else if (s.mode == TripMode.REAL) "実車" else "空車"
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentTitle("TAXIAPP GPS試験版・" + label)
@@ -191,6 +281,7 @@ class GpsTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        clearAlightRequests()
         stopListening()
         // If killed without ACTION_STOP, mark an incomplete trip for inspection.
         if (engine.snapshot().running) {
