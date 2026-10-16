@@ -32,6 +32,13 @@ assert.equal(done.elapsedSeconds,52200);
 assert.equal(done.remainingSeconds,0);
 assert.equal(done.exceededSeconds,5400);
 eq(done.travelKm,110);
+// A legacy checked-in record with no dated end timestamp must not keep ticking.
+const legacyClosed=daily.calculate({...shift,endedAt:'21:30',endingOdo:'110'}, {
+ ...opts,now:new Date('2026-10-25T12:00:00+09:00')
+});
+assert.equal(legacyClosed.elapsedSeconds,null);
+assert.equal(legacyClosed.remainingSeconds,null);
+assert.equal(legacyClosed.distanceProjection!==null,true);
 const unknown=daily.calculate({...shift,startingOdo:'',records:[]},opts);
 assert.equal(unknown.travelKm,null);
 assert.equal(unknown.distanceProjection,null);
