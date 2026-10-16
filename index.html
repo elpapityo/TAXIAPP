@@ -325,6 +325,7 @@ html[data-ui-theme="night"] .operations-fold>summary{background:#243a54;color:#e
   setTimeout(function () { if (document.querySelector('#app > .boot')) showBootError('起動に時間がかかっています。'); }, 8000);
 })();
 </script>
+<script src="./daily-reference.js?v=0.3.27"></script>
 <script src="./gps-trip.js?v=0.3.26"></script>
 <script src="./gps-trip-ui.js?v=0.3.26"></script>
 <script>
@@ -797,6 +798,53 @@ function paymentElapsedPanel(shift){
 }
 function shiftElapsed(shift,now=new Date()){return durationSeconds(shift?.startedIso,shift?.endedIso||now);}
 function plannedEndDatetime(shift){const val=String(shift?.plannedEndAt||'');if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(val))return null;const start=new Date(shift.startedIso);if(!Number.isFinite(start.getTime()))return null;const end=new Date(start);const [h,m]=val.split(':').map(Number);end.setHours(h,m,0,0);if(end.getTime()<=start.getTime())end.setDate(end.getDate()+1);return end;}
+
+function dailyReferenceFor(shift,now=new Date(),summary=null){
+ if(!shift||!window.TAXIAPP_DAILY_REFERENCE)return null;
+ const t=summary||totals(shift.records,shift.settings,shift.date);
+ return window.TAXIAPP_DAILY_REFERENCE.calculate(shift,{
+  now,meter:t.meter,rides:t.rides,deriveRaw:row=>deriveRaw(row,shift.settings)
+ });
+}
+const formatReferenceKm=value=>value===null||value===undefined?'未計測':Number(value).toLocaleString('ja-JP',{maximumFractionDigits:3})+' km';
+const formatReferenceYen=value=>value===null||value===undefined?'未計算':money(value);
+const formatReferenceDeadline=iso=>iso?
+ new Date(iso).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'時刻未設定';
+function dailyReferenceStrip(shift){
+ const ref=dailyReferenceFor(shift);
+ if(!ref)return '';
+ return `<section class="card duty-reference-strip"><h2 class="h2">乗務基準　13時間・275km＋高速免除</h2>
+ <p class="helper">出庫からの経過時間と、車両トリップ距離の参考比較です。</p>
+ <div class="live-stats">
+ <div class="live-stat"><span>出庫からの経過時間</span><strong data-duty-elapsed>${durationHms(ref.elapsedSeconds)}</strong></div>
+ <div class="live-stat"><span>13時間までの残り</span><strong data-duty-remaining>${ref.exceededSeconds>0?'超過 '+durationHms(ref.exceededSeconds):durationHms(ref.remainingSeconds)}</strong></div>
+ <div class="live-stat"><span>距離基準（高速免除込み）</span><strong>${formatReferenceKm(ref.capKm)}</strong><small>275km＋免除 ${formatReferenceKm(ref.exemptKm)}</small></div>
+ <div class="live-stat"><span>距離基準までの残り</span><strong>${formatReferenceKm(ref.remainingKm)}</strong><small>${safeText(ref.distanceSource)}${ref.exceededKm>0?'／超過 '+formatReferenceKm(ref.exceededKm):''}</small></div>
+ </div></section>`;
+}
+function dailyReferenceDetails(shift,ref){
+ if(!ref)return '';
+ const item=(name,value)=>`<div class="statline"><span>${name}</span><b>${value}</b></div>`;
+ return `<section class="card"><h2 class="h2">日報詳細分析：13時間・275km＋高速免除</h2>
+ ${item('基準業務時間','13時間')}
+ ${item('出庫からの実時間',`<span data-duty-elapsed>${durationHms(ref.elapsedSeconds)}</span>`)}
+ ${item('13時間の基準終了日時',safeText(formatReferenceDeadline(ref.deadlineIso)))}
+ ${item('13時間までの残り／超過',`<span data-duty-remaining>${ref.exceededSeconds>0?'超過 '+durationHms(ref.exceededSeconds):durationHms(ref.remainingSeconds)}</span>`)}
+ ${item('基本距離','275 km')}
+ ${item('実車高速の免除距離',formatReferenceKm(ref.exemptRealKm))}
+ ${item('空車高速の免除距離',formatReferenceKm(ref.exemptEmptyKm))}
+ ${item('売上上限試算用距離',formatReferenceKm(ref.capKm))}
+ ${item('現在までの走行距離',formatReferenceKm(ref.travelKm))}
+ ${item('残りの走行距離',formatReferenceKm(ref.remainingKm))}
+ <p class="footnote">距離の取得元：${safeText(ref.distanceSource)}。距離の記録がない場合、またはGPS欠測中は距離の売上試算を行いません。</p>
+ ${item('時間あたりメーター売上',`<span data-duty-pace>${formatReferenceYen(ref.hourlyRevenue)}</span>／時間`)}
+ ${item('1kmあたりメーター売上',formatReferenceYen(ref.yenPerKm)+'／km')}
+ ${item('13時間換算の売上（参考）',`<span data-duty-time-projection>${formatReferenceYen(ref.timeProjection)}</span>`)}
+ ${item('275km＋高速免除距離の売上上限試算',formatReferenceYen(ref.distanceProjection))}
+ <p class="footnote">13時間換算は30分以上かつ営業1件以上で表示。距離上限試算は、メーター売上÷走行距離×（275km＋実車・空車の高速免除距離）。どちらも将来の営業状況を保証するものではなく、売上や納金には加算しません。</p>
+ </section>`;
+}
+
 function liveBusinessNumbers(shift,now=new Date()){
  const t=totals(shift.records,shift.settings,shift.date),elapsed=shiftElapsed(shift,now),rides=shift.records.filter(r=>r.kind==='ride'&&r.status==='complete'),activeRide=shift.draft?.kind==='ride'&&!shift.draft.editId&&shift.draft.status==='draft'?(durationSeconds(shift.draft.meta?.boardedIso||shift.draft.meta?.createdAt,now)||0):0,liveDuration=rides.reduce((sum,r)=>sum+rideDurationSeconds(r.raw),0)+activeRide,waitDuration=totalWaitSeconds(shift,now),unclassified=elapsed===null?null:Math.max(0,elapsed-liveDuration-waitDuration),hours=elapsed?elapsed/3600:0,pace=hours>0?t.meter/hours:0,plan=plannedEndDatetime(shift),totalPlanSeconds=plan?durationSeconds(shift.startedIso,plan):null,remaining=plan?Math.max(0,(plan.getTime()-now.getTime())/1000):null;
  return {t,elapsed,liveDuration,waitDuration,unclassified,pace,planned:plan,remaining,referenceEstimate:plan&&elapsed>=1800&&t.rides>0&&remaining>0?t.meter+pace*remaining/3600:null};
