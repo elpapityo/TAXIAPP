@@ -966,12 +966,12 @@ function historyRecordDetails(record,shift){
   ${isCancel?'':item('降車時刻',raw.M)}
   ${item('乗車地・迎車場所',raw.AL)}${item('降車地',raw.AM)}
   ${item('乗車距離（km）',raw.F)}${item('降車距離（km）',raw.L)}
-  ${note}
+  ${note}${record.meta?.gpsCancelTripKm!==undefined?item('キャンセル時GPSトリップ（参考）',Number(record.meta.gpsCancelTripKm).toFixed(1)+' km'):''}
   </div>
   ${record.meta?.gpsDistance?`<h3 class="subsection">GPS距離（参考値）</h3><div class="history-fact-grid">
-  ${item('乗車時トリップ（GPS）',Number(record.meta.gpsDistance.boardTripKm||0).toFixed(1)+' km')}
-  ${item('降車時トリップ（GPS）',record.meta.gpsDistance.alightTripKm===undefined?'未確定':Number(record.meta.gpsDistance.alightTripKm).toFixed(1)+' km')}
-  ${item('実車GPS計測分',record.meta.gpsDistance.realRouteKm===undefined?'未確定':Number(record.meta.gpsDistance.realRouteKm).toFixed(1)+' km')}
+  ${item('乗車時トリップ（GPS）',record.meta.gpsDistance.boardQuality==='valid'?Number(record.meta.gpsDistance.boardTripKm||0).toFixed(1)+' km':'未測位・補正が必要')}
+  ${item('降車時トリップ（GPS）',record.meta.gpsDistance.alightQuality==='valid'?Number(record.meta.gpsDistance.alightTripKm).toFixed(1)+' km':'未測位・補正が必要')}
+  ${item('実車GPS計測分（欠測区間は含まない）',record.meta.gpsDistance.realRouteKm===undefined?'未確定':Number(record.meta.gpsDistance.realRouteKm).toFixed(1)+' km')}
   ${item('営業中の計測中断',record.meta.gpsDistance.alightGapCount===undefined?'不明':Math.max(0,record.meta.gpsDistance.alightGapCount-record.meta.gpsDistance.boardGapCount)+'件')}
   </div>`:''}
   <h3 class="subsection">金額・手数料</h3>
