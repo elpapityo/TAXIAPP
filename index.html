@@ -1559,7 +1559,7 @@ function setDeposit(value){const s=getShift();if(!s?.draft)return;
 
 function stampAlightIfNeeded(shift){
  const d=shift?.draft;if(!d||d.kind!=='ride'||d.raw.M)return false;
- const now=new Date();d.raw.M=stamp(now);d.meta??={};d.meta.alightIso=now.toISOString();d.status='alighted';
+ const now=new Date();d.raw.M=stamp(now);d.meta??={};d.meta.alightIso=now.toISOString();d.status='alighted';gpsTripUI?.alight(shift,d);
  const indicator=appEl.querySelector('[data-alight-indicator]');if(indicator)indicator.textContent=shortTime(d.raw.M)+' 降車';
  // Meter entry can stamp alighting without a full render; update the visible editable time input now.
  appEl.querySelectorAll('[data-col="M"]').forEach(input=>{if(document.activeElement!==input)input.value=shortTime(d.raw.M);});
@@ -1586,7 +1586,7 @@ function fillCurrentTime(col){
  if(!d||!timeFields.has(col))return;
  const now=new Date();d.raw[col]=stamp(now);
  if(col==='M'&&d.kind==='ride'){
-  d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();
+  d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();gpsTripUI?.alight(s,d);
  }
  saveLater();render();toast((RAW_COLUMNS.find(x=>x[0]===col)?.[1]||'時刻')+'に現在時刻を入力しました');
 }
@@ -1609,7 +1609,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   const n=number(target.value);
   if(target.value.trim()!==''&&(n===null||n<0)){if(e.type==='change')toast('走行距離は0以上で入力してください',true);return;}
   const key=target.dataset.shiftOdo==='start'?'startingOdo':target.dataset.shiftOdo==='end'?'endingOdo':null;
-  if(key){s[key]=target.value.trim();saveLater();}return;
+  if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');saveLater();}return;
  }
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
   const key=target.dataset.waitField;if(!['place','odometer'].includes(key))return;
@@ -1622,11 +1622,11 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     if(!registerWaitName(name,s.waiting.geo))toast('登録候補は30件までです（待機履歴には保存されます）',true);
     else {target.value=name;refreshWaitView(s.waiting.id);}
    }
-  }else{s.waiting[key]=target.value;}
+  }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}
   saveLater();return;
  }
- if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false;s.draft.raw[col]=target.value;if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';}if(col==='M'&&s.draft.kind==='ride'){
-  if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';}
+ if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false;s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&!s.draft.editId)gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';}if(col==='M'&&s.draft.kind==='ride'){
+  if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';if(e.type==='change')gpsTripUI?.alight(s,s.draft);}
   const badge=appEl.querySelector('[data-alight-indicator]');if(badge)badge.textContent=target.value?shortTime(target.value)+' 降車':'メーター入力で時刻記録';
  }if(['AF','AG','AH'].includes(col))refreshEmptyHighwayAmounts(s.draft,col);if(col==='N'&&s.draft.meta?.splitPayment?.second===target.value)s.draft.meta.splitPayment={second:'',manualSlot:null,manualAmount:''};updateEstimate();saveLater();if(col==='K'&&e.type==='change'&&s.draft.kind==='ride'&&s.draft.raw.M&&!s.draft.meta?.dropGpsRequested&&navigator.geolocation&&window.isSecureContext){s.draft.meta.dropGpsRequested=true;setTimeout(()=>{const active=getShift();if(active?.draft?.id===s.draft.id)getGps(active,active.draft,'drop');},200);}if(col==='P'&&e.type==='change')render();return;}
  if(target.dataset.meta&&s?.draft){s.draft.meta[target.dataset.meta]=target.value;updateEstimate();saveLater();if(target.dataset.meta==='uberAppDisplayed'&&e.type==='change')render();return;}
@@ -1768,10 +1768,10 @@ if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
 if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
-await load();if(upgradeWaitingHistory())await save();render();
+await load();if(upgradeWaitingHistory())await save();render();if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
 if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
 window.addEventListener('online',()=>{if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
+document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();if(document.visibilityState==='visible'&&sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
 
 })().catch(function (err) {
   console.error('TAXIAPP startup error:',err);
