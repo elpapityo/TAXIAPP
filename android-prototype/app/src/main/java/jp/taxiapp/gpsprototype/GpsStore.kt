@@ -53,5 +53,12 @@ object GpsStore {
     }
 
     fun clear(context: Context) { prefs(context).edit().clear().apply() }
+    fun noteGpsCallback(context: Context) {
+        prefs(context).edit().putLong("lastGpsCallbackAt", System.currentTimeMillis()).apply()
+    }
+
+    fun lastGpsCallbackAt(context: Context) =
+        prefs(context).getLong("lastGpsCallbackAt", 0L)
+
     fun updatedAt(context: Context) = prefs(context).getLong("updatedAt", 0)
 }
