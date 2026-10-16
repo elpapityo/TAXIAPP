@@ -1,0 +1,93 @@
+name: TAXIAPP native Android daily pilot
+on:
+  push:
+    branches:
+      - feature/taxiapp-native-android-20261017
+    paths:
+      - 'android-prototype/**'
+      - '.github/workflows/taxiapp-native-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  native-daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Prepare current production UI as isolated offline assets
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin '+refs/heads/main:refs/remotes/origin/main'
+          TARGET="android-prototype/dailyapp/src/main/assets"
+          mkdir -p "$TARGET"
+          for name in index.html gps-trip.js gps-trip-ui.js daily-reference.js device-management.js \
+             elapsed-alight-clock.js secure-transfer.js map.html map-shared.js map-view.js municipalities.json; do
+            git show "origin/main:$name" > "$TARGET/$name"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path("android-prototype/dailyapp/src/main/assets/index.html")
+          src=html.read_text()
+          needle='<script src="./gps-trip-ui.js?v=0.3.35"></script>'
+          if needle not in src:
+            raise RuntimeError("Expected GPS UI script tag not found; review changes before building")
+          src=src.replace(needle,needle+'\n<script src="./native-gps-ui.js"></script>',1)
+          download="function download(textData,file,type){"
+          if src.count(download)!=1:
+            raise RuntimeError("Expected exactly one backup download function")
+          src=src.replace(download,download+
+            "if(window.TAXIAPP_NATIVE_FILES){window.TAXIAPP_NATIVE_FILES.saveText(String(file),String(textData),String(type));return;}",1)
+          html.write_text(src)
+          PY
+          cp android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsStore.kt \
+             android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype/GpsStore.kt
+          cp android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt \
+             android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt
+      - name: Validate embedded GPS JavaScript
+        run: |
+          node --check android-prototype/dailyapp/src/main/assets/native-gps-ui.js
+          node --check android-prototype/dailyapp/src/main/assets/gps-trip-ui.js
+          node --test android-prototype/dailyapp/src/test/native-gps-ui.test.js
+      - name: Install Android 35
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Test distance engine and build installable APK
+        run: |
+          cd android-prototype
+          gradle --no-daemon :core:test :dailyapp:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TAXIAPP-Android-daily-GPS-pilot-APK
+          path: android-prototype/dailyapp/build/outputs/apk/debug/dailyapp-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish pilot APK for direct installation
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          set -euo pipefail
+          FILE="$RUNNER_TEMP/TAXIAPP-Android-native-pilot-v0.1.0.apk"
+          cp android-prototype/dailyapp/build/outputs/apk/debug/dailyapp-debug.apk "$FILE"
+          TAG="taxiapp-android-native-pilot-v0.1.0"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "TAXIAPP 日報Android版 GPS統合試験 v0.1.0" \
+              --notes "本番とは別インストールの試験版。日報画面はAPK内で動作し、GPS距離はAndroidフォアグラウンドサービスで測定。現行ブラウザの保存記録は自動移行されません。業務利用前に暗号化バックアップから移行し件数・金額を必ず確認してください。GPS/降車精度は実機検証が必要です。" --prerelease
+          fi
