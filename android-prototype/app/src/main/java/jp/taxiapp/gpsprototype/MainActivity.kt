@@ -180,7 +180,7 @@ class MainActivity : Activity() {
         val gpsAt = GpsStore.lastGpsCallbackAt(this)
         val seconds = if (gpsAt > 0L) (System.currentTimeMillis() - gpsAt) / 1000 else -1
         val currentRide = if (s.mode == TripMode.REAL && s.rideStartRealKm != null)
-            (s.realKm - s.rideStartRealKm).coerceAtLeast(0.0) else 0.0
+            (s.realKm - (s.rideStartRealKm ?: s.realKm)).coerceAtLeast(0.0) else 0.0
         val matched = checks.getInt("rideCount", -1) == s.completedRides
         val lines = listOf(
             "TAXIAPP GPS距離測定試験",
@@ -207,7 +207,7 @@ class MainActivity : Activity() {
         if (!::stats.isInitialized) return
         val state = GpsStore.load(this)
         val currentRide = if (state.mode == TripMode.REAL && state.rideStartRealKm != null)
-            (state.realKm - state.rideStartRealKm).coerceAtLeast(0.0) else 0.0
+            (state.realKm - (state.rideStartRealKm ?: state.realKm)).coerceAtLeast(0.0) else 0.0
         stats.text = "GPS累計： " + fmtKm(state.tripKm) + "\n" +
             "実車累計： " + fmtKm(state.realKm) + "\n" +
             "空車累計： " + fmtKm(state.emptyKm) + "\n" +
