@@ -86,6 +86,9 @@
     if(p.velocity!==null&&(p.velocity<0||p.velocity>MAX_SPEED_MPS))
       return miss(s,'GPS速度が異常',receivedAt);
     const last=s.lastFix;
+    // The last accepted GPS callback may be recent even when the distance
+    // anchor is old (for example, a taxi stationary at a rank for minutes).
+    const previousSeenMs=Number(s.lastSeenMs||last?.t||0);
     s.lastSeenMs=receivedAt;s.lastAccuracy=p.accuracy;
     if(!last||s.gapOpen){
       s.lastFix={lat:p.lat,lng:p.lng,accuracy:p.accuracy,t:p.t};
@@ -94,7 +97,8 @@
     }
     const elapsed=(p.t-last.t)/1000;
     if(!Number.isFinite(elapsed)||elapsed<=0)return {accepted:false,reason:'時刻順序が不正'};
-    if(elapsed*1000>MAX_GAP_MS)return Object.assign(miss(s,'前回の測位から60秒超：距離は未計測',receivedAt),{reanchorNeeded:true});
+    if(elapsed*1000>MAX_GAP_MS&&receivedAt-previousSeenMs>MAX_GAP_MS)
+      return Object.assign(miss(s,'前回の測位から60秒超：距離は未計測',receivedAt),{reanchorNeeded:true});
     const meters=metersBetween(last,p);
     if(meters/elapsed>MAX_SPEED_MPS)return miss(s,'位置飛びを検出：距離は加算しません',receivedAt);
     // At a standstill, mobile GPS can wander tens of metres even though the
