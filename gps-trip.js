@@ -43,6 +43,7 @@
     s.lastFix=null; // Never bridge previous session / background / tab reload.
     s.gapOpen=false;
     s.lastSeenMs=0;
+    s.watchStartedIso=nowIso(t);
     if(!s.startedIso)s.startedIso=nowIso(t);
     return s;
   }
