@@ -8,10 +8,14 @@ const path=require('node:path');
 const dir=path.resolve(__dirname,'..');
 const session={};
 const callbacks=new Map(),errors=new Map(),cleared=[],oneShots=[];
+// Simulate a leftover waiting-distance input while no waiting object exists:
+// settlement changes GPS mode before clearing the completed ride draft.
+const staleWaitingInput={value:'manual-value'};
+const appRoot={querySelectorAll:selector=>selector==='[data-wait-field="odometer"]'?[staleWaitingInput]:[]};
 let watchCount=0;
 const ctx={
   window:{isSecureContext:true},
-  document:{visibilityState:'visible',getElementById:()=>null,activeElement:null},
+  document:{visibilityState:'visible',getElementById:id=>id==='app'?appRoot:null,activeElement:null},
   navigator:{geolocation:{
     watchPosition:(ok,err)=>{const id=++watchCount;callbacks.set(id,ok);errors.set(id,err);return id;},
     clearWatch:id=>cleared.push(id),
@@ -36,6 +40,11 @@ const send=(id,lat,speed=10)=>{
   callbacks.get(id)(p(lat,speed));
 };
 pilot.start(shift);
+shift.waiting=null;
+assert.doesNotThrow(()=>pilot.mode(shift,'empty'),
+  'GPS paint during settlement must not read odometer from null waiting');
+assert.equal(staleWaitingInput.value,'manual-value',
+  'a stale waiting input must not be overwritten without a waiting record');
 const first=watchCount;
 send(first,35);send(first,35.0009);
 const original=shift.gpsTrip.tripKm;
