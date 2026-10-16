@@ -198,10 +198,8 @@ function factory(deps){
   // Adopt an upward manual reading before switching empty -> real, so the
   // alighting total cannot begin below the pickup distance.
   const boardingKm=number(record.raw?.F);
-  const priorAuto=record.meta?.gpsFilledFields?.F;
   if(boardingKm!==null&&Number.isFinite(boardingKm)&&boardingKm>=0&&
-     boardingKm>s.tripKm+0.0001&&
-     (!priorAuto||String(priorAuto.km)!==String(record.raw.F))){
+     boardingKm>s.tripKm+0.0001){
     engine.correct(s,boardingKm,'乗車時の車両トリップへ基準を合わせる');
   }
   fillDistance(shift,record,'F','board');
