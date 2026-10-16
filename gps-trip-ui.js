@@ -128,7 +128,7 @@ function factory(deps){
   if(reloading&&shift.gpsTrip.enabled)
     engine.miss(shift.gpsTrip,'アプリ再起動の間の移動は未計測');
   // Manual stop / restart must not silently count the untracked time as measured.
-  if(!shift.gpsTrip.enabled&&shift.gpsTrip.lastStopIso)
+  if(!shift.gpsTrip.enabled&&(shift.gpsTrip.lastStopIso||shift.gpsTrip.startedIso))
     engine.miss(shift.gpsTrip,'GPS停止中の移動は未計測：車両トリップで確認・補正してください');
   engine.resume(shift.gpsTrip);
   engine.mode(shift.gpsTrip,modeForShift(shift));
