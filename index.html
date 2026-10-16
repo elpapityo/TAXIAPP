@@ -1285,9 +1285,9 @@ function handleSheetTargetSetting(target){const field=target.dataset.cloudSettin
 function renderDeviceManagementPanel(){
  const list=[...model.shifts].sort((a,b)=>String(b.startedIso||"").localeCompare(String(a.startedIso||"")));
  const rows=list.map(s=>{
-  const active=s.id===model.activeId||!s.endedAt;
-  const action=active?'<span class="caption-note">入庫未完了・削除不可</span>':
-   '<button class="linkbutton danger" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'">この乗務を削除</button>';
+  const unfinished=s.id===model.activeId||!s.endedAt;
+  const action='<button class="linkbutton danger" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'">'+
+   (unfinished?'未入庫のテスト乗務を削除':'この乗務を削除')+'</button>';
   return '<tr><td>'+safeText(s.date||"—")+'</td><td>'+shortTime(s.startedAt)+'〜'+shortTime(s.endedAt)+'</td><td>'+s.records.length+'件</td>'+
    '<td>'+money(totals(s.records,s.settings||{},s.date||"").meter)+'</td><td>'+action+'</td></tr>';
  }).join("");
@@ -1304,7 +1304,7 @@ function renderDeviceManagementPanel(){
   '<div class="actions"><button class="btn red" type="button" data-action="importDevice">この端末の営業記録と設定をPCデータで上書き</button></div>'+
   '<p class="footnote">取り込み前のスマホデータを暗号化してバックアップした後に上書きします。移行直後のGoogle送信は手動設定になります。</p></section>'+
   '<section class="card"><details class="details"><summary>テストデータを削除（出庫〜入庫の乗務単位：'+list.length+'件）</summary><div class="inner">'+
-  '<p class="helper">1行が出庫から入庫までの乗務1回分です。営業明細、待機履歴、GPS情報、集計情報をまとめて端末から削除します。</p>'+
+  '<p class="helper">1行が出庫から入庫までの乗務1回分です。未入庫のテスト乗務も、確認後に出庫からの記録を丸ごと削除できます。営業明細、待機履歴、GPS情報、集計情報をまとめて端末から削除します。</p>'+
   '<p class="warn">Googleスプレッドシートへ送信済みのデータは、この操作では削除されません。</p>'+
   '<div class="table-wrap"><table class="data-table"><thead><tr><th>日付</th><th>出庫〜入庫</th><th>営業件数</th><th>メーター売上</th><th>削除</th></tr></thead><tbody>'+
   (rows||'<tr><td colspan="5">保存された乗務はありません</td></tr>')+'</tbody></table></div></div></details></section>';
@@ -1942,23 +1942,37 @@ async function importDevice(){
 async function deleteWholeShift(shiftId){
  const shift=model.shifts.find(s=>s.id===shiftId);
  if(!shift){toast('削除対象が見つかりません',true);return;}
- if(shift.id===model.activeId||!shift.endedAt){toast('入庫済みの乗務だけ削除できます',true);return;}
  if(cloudRunning){toast('Google送信中は削除できません',true);return;}
- const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+shortTime(shift.endedAt);
+ const unfinished=shift.id===model.activeId||!shift.endedAt;
+ const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
- if(!confirm('【出庫〜入庫の乗務1件を削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+'\nこの乗務の明細・待機履歴・GPSもまとめて端末から削除します。\nGoogleシートへ送信したデータは残ります。\n本当に削除しますか？'))return;
+ if(!confirm('【テスト乗務1件をまとめて削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
+  '\nこの乗務の営業明細・編集中の記録・待機履歴・GPSもまとめて端末から削除します。\nGoogleシートへ送信したデータは残ります。\n本当に削除しますか？'))return;
+ if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
  const previous=deepCopy(model);
  try{
-  model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId).model;
+  // Invalidate any pending save and GPS watch before removing an active duty.
+  clearTimeout(persistTimer);persistTimer=0;
+  clearTimeout(cloudTimer);cloudTimer=null;
+  if(shift.id===model.activeId)gpsTripUI?.clearWatch();
+  model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId,{allowUnfinished:unfinished}).model;
   await save(true);
   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
-  if(stored?.shifts?.some(s=>s.id===shiftId))throw Error('削除後の記録を保存できません');
+  if(!stored||!Array.isArray(stored.shifts)||stored.shifts.some(s=>s.id===shiftId)||stored.activeId!==model.activeId)
+   throw Error('削除後の記録を保存できません');
   if(historyShiftId===shiftId)historyShiftId='';
   if(printShiftId===shiftId)printShiftId='';
   render();toast(display+' の乗務を削除しました。');
  }catch(e){
-  model=previous;await save(true);render();
-  toast('削除を取り消しました：'+String(e.message||e),true);
+  model=previous;
+  try{
+   await save(true);
+   if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+  }catch(restoreError){
+   toast('削除・復元とも失敗しました。事前のJSONバックアップを確認してください：'+String(restoreError.message||restoreError),true);
+   return;
+  }
+  render();toast('削除を取り消しました：'+String(e.message||e),true);
  }
 }
 async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}let json;try{json=JSON.parse(await file.text());if(json.version!==1||!Array.isArray(json.shifts)||json.shifts.some(s=>!Array.isArray(s.records)||s.records.length>MAX_RECORDS||s.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||!s.settings))throw Error('互換性のないデータです');}catch(e){toast('復元できません: '+e.message,true);return;}const existingIds=new Set(model.shifts.map(s=>s.id));
