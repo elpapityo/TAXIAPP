@@ -883,13 +883,17 @@ function saveLater(){clearTimeout(persistTimer);persistTimer=setTimeout(save,350
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){const shift=getShift();return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · v0.3.30</div></div></div><span class="status-pill ${shift?'':'stop'}">${shift?'● 乗務中':'○ 出庫前 / 帰庫済'}</span></header>`;}
 let pendingRender=false, renderAfterKeypad=false;
+let saveTouchPress=null,saveRenderPending=false,saveTouchTimeout=null,skipSaveClick=null;
+
 function render(){
  if(keypadActive){renderAfterKeypad=true;return;}
+ // An asynchronous GPS/address update must not replace Save while it is being pressed.
+ if(saveTouchPress){saveRenderPending=true;return;}
  if(pendingRender)return;
  pendingRender=true;
  setTimeout(()=>{pendingRender=false;renderNow();},0);
 }
-function renderNow(){if(keypadActive){renderAfterKeypad=true;return;}const gpsSettingsWasOpen=Boolean(appEl.querySelector('[data-gps-settings]')?.open);const dataManagementWasOpen=Boolean(appEl.querySelector('[data-data-management]')?.open);const highwayWasOpen=Boolean(appEl.querySelector('[data-highway-fold]')?.open);for(const panel of appEl.querySelectorAll('[data-operation-panel]')){if(panel.dataset.operationPanel in operationPanelOpen)operationPanelOpen[panel.dataset.operationPanel]=panel.open;}applyUi();const shift=selectedShift();appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;if(highwayWasOpen){const highway=appEl.querySelector('[data-highway-fold]');if(highway)highway.open=true;}applyInputKeyboardMode();if(tab==='settings'){const gpsSection=appEl.querySelector('[data-gps-settings]');if(gpsSection&&gpsSettingsWasOpen)gpsSection.open=true;const dataSection=appEl.querySelector('[data-data-management]');if(dataSection&&dataManagementWasOpen)dataSection.open=true;readGpsPermission();}}
+function renderNow(){if(keypadActive){renderAfterKeypad=true;return;}if(saveTouchPress){saveRenderPending=true;return;}const gpsSettingsWasOpen=Boolean(appEl.querySelector('[data-gps-settings]')?.open);const dataManagementWasOpen=Boolean(appEl.querySelector('[data-data-management]')?.open);const highwayWasOpen=Boolean(appEl.querySelector('[data-highway-fold]')?.open);for(const panel of appEl.querySelectorAll('[data-operation-panel]')){if(panel.dataset.operationPanel in operationPanelOpen)operationPanelOpen[panel.dataset.operationPanel]=panel.open;}applyUi();const shift=selectedShift();appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;if(highwayWasOpen){const highway=appEl.querySelector('[data-highway-fold]');if(highway)highway.open=true;}applyInputKeyboardMode();if(tab==='settings'){const gpsSection=appEl.querySelector('[data-gps-settings]');if(gpsSection&&gpsSettingsWasOpen)gpsSection.open=true;const dataSection=appEl.querySelector('[data-data-management]');if(dataSection&&dataManagementWasOpen)dataSection.open=true;readGpsPermission();}}
 function titleBlock(title,kicker,description){return `<div class="section-heading"><div><div class="eyebrow">${safeText(kicker)}</div><h1 class="h1">${safeText(title)}</h1>${description?`<div class="helper">${description}</div>`:''}</div></div>`;}
 function metrics(shift){const t=totals(shift.records,shift.settings,shift.date),check=meterCheckValues(t);return `<div class="metrics compact-metrics"><div class="metric"><div class="label">本日の記録数</div><strong>${t.records}件</strong><small>営業 ${t.rides}件・キャンセル ${t.cancels}件</small></div><div class="metric highlight"><div class="label">メーター売上</div><strong>${money(t.meter)}</strong><small>営業売上のみ（キャンセルは含まない）</small></div><div class="metric meter-check"><div class="label">メーター照合用累計（キャンセル迎車料を含む）</div><strong>${money(check.total)}</strong><small>売上 ${money(t.meter)} ＋ キャンセル ${check.cancelCount}件 × ${money(CANCEL_METER_CHECK_AMOUNT)} ＝ ${money(check.total)}。入力チェック専用・売上や納金には加算しません。</small></div></div>`;}
 function selector(col,values,current,descriptions=false){return `<div class="selector" role="group" aria-label="${safeText(col==='N'?'支払方法':col==='I'?'男性人数':col==='J'?'女性人数':col)}">${values.map(v=>{let key=Array.isArray(v)?v[0]:v,label=Array.isArray(v)?v[1]:v;const visible=(col==='N'||col==='I'||col==='J')?key:(descriptions?`${key} · ${label}`:label);return `<button type="button" data-setcol="${safeText(col)}" data-value="${safeText(key)}" class="chip label-chip ${String(current)===String(key)?'active':''}" aria-label="${safeText(label)}" title="${safeText(label)}" aria-pressed="${String(current)===String(key)}">${safeText(visible)}</button>`}).join('')}</div>`;}
@@ -1645,7 +1649,7 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
  }
  if(action==='gpsPickup'||action==='gpsDrop'){if(shift?.draft)getGps(shift,shift.draft,action==='gpsPickup'?'pickup':'drop');return;}
  if(action==='discardDraft'){if(!shift?.draft)return;if(!confirm('編集中の入力を破棄しますか？ 保存済みの履歴は残ります。'))return;shift.draft=null;gpsTripUI?.mode(shift,'empty');save();render();return;}
- if(action==='saveDraft'){if(!shift?.draft)return;const d=shift.draft;if(d.kind==='ride'&&number(d.raw.K)!==null)stampAlightIfNeeded(shift);if(d.kind==='ride'&&d.raw.M&&gpsTripUI?.active(shift)&&!d.meta?.gpsDistance?.alightedIso)gpsTripUI.alight(shift,d);const issues=[...validateDraft(d),...validatePaymentBreakdown(d,shift.settings,shift.date)];if(issues.length){toast('未入力・不整合: '+issues.join('、'),true);return;}d.status='complete';d.meta.serviceDate=shift.date;syncCashChange(d,shift.settings,shift.date);d.raw=deriveRaw(d,shift.settings);if(d.kind==='empty'){d.raw.P='空';}if(d.kind==='cancel'){d.raw.N='キ';d.raw.B='キャンセル';d.raw.K=0;}
+ if(action==='saveDraft'){if(!shift?.draft)return;const d=shift.draft;if(d.kind==='ride'&&number(d.raw.K)!==null)stampAlightIfNeeded(shift);if(d.kind==='ride'&&d.raw.M&&gpsTripUI?.active(shift)&&!d.meta?.gpsDistance?.alightedIso)gpsTripUI.alight(shift,d);const issues=[...validateDraft(d),...validatePaymentBreakdown(d,shift.settings,shift.date)];if(issues.length){showSaveProblem('保存できません：'+issues.join('、'));return;}d.status='complete';d.meta.serviceDate=shift.date;syncCashChange(d,shift.settings,shift.date);d.raw=deriveRaw(d,shift.settings);if(d.kind==='empty'){d.raw.P='空';}if(d.kind==='cancel'){d.raw.N='キ';d.raw.B='キャンセル';d.raw.K=0;}
  if(d.kind==='ride'&&!d.editId){gpsTripUI?.mode(shift,'empty');d.meta??={};if(!d.meta.settledIso)d.meta.settledIso=new Date().toISOString();}
  if(d.editId){const index=shift.records.findIndex(x=>x.id===d.editId);if(index>=0){d.id=d.editId;delete d.editId;shift.records[index]=d;}}else{if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}shift.records.push(d);}shift.records.forEach((r,i)=>r.raw.A=i+1);shift.draft=null;save();render();toast(`№ ${d.raw.A} を保存しました。`);return;}
  if(action==='editRecord'){if(!shift||shift.draft)return;let original=shift.records.find(x=>x.id===id);if(!original)return;const d=deepCopy(original);d.editId=original.id;d.status=d.kind==='ride'?'alighted':'draft';shift.draft=d;tab='drive';save();render();return;}
@@ -1654,6 +1658,62 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
  if(action==='downloadPaymentsCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportPaymentsCsv(latest),exportFileName('決済内訳',latest),'text/csv;charset=utf-8');toast('決済内訳CSVを保存しました。');return;}
  if(action==='downloadFeesCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportFeesCsv(latest),exportFileName('GO_Uber手数料',latest),'text/csv;charset=utf-8');toast('GO・Uber手数料明細CSVを保存しました。');return;}
  if(action==='downloadJson'){const backup={...model,exportedAt:new Date().toISOString()};download(JSON.stringify(backup,null,2),exportFileName('全データ',latest),'application/json;charset=utf-8');toast('バックアップを保存しました。');return;}}
+// Make a failed save visible next to the save button, not only in a brief toast.
+function showSaveProblem(message){
+ const text=String(message||'保存できませんでした。入力を確認してください。');
+ const button=appEl.querySelector('[data-action="saveDraft"]');
+ if(button){
+  let warning=appEl.querySelector('[data-save-error]');
+  if(!warning){
+   warning=document.createElement('p');warning.className='warn';warning.dataset.saveError='';
+   warning.setAttribute('role','alert');button.closest('.actions')?.before(warning);
+  }
+  if(warning){warning.textContent=text;warning.hidden=false;}
+ }
+ toast(text,true);
+}
+function invokeSaveDraft(){
+ try{handleAction('saveDraft');}
+ catch(error){console.error('TAXIAPP save draft failed:',error);showSaveProblem('登録処理に失敗しました。入力内容は残しています。設定からバックアップを保存し、確認してください。');}
+}
+function finishSaveTouchPress(){
+ if(saveTouchTimeout!==null){clearTimeout(saveTouchTimeout);saveTouchTimeout=null;}
+ saveTouchPress=null;
+ if(saveRenderPending){saveRenderPending=false;render();}
+}
+// On Android, input blur and asynchronous reverse-geocoding may request a
+// full render between pointerdown and click. Hold that render until pointerup,
+// and commit from pointerup so a missing synthetic click does not lose a sale.
+// The normal click path remains for keyboards and accessibility software.
+appEl.addEventListener('pointerdown',event=>{
+ const button=event.target.closest?.('[data-action="saveDraft"]');
+ if(!button||event.button!==0||!getShift()?.draft)return;
+ if(saveTouchTimeout!==null)clearTimeout(saveTouchTimeout);
+ saveTouchPress={button,pointerId:event.pointerId,draftId:getShift().draft.id};
+ saveTouchTimeout=setTimeout(finishSaveTouchPress,3500); // Never freeze rendering if Android drops pointerup.
+},true);
+document.addEventListener('pointerup',event=>{
+ const gesture=saveTouchPress;
+ if(!gesture||event.pointerId!==gesture.pointerId)return;
+ const confirmed=gesture.button.isConnected&&
+  event.target.closest?.('[data-action="saveDraft"]')===gesture.button&&
+  getShift()?.draft?.id===gesture.draftId;
+ // Release before saving so that render()/error handling can proceed normally.
+ if(saveTouchTimeout!==null){clearTimeout(saveTouchTimeout);saveTouchTimeout=null;}
+ saveTouchPress=null;
+ if(confirmed){
+  skipSaveClick={button:gesture.button,at:Date.now()};
+  closeKeypad(true,true);
+  invokeSaveDraft();
+ }
+ if(saveRenderPending){saveRenderPending=false;render();}
+},true);
+document.addEventListener('pointercancel',event=>{
+ if(saveTouchPress&&event.pointerId===saveTouchPress.pointerId)finishSaveTouchPress();
+},true);
+window.addEventListener('blur',()=>{
+ if(saveTouchPress)finishSaveTouchPress();
+});
 const HIGHWAY_RAW_KEYS={実:['Q','R','S','T','U','V','W','X','Y'],空:['Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK']};
 function toggleRideHighway(mode){
  const shift=getShift(),d=shift?.draft;
@@ -2053,7 +2113,10 @@ async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toas
  model.shifts.push(...addition);
  model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  upgradeWaitingHistory();await save();historyDate='';historyShiftId='';tab='history';render();toast(`${addition.length}乗務を追加しました。既存データは維持しました。`);}
-appEl.addEventListener('click',event=>{let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
+appEl.addEventListener('click',event=>{let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
+  if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
+  skipSaveClick=null;invokeSaveDraft();return;
+ }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
 appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-pref-gps-start]')){model.prefs.gpsTripAtStart=event.target.value==='off'?'off':'on';saveLater();toast('出庫時GPS設定を保存しました');return;}
