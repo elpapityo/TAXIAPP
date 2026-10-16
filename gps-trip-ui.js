@@ -209,18 +209,69 @@ function factory(deps){
     boardedIso:new Date().toISOString()};
   changeMode(shift,'real');
  }
+ // A last GPS fix up to one minute old is not a reliable *alighting*
+ // position. At 36km/h, a 40-second-old fix is already 400m behind.
+ const MAX_ALIGHT_FIX_AGE_MS=10000;
+ let freshAlightPending=false;
  function alight(shift,record){
   if(!active(shift)||!record||record.kind!=='ride'||record.editId||record.meta?.gpsDistance?.alightedIso)return;
   const s=shift.gpsTrip;
-  fillDistance(shift,record,'L','alight');
+  const lastAge=Math.max(0,Date.now()-Number(s.lastSeenMs||0));
+  const fresh=trusted(shift)&&lastAge<=MAX_ALIGHT_FIX_AGE_MS;
+  if(fresh)fillDistance(shift,record,'L','alight');
+  else{
+   // Drop ONLY an old GPS-generated L. Never erase a driver's input.
+   const prior=record.meta?.gpsFilledFields?.L;
+   if(prior&&String(prior.km)===String(record.raw.L??'')){
+    record.raw.L='';
+    delete record.meta.gpsFilledFields.L;
+   }
+   toast('降車時のGPS位置が古い、または欠測しています。車両トリップを確認してください。',true);
+  }
   record.meta??={};record.meta.gpsDistance??={};
   const meta=record.meta.gpsDistance;
   meta.alightTripKm=s.tripKm;meta.alightRealKm=s.realKm;
   meta.alightGapCount=s.gapCount;
-  meta.alightQuality=trusted(shift)?'valid':'needs_correction';
+  meta.alightLastFixAgeMs=Number.isFinite(lastAge)?lastAge:null;
+  meta.alightQuality=fresh?'valid':s.unresolvedGap?'needs_correction':'stale_endpoint';
   meta.realRouteKm=Math.max(0,Math.round((s.realKm-(meta.boardRealKm??s.realKm))*10000)/10000);
   meta.alightedIso=new Date().toISOString();
   changeMode(shift,'empty');
+ }
+ // Only the user's explicit 'GPS降車' button requests a fresh endpoint.
+ // Keep the ride in REAL mode until a fresh fix or a short timeout.
+ // Automatic meter entry continues to work without waiting for GPS.
+ function captureFreshAlightFix(shift,record){
+  if(freshAlightPending)return Promise.resolve(false);
+  if(!active(shift)||!record||record.kind!=='ride'||record.raw.M||
+     shift.draft?.id!==record.id||!navigator.geolocation||
+     document.visibilityState!=='visible')return Promise.resolve(false);
+  freshAlightPending=true;
+  return new Promise(resolve=>{
+   let settled=false;
+   const done=accepted=>{
+    if(settled)return;
+    settled=true;freshAlightPending=false;resolve(Boolean(accepted));
+   };
+   try{
+    navigator.geolocation.getCurrentPosition(pos=>{
+     const current=getShift();
+     if(!current||current.id!==shift.id||current.draft?.id!==record.id||
+        current.draft.raw.M||!active(current)||current.gpsTrip.mode!=='real'){
+      done(false);return;
+     }
+     const point=engine.point(pos);
+     // Reject bad accuracy without destroying the previous good distance.
+     if(!point||point.accuracy>engine.MAX_ACCURACY_M||
+        Math.abs(Date.now()-point.t)>10000){done(false);return;}
+     const result=engine.ingest(current.gpsTrip,pos);
+     if(result.accepted&&trusted(current))fill(current);
+     paint(current);
+     if(result.accepted)persist(false);
+     done(result.accepted);
+    },()=>done(false),{enableHighAccuracy:true,timeout:6500,maximumAge:0});
+   }catch(error){done(false);}
+  });
  }
  function correct(shift,km,source){
   if(!active(shift))return false;
@@ -261,7 +312,7 @@ function factory(deps){
   }
   correct(shift,value,source||('距離欄'+column));
  }
- return {panel,status,paint,start,stop,mode:changeMode,board,alight,correct,hidden,tick,
+ return {panel,status,paint,start,stop,mode:changeMode,board,alight,captureFreshAlightFix,correct,hidden,tick,
          atInputDistance,active,trusted,fill,fillLocationDistance,fillDistance,fillWaitDistance,clearWatch,fmt};
 }
 root.TAXIAPP_GPS_UI=factory;
