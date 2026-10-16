@@ -11,7 +11,7 @@
     return {
       version:1,enabled:false,tripKm:Math.max(0,Number(startKm)||0),
       realKm:0,emptyKm:0,correctionKm:0,mode:'empty',status:'off',
-      lastFix:null,lastSeenMs:0,lastAccuracy:null,lastError:'',gapOpen:false,
+      lastFix:null,lastSeenMs:0,lastAccuracy:null,lastError:'',gapOpen:false,unresolvedGap:false,
       gapCount:0,gaps:[],corrections:[],modeHistory:[]
     };
   }
@@ -35,7 +35,7 @@
       (s.gaps??=[]).push({at:nowIso(t),reason:message,tripKm:s.tripKm,mode:s.mode});
       if(s.gaps.length>60)s.gaps.shift();
     }
-    s.lastFix=null;s.status='gap';s.lastError=message;
+    s.lastFix=null;s.status='gap';s.lastError=message;s.unresolvedGap=true;
     return {accepted:false,gap:true,reason:message};
   }
   function resume(s,t=Date.now()){
@@ -70,6 +70,7 @@
       differenceKm:diff,source:String(source).slice(0,80),mode:s.mode});
     if(s.corrections.length>100)s.corrections.shift();
     s.tripKm=roundKm(after);s.correctionKm=roundKm((s.correctionKm||0)+diff);
+    s.unresolvedGap=false;s.lastCorrectionIso=nowIso(t);
     s.lastFix=null; // First new position is a new reference, not a traveled leg.
     s.status=s.enabled?'waiting':'off';
     return {beforeKm:before,afterKm:s.tripKm,differenceKm:diff};
