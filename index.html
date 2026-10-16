@@ -1320,14 +1320,6 @@ function renderDataManagement(){
 }
 
 function renderDeviceManagementPanel(){
- const list=[...model.shifts].sort((a,b)=>String(b.startedIso||"").localeCompare(String(a.startedIso||"")));
- const rows=list.map(s=>{
-  const unfinished=s.id===model.activeId||!s.endedAt;
-  const action='<button class="linkbutton danger" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'">'+
-   (unfinished?'未入庫のテスト乗務を削除':'この乗務を削除')+'</button>';
-  return '<tr><td>'+safeText(s.date||"—")+'</td><td>'+shortTime(s.startedAt)+'〜'+shortTime(s.endedAt)+'</td><td>'+s.records.length+'件</td>'+
-   '<td>'+money(totals(s.records,s.settings||{},s.date||"").meter)+'</td><td>'+action+'</td></tr>';
- }).join("");
  return '<section class="card"><h2 class="h2">パソコンからスマホへの一括移行</h2>'+
   '<p class="helper">営業データ、乗務設定、待機場所、Googleスプレッドシートの接続URLと接続キーを暗号化してまとめて移します。Googleログインや位置情報の許可は移行されません。</p>'+
   '<p class="warn">暗号化ファイルには接続キーが入ります。パスワードは12文字以上とし、ファイルとパスワードを一緒に送らないでください。</p>'+
