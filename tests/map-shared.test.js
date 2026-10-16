@@ -50,4 +50,13 @@ assert.equal(m.currentFix({gpsTrip:{lastFix:{lat:35.5,lng:135.5,t:100000}}},9000
 assert.equal(m.mapsUrl({lat:35.5,lng:135.5},true).startsWith('https://www.google.com/maps/dir/?api=1&destination='),true);
 assert.equal(m.mapsUrl({lat:35.5,lng:135.5},false).startsWith('https://www.google.com/maps/search/?api=1&query='),true);
 assert.equal(m.mapsUrl(null,true),null);
-console.log('map-shared tests passed: shared storage keys, layouts, geometry, shift selection, maps URLs.');
+// A GPS distance anchor may stay unchanged for minutes while the device keeps
+// receiving valid stationary fixes. Use the last callback as the freshness time.
+const stationaryShift={gpsTrip:{enabled:true,status:'tracking',gapOpen:false,
+  lastFix:{lat:35.5,lng:135.5,t:100000},lastSeenMs:400000}};
+assert.equal(m.currentFix(stationaryShift,420000).lat,35.5);
+assert.equal(m.currentFix(stationaryShift,470001),null); // no callbacks for >60 s
+stationaryShift.gpsTrip.status='gap';
+assert.equal(m.currentFix(stationaryShift,420000),null); // don't revive stale fix
+
+console.log('map-shared tests passed: storage keys, layouts, geometry, stationary location, shift selection, maps URLs.');

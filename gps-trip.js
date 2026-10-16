@@ -102,11 +102,16 @@
     if(p.velocity!==null&&p.velocity<.7){
       if(meters>Math.max(50,p.accuracy*3,last.accuracy*3))
         return miss(s,'GPSは停止中なのに位置が大きく変化：車両トリップで確認',receivedAt);
+      // A valid stationary fix refreshes the reference, never the distance.
+      s.lastFix={lat:p.lat,lng:p.lng,accuracy:p.accuracy,t:p.t};
       s.status='tracking';s.lastError='';
       return {accepted:true,stationary:true,deltaKm:0};
     }
     // If speed was not available, small displacements are likely GPS noise.
     if(meters<Math.max(9,p.accuracy*.4,last.accuracy*.4)) {
+      // Preserve the distance anchor for small movements, but refresh its
+      // timestamp so valid repeated samples never cause a false gap.
+      s.lastFix={...last,t:p.t};
       s.status='tracking';s.lastError='';
       return {accepted:true,stationary:true,deltaKm:0};
     }

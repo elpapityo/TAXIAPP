@@ -56,4 +56,40 @@ const old=gps.ingest(state,p(35.0051,t+80000),t+125000);
 assert.equal(old.accepted,false);
 assert.equal(state.tripKm,6.2);
 
-console.log('GPS trip tests passed: calibration, mode, gaps, accuracy, stale points.');
+// Continuous, valid fixes while waiting must not be mistaken for a dropout
+// simply because the distance anchor remains at the same coordinates.
+for (const velocity of [0,null]) {
+  const waiting=gps.create(0);
+  gps.resume(waiting,t);
+  for (const seconds of [0,15,30,45,61,120,180]) {
+    const at=t+seconds*1000;
+    const result=gps.ingest(waiting,p(35,at,5,velocity),at);
+    assert.equal(result.accepted,true,'stationary fix at '+seconds+' sec');
+    assert.equal(result.gap,undefined,'no false gap at '+seconds+' sec');
+    assert.equal(waiting.unresolvedGap,false);
+    assert.equal(waiting.tripKm,0);
+  }
+  // Driving away after a long, well-observed stop still counts movement.
+  const resumed=gps.ingest(waiting,p(35.0009,t+190000,5,9),t+190000);
+  assert.equal(resumed.accepted,true);
+  approx(waiting.tripKm,.1);
+  // No callbacks at all for 80 seconds remains a genuine measurement gap.
+  const lost=gps.ingest(waiting,p(35.0050,t+270000,5,9),t+270000);
+  assert.equal(lost.gap,true);
+  approx(waiting.tripKm,.1);
+  assert.equal(waiting.unresolvedGap,true);
+}
+
+// A kilometre-sized coordinate jump directly after valid stationary samples
+// is not a measured journey, even if the taxi waited for several minutes.
+const jumpCheck=gps.create(0);
+gps.resume(jumpCheck,t);
+for (const seconds of [0,15,30,45,61,120,180]) {
+  const at=t+seconds*1000;
+  gps.ingest(jumpCheck,p(35,at,5,0),at);
+}
+const implausible=gps.ingest(jumpCheck,p(35.01,t+190000,5,9),t+190000);
+assert.equal(implausible.gap,true);
+assert.equal(jumpCheck.tripKm,0);
+
+console.log('GPS trip tests passed: calibration, mode, gaps, stationary fixes, jump rejection, accuracy, stale points.');
