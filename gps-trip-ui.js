@@ -216,7 +216,11 @@ function factory(deps){
  function alight(shift,record){
   if(!active(shift)||!record||record.kind!=='ride'||record.editId||record.meta?.gpsDistance?.alightedIso)return;
   const s=shift.gpsTrip;
-  const lastAge=Math.max(0,Date.now()-Number(s.lastSeenMs||0));
+  // Trust the actual fix timestamp, not merely when its callback arrived.
+  const fixTime=Number(s.lastFix?.t||0);
+  const receiveTime=Number(s.lastSeenMs||0);
+  const lastAge=fixTime>0&&receiveTime>0?
+   Math.max(0,Date.now()-fixTime,Date.now()-receiveTime):Infinity;
   const fresh=trusted(shift)&&lastAge<=MAX_ALIGHT_FIX_AGE_MS;
   if(fresh)fillDistance(shift,record,'L','alight');
   else{
