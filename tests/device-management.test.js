@@ -41,6 +41,23 @@ assert.equal(removal.model.shifts[0].id,'shift-open');
 assert.equal(removal.model.activeId,'shift-open');
 assert.equal(model.shifts.length,2);
 assert.throws(()=>dev.deleteShift(model,'shift-open'),/入庫/);
+// Unfinished test shift deletion requires the explicit second confirmation.
+const before=JSON.stringify(model);
+const openRemoval=dev.deleteShift(model,'shift-open',{allowUnfinished:true});
+assert.equal(openRemoval.deleted.id,'shift-open');
+assert.equal(openRemoval.model.activeId,null);
+assert.equal(openRemoval.model.shifts.length,1);
+assert.equal(openRemoval.model.shifts[0].id,'shift-closed');
+assert.equal(openRemoval.model.shifts[0].records[0].raw.K,3200);
+assert.equal(JSON.stringify(model),before); // Source is immutable
+// An unfinished shift containing a draft and waiting interval is removed as one unit.
+const withDraft=JSON.parse(JSON.stringify(model));
+withDraft.shifts[0].draft={kind:'ride',raw:{A:2},status:'draft'};
+withDraft.shifts[0].waiting={id:'wait-1',place:'神戸'};
+const draftRemoval=dev.deleteShift(withDraft,'shift-open',{allowUnfinished:true});
+assert.equal(draftRemoval.deleted.draft.kind,'ride');
+assert.equal(draftRemoval.deleted.waiting.place,'神戸');
+assert.equal(draftRemoval.model.shifts[0].id,'shift-closed');
 assert.throws(()=>dev.deleteShift(model,'nonexistent'),/見つかりません/);
 assert.throws(()=>dev.validate({...backup,googleAccessKey:123}),/形式/);
 assert.equal(dev.validModel({...model,shifts:[closed,closed]}),false);

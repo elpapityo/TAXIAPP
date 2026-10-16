@@ -81,4 +81,40 @@ assert.equal(drift.tripKm,0);
 const jumped=engine.ingest(drift,pos(35.001,start+20000,0),start+20000);
 assert.equal(jumped.gap,true);
 assert.equal(drift.unresolvedGap,true);
-console.log('GPS UI lifecycle tests passed: pause/restart, stale callbacks, gaps and stationary jitter.');
+// Pressing the location button fills both coordinates (app controller) and
+// trusted trip distance (this controller), without overwriting manual input.
+shift.gpsTrip=engine.create(0);
+pilot.start(shift);
+send(watchCount,35,0);
+assert.equal(pilot.trusted(shift),true);
+shift.gpsTrip.tripKm=3.4;
+const ride={id:'gps-ride',kind:'ride',raw:{F:'',L:''},meta:{}};
+assert.equal(pilot.fillLocationDistance(shift,ride,'pickup'),true);
+assert.equal(ride.raw.F,'3.4');
+assert.equal(ride.meta.gpsFilledFields.F.source,'location');
+shift.gpsTrip.tripKm=4.6;
+assert.equal(pilot.fillLocationDistance(shift,ride,'drop'),true);
+assert.equal(ride.raw.L,'4.6');
+// On subsequent location requests, GPS-filled numbers may be refreshed.
+shift.gpsTrip.tripKm=5.1;
+assert.equal(pilot.fillLocationDistance(shift,ride,'drop'),true);
+assert.equal(ride.raw.L,'5.1');
+// Once corrected by a human, GPS may no longer silently replace the value.
+ride.raw.F='12.5';
+assert.equal(pilot.fillLocationDistance(shift,ride,'pickup'),false);
+assert.equal(ride.raw.F,'12.5');
+ride.raw.L='9.9';
+assert.equal(pilot.fillLocationDistance(shift,ride,'drop'),false);
+assert.equal(ride.raw.L,'9.9');
+// An already-complete record opened for edit is also protected.
+ride.editId='historic-ride';
+ride.raw.F='';
+assert.equal(pilot.fillLocationDistance(shift,ride,'pickup'),false);
+// Dispatch address capture has a matching pickup-side odometer field.
+const dispatch={kind:'dispatch',raw:{F:''},meta:{}};
+assert.equal(pilot.fillLocationDistance(shift,dispatch,'pickup'),true);
+assert.equal(dispatch.raw.F,'5.1');
+pilot.stop(shift);
+assert.equal(pilot.fillLocationDistance(shift,{kind:'ride',raw:{F:''}},'pickup'),false);
+
+console.log('GPS UI lifecycle tests passed: pause/restart, stale callbacks, gaps, stationary jitter and location distance fill.');
