@@ -60,6 +60,10 @@ function factory(deps){
   const prior=record.meta?.gpsFilledFields?.[field];
   if(current&&(!prior||String(prior.km)!==current))return false;
   const km=fmt(shift.gpsTrip.tripKm);
+  // The browser may miss most of a journey while locked/backgrounded.
+  // Never put an undercounted GPS drop reading below a manual boarding trip
+  // reading: that would make the otherwise valid fare impossible to save.
+  if(field==='L'&&number(record.raw.F)!==null&&Number(km)<number(record.raw.F))return false;
   record.raw[field]=km;
   record.meta??={};record.meta.gpsFilledFields??={};
   record.meta.gpsFilledFields[field]={km,at:new Date().toISOString(),source};
