@@ -242,7 +242,7 @@ html[data-ui-theme="night"] .wait-place-move:disabled{background:#20364e}
 .calc-detail .statline.total b{font-size:calc(19px * var(--ui-font));}
 .gps-control{margin:18px 0}.gps-control .gps-status{font-weight:750;margin:10px 0;overflow-wrap:anywhere;}
 .gps-help{font-size:calc(12px * var(--ui-font));line-height:1.7;margin:10px 0 0;color:var(--muted)}
-.keypad-overlay{position:fixed;z-index:110;inset:0;pointer-events:none;background:#081d3122;display:flex;align-items:flex-end;justify-content:center;padding:8px 8px max(8px,env(safe-area-inset-bottom))}
+.keypad-overlay{position:fixed;z-index:110;inset:0;pointer-events:auto;touch-action:manipulation;background:#081d3122;display:flex;align-items:flex-end;justify-content:center;padding:8px 8px max(8px,env(safe-area-inset-bottom))}
 .keypad-panel{pointer-events:auto;width:min(100%,400px);background:var(--sheet);color:var(--dark);border-radius:16px 16px 12px 12px;padding:10px 12px 12px;box-shadow:0 9px 45px #0005}
 .keypad-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.keypad-top strong{font-size:calc(14px * var(--ui-font))}.keypad-close{min-height:40px}
 .keypad-value{font-variant-numeric:tabular-nums;text-align:right;font-size:calc(25px * var(--ui-font));font-weight:850;background:#eff5fb;border:1px solid #a3c1d8;border-radius:10px;padding:6px 12px;margin:7px 0 9px;min-height:48px;overflow-wrap:anywhere}
@@ -1783,6 +1783,8 @@ function keypadTarget(el){
  return true;
 }
 function closeKeypad(commit=false,suppressRender=false){
+ if(keypadDismissTimer!==null){clearTimeout(keypadDismissTimer);keypadDismissTimer=null;}
+ keypadPendingClose=null;
  if(keypadOpenTask!==null){clearTimeout(keypadOpenTask);keypadOpenTask=null;}
  const active=keypadActive;
  keypadActive=null;
@@ -1857,6 +1859,7 @@ appEl.addEventListener('click',e=>{
 // occasionally discarded synthesized click. Suppress the follow-up click so a
 // single press can never enter the same digit twice.
 let keypadPointerHandled=null;
+let keypadPendingClose=null,keypadDismissTimer=null;
 function executeKeypadButton(button){
  if(button.dataset.keypadKey!==undefined)keypadPress(button.dataset.keypadKey);
  else if(button.dataset.keypadCommand==='clear')keypadPress('C');
@@ -1867,12 +1870,43 @@ document.addEventListener('pointerdown',e=>{
  if(!button||!keypadActive)return;
  e.preventDefault();e.stopPropagation();
  keypadPointerHandled={button,at:Date.now()};
+ const cmd=button.dataset.keypadCommand;
+ // Android may dispatch the finger release on the button behind this dialog
+ // when the modal is removed during pointerdown. Keep it mounted until release.
+ if(cmd==='done'||cmd==='close'){
+  keypadPendingClose={button,commit:cmd==='done'};
+  return;
+ }
  executeKeypadButton(button);
+},true);
+document.addEventListener('pointerup',e=>{
+ if(!keypadPendingClose)return;
+ const pending=keypadPendingClose;
+ if(e.target.closest('[data-keypad-command]')!==pending.button){
+  keypadPendingClose=null;return;
+ }
+ clearTimeout(keypadDismissTimer);
+ // Fallback for Android browsers that do not synthesize a click.
+ // The overlay must shield the underlying controls after pointerup.
+ keypadDismissTimer=setTimeout(()=>{
+  if(keypadPendingClose!==pending)return;
+  keypadPendingClose=null;keypadPointerHandled=null;
+  closeKeypad(pending.commit);
+ },400);
+},true);
+document.addEventListener('pointercancel',()=>{
+ keypadPendingClose=null;clearTimeout(keypadDismissTimer);keypadDismissTimer=null;
 },true);
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-keypad-key],[data-keypad-command]');
  if(!button)return;
  e.preventDefault();e.stopPropagation();
+ if(keypadPendingClose?.button===button){
+  const pending=keypadPendingClose;
+  keypadPendingClose=null;clearTimeout(keypadDismissTimer);keypadDismissTimer=null;
+  keypadPointerHandled=null;
+  closeKeypad(pending.commit);return;
+ }
  if(keypadPointerHandled?.button===button&&Date.now()-keypadPointerHandled.at<1200){
   keypadPointerHandled=null;return;
  }
