@@ -51,6 +51,22 @@ function factory(deps){
     GPS実車・空車の計測分と補正差は別管理です。中断区間の距離は推測しません。</p>`:''}
    </section>`;
  }
+ function fillLocationDistance(shift,record,when){
+  if(!trusted(shift)||!record||record.editId)return false;
+  const field=when==='pickup'?'F':when==='drop'?'L':null;
+  if(!field||(when==='pickup'&&!['ride','dispatch'].includes(record.kind))||
+    (when==='drop'&&record.kind!=='ride'))return false;
+  const current=String(record.raw?.[field]??'').trim();
+  const prior=record.meta?.gpsFilledFields?.[field];
+  // Preserve any vehicle trip reading manually entered or corrected by the driver.
+  // Previously GPS-filled values may be refreshed on an explicit GPS action.
+  if(current&&(!prior||String(prior.km)!==current))return false;
+  const km=fmt(shift.gpsTrip.tripKm);
+  record.raw[field]=km;
+  record.meta??={};record.meta.gpsFilledFields??={};
+  record.meta.gpsFilledFields[field]={km,at:new Date().toISOString(),source:'location'};
+  return true;
+ }
  function paint(shift){
   const s=shift?.gpsTrip;if(!s)return;
   const ui=rootEl();if(!ui)return;
@@ -198,7 +214,7 @@ function factory(deps){
   correct(shift,value,source||('距離欄'+column));
  }
  return {panel,status,paint,start,stop,mode:changeMode,board,alight,correct,hidden,tick,
-         atInputDistance,active,trusted,fill,clearWatch,fmt};
+         atInputDistance,active,trusted,fill,fillLocationDistance,clearWatch,fmt};
 }
 root.TAXIAPP_GPS_UI=factory;
 })(typeof window!=='undefined'?window:globalThis);
