@@ -17,7 +17,7 @@ const ctx={
     clearWatch:id=>cleared.push(id),
     getCurrentPosition:(ok,err,opts)=>oneShots.push({ok,err,opts})
   }},
-  console,Date,Math,Number,String,Array,Object,JSON,Set,Map
+  console,Date,Math,Number,String,Array,Object,JSON,Set,Map,setTimeout,clearTimeout
 };
 vm.runInNewContext(fs.readFileSync(path.join(dir,'gps-trip.js'),'utf8'),ctx,{filename:'gps-trip.js'});
 vm.runInNewContext(fs.readFileSync(path.join(dir,'gps-trip-ui.js'),'utf8'),ctx,{filename:'gps-trip-ui.js'});
