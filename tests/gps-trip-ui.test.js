@@ -176,4 +176,35 @@ engine.miss(shift.gpsTrip,'lost signal');
 assert.equal(pilot.fillDistance(shift,highway,'S','highwayIn'),false);
 assert.equal(pilot.fillWaitDistance(shift,{odometer:''}),false);
 pilot.stop(shift);
+// Regression: a driver's 10.0km pickup-odometer must not be left behind the
+// browser's 3.0km undercount, even if the last input 'change' event was missed.
+shift.gpsTrip=engine.create(0);
+pilot.start(shift);
+send(watchCount,35,0);
+shift.gpsTrip.tripKm=3.0;
+const driverPickup={kind:'ride',id:'driver-pickup',raw:{F:'10.0',L:''},meta:{}};
+pilot.board(shift,driverPickup);
+assert.equal(shift.gpsTrip.tripKm,10.0);
+assert.equal(shift.gpsTrip.mode,'real');
+assert.equal(driverPickup.meta.gpsDistance.boardTripKm,10.0);
+assert.equal(driverPickup.raw.F,'10.0');
+// Entering a historical highway entrance reading after boarding must not
+// rewind the current trip from 10 km down to 6 km.
+pilot.atInputDistance(shift,'S','6.0','過去の高速入口');
+assert.equal(shift.gpsTrip.tripKm,10.0);
+pilot.atInputDistance(shift,'V','10.2','現在の高速出口');
+assert.equal(shift.gpsTrip.tripKm,10.2);
+// The fresh GPS fixes must add distance on top of the corrected baseline.
+send(watchCount,35.0030,10);
+send(watchCount,35.0039,10);
+assert.ok(shift.gpsTrip.tripKm>10.25);
+pilot.alight(shift,driverPickup);
+assert.ok(Number(driverPickup.raw.L)>=Number(driverPickup.raw.F));
+assert.equal(shift.gpsTrip.mode,'empty');
+// An explicit GPS correction button can still decrease a previously inflated
+// GPS total; only incidental field changes are protected from rewinding it.
+pilot.correct(shift,8.0,'明示的な車両トリップ補正');
+assert.equal(shift.gpsTrip.tripKm,8.0);
+pilot.stop(shift);
+
 console.log('GPS UI lifecycle tests passed: pause/restart, stale callbacks, gaps, stationary jitter location distance, waiting, highway and alight protection.');
