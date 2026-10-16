@@ -52,6 +52,7 @@ jobs:
             "if(window.TAXIAPP_NATIVE_FILES){window.TAXIAPP_NATIVE_FILES.saveText(String(file),String(textData),String(type));return;}",1)
           html.write_text(src)
           PY
+          mkdir -p android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype
           cp android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsStore.kt \
              android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype/GpsStore.kt
           cp android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt \
