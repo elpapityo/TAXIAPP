@@ -57,6 +57,8 @@ jobs:
              android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype/GpsStore.kt
           cp android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt \
              android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt
+          sed -i 's/MainActivity::class.java/jp.taxiapp.dailyapp.HomeActivity::class.java/g' \
+             android-prototype/dailyapp/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt
       - name: Validate embedded GPS JavaScript
         run: |
           node --check android-prototype/dailyapp/src/main/assets/native-gps-ui.js
