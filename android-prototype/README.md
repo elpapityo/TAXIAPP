@@ -1,12 +1,12 @@
 # TAXIAPP Android GPS距離計測 試験版
 
 > **安全優先：今の業務用TAXIAPPとは独立しています。**
-> このフォルダのコードは独立開発ブランチ \`prototype/android-background-gps-20261016\` にだけ置きます。
-> \`main\` へ統合しない／GitHub PagesのURLを変更しない／既存スマホのデータを読み書きしない。
+> このフォルダのコードは独立開発ブランチ `prototype/android-background-gps-20261016` にだけ置きます。
+> `main` へ統合しない／GitHub PagesのURLを変更しない／既存スマホのデータを読み書きしない。
 
 ## 現状
 
-- Androidのネイティブ \`ForegroundService\`（タイプ \`location\`）で位置情報を継続取得する試験アプリ。
+- Androidのネイティブ `ForegroundService`（タイプ `location`）で位置情報を継続取得する試験アプリ。
 - 通知欄に「TAXIAPP GPS試験版」が表示され、アプリ画面を消したり別アプリへ移動したりしてもサービスを継続する方式。
 - GPS位置の変化をトリップ距離に換算。実車／空車の独立累積を試験用ボタンで切り替え。
 - 位置飛び・精度不良・1分超欠測では、推定距離を無理に加算せず「未計測」として記録。
@@ -16,8 +16,8 @@
 
 ## 構成
 
-- \`core\`：Android非依存のGPS距離積算とJVM単体テスト。
-- \`app\`：Androidアプリ試作・画面／権限許可／永続化／GPSフォアグラウンドサービス。
+- `core`：Android非依存のGPS距離積算とJVM単体テスト。
+- `app`：Androidアプリ試作・画面／権限許可／永続化／GPSフォアグラウンドサービス。
 - Android 8.0以上を想定、target SDK 35。Google Maps APIや有料APIは不要。
 - 通知許可（Android 13以降）と正確な位置情報への許可を利用者が与える必要があります。
 - サービスは**利用者が試験アプリ画面から開始**します。Android 14以降の位置情報の「使用中」制限に合わせ、裏から勝手に起動しません。
@@ -26,12 +26,12 @@
 
 Android SDK / JDK 17 / Gradle 8.10.2 が必要です。
 
-\`\`\`bash
+```bash
 cd android-prototype
 gradle --no-daemon :core:test :app:assembleDebug
-\`\`\`
+```
 
-成果物は \`app/build/outputs/apk/debug/app-debug.apk\` 。署名済み公開製品ではなく**検証専用**です。
+成果物は `app/build/outputs/apk/debug/app-debug.apk` 。署名済み公開製品ではなく**検証専用**です。
 技術確認が済むまではユーザーの業務中のスマホにインストール・切替しません。
 
 ## 今後の作業（未実装）
