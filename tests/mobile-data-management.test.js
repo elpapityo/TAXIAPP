@@ -8,11 +8,18 @@ const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].ma
 assert.ok(scripts.length>=2);
 for(const source of scripts) new vm.Script(source); // Parse all inline scripts.
 
-assert.match(html,/data:\['▣','データ管理'\]/);
-assert.match(html,/tab==='data'\?renderDataManagement\(\)/);
-assert.match(html,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);overflow:visible/);
+// Exactly six fixed bottom-menu items; management belongs in the Settings screen.
+const nav=html.match(/const labels=\{([^}]+)\};/);
+assert.ok(nav);
+assert.deepEqual([...nav[1].matchAll(/([a-z]+):\[/g)].map(x=>x[1]),
+ ['drive','live','history','print','shift','settings']);
+assert.match(html,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+assert.doesNotMatch(html,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);overflow:visible/);
+assert.doesNotMatch(html,/tab==='data'\?/);
+assert.match(html,/data-data-management><summary>データ管理（乗務単位の削除）<\/summary>/);
+assert.match(html,/dataManagementWasOpen/);
 assert.match(html,/data-action="deleteShift"/);
-assert.match(html,/data-tab="data">▣ データ管理を開く/);
+assert.doesNotMatch(html,/data-tab="data"/);
 assert.doesNotMatch(html,/テストデータを削除（出庫〜入庫の乗務単位/);
 
 const start=html.indexOf('function renderDataManagement(){');
