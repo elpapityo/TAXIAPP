@@ -8,6 +8,10 @@ on:
       - '.github/workflows/taxiapp-native-android.yml'
   workflow_dispatch:
 
+concurrency:
+  group: taxiapp-native-pilot-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
