@@ -408,10 +408,16 @@ function applySelectedPrintShift() {
   throw Error('集計表のメーター売上が一致しません。B17を再選択してください。');
  // Preserve live status and selection formulas in B18, B19, B3 and B4.
  // These formulas update automatically as soon as the dropdown changes.
+ // Calling getUi().alert() pauses Apps Script until someone accepts the
+ // modal. From the editor it may not appear on the spreadsheet at all,
+ // leaving the run indefinitely suspended. Use nonblocking toast + logs.
+ var notice='乗務 '+shift.date+' / '+shift.records.length+
+  '件 / メーター '+expected+'円、原本と印刷用帳票を照合済み';
+ Logger.log('TAXIAPP_PRINT_CHECK_OK id='+id+' : '+notice);
  try{
-  SpreadsheetApp.getUi().alert('補助簿の確認',
-   '乗務：'+shift.date+' / '+shift.records.length+'件\nメーター売上：'+expected+'円' +
-   '\n両方の「補助簿印刷用」を確認し、PCから印刷してください。',
-   SpreadsheetApp.getUi().ButtonSet.OK);
- }catch(uiError){Logger.log('乗務 '+shift.date+' / メーター '+expected+' 円、照合済み');}
+  ss.toast(notice,'TAXIAPP 印刷確認',8);
+ }catch(toastError){
+  Logger.log('印刷通知の表示を省略: '+String(toastError));
+ }
+ return {ok:true,shiftId:id,records:shift.records.length,meter:expected};
 }
