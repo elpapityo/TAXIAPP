@@ -43,11 +43,14 @@ function prepareImport(value){
  }
  return {model:updated,googleAccessKey:data.googleAccessKey};
 }
-function deleteShift(model,shiftId){
+function deleteShift(model,shiftId,options={}){
  if(!validModel(model))throw Error('保存中の乗務データに問題があります');
  const target=model.shifts.find(s=>s.id===shiftId);
  if(!target)throw Error('削除対象の乗務が見つかりません');
- if(model.activeId===shiftId||!target.endedAt)throw Error('入庫が完了していない乗務は削除できません');
+ // By default protect unfinished duties. Only an explicitly confirmed
+ // administrator action can remove an open test duty in its entirety.
+ if((model.activeId===shiftId||!target.endedAt)&&options.allowUnfinished!==true)
+  throw Error('入庫が完了していない乗務は、確認操作なしに削除できません');
  const updated=copy(model);
  updated.shifts=updated.shifts.filter(s=>s.id!==shiftId);
  if(updated.activeId===shiftId)updated.activeId=null;
