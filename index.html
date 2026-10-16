@@ -151,12 +151,12 @@ html[data-ui-theme="night"] .wait-title,html[data-ui-theme="night"] .wait-gps [r
 .pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .pickup-address-line{margin-top:13px}
 .pickup-received-time{margin-top:4px}
-.inline-location-field,.inline-time-field{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:end;min-width:0}
-.inline-location-field>.field,.inline-time-field>.control{min-width:0;width:100%}
+.inline-location-field,.inline-time-field,.inline-distance-field{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:end;min-width:0}
+.inline-location-field>.field,.inline-time-field>.control,.inline-distance-field>.control{min-width:0;width:100%}
 .inline-location-field>.field .control{min-width:0;width:100%}
 .btn.inline-field-icon{width:48px;min-width:48px;min-height:48px;height:var(--ui-touch);padding:0;display:grid;place-items:center;font-size:24px;font-weight:800;line-height:1;border-radius:10px}
 .inline-time-field .btn.inline-field-icon{height:var(--ui-touch)}
-@media(max-width:500px){.pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-location-field,.inline-time-field{grid-template-columns:minmax(0,1fr) 48px}}
+@media(max-width:500px){.pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-location-field,.inline-time-field,.inline-distance-field{grid-template-columns:minmax(0,1fr) 48px}}
 
 /* v0.3.0: switchable payment methods, in either order, with an auto remainder */
 .payment-split{margin-top:16px;border:2px solid #96b0c8;border-radius:16px;padding:15px;background:#fff;}
@@ -896,8 +896,10 @@ function field(key,raw,opts={}){const info=RAW_COLUMNS.find(x=>x[0]===key)||[key
  }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${['F','L','S','V','AB','AE','X','Y','AJ','AK'].includes(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
  const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&gpsTripUI?.active(getShift())
-  ?`<button type="button" class="btn gps-fill-button" data-action="gpsTripFill" data-id="${key}">⌖ GPS距離を入力</button>`:'';
- return `<label class="field"><span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>${control}${gpsButton}</label>`;}
+  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}にGPS距離を入力" title="GPS距離を入力">⌖</button>`:'';
+ const labelText=`<span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>`;
+ if(gpsButton)return `<div class="field">${labelText}<div class="inline-distance-field">${control}${gpsButton}</div></div>`;
+ return `<label class="field">${labelText}${control}</label>`;}
 function locationField(key,raw,label,action){return `<div class="inline-location-field">${field(key,raw,{label})}<button class="btn inline-field-icon" data-action="${action}" type="button" aria-label="${safeText(label)}の現在地を取得" title="${safeText(label)}の現在地を取得">⌖</button></div>`;}
 function userFields(keys,raw,config={}){return `<div class="form-grid ${config.three?'three':''}">${keys.map(k=>field(k,raw,config.options?.[k]||{})).join('')}</div>`;}
 function renderDrive(shift){const active=getShift();if(!active){return `${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
@@ -1449,7 +1451,16 @@ function updateElapsedTimer(){
  const active=getShift(), now=new Date(), w=active?.waiting;
  const display=appEl.querySelector('[data-wait-elapsed]');
  if(display&&w&&!active?.draft)display.textContent=elapsedWaitingText(w);
- const pay=appEl.querySelector('[data-last-payment-elapsed]');if(pay&&active)pay.textContent=durationJapanese(elapsedSinceLastPayment(active,now));
+ const pay=appEl.querySelector('[data-last-payment-elapsed]');
+ if(pay&&active){
+  const current=window.TAXIAPP_ALIGHT_CLOCK.reference(active,now);
+  pay.textContent=durationJapanese(current.seconds);
+  const card=pay.closest('.last-payment-clock');
+  const label=current.hasAlight?'前回の降車から':'出庫から';
+  const heading=card?.querySelector('.last-payment-heading strong');
+  if(heading&&heading.textContent!==label)heading.textContent=label;
+  if(card)card.setAttribute('aria-label',label+'の経過時間');
+ }
  gpsTripUI?.tick();
  const nowEl=appEl.querySelector('[data-live-now]');if(nowEl)nowEl.textContent=shortTime(stamp(now));
  if(active&&appEl.querySelector('[data-live-elapsed]')){
