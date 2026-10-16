@@ -50,6 +50,7 @@ class GpsTrackingService : Service() {
                 elapsedRealtimeMs = location.elapsedRealtimeNanos / 1000000L,
                 speedMetersPerSecond = if (location.hasSpeed()) location.speed.toDouble() else null
             )
+            GpsStore.noteGpsCallback(this@GpsTrackingService)
             engine.ingest(sample, SystemClock.elapsedRealtime())
             GpsStore.save(this@GpsTrackingService, engine.snapshot())
             updateNotification()
@@ -70,6 +71,7 @@ class GpsTrackingService : Service() {
         if (previous.running) {
             // Previous process died: do not bridge its last coordinate to a new fix.
             engine.interrupted("位置情報サービスが再起動しました")
+            engine.stop() // No live provider exists in this fresh process yet.
             GpsStore.save(this, engine.snapshot())
         }
         val notifications = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
