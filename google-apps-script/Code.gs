@@ -22,16 +22,31 @@ var TAXIAPP_RAW_KEYS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N',
  'Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH',
  'AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR'];
 
-// Unique menu handler: the original spreadsheet's onOpen() and macros remain intact.
+// Print sheets are driven by B17 (selected duty) / B15 (latest-duty flag).
+// Retain a no-op legacy handler so an old installable trigger cannot recreate
+// the unused menu. It does not affect stored data, macros or Web App sync.
 function taxiappOpenMenu() {
- SpreadsheetApp.getUi().createMenu('TAXIAPP 印刷')
-  .addItem('初期設定・接続キーを確認', 'setupTAXIAPP')
-  .addItem('最新乗務を選択', 'selectLatestTAXIAPPShift')
-  .addItem('印刷対象とメーター売上を確認', 'applySelectedPrintShift')
-  .addToUi();
+ // Intentionally empty.
 }
 
-/** Run once from Apps Script or the sheet's "TAXIAPP 印刷" menu. */
+/** One-time cleanup ONLY for obsolete triggers in this Apps Script project.
+ *  The checkNewRowAndNotify function no longer exists, so its old time trigger
+ *  emits repeated "Script function not found" errors.
+ */
+function cleanupTAXIAPPObsoleteTriggers() {
+ var obsolete=['taxiappOpenMenu','checkNewRowAndNotify'];
+ var removed=[];
+ ScriptApp.getProjectTriggers().forEach(function(trigger) {
+  var name=trigger.getHandlerFunction();
+  if(obsolete.indexOf(name)<0)return;
+  ScriptApp.deleteTrigger(trigger);
+  removed.push(name);
+ });
+ Logger.log('TAXIAPP不要トリガー削除: '+(removed.join(', ')||'対象なし'));
+ return removed;
+}
+
+/** Run once to configure the Google Sheets bridge. */
 function setupTAXIAPP() {
  var props = PropertiesService.getScriptProperties();
  var token = props.getProperty('TAXIAPP_WRITE_KEY');
@@ -42,11 +57,6 @@ function setupTAXIAPP() {
  }
  var ss = SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  ensureStorageSheets_(ss);
- // Keep all existing macros. Install only our independent on-open trigger once.
- if (!ScriptApp.getProjectTriggers().some(function(trigger) {
-  return trigger.getHandlerFunction() === 'taxiappOpenMenu';
- })) ScriptApp.newTrigger('taxiappOpenMenu').forSpreadsheet(ss).onOpen().create();
- try { taxiappOpenMenu(); } catch(menuError) { Logger.log('メニュー表示はシートを再読み込みして確認: '+menuError); }
  var page = ss.getSheetByName('TAXIAPP_印刷操作');
  if (page) {
   page.getRange('A17').setValue('印刷対象の乗務（出庫日時・件数）');
