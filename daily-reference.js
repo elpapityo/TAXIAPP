@@ -66,8 +66,11 @@
  function calculate(shift,{now=new Date(),meter=0,rides=0,deriveRaw}={}){
   if(!(now instanceof Date))now=new Date(now);
   const start=Date.parse(shift?.startedIso||'');
+  const stopped=Boolean(shift?.endedAt||shift?.endedIso);
   const final=shift?.endedIso?Date.parse(shift.endedIso):NaN;
-  const end=Number.isFinite(final)?final:now.getTime();
+  // A historical check-in with only a clock string has no reliable end date.
+  // Never count time up to the present once the shift is closed.
+  const end=stopped?final:now.getTime();
   const elapsed=Number.isFinite(start)?Math.max(0,Math.floor((end-start)/1000)):null;
   const deadline=Number.isFinite(start)?new Date(start+SHIFT_SECONDS*1000):null;
   const remaining=elapsed===null?null:Math.max(0,SHIFT_SECONDS-elapsed);
