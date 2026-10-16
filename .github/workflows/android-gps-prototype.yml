@@ -11,6 +11,9 @@ on:
 jobs:
   test-android-prototype:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
