@@ -14,7 +14,8 @@ function factory(deps){
  // Do not automatically certify an estimate until we have a recent valid fix
  // AND any prior missed interval was corrected using the vehicle trip meter.
  const trusted=shift=>Boolean(active(shift)&&shift.gpsTrip.lastFix&&
-   shift.gpsTrip.status==='tracking'&&!shift.gpsTrip.unresolvedGap);
+   shift.gpsTrip.status==='tracking'&&!shift.gpsTrip.unresolvedGap&&
+   Date.now()-Number(shift.gpsTrip.lastSeenMs||0)<60000);
  function status(shift){
   const s=shift?.gpsTrip;
   if(!s)return '未開始（距離は従来どおり手入力できます）';
@@ -59,6 +60,7 @@ function factory(deps){
    ['data-gps-trip-status',status(shift)]]){
    ui.querySelectorAll('['+attr+']').forEach(el=>el.textContent=value);
   }
+  if(!trusted(shift))return;
   for(const key of ['[data-shift-odo="end"]','[data-wait-field="odometer"]','[data-col="L"]']){
    const input=ui.querySelector(key);
    if(!input||document.activeElement===input)continue;
