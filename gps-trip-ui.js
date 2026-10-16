@@ -134,7 +134,7 @@ function factory(deps){
   changeMode(shift,'real');
  }
  function alight(shift,record){
-  if(!active(shift)||!record||record.kind!=='ride'||record.editId)return;
+  if(!active(shift)||!record||record.kind!=='ride'||record.editId||record.meta?.gpsDistance?.alightedIso)return;
   const s=shift.gpsTrip;
   record.raw.L=fmt(s.tripKm);
   record.meta??={};record.meta.gpsDistance??={};
