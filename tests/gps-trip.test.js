@@ -80,4 +80,16 @@ for (const velocity of [0,null]) {
   assert.equal(waiting.unresolvedGap,true);
 }
 
-console.log('GPS trip tests passed: calibration, mode, gaps, stationary fixes, accuracy, stale points.');
+// A kilometre-sized coordinate jump directly after valid stationary samples
+// is not a measured journey, even if the taxi waited for several minutes.
+const jumpCheck=gps.create(0);
+gps.resume(jumpCheck,t);
+for (const seconds of [0,15,30,45,61,120,180]) {
+  const at=t+seconds*1000;
+  gps.ingest(jumpCheck,p(35,at,5,0),at);
+}
+const implausible=gps.ingest(jumpCheck,p(35.01,t+190000,5,9),t+190000);
+assert.equal(implausible.gap,true);
+assert.equal(jumpCheck.tripKm,0);
+
+console.log('GPS trip tests passed: calibration, mode, gaps, stationary fixes, jump rejection, accuracy, stale points.');
