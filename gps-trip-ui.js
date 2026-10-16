@@ -193,6 +193,17 @@ function factory(deps){
  function board(shift,record){
   if(!active(shift)||!record||record.editId)return;
   const s=shift.gpsTrip;
+  // An entered vehicle-trip reading at pickup is an absolute cumulative
+  // odometer. The browser GPS may have measured only part of the approach.
+  // Adopt an upward manual reading before switching empty -> real, so the
+  // alighting total cannot begin below the pickup distance.
+  const boardingKm=number(record.raw?.F);
+  const priorAuto=record.meta?.gpsFilledFields?.F;
+  if(boardingKm!==null&&Number.isFinite(boardingKm)&&boardingKm>=0&&
+     boardingKm>s.tripKm+0.0001&&
+     (!priorAuto||String(priorAuto.km)!==String(record.raw.F))){
+    engine.correct(s,boardingKm,'乗車時の車両トリップへ基準を合わせる');
+  }
   fillDistance(shift,record,'F','board');
   record.meta??={};
   record.meta.gpsDistance={boardTripKm:s.tripKm,boardRealKm:s.realKm,boardEmptyKm:s.emptyKm,
@@ -240,6 +251,16 @@ function factory(deps){
  function atInputDistance(shift,column,value,source){
   if(!active(shift))return;
   if(!['F','L','S','V','AB','AE'].includes(column))return;
+  const entered=number(value);
+  if(entered===null||!Number.isFinite(entered)||entered<0)return;
+  // A historical checkpoint (e.g. an expressway entrance) may be entered
+  // after a later point. It must NOT rewind the live cumulative trip.
+  // Intentional downward calibration remains possible with GPS補正.
+  const current=Number(shift.gpsTrip.tripKm)||0;
+  if(entered+0.0001<current){
+    toast('入力した距離は記録しました。GPS累計は戻していません。車両トリップの現在値を修正する場合はGPS補正を使用してください。');
+    return;
+  }
   correct(shift,value,source||('距離欄'+column));
  }
  return {panel,status,paint,start,stop,mode:changeMode,board,alight,correct,hidden,tick,
