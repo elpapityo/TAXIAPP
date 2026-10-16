@@ -1884,6 +1884,83 @@ document.addEventListener('touchmove',e=>{
  else if(document.activeElement?.matches?.('input,textarea,select'))document.activeElement.blur();
 },{passive:true});
 window.addEventListener('wheel',e=>{if(inputPrefs().scrollDismiss!=='on')return;if(keypadActive&&!e.target.closest('.keypad-panel'))closeKeypad(true);else if(!keypadActive&&document.activeElement?.matches?.('input,textarea,select'))document.activeElement.blur();},{passive:true});
+async function exportDevice(){
+ try{
+  const pw=document.getElementById('transferExportPassword')?.value||'';
+  const repeat=document.getElementById('transferExportConfirm')?.value||'';
+  if(!window.TAXIAPP_TRANSFER.passwordOk(pw))throw Error('パスワードは12文字以上256文字以内にしてください');
+  if(pw!==repeat)throw Error('再入力のパスワードが一致しません');
+  if(!googleWriteKey()||!googleWebAppUrl(sheetTargetPrefs().webAppUrl)){
+   if(!confirm('PC側にGoogle接続キーまたはWebアプリURLが設定されていません。未設定のまま書き出しますか？'))return;
+  }
+  const snapshot=window.TAXIAPP_DEVICE_DATA.snapshot(model,googleWriteKey());
+  const encrypted=await window.TAXIAPP_TRANSFER.encrypt(snapshot,pw);
+  download(JSON.stringify(encrypted),'TAXIAPP_端末一括移行_'+dateStamp()+'.json','application/json;charset=utf-8');
+  const a=document.getElementById('transferExportPassword'),b=document.getElementById('transferExportConfirm');
+  if(a)a.value='';if(b)b.value='';
+  toast('暗号化移行ファイルを保存しました。パスワードを別に控えてください。');
+ }catch(e){toast('一括書き出しに失敗：'+String(e.message||e),true);}
+}
+async function importDevice(){
+ const file=document.getElementById('transferImportFile')?.files?.[0],pw=document.getElementById('transferImportPassword')?.value||'';
+ if(!file){toast('PCで保存した移行ファイルを選択してください',true);return;}
+ if(file.size>20*1024*1024){toast('ファイルサイズが20MBを超えています',true);return;}
+ if(cloudRunning){toast('Google送信中です。完了後に実行してください',true);return;}
+ try{
+  const encrypted=JSON.parse(await file.text());
+  const data=await window.TAXIAPP_TRANSFER.decrypt(encrypted,pw);
+  const incoming=window.TAXIAPP_DEVICE_DATA.prepareImport(data);
+  const oldCount=model.shifts.length,newCount=incoming.model.shifts.length;
+  const hasKey=incoming.googleAccessKey.length>=24;
+  const label='PC側 '+newCount+'乗務／このスマホ '+oldCount+'乗務';
+  if(!confirm(label+'\nスマホの乗務・表示・料金・Google接続設定をPCのデータに丸ごと上書きします。\n接続キー：'+(hasKey?'含まれています':'未設定')+'\n続行しますか？'))return;
+  const encryptedBackup=await window.TAXIAPP_TRANSFER.encrypt(window.TAXIAPP_DEVICE_DATA.snapshot(model,googleWriteKey()),pw);
+  download(JSON.stringify(encryptedBackup),'TAXIAPP_上書き前のスマホ控え_'+dateStamp()+'.json','application/json;charset=utf-8');
+  if(!confirm('現在のスマホの暗号化バックアップをダウンロードできましたか？\n保存されたことを確認してから「OK」で上書きしてください。'))return;
+  clearTimeout(persistTimer);persistTimer=0;
+  clearTimeout(cloudTimer);cloudTimer=null;
+  gpsTripUI?.clearWatch();
+  const previousModel=deepCopy(model),previousKey=googleWriteKey();
+  try{
+   model=incoming.model;
+   await save(true);
+   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   if(JSON.stringify(stored)!==JSON.stringify(model))throw Error('保存したデータを読み戻せません');
+   if(!setGoogleWriteKey(incoming.googleAccessKey)||googleWriteKey()!==incoming.googleAccessKey)
+    throw Error('Google接続キーを保存できません');
+  }catch(error){
+   model=previousModel;
+   try{await save(true);setGoogleWriteKey(previousKey);}catch(restoreError){
+    throw Error('上書きに失敗し元の状態への復元もできません。移行前バックアップを保管してください：'+String(restoreError.message||restoreError));
+   }
+   throw Error('上書きできなかったため元のデータへ戻しました：'+String(error.message||error));
+  }
+  historyDate='';historyShiftId='';printShiftId='';tab='settings';
+  render();toast('PCから'+newCount+'乗務と設定を引き継ぎました。Google送信は手動にしています。');
+ }catch(e){toast('一括引き継ぎに失敗：'+String(e.message||e),true);}
+}
+async function deleteWholeShift(shiftId){
+ const shift=model.shifts.find(s=>s.id===shiftId);
+ if(!shift){toast('削除対象が見つかりません',true);return;}
+ if(shift.id===model.activeId||!shift.endedAt){toast('入庫済みの乗務だけ削除できます',true);return;}
+ if(cloudRunning){toast('Google送信中は削除できません',true);return;}
+ const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+shortTime(shift.endedAt);
+ const total=totals(shift.records,shift.settings,shift.date);
+ if(!confirm('【出庫〜入庫の乗務1件を削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+'\nこの乗務の明細・待機履歴・GPSもまとめて端末から削除します。\nGoogleシートへ送信したデータは残ります。\n本当に削除しますか？'))return;
+ const previous=deepCopy(model);
+ try{
+  model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId).model;
+  await save(true);
+  const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+  if(stored?.shifts?.some(s=>s.id===shiftId))throw Error('削除後の記録を保存できません');
+  if(historyShiftId===shiftId)historyShiftId='';
+  if(printShiftId===shiftId)printShiftId='';
+  render();toast(display+' の乗務を削除しました。');
+ }catch(e){
+  model=previous;await save(true);render();
+  toast('削除を取り消しました：'+String(e.message||e),true);
+ }
+}
 async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}let json;try{json=JSON.parse(await file.text());if(json.version!==1||!Array.isArray(json.shifts)||json.shifts.some(s=>!Array.isArray(s.records)||s.records.length>MAX_RECORDS||s.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||!s.settings))throw Error('互換性のないデータです');}catch(e){toast('復元できません: '+e.message,true);return;}const existingIds=new Set(model.shifts.map(s=>s.id));
  const addition=json.shifts.filter(s=>!existingIds.has(s.id));
  const skipped=json.shifts.length-addition.length;
