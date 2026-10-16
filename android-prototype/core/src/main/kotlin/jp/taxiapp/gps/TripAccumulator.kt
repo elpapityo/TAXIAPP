@@ -75,8 +75,9 @@ class TripAccumulator(initial: Snapshot = Snapshot()) {
 
     fun interrupted(reason: String) {
         anchor = null
+        val stillSameGap = state.unresolvedGap && state.status.startsWith("未計測区間：")
         state = state.copy(
-            gapCount = state.gapCount + 1,
+            gapCount = state.gapCount + if (stillSameGap) 0 else 1,
             unresolvedGap = true,
             status = "未計測区間：" + reason
         )
