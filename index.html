@@ -1579,7 +1579,7 @@ function flushVisibleDraftInputs(shift){
   const slot=Number(input.dataset.payAmount);
   draft.meta.splitPayment={...splitPaymentMeta(draft),manualSlot:slot,manualAmount:input.value};
  }
- if(draft.kind==='ride')updateDiscountForDraft(draft,'AR');
+ if(draft.kind==='ride')updateDiscountForDraft(draft,'K');
 }
 // Never treat an undercounted, auto-filled GPS drop value as a manual odometer.
 // Preserve the rejected estimate in metadata; leave driver's distances alone.
