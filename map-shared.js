@@ -54,7 +54,12 @@
  function currentFix(shift,now=Date.now()){
    const g=shift?.gpsTrip;
    const last=g?.lastFix;
-   const t=Number(last?.t||g?.lastSeenMs||0);
+   // Valid GPS callbacks continue while stationary even when the distance
+   // anchor's coordinates and timestamp stay unchanged.
+   const anchorTime=Number(last?.t||0);
+   const recentTime=Number(g?.lastSeenMs||0);
+   const t=g?.enabled&&g?.status==='tracking'&&!g?.gapOpen&&recentTime>=anchorTime
+     ?recentTime:(anchorTime||recentTime);
    if(!last||!Number.isFinite(t)||!t||now-t<0||now-t>60000)return null;
    const fixed=point(last);
    return fixed?{...fixed,recordedAt:new Date(t).toISOString(),source:'GPS走行距離の最終測位'}:null;
