@@ -11,7 +11,7 @@ const end=html.indexOf('function amountDiscount(',pos);
 assert.ok(pos>=0&&end>pos);
 const ctx={
  selector:()=>'<div>配車元選択</div>',
- field:(key)=>'<input data-field="'+key+'">',
+ field:(key,_raw,options={})=>'<label>'+String(options.label||'')+'</label><input data-field="'+key+'">',
  locationField:()=>'<input data-location="AL">',
  safeText:s=>String(s).replaceAll('<','&lt;').replaceAll('>','&gt;'),
  renderAllFields:()=>'<div>全項目</div>',
