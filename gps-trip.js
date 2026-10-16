@@ -97,9 +97,16 @@
     if(elapsed*1000>MAX_GAP_MS)return Object.assign(miss(s,'前回の測位から60秒超：距離は未計測',receivedAt),{reanchorNeeded:true});
     const meters=metersBetween(last,p);
     if(meters/elapsed>MAX_SPEED_MPS)return miss(s,'位置飛びを検出：距離は加算しません',receivedAt);
-    // Do not turn stationary GPS jitter into a positive driving distance.
-    if(meters<Math.max(9,p.accuracy*.4)||
-        (p.velocity!==null&&p.velocity<.7&&meters<Math.max(16,p.accuracy))) {
+    // At a standstill, mobile GPS can wander tens of metres even though the
+    // vehicle hasn't moved. Never count those jumps as distance driven.
+    if(p.velocity!==null&&p.velocity<.7){
+      if(meters>Math.max(50,p.accuracy*3,last.accuracy*3))
+        return miss(s,'GPSは停止中なのに位置が大きく変化：車両トリップで確認',receivedAt);
+      s.status='tracking';s.lastError='';
+      return {accepted:true,stationary:true,deltaKm:0};
+    }
+    // If speed was not available, small displacements are likely GPS noise.
+    if(meters<Math.max(9,p.accuracy*.4,last.accuracy*.4)) {
       s.status='tracking';s.lastError='';
       return {accepted:true,stationary:true,deltaKm:0};
     }
