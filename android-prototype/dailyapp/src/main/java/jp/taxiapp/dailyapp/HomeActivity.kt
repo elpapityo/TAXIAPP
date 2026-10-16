@@ -46,7 +46,7 @@ class HomeActivity : Activity() {
             domStorageEnabled = true
             databaseEnabled = true
             allowFileAccess = false
-            allowContentAccess = false
+            allowContentAccess = true // Needed only for user-selected encrypted JSON import URIs
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             javaScriptCanOpenWindowsAutomatically = false
         }
