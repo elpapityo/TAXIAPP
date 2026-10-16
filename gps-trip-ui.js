@@ -51,20 +51,43 @@ function factory(deps){
     GPS実車・空車の計測分と補正差は別管理です。中断区間の距離は推測しません。</p>`:''}
    </section>`;
  }
- function fillLocationDistance(shift,record,when){
-  if(!trusted(shift)||!record||record.editId)return false;
-  const field=when==='pickup'?'F':when==='drop'?'L':null;
-  if(!field||(when==='pickup'&&!['ride','dispatch'].includes(record.kind))||
-    (when==='drop'&&record.kind!=='ride'))return false;
+ const distanceKeys=new Set(['F','L','S','V','AB','AE']);
+ // The value is always the cumulative vehicle-trip estimate, not the route
+ // section length. Auto-filled values can advance, manual values never do.
+ function fillDistance(shift,record,field,source='event'){
+  if(!trusted(shift)||!record||record.editId||!distanceKeys.has(field))return false;
   const current=String(record.raw?.[field]??'').trim();
   const prior=record.meta?.gpsFilledFields?.[field];
-  // Preserve any vehicle trip reading manually entered or corrected by the driver.
-  // Previously GPS-filled values may be refreshed on an explicit GPS action.
   if(current&&(!prior||String(prior.km)!==current))return false;
   const km=fmt(shift.gpsTrip.tripKm);
   record.raw[field]=km;
   record.meta??={};record.meta.gpsFilledFields??={};
-  record.meta.gpsFilledFields[field]={km,at:new Date().toISOString(),source:'location'};
+  record.meta.gpsFilledFields[field]={km,at:new Date().toISOString(),source};
+  return true;
+ }
+ function fillLocationDistance(shift,record,when){
+  const field=when==='pickup'?'F':when==='drop'?'L':null;
+  if(!field||!record||(when==='pickup'&&!['ride','dispatch'].includes(record.kind))||
+     (when==='drop'&&record.kind!=='ride'))return false;
+  return fillDistance(shift,record,field,'location');
+ }
+ function fillWaitDistance(shift,waiting,source='wait'){
+  if(!trusted(shift)||!waiting)return false;
+  const current=String(waiting.odometer??'').trim();
+  const prior=waiting.gpsAutoOdometer;
+  if(current&&(!prior||String(prior.km)!==current))return false;
+  const km=fmt(shift.gpsTrip.tripKm);
+  waiting.odometer=km;
+  waiting.gpsAutoOdometer={km,at:new Date().toISOString(),source};
+  return true;
+ }
+ function fillEndingDistance(shift){
+  if(!trusted(shift))return false;
+  const current=String(shift.endingOdo??'').trim();
+  const prior=shift.gpsAutoEndingOdo;
+  if(current&&(!prior||String(prior.km)!==current))return false;
+  const km=fmt(shift.gpsTrip.tripKm);
+  shift.endingOdo=km;shift.gpsAutoEndingOdo={km,at:new Date().toISOString()};
   return true;
  }
  function paint(shift){
@@ -77,11 +100,13 @@ function factory(deps){
    ui.querySelectorAll('['+attr+']').forEach(el=>el.textContent=value);
   }
   if(!trusted(shift))return;
-  for(const key of ['[data-shift-odo="end"]','[data-wait-field="odometer"]','[data-col="L"]']){
+  // Only reflect already-validated auto values; never replace a manual reading.
+  for(const [key,value] of [
+   ['[data-shift-odo="end"]',shift.gpsAutoEndingOdo?.km===shift.endingOdo?shift.endingOdo:null],
+   ['[data-wait-field="odometer"]',shift.waiting?.gpsAutoOdometer?.km===shift.waiting?.odometer?shift.waiting.odometer:null],
+   ['[data-col="L"]',shift.draft?.kind==='ride'&&shift.draft?.meta?.gpsFilledFields?.L?.km===shift.draft.raw.L?shift.draft.raw.L:null]]){
    const input=ui.querySelector(key);
-   if(!input||document.activeElement===input)continue;
-   if(key==='[data-col="L"]'&&(!shift.draft||shift.draft.kind!=='ride'||shift.draft.raw.M))continue;
-   input.value=fmt(s.tripKm);
+   if(input&&value!==null&&value!==undefined&&document.activeElement!==input)input.value=String(value);
   }
  }
  function clearWatch(){
@@ -96,12 +121,12 @@ function factory(deps){
   persist(false);paint(shift);
  }
  function fill(shift){
-  const s=shift?.gpsTrip;if(!s)return;
-  const km=fmt(s.tripKm),draft=shift.draft;
-  shift.endingOdo=km;
-  if(shift.waiting&&!draft)shift.waiting.odometer=km;
-  if(draft?.kind==='dispatch'&&!draft.raw.F)draft.raw.F=km;
-  if(draft?.kind==='ride'&&!draft.raw.M&&!draft.editId)draft.raw.L=km;
+  if(!trusted(shift))return;
+  fillEndingDistance(shift);
+  const draft=shift.draft;
+  if(shift.waiting&&!draft)fillWaitDistance(shift,shift.waiting,'tracking');
+  if(draft?.kind==='dispatch')fillDistance(shift,draft,'F','tracking');
+  if(draft?.kind==='ride'&&!draft.raw.M)fillDistance(shift,draft,'L','tracking');
  }
  function onPosition(shiftId,generation,position){
   if(generation!==watchGeneration)return;
@@ -164,7 +189,7 @@ function factory(deps){
  function board(shift,record){
   if(!active(shift)||!record||record.editId)return;
   const s=shift.gpsTrip;
-  if(trusted(shift))record.raw.F=fmt(s.tripKm);
+  fillDistance(shift,record,'F','board');
   record.meta??={};
   record.meta.gpsDistance={boardTripKm:s.tripKm,boardRealKm:s.realKm,boardEmptyKm:s.emptyKm,
     boardGapCount:s.gapCount,boardQuality:trusted(shift)?'valid':'needs_correction',
@@ -174,7 +199,7 @@ function factory(deps){
  function alight(shift,record){
   if(!active(shift)||!record||record.kind!=='ride'||record.editId||record.meta?.gpsDistance?.alightedIso)return;
   const s=shift.gpsTrip;
-  if(trusted(shift))record.raw.L=fmt(s.tripKm);
+  fillDistance(shift,record,'L','alight');
   record.meta??={};record.meta.gpsDistance??={};
   const meta=record.meta.gpsDistance;
   meta.alightTripKm=s.tripKm;meta.alightRealKm=s.realKm;
@@ -214,7 +239,7 @@ function factory(deps){
   correct(shift,value,source||('距離欄'+column));
  }
  return {panel,status,paint,start,stop,mode:changeMode,board,alight,correct,hidden,tick,
-         atInputDistance,active,trusted,fill,fillLocationDistance,clearWatch,fmt};
+         atInputDistance,active,trusted,fill,fillLocationDistance,fillDistance,fillWaitDistance,clearWatch,fmt};
 }
 root.TAXIAPP_GPS_UI=factory;
 })(typeof window!=='undefined'?window:globalThis);

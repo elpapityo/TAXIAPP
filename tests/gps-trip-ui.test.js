@@ -117,4 +117,63 @@ assert.equal(dispatch.raw.F,'5.1');
 pilot.stop(shift);
 assert.equal(pilot.fillLocationDistance(shift,{kind:'ride',raw:{F:''}},'pickup'),false);
 
-console.log('GPS UI lifecycle tests passed: pause/restart, stale callbacks, gaps, stationary jitter and location distance fill.');
+// Every operational milestone captures a cumulative GPS trip when trusted.
+shift.gpsTrip=engine.create(0);pilot.start(shift);
+send(watchCount,35,0);
+shift.gpsTrip.tripKm=6.1;
+const waiting={odometer:'',gpsAutoOdometer:null};
+assert.equal(pilot.fillWaitDistance(shift,waiting,'waitStart'),true);
+assert.equal(waiting.odometer,'6.1');
+// A second GPS fix may advance only the auto-captured waiting distance.
+shift.waiting=waiting;shift.gpsTrip.tripKm=6.2;
+send(watchCount,35,0);
+assert.equal(waiting.odometer,'6.2');
+waiting.odometer='10.5';shift.gpsTrip.tripKm=6.3;
+send(watchCount,35,0);
+assert.equal(waiting.odometer,'10.5');
+assert.equal(pilot.fillWaitDistance(shift,waiting,'waitLocation'),false);
+// A dispatch that has manually entered a value must not be overwritten on boarding.
+shift.waiting=null;
+const dispatchManual={kind:'dispatch',raw:{F:'12.8'},meta:{}};
+shift.draft=dispatchManual;
+shift.gpsTrip.tripKm=6.4;
+send(watchCount,35,0);
+assert.equal(dispatchManual.raw.F,'12.8');
+dispatchManual.kind='ride';
+pilot.board(shift,dispatchManual);
+assert.equal(dispatchManual.raw.F,'12.8');
+// Fresh GPS after board mode transition; test highway IN/OUT and alight.
+send(watchCount,35,0);
+assert.equal(pilot.trusted(shift),true);
+const highway={kind:'ride',raw:{S:'',V:'',AB:'',AE:''},meta:{}};
+shift.gpsTrip.tripKm=7.1;
+assert.equal(pilot.fillDistance(shift,highway,'S','highwayIn'),true);
+assert.equal(highway.raw.S,'7.1');
+shift.gpsTrip.tripKm=8.2;
+assert.equal(pilot.fillDistance(shift,highway,'V','highwayOut'),true);
+assert.equal(highway.raw.V,'8.2');
+shift.gpsTrip.tripKm=9.3;
+assert.equal(pilot.fillDistance(shift,highway,'AB','emptyHighwayIn'),true);
+assert.equal(highway.raw.AB,'9.3');
+shift.gpsTrip.tripKm=10.4;
+assert.equal(pilot.fillDistance(shift,highway,'AE','emptyHighwayOut'),true);
+assert.equal(highway.raw.AE,'10.4');
+highway.raw.AE='42.0';shift.gpsTrip.tripKm=10.9;
+assert.equal(pilot.fillDistance(shift,highway,'AE','repeatedTimeTap'),false);
+assert.equal(highway.raw.AE,'42.0');
+// The alight button records L before switching real->empty mode.
+const alight={kind:'ride',raw:{F:'7.0',L:''},meta:{gpsDistance:{boardRealKm:0}}};
+pilot.alight(shift,alight);
+assert.equal(alight.raw.L,'10.9');
+assert.equal(shift.gpsTrip.mode,'empty');
+// A subsequent fresh GPS fix cannot clobber corrected L.
+send(watchCount,35,0);
+alight.raw.L='11.7';shift.gpsTrip.tripKm=11.1;
+assert.equal(pilot.fillDistance(shift,alight,'L','repeatedAlight'),false);
+assert.equal(alight.raw.L,'11.7');
+// Untrusted GPS never writes a plausible-looking number.
+engine.miss(shift.gpsTrip,'lost signal');
+assert.equal(pilot.fillDistance(shift,highway,'S','highwayIn'),false);
+assert.equal(pilot.fillWaitDistance(shift,{odometer:''}),false);
+pilot.stop(shift);
+console.log('GPS UI lifecycle tests passed: pause/restart, stale callbacks, gaps, stationary jitter location distance, waiting, highway and alight protection.');
