@@ -11,7 +11,10 @@ const callbacks=new Map(),errors=new Map(),cleared=[],oneShots=[];
 // Simulate a leftover waiting-distance input while no waiting object exists:
 // settlement changes GPS mode before clearing the completed ride draft.
 const staleWaitingInput={value:'manual-value'};
-const appRoot={querySelectorAll:selector=>selector==='[data-wait-field="odometer"]'?[staleWaitingInput]:[]};
+const appRoot={
+ querySelectorAll:selector=>selector==='[data-wait-field="odometer"]'?[staleWaitingInput]:[],
+ querySelector:selector=>selector==='[data-wait-field="odometer"]'?staleWaitingInput:null
+};
 let watchCount=0;
 const ctx={
   window:{isSecureContext:true},
