@@ -36,3 +36,10 @@ jobs:
         run: |
           cd android-prototype
           gradle --no-daemon :core:test :app:assembleDebug
+      - name: Upload installable GPS test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TAXIAPP-GPS-distance-test-APK
+          path: android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
