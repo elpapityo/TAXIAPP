@@ -29,7 +29,10 @@ data class Snapshot(
     val running: Boolean = false,
     val mode: TripMode = TripMode.EMPTY,
     val lastAccuracyMeters: Double? = null,
-    val status: String = "停止中"
+    val status: String = "停止中",
+    val rideStartRealKm: Double? = null,
+    val lastRideKm: Double? = null,
+    val completedRides: Int = 0
 )
 
 data class Measure(val deltaKm: Double, val status: String)
@@ -57,7 +60,17 @@ class TripAccumulator(initial: Snapshot = Snapshot()) {
     fun switchMode(next: TripMode) {
         if (state.mode == next) return
         anchor = null // Avoid counting unknown motion across passenger boundaries.
-        state = state.copy(mode = next, status = "乗車状態切替・再測位待ち")
+        val endingRide = state.mode == TripMode.REAL && next == TripMode.EMPTY
+        val completedDistance = if (endingRide)
+            roundKm(max(0.0, state.realKm - (state.rideStartRealKm ?: state.realKm)))
+        else state.lastRideKm
+        state = state.copy(
+            mode = next,
+            rideStartRealKm = if (next == TripMode.REAL) state.realKm else null,
+            lastRideKm = completedDistance,
+            completedRides = state.completedRides + if (endingRide) 1 else 0,
+            status = "乗車状態切替・再測位待ち"
+        )
     }
 
     fun interrupted(reason: String) {
@@ -124,18 +137,33 @@ class TripAccumulator(initial: Snapshot = Snapshot()) {
             return Measure(0.0, state.status)
         }
         if (fix.speedMetersPerSecond != null && fix.speedMetersPerSecond < 0.7) {
-            if (meters > max(50.0, max(previous.accuracyMeters, fix.accuracyMeters) * 3.0)) {
-                interrupted("停止中の大きな位置飛び")
+            // Speed zero is measured at the END of this sample, not across the
+            // whole interval. A moving -> stopped final leg may span ~400 m.
+            val previousSpeed = previous.speedMetersPerSecond
+            val wasMoving = previousSpeed != null && previousSpeed >= 0.7
+            if (!wasMoving) {
+                if (meters > max(50.0, max(previous.accuracyMeters, fix.accuracyMeters) * 3.0)) {
+                    interrupted("停止中の大きな位置飛び")
+                    anchor = fix
+                    return Measure(0.0, state.status)
+                }
+                anchor = fix
+                state = state.copy(lastAccuracyMeters = fix.accuracyMeters, status = "停止中の測位")
+                return Measure(0.0, "停止中")
+            }
+            val plausibleMps = min(55.0, max(22.0, previousSpeed * 2.2))
+            if (meters / (elapsed / 1000.0) > plausibleMps) {
+                interrupted("停止直前のGPS位置飛び")
                 anchor = fix
                 return Measure(0.0, state.status)
             }
-            anchor = fix
-            state = state.copy(lastAccuracyMeters = fix.accuracyMeters, status = "停止中の測位")
-            return Measure(0.0, "停止中")
         }
         // Keep the older position anchor so a series of small valid movements
         // eventually exceeds the GPS noise floor instead of being lost.
         if (meters < max(9.0, max(previous.accuracyMeters, fix.accuracyMeters) * 0.4)) {
+            // Keep the spatial anchor to accumulate several tiny movements,
+            // but refresh time so long stationary sampling is not a false gap.
+            anchor = previous.copy(elapsedRealtimeMs = fix.elapsedRealtimeMs)
             state = state.copy(lastAccuracyMeters = fix.accuracyMeters, status = "測位中")
             return Measure(0.0, "小移動・保留")
         }
