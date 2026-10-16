@@ -78,6 +78,60 @@ class TripAccumulatorTest {
         assertTrue(meter.snapshot().unresolvedGap)
     }
 
+    @Test fun realPassengerRideAndVehicleComparisonSegments() {
+        val meter = TripAccumulator()
+        meter.start()
+        meter.ingest(fix(35.0, 100000L, 12.0), 100000L)
+        meter.ingest(fix(35.0009, 110000L, 12.0), 110000L)
+        meter.switchMode(TripMode.REAL)
+        meter.ingest(fix(35.0009, 120000L, 12.0), 120000L)
+        meter.ingest(fix(35.0018, 130000L, 12.0), 130000L)
+        meter.switchMode(TripMode.EMPTY)
+        assertEquals(1, meter.snapshot().completedRides)
+        assertTrue(meter.snapshot().lastRideKm!! in 0.09..0.11)
+        meter.switchMode(TripMode.REAL)
+        meter.ingest(fix(35.0018, 140000L, 12.0), 140000L)
+        meter.ingest(fix(35.0036, 150000L, 12.0), 150000L)
+        meter.switchMode(TripMode.EMPTY)
+        assertEquals(2, meter.snapshot().completedRides)
+        assertTrue(meter.snapshot().lastRideKm!! in 0.19..0.21)
+        assertTrue(meter.snapshot().realKm in 0.29..0.31)
+    }
+
+    @Test fun movingToStoppedCountsLastFourHundredMeters() {
+        val meter = TripAccumulator()
+        meter.start()
+        meter.switchMode(TripMode.REAL)
+        meter.ingest(fix(35.0, 100000L, 12.0), 100000L)
+        val stopped = meter.ingest(fix(35.0036, 135000L, 0.0), 135000L)
+        assertTrue(stopped.deltaKm in 0.39..0.41)
+        assertTrue(meter.snapshot().realKm in 0.39..0.41)
+        meter.ingest(fix(35.0037, 140000L, 0.0), 140000L)
+        assertTrue(meter.snapshot().realKm in 0.39..0.41)
+        meter.switchMode(TripMode.EMPTY)
+        assertTrue(meter.snapshot().lastRideKm!! in 0.39..0.41)
+    }
+
+    @Test fun rejectStationaryGpsTeleport() {
+        val meter = TripAccumulator()
+        meter.start()
+        meter.ingest(fix(35.0, 100000L, 0.0), 100000L)
+        val jumped = meter.ingest(fix(35.0036, 135000L, 0.0), 135000L)
+        assertEquals(0.0, jumped.deltaKm)
+        assertEquals(0.0, meter.snapshot().tripKm)
+        assertTrue(meter.snapshot().unresolvedGap)
+    }
+
+    @Test fun repeatedBadAccuracyCountsOneContinuousGap() {
+        val meter = TripAccumulator()
+        meter.start()
+        meter.ingest(fix(35.0, 100000L), 100000L)
+        for (time in listOf(110000L, 120000L, 130000L)) {
+            meter.ingest(fix(35.001, time, accuracy = 100.0), time)
+        }
+        assertEquals(1, meter.snapshot().gapCount)
+    }
+
     @Test fun invalidOrNegativeCorrectionsAreRejected() {
         val meter = TripAccumulator()
         assertFalse(meter.correctWithVehicleTrip(-1.0))
