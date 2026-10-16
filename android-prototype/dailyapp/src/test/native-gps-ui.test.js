@@ -28,7 +28,7 @@ function setup(){
  };
  const context={window:{TAXIAPP_NATIVE_GPS:api},document:dom,
   Date,Number,Math,JSON,String,Object,Array,Set,setTimeout:()=>0,clearTimeout:()=>{}};
- const src=fs.readFileSync(path.join(__dirname,'..','..','assets','native-gps-ui.js'),'utf8');
+ const src=fs.readFileSync(path.join(__dirname,'..','main','assets','native-gps-ui.js'),'utf8');
  vm.runInNewContext(src,context);
  const shift={id:'unit',endedAt:'',draft:null,waiting:null,gpsTrip:null};
  let saves=0;
