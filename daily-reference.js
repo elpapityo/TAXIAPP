@@ -71,7 +71,7 @@
   // A historical check-in with only a clock string has no reliable end date.
   // Never count time up to the present once the shift is closed.
   const end=stopped?final:now.getTime();
-  const elapsed=Number.isFinite(start)?Math.max(0,Math.floor((end-start)/1000)):null;
+  const elapsed=Number.isFinite(start)&&Number.isFinite(end)?Math.max(0,Math.floor((end-start)/1000)):null;
   const deadline=Number.isFinite(start)?new Date(start+SHIFT_SECONDS*1000):null;
   const remaining=elapsed===null?null:Math.max(0,SHIFT_SECONDS-elapsed);
   const exceeded=elapsed===null?null:Math.max(0,elapsed-SHIFT_SECONDS);
