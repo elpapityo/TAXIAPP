@@ -37,7 +37,7 @@ assert.equal(v.seconds,60);
 // Historic record currently opened for edit must not reset the elapsed clock.
 shift.draft.editId='old-record';
 v=clock.reference(shift,new Date('2026-10-16T00:24:20+09:00'));
-assert.equal(v.seconds,1580); // 23:58:00 to 00:24:20 (legacy)
+assert.equal(v.seconds,1568); // 23:58:12 to 00:24:20 (recorded alight ISO)
 delete shift.draft;
 // A second completed ride after midnight supersedes the previous ride.
 shift.records.push({kind:'ride',status:'complete',raw:{M:'00:35'},meta:{
