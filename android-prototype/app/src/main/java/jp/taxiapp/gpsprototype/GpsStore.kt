@@ -26,7 +26,10 @@ object GpsStore {
             running = p.getBoolean("running", false),
             mode = mode,
             lastAccuracyMeters = p.getString("accuracy", null)?.toDoubleOrNull(),
-            status = p.getString("status", "停止中") ?: "停止中"
+            status = p.getString("status", "停止中") ?: "停止中",
+            rideStartRealKm = p.getString("rideStartReal", null)?.toDoubleOrNull(),
+            lastRideKm = p.getString("lastRide", null)?.toDoubleOrNull(),
+            completedRides = p.getInt("completedRides", 0)
         )
     }
 
@@ -42,6 +45,9 @@ object GpsStore {
             .putString("mode", state.mode.name)
             .putString("accuracy", state.lastAccuracyMeters?.toString())
             .putString("status", state.status)
+            .putString("rideStartReal", state.rideStartRealKm?.toString())
+            .putString("lastRide", state.lastRideKm?.toString())
+            .putInt("completedRides", state.completedRides)
             .putLong("updatedAt", System.currentTimeMillis())
             .apply()
     }
