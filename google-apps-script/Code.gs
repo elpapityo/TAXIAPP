@@ -358,27 +358,30 @@ function resolvePrintShiftId_(ss,operation) {
  var index=ss.getSheetByName('TAXIAPP_乗務一覧');
  var originals=ss.getSheetByName('TAXIAPP_同期原本');
  if(!index||!originals)throw Error('TAXIAPPの保存用シートがありません');
+ var followLatest=operation.getRange('B15').getValue()===true;
  var choice=String(operation.getRange('B17').getDisplayValue()||'').trim();
  var derived=String(operation.getRange('C17').getDisplayValue()||'').trim();
- var followLatest=operation.getRange('B15').getValue()===true;
  var length=Math.max(0,index.getLastRow()-1);
  if(!length)return '';
  var rows=index.getRange(2,1,length,21).getDisplayValues();
- // Never select a nonexistent ID merely because an old formula still shows it.
  var savedIds=new Set(originals.getRange(2,1,Math.max(1,originals.getLastRow()-1),1)
   .getDisplayValues().map(function(r){return String(r[0]||'').trim();}));
- if(followLatest) {
-  var latest=String(rows[0]&&rows[0][0]||'').trim();
-  return savedIds.has(latest)?latest:'';
- }
- // C17 may be blank due to an old B17 dropdown value or stale calculations.
- if(derived&&savedIds.has(derived))return derived;
+ // T is a sorted list of *labels* while A and U remain row-aligned.
+ // A2 is NOT necessarily the same duty as the top (latest) label in T2.
+ var requested=followLatest?String(index.getRange('T2').getDisplayValue()||'').trim():choice;
+ if(!requested)return '';
+ // Validate both the selected label and presence of the original snapshot.
+ // Do not trust C17 by itself: its formula can lag behind B15/B17.
  for(var i=0;i<rows.length;i++){
   var id=String(rows[i][0]||'').trim();
-  // Column T is sorted friendly labels; U is row-aligned friendly text.
-  if(savedIds.has(id)&&(choice===id||choice===String(rows[i][20]||'').trim()))
-   return id;
+  var label=String(rows[i][20]||'').trim();
+  if(!savedIds.has(id))continue;
+  if(requested===id||requested===label)return id;
  }
+ // Compatible with older sheets where the row-aligned U formula is absent.
+ // Only allow derived when it genuinely matches the selected ID/label;
+ // otherwise selecting a different duty could silently print the wrong one.
+ if(derived&&savedIds.has(derived)&&requested===derived)return derived;
  return '';
 }
 function applySelectedPrintShift() {
