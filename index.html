@@ -1383,6 +1383,28 @@ async function getGps(shift,d,when){const key=when==='pickup'?'pickup':'drop';co
  try{const address=await reverseAddress(gps),latest=gpsTarget(shift,d.id);if(!latest)return;if(address){const old=latest.raw[addressKey];if(!old||old===`${gps.lat.toFixed(6)},${gps.lng.toFixed(6)}`){latest.raw[addressKey]=address;latest.meta[key+'AddressProvider']='国土地理院';latest.meta[key+'GpsStatus']='GPS座標保存済み。国土地理院の町名・丁目（推定）です。';await save();render();toast('推定住所を入力しました。住所を確認してください。');}else{latest.meta[key+'GpsStatus']='GPS座標保存済み。手入力した住所は維持しました。';saveLater();render();}}}catch(e){const last=gpsTarget(shift,d.id);if(last){last.meta[key+'GpsStatus']='GPS座標は保存済み。町名・丁目が見つからないため座標を表示しています。住所は手入力できます。';saveLater();render();}}},err=>{const live=gpsTarget(shift,d.id);if(live){live.meta[key+'GpsStatus']=gpsMessage(err);saveLater();render();}toast(gpsMessage(err),true);},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 function handleAction(action,id){const shift=getShift(),latest=selectedShift();
+ if(action==='gpsTripStart'){if(shift)gpsTripUI?.start(shift);return;}
+ if(action==='gpsTripStop'){if(shift)gpsTripUI?.stop(shift);return;}
+ if(action==='gpsTripCorrect'){
+  if(!shift||!gpsTripUI?.active(shift))return;
+  const value=appEl.querySelector('[data-gps-trip-correct]')?.value;
+  if(value===undefined||value.trim()===''){toast('車両トリップの実測値を入力してください。',true);return;}
+  if(gpsTripUI.correct(shift,value,'GPS画面の手動補正'))render();
+  return;
+ }
+ if(action==='gpsTripAlight'){
+  if(shift?.draft?.kind==='ride'&&!shift.draft.raw.M){stampAlightIfNeeded(shift);save();render();toast('降車時刻・GPSトリップ距離を記録しました。');}
+  return;
+ }
+ if(action==='gpsTripFill'){
+  if(!shift?.draft||!gpsTripUI?.active(shift)||!['F','L','S','V','AB','AE'].includes(id))return;
+  const km=gpsTripUI.fmt(shift.gpsTrip.tripKm);
+  shift.draft.raw[id]=km;
+  shift.draft.meta??={};shift.draft.meta.gpsFilledFields??={};
+  shift.draft.meta.gpsFilledFields[id]={km,at:new Date().toISOString()};
+  saveLater();render();toast('現在のGPSトリップ '+km+'km を入力しました。');
+  return;
+ }
  if(action==='syncCurrentShift'){googleSendShift(latest,true);return;}
  if(action==='syncAllShifts'){googleSendAllShifts();return;}if(action==='checkGpsPermission'){requestGpsPermission();return;}if(action==='addWaitPlace'){addWaitingPlace(document.getElementById('newWaitPlace')?.value||'');return;}if(action==='resetUi'){model.prefs.ui={...UI_DEFAULTS};applyUi();saveLater();render();toast('表示設定を初期値に戻しました');return;}if(action==='startShift'){
   if(shift)return;
@@ -1394,7 +1416,10 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
   const newRecord=newShift(when,model.prefs);
   newRecord.startingOdo=odometer;newRecord.endingOdo='';
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
-  save();render();toast('出庫距離を保存し、乗務を開始しました。');return;
+  const gpsOptIn=Boolean(document.getElementById('gpsAtStart')?.checked);
+  save();if(gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
+  else render();
+  toast(gpsOptIn?'出庫しました。GPS試験計測を開始します。':'出庫距離を保存し、乗務を開始しました。');return;
  }
  if(action==='showRecordDetails'){
   const details=[...appEl.querySelectorAll('[data-record-detail]')].find(el=>el.dataset.recordDetail===id);
@@ -1412,6 +1437,8 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
   target.returnUndoLog??=[];
   target.returnUndoLog.push({endedAt:target.endedAt,endedIso:target.endedIso||'',endingOdo:target.endingOdo??'',undoneIso:new Date().toISOString()});
   target.endedAt='';target.endedIso='';target.endingOdo='';
+  // An undone shift is deliberately not resumed in the background.
+  if(target.gpsTrip)target.gpsTrip.enabled=false;
   model.activeId=target.id;tab='shift';
   save();render();toast('入庫を取り消しました。営業記録はそのままです。');return;
  }
@@ -1426,7 +1453,7 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
   if(!confirm(`乗務を終了しますか？\n営業 ${shift.records.length}件\n出庫距離 ${startText} km → 入庫距離 ${endText} km\n走行距離 ${(end-start).toLocaleString('ja-JP')} km`))return;
   const ended=new Date();
   shift.startingOdo=startText;shift.endingOdo=endText;
-  pauseWaiting(shift,ended,'return');shift.endedAt=stamp(ended);shift.endedIso=ended.toISOString();model.activeId=null;
+  pauseWaiting(shift,ended,'return');shift.endedAt=stamp(ended);shift.endedIso=ended.toISOString();gpsTripUI?.stop(shift,true);model.activeId=null;
   save();render();toast('入庫距離と帰庫時刻を保存しました。');return;
  }
  if(action==='beginWait'){
@@ -1441,23 +1468,23 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
  if(action==='registerWaitPlace'){if(shift?.waiting&&!shift.draft)registerCurrentWaitingPlace(shift,shift.waiting);return;}
  if(action==='boardDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  const d=boardDispatch(shift,new Date());save();render();getGps(shift,d,'pickup');return;
+  const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');return;
  }
  if(action==='cancelDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  cancelDispatch(shift,new Date());save();render();return;
+  cancelDispatch(shift,new Date());gpsTripUI?.mode(shift,'empty');if(gpsTripUI?.active(shift))shift.draft.meta.gpsCancelTripKm=shift.gpsTrip.tripKm;save();render();return;
  }
  if(action==='beginRide'){
   if(!shift||shift.draft)return;
   const now=new Date(),before=shift.waiting;
   try{const d=makeDraft(shift,'ride',now,'乗');if(before?.startedAt)d.raw.C=before.startedAt;
    if(action==='beginRide'&&before){d.meta.waitingId=before.id||'';d.meta.waitPlace=before.place||'';d.meta.waitOdometer=before.odometer??'';if(number(before.odometer)!==null)d.raw.F=before.odometer;if(before.place){d.raw.AL=before.place;d.meta.pickupWaitProvisional=true;}if(before.geo){d.raw.D=`${before.geo.lat.toFixed(6)},${before.geo.lng.toFixed(6)}`;}}
-   pauseWaiting(shift,now,'ride');shift.draft=d;save();render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
+   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
  }
  if(action==='gpsPickup'||action==='gpsDrop'){if(shift?.draft)getGps(shift,shift.draft,action==='gpsPickup'?'pickup':'drop');return;}
- if(action==='discardDraft'){if(!shift?.draft)return;if(!confirm('編集中の入力を破棄しますか？ 保存済みの履歴は残ります。'))return;shift.draft=null;save();render();return;}
- if(action==='saveDraft'){if(!shift?.draft)return;const d=shift.draft;if(d.kind==='ride'&&number(d.raw.K)!==null)stampAlightIfNeeded(shift);const issues=[...validateDraft(d),...validatePaymentBreakdown(d,shift.settings,shift.date)];if(issues.length){toast('未入力・不整合: '+issues.join('、'),true);return;}d.status='complete';d.meta.serviceDate=shift.date;syncCashChange(d,shift.settings,shift.date);d.raw=deriveRaw(d,shift.settings);if(d.kind==='empty'){d.raw.P='空';}if(d.kind==='cancel'){d.raw.N='キ';d.raw.B='キャンセル';d.raw.K=0;}
- if(d.kind==='ride'&&!d.editId){d.meta??={};if(!d.meta.settledIso)d.meta.settledIso=new Date().toISOString();}
+ if(action==='discardDraft'){if(!shift?.draft)return;if(!confirm('編集中の入力を破棄しますか？ 保存済みの履歴は残ります。'))return;shift.draft=null;gpsTripUI?.mode(shift,'empty');save();render();return;}
+ if(action==='saveDraft'){if(!shift?.draft)return;const d=shift.draft;if(d.kind==='ride'&&number(d.raw.K)!==null)stampAlightIfNeeded(shift);if(d.kind==='ride'&&d.raw.M&&gpsTripUI?.active(shift)&&!d.meta?.gpsDistance?.alightedIso)gpsTripUI.alight(shift,d);const issues=[...validateDraft(d),...validatePaymentBreakdown(d,shift.settings,shift.date)];if(issues.length){toast('未入力・不整合: '+issues.join('、'),true);return;}d.status='complete';d.meta.serviceDate=shift.date;syncCashChange(d,shift.settings,shift.date);d.raw=deriveRaw(d,shift.settings);if(d.kind==='empty'){d.raw.P='空';}if(d.kind==='cancel'){d.raw.N='キ';d.raw.B='キャンセル';d.raw.K=0;}
+ if(d.kind==='ride'&&!d.editId){gpsTripUI?.mode(shift,'empty');d.meta??={};if(!d.meta.settledIso)d.meta.settledIso=new Date().toISOString();}
  if(d.editId){const index=shift.records.findIndex(x=>x.id===d.editId);if(index>=0){d.id=d.editId;delete d.editId;shift.records[index]=d;}}else{if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}shift.records.push(d);}shift.records.forEach((r,i)=>r.raw.A=i+1);shift.draft=null;save();render();toast(`№ ${d.raw.A} を保存しました。`);return;}
  if(action==='editRecord'){if(!shift||shift.draft)return;let original=shift.records.find(x=>x.id===id);if(!original)return;const d=deepCopy(original);d.editId=original.id;d.status=d.kind==='ride'?'alighted':'draft';shift.draft=d;tab='drive';save();render();return;}
  if(action==='deleteRecord'){if(!shift||shift.draft)return;let found=shift.records.find(x=>x.id===id);if(!found||!confirm(`№${found.raw.A} を削除しますか？ 削除すると営業番号を詰め直します。`))return;shift.records=shift.records.filter(x=>x.id!==id);shift.records.forEach((r,i)=>r.raw.A=i+1);save();render();toast('記録を削除しました。');return;}
