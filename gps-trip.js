@@ -22,6 +22,7 @@
        ||!Number.isFinite(accuracy)||accuracy<=0)return null;
     return {lat,lng,accuracy,t,velocity:Number.isFinite(Number(c.speed))&&c.speed!==null?Number(c.speed):null};
   }
+  function anchorFix(p){return {lat:p.lat,lng:p.lng,accuracy:p.accuracy,t:p.t,velocity:p.velocity};}
   function metersBetween(a,b){
     const rad=Math.PI/180,p1=a.lat*rad,p2=b.lat*rad;
     const dp=(b.lat-a.lat)*rad,dl=(b.lng-a.lng)*rad;
@@ -88,7 +89,7 @@
     const last=s.lastFix;
     s.lastSeenMs=receivedAt;s.lastAccuracy=p.accuracy;
     if(!last||s.gapOpen){
-      s.lastFix={lat:p.lat,lng:p.lng,accuracy:p.accuracy,t:p.t};
+      s.lastFix=anchorFix(p);
       s.gapOpen=false;s.lastError='';s.status='tracking';
       return {accepted:true,anchored:true,deltaKm:0};
     }
@@ -97,15 +98,26 @@
     if(elapsed*1000>MAX_GAP_MS)return Object.assign(miss(s,'前回の測位から60秒超：距離は未計測',receivedAt),{reanchorNeeded:true});
     const meters=metersBetween(last,p);
     if(meters/elapsed>MAX_SPEED_MPS)return miss(s,'位置飛びを検出：距離は加算しません',receivedAt);
-    // At a standstill, mobile GPS can wander tens of metres even though the
-    // vehicle hasn't moved. Never count those jumps as distance driven.
+    // A taxi can move 400m between fixes, then arrive and stop. A last
+    // reported speed of 0 m/s describes the *end* of this leg, not the
+    // whole leg. The old code wrongly discarded such a valid last segment.
     if(p.velocity!==null&&p.velocity<.7){
-      if(meters>Math.max(50,p.accuracy*3,last.accuracy*3))
-        return miss(s,'GPSは停止中なのに位置が大きく変化：車両トリップで確認',receivedAt);
-      // A valid stationary fix refreshes the reference, never the distance.
-      s.lastFix={lat:p.lat,lng:p.lng,accuracy:p.accuracy,t:p.t};
-      s.status='tracking';s.lastError='';
-      return {accepted:true,stationary:true,deltaKm:0};
+      const previousSpeed=Number(last.velocity);
+      const previouslyMoving=Number.isFinite(previousSpeed)&&previousSpeed>=.7;
+      if(!previouslyMoving){
+        if(meters>Math.max(50,p.accuracy*3,last.accuracy*3))
+          return miss(s,'GPSは停止中なのに位置が大きく変化：車両トリップで確認',receivedAt);
+        // Both fixes say stopped. Discard drift rather than invent driving.
+        s.lastFix=anchorFix(p);
+        s.status='tracking';s.lastError='';
+        return {accepted:true,stationary:true,deltaKm:0};
+      }
+      // A previously moving fix allows a final travel leg into a stop.
+      // Reject a physically implausible offset; do not assume every jump
+      // between a moving and stopped point is genuine distance.
+      const plausibleAverageMps=Math.min(MAX_SPEED_MPS,Math.max(22,previousSpeed*2.2));
+      if(meters/elapsed>plausibleAverageMps)
+        return miss(s,'停止直前のGPS位置飛びを検出：距離は加算しません',receivedAt);
     }
     // If speed was not available, small displacements are likely GPS noise.
     if(meters<Math.max(9,p.accuracy*.4,last.accuracy*.4)) {
@@ -119,7 +131,7 @@
     s.tripKm=roundKm(s.tripKm+distance);
     const part=s.mode==='real'?'realKm':'emptyKm';
     s[part]=roundKm((s[part]||0)+distance);
-    s.lastFix={lat:p.lat,lng:p.lng,accuracy:p.accuracy,t:p.t};
+    s.lastFix=anchorFix(p);
     s.gapOpen=false;s.status='tracking';s.lastError='';
     return {accepted:true,distanceMeters:meters,deltaKm:distance,mode:s.mode};
   }
