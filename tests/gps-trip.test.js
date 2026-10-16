@@ -92,4 +92,32 @@ const implausible=gps.ingest(jumpCheck,p(35.01,t+190000,5,9),t+190000);
 assert.equal(implausible.gap,true);
 assert.equal(jumpCheck.tripKm,0);
 
+
+// Regression for final leg lost after a moving taxi stops between GPS fixes.
+// A 35-second interval with ~400m actual displacement ending at speed zero
+// must count when the preceding reliable fix reported normal driving speed.
+const stoppingLeg=gps.create(0);
+gps.resume(stoppingLeg,t);
+gps.mode(stoppingLeg,'real',t);
+gps.ingest(stoppingLeg,p(35,t,5,12),t);
+const stopArrival=gps.ingest(stoppingLeg,p(35.0036,t+35000,5,0),t+35000);
+assert.equal(stopArrival.accepted,true);
+approx(stoppingLeg.realKm,.4);
+approx(stoppingLeg.tripKm,.4);
+assert.equal(stoppingLeg.gapCount,0);
+// Repeated stationary fixes must not accumulate drift after the stop.
+gps.ingest(stoppingLeg,p(35.0037,t+40000,5,0),t+40000);
+approx(stoppingLeg.realKm,.4);
+// A purported 1.1km jump in 10s while coming to a stop is not plausible.
+const stopJump=gps.create(0);gps.resume(stopJump,t);
+gps.ingest(stopJump,p(35,t,5,12),t);
+const rejectedStop=gps.ingest(stopJump,p(35.01,t+10000,5,0),t+10000);
+assert.equal(rejectedStop.gap,true);
+assert.equal(stopJump.tripKm,0);
+// Two stationary fixes separated by 400m are still a GPS jump, not travel.
+const stationaryJump=gps.create(0);gps.resume(stationaryJump,t);
+gps.ingest(stationaryJump,p(35,t,5,0),t);
+assert.equal(gps.ingest(stationaryJump,p(35.0036,t+35000,5,0),t+35000).gap,true);
+assert.equal(stationaryJump.tripKm,0);
+
 console.log('GPS trip tests passed: calibration, mode, gaps, stationary fixes, jump rejection, accuracy, stale points.');
