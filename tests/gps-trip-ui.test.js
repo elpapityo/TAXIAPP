@@ -7,16 +7,17 @@ const fs=require('node:fs');
 const path=require('node:path');
 const dir=path.resolve(__dirname,'..');
 const session={};
-const callbacks=new Map(),errors=new Map(),cleared=[];
+const callbacks=new Map(),errors=new Map(),cleared=[],oneShots=[];
 let watchCount=0;
 const ctx={
   window:{isSecureContext:true},
   document:{visibilityState:'visible',getElementById:()=>null,activeElement:null},
   navigator:{geolocation:{
     watchPosition:(ok,err)=>{const id=++watchCount;callbacks.set(id,ok);errors.set(id,err);return id;},
-    clearWatch:id=>cleared.push(id)
+    clearWatch:id=>cleared.push(id),
+    getCurrentPosition:(ok,err,opts)=>oneShots.push({ok,err,opts})
   }},
-  console,Date,Math,Number,String,Array,Object,JSON,Set,Map
+  console,Date,Math,Number,String,Array,Object,JSON,Set,Map,setTimeout,clearTimeout
 };
 vm.runInNewContext(fs.readFileSync(path.join(dir,'gps-trip.js'),'utf8'),ctx,{filename:'gps-trip.js'});
 vm.runInNewContext(fs.readFileSync(path.join(dir,'gps-trip-ui.js'),'utf8'),ctx,{filename:'gps-trip-ui.js'});
@@ -208,3 +209,50 @@ assert.equal(shift.gpsTrip.tripKm,8.0);
 pilot.stop(shift);
 
 console.log('GPS UI lifecycle tests passed: pause/restart, stale callbacks, gaps, stationary jitter location distance, waiting, highway and alight protection.');
+
+// Regression: a 25-second-old auto GPS distance is not an alighting
+// checkpoint. Keep a driver's manual L untouched.
+shift.gpsTrip=engine.create(0);pilot.start(shift);
+send(watchCount,35,0);
+const staleRide={id:'stale-ride',kind:'ride',raw:{F:'0.0',L:'1.2'},meta:{
+  gpsFilledFields:{L:{km:'1.2',source:'tracking'}}
+}};
+shift.draft=staleRide;pilot.board(shift,staleRide);
+shift.gpsTrip.lastSeenMs=Date.now()-25000;
+pilot.alight(shift,staleRide);
+assert.equal(staleRide.raw.L,'');
+assert.equal(staleRide.meta.gpsDistance.alightQuality,'stale_endpoint');
+assert.ok(staleRide.meta.gpsDistance.alightLastFixAgeMs>=24000);
+const manualStale={id:'manual-ride',kind:'ride',raw:{F:'0.0',L:'3.2'},meta:{}};
+shift.draft=manualStale;pilot.board(shift,manualStale);
+shift.gpsTrip.lastSeenMs=Date.now()-25000;
+pilot.alight(shift,manualStale);
+assert.equal(manualStale.raw.L,'3.2','driver alighting trip must never be wiped');
+pilot.stop(shift);
+
+// The explicit passenger alight button requests one fresh position before
+// ending REAL mode, so the last ~100m is not silently lost.
+(async ()=>{
+ shift.gpsTrip=engine.create(0);shift.draft=null;pilot.start(shift);
+ send(watchCount,35,10);
+ const ride={id:'endpoint-ride',kind:'ride',raw:{F:'0.0',L:''},meta:{}};
+ shift.draft=ride;pilot.board(shift,ride);
+ send(watchCount,35.0009,10); // anchor after switching modes
+ send(watchCount,35.0018,10); // ~100m counted in real mode
+ const before=shift.gpsTrip.realKm;
+ assert.ok(before>.09);
+ const pending=pilot.captureFreshAlightFix(shift,ride);
+ assert.equal(oneShots.length,1);
+ assert.equal(oneShots[0].opts.maximumAge,0);
+ shift.gpsTrip.lastFix.t-=10000;
+ oneShots.pop().ok(p(35.0027,10)); // endpoint another ~100m
+ assert.equal(await pending,true);
+ assert.ok(shift.gpsTrip.realKm>before+.09);
+ pilot.alight(shift,ride);
+ assert.equal(ride.meta.gpsDistance.alightQuality,'valid');
+ assert.ok(Number(ride.raw.L)>.15);
+ assert.equal(shift.gpsTrip.mode,'empty');
+ pilot.stop(shift);
+ console.log('GPS endpoint quality tests passed: 25s stale fix, manual protection, one-shot alighting fix.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+
