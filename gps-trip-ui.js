@@ -252,13 +252,19 @@ function factory(deps){
      document.visibilityState!=='visible')return Promise.resolve(false);
   freshAlightPending=true;
   return new Promise(resolve=>{
-   let settled=false;
+   let settled=false,timer=null;
    const done=accepted=>{
     if(settled)return;
-    settled=true;freshAlightPending=false;resolve(Boolean(accepted));
+    settled=true;
+    if(timer!==null)clearTimeout(timer);
+    freshAlightPending=false;resolve(Boolean(accepted));
    };
+   // Permission prompts and browser suspensions may outlast the native
+   // geolocation timeout. Never leave the Alight button blocked forever.
+   timer=setTimeout(()=>done(false),8000);
    try{
     navigator.geolocation.getCurrentPosition(pos=>{
+     if(settled)return; // Ignore late GPS callbacks after the ride ended.
      const current=getShift();
      if(!current||current.id!==shift.id||current.draft?.id!==record.id||
         current.draft.raw.M||!active(current)||current.gpsTrip.mode!=='real'){
