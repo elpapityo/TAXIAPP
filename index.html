@@ -910,7 +910,7 @@ function field(key,raw,opts={}){const info=RAW_COLUMNS.find(x=>x[0]===key)||[key
 function userFields(keys,raw,config={}){return `<div class="form-grid ${config.three?'three':''}">${keys.map(k=>field(k,raw,config.options?.[k]||{})).join('')}</div>`;}
 function renderDrive(shift){const active=getShift();if(!active){return `${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
 const t=totals(active.records,active.settings,active.date);
- return `${titleBlock('乗務入力','DAILY OPERATIONS',`${friendlyDate(active.date)}　出庫 ${shortTime(active.startedAt)}　・　${active.vehicle?safeText(active.vehicle):'車両未設定'}`)}${paymentElapsedPanel(active)}${dailyReferenceStrip(active)}${gpsTripUI?.panel(active)||''}${active.draft?renderDraft(active):`${renderNewAction(active)}${metrics(active)}${renderRecent(active)}`}`;}
+ return `${titleBlock('乗務入力','DAILY OPERATIONS',`${friendlyDate(active.date)}　出庫 ${shortTime(active.startedAt)}　・　${active.vehicle?safeText(active.vehicle):'車両未設定'}`)}${paymentElapsedPanel(active)}${gpsTripUI?.panel(active)||''}${active.draft?renderDraft(active):`${renderNewAction(active)}${metrics(active)}${renderRecent(active)}`}`;}
 
 function renderNewAction(shift){const count=shift.records.length,waiting=shift.waiting;
  const places=waitingPlaces();
