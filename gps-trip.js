@@ -43,12 +43,14 @@
     s.lastFix=null; // Never bridge previous session / background / tab reload.
     s.gapOpen=false;
     s.lastSeenMs=0;
+    s.lastStopIso='';
     s.watchStartedIso=nowIso(t);
     if(!s.startedIso)s.startedIso=nowIso(t);
     return s;
   }
-  function stop(s){
+  function stop(s,t=Date.now()){
     s.enabled=false;s.status='off';s.lastFix=null;
+    s.lastStopIso=nowIso(t);
     return s;
   }
   function mode(s,name,t=Date.now()){
