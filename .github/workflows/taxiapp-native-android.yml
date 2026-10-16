@@ -78,7 +78,7 @@ jobs:
           retention-days: 14
       - name: Publish pilot APK for direct installation
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           FILE="$RUNNER_TEMP/TAXIAPP-Android-native-pilot-v0.1.0.apk"
