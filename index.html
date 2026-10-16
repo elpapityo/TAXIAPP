@@ -147,7 +147,7 @@ html[data-ui-theme="night"] .wait-title,html[data-ui-theme="night"] .wait-gps [r
 .pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .pickup-address-line{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:13px}
 .pickup-gps-btn{white-space:nowrap;min-height:var(--ui-touch)}
-.pickup-reception-time{margin-top:13px}
+.pickup-boarding-time{margin-top:13px}
 @media(max-width:500px){.pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.pickup-address-line{grid-template-columns:minmax(0,1fr)}.pickup-gps-btn{width:100%}}
 
 /* v0.3.0: switchable payment methods, in either order, with an auto remainder */
@@ -954,7 +954,7 @@ function renderPaymentSplit(shift,d){
 
 function renderRideForm(shift,d){
  const r=d.raw,rideUber=r.E==='U',rate=feeSettings(shift.settings);updateDiscountForDraft(d);
- const pickupFields=`<div class="form-grid pickup-main-fields">${field('G',r,{label:'乗車時刻'})}${field('F',r,{label:'乗車時の走行距離（km）',required:true})}</div><div class="pickup-address-line">${field('AL',r,{label:'乗車地・住所'})}<button class="btn pickup-gps-btn" data-action="gpsPickup" type="button">⌖ 現在地</button></div><div class="pickup-reception-time">${field('C',r,{label:'データ受信・待機開始時刻'})}</div>`;
+ const pickupFields=`<div class="form-grid pickup-main-fields">${field('C',r,{label:'データ受信・待機開始時刻'})}${field('F',r,{label:'乗車時の走行距離（km）',required:true})}</div><div class="pickup-address-line">${field('AL',r,{label:'乗車地・住所'})}<button class="btn pickup-gps-btn" data-action="gpsPickup" type="button">⌖ 現在地</button></div><div class="pickup-boarding-time">${field('G',r,{label:'乗車時刻'})}</div>`;
  const passengers=`<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div>`;
  const payment=`<div class="field-label" style="font-weight:800;margin:13px 0 8px">支払方法</div>${selector('N',PAYMENTS,r.N,true)}`;
  const realHighway=hasRealHighway(r),emptyHighway=hasEmptyHighway(r);
