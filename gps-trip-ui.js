@@ -164,7 +164,7 @@ function factory(deps){
  }
  function tick(){
   const shift=getShift(),s=shift?.gpsTrip;if(!active(shift))return;
-  const latest=s.lastSeenMs||Date.parse(s.startedIso||'');
+  const latest=s.lastSeenMs||Date.parse(s.watchStartedIso||s.startedIso||'');
   if(document.visibilityState==='visible'&&latest&&Date.now()-latest>75000&&s.status!=='gap')
     missing(shift,'GPS位置が75秒以上届いていません。車両トリップを確認してください');
   paint(shift);
