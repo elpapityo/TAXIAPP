@@ -35,6 +35,7 @@ class GpsTrackingService : Service() {
         const val ACTION_STOP = "jp.taxiapp.gpsprototype.STOP"
         const val ACTION_REAL = "jp.taxiapp.gpsprototype.REAL"
         const val ACTION_EMPTY = "jp.taxiapp.gpsprototype.EMPTY"
+        const val ACTION_CORRECT = "jp.taxiapp.gpsprototype.CORRECT"
         private const val CHANNEL = "taxiapp_native_gps_test"
         private const val NOTIFICATION_ID = 201
     }
@@ -174,6 +175,16 @@ class GpsTrackingService : Service() {
                 GpsStore.save(this, engine.snapshot())
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_CORRECT -> {
+                if (engine.snapshot().running) {
+                    val km = intent.getDoubleExtra("vehicleTripKm", Double.NaN)
+                    if (engine.correctWithVehicleTrip(km)) {
+                        GpsStore.save(this, engine.snapshot())
+                        updateNotification()
+                    }
+                }
                 return START_NOT_STICKY
             }
             ACTION_REAL, ACTION_EMPTY -> {
