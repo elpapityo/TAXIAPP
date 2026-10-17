@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn() { return request.auth != null; }
+  // admins/{uid} is bootstrapped by the Firebase Console / trusted server.
+  // Clients may NEVER assign, edit or delete administrator privileges.
+  function isAdmin() {
+   return signedIn() &&
+     exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+     get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+  }
+  match /admins/{uid} {
+   allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+   allow list: if isAdmin();
+   allow create, update, delete: if false;
+  }
+  match /users/{uid} {
+   allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+   allow list: if isAdmin();
+   // Future invitations and suspension must run on a trusted backend.
+   allow create, update, delete: if false;
+  }
+  // Protected user records, Drive file references and future features
+  // remain CLOSED until data-owner rules and backend are separately tested.
+  match /{document=**} { allow read, write: if false; }
+ }
+}
