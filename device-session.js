@@ -43,6 +43,28 @@ root.TAXIAPP_DEVICE_SESSION={
    try{return sessionStorage.getItem(sessionKey())||'';}
    catch{return '';}
   }
+  async function diagnosePermission(uid,generation){
+   // Only runs after a denied operation (never polls): check the CURRENT
+   // server-side account registration, not a possibly stale offline cache.
+   if(typeof f.getDocFromServer!=='function')return;
+   try{
+    const results=await Promise.all([
+     f.getDocFromServer(f.doc(db,'admins',uid)),
+     f.getDocFromServer(f.doc(db,'users',uid))
+    ]);
+    if(uid!==currentUid||generation!==watchGeneration||mode==='writer')return;
+    const admin=results[0].exists()&&results[0].data()?.enabled===true;
+    const user=results[1].exists()&&results[1].data()?.status==='active';
+    if(!admin&&!user)
+     set('viewer','操作権を取得できません：Firestoreに管理者または有効な利用者の登録がありません（Googleログインだけでは操作できません）');
+    else
+     set('viewer','操作権を取得できません：利用者登録は確認済みですが、deviceSessionsへのアクセスが拒否されています。FirestoreルールとFirebaseの接続先を確認してください');
+   }catch(error){
+    if(uid===currentUid&&generation===watchGeneration&&mode!=='writer')
+     set('viewer','操作権を取得できません：本人の登録情報をサーバーから確認できません（'+
+       String(error?.code||error?.message||error)+'）');
+   }
+  }
   async function claim(){
    if(!currentUid||!d.auth.currentUser||d.auth.currentUser.uid!==currentUid)return;
    if(claimInFlight)return;
@@ -73,7 +95,11 @@ root.TAXIAPP_DEVICE_SESSION={
     viewerRequested=false;
     set('writer','操作可能（サーバー確認済み）');
    }catch(error){
-    if(uid===currentUid)set('viewer','操作権の切り替えに失敗：'+String(error.code||error.message||error));
+    if(uid===currentUid){
+     set('viewer','操作権の切り替えに失敗：'+String(error.code||error.message||error));
+     if(String(error.code||'').includes('permission-denied'))
+      void diagnosePermission(uid,watchGeneration);
+    }
    }finally{claimInFlight=false;}
   }
   function subscribe(){
@@ -120,6 +146,8 @@ root.TAXIAPP_DEVICE_SESSION={
      pendingTakeover=false;
      set('viewer','操作権の確認が拒否されました：'+String(error.code||error.message||error)+
       '（Firestoreの利用者登録・ルールをご確認ください）');
+     if(String(error.code||'').includes('permission-denied'))
+      void diagnosePermission(uid,generation);
     });
    }catch(error){
     if(generation!==watchGeneration||uid!==currentUid)return;
