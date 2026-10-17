@@ -44,6 +44,24 @@ dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 <p class="note">同じブラウザ・同じドメインで開いたときだけ、既存の端末保存データを確認できます。データの送信・削除・上書きは一切行いません。</p>
 <p class="warning">別端末の記録はここでは見えません。PCとスマホの引き継ぎは必ずバックアップと件数照合後に行います。</p>
 </section>
+<section id="settingsTransfer" hidden aria-labelledby="settingsTransferTitle">
+<h2 id="settingsTransferTitle">設定データの引き継ぎ</h2>
+<p>乗務員名・待機所・車両・入力方法・表示設定・料金関連を、ログインした本人専用のクラウドへ保存します。</p>
+<p class="note">営業履歴は既存Googleの双方向同期を維持し、ここでは移動・変更しません。Google接続キーやGPS許可は端末ごとに保持します。</p>
+<dl>
+<dt>この端末の設定</dt><dd id="localSettingsSummary">読み取り中です…</dd>
+<dt>Googleアカウントの設定</dt><dd id="cloudSettingsSummary">確認中です…</dd>
+</dl>
+<p id="settingsTransferStatus" class="status" role="status" aria-live="polite">設定を確認中です…</p>
+<div class="row"><button id="uploadSettings" type="button" disabled>この端末の設定を初回保存</button><button id="refreshCloudSettings" class="alt" type="button" disabled>クラウド設定を再確認</button></div>
+<p class="note">既存のクラウド設定がある場合、勝手に上書きしません。どの端末の設定を基準にするか選んでから保存してください。</p>
+<h2>別端末に設定を取り込む（安全確認）</h2>
+<p>取り込み前に、現在の端末の全データをパスワード付きでバックアップします。乗務データは取り込み時も変更しません。</p>
+<label for="settingsBackupPassword">バックアップ用パスワード（12文字以上）</label>
+<input id="settingsBackupPassword" class="uid-input" type="password" minlength="12" maxlength="256" autocomplete="new-password" placeholder="12文字以上">
+<div class="row"><button id="backupBeforeSettings" class="alt" type="button" disabled>① 現在の端末を暗号化バックアップ</button><button id="restoreCloudSettings" type="button" disabled>② クラウドの設定を取り込む</button></div>
+<p class="warning">取り込む場合は、従来版TAXIAPPを開いている別タブを閉じ、営業入力を終了してから操作してください。復元後は従来版を開き直してください。</p>
+</section>
 <section>
 <h2>従来の日報アプリ</h2>
 <p>新しい認証が設定・検証されるまで、従来のTAXIAPPは引き続き利用できます。</p>
@@ -53,5 +71,8 @@ dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 </main>
 <script src="./firebase-config.js?v=20261017-2"></script>
 <script src="./login-core.js?v=20261017-2"></script>
-<script type="module" src="./login.js?v=20261017-3"></script>
+<script src="./account-settings.js?v=20261017-4"></script>
+<script src="./device-management.js"></script>
+<script src="./secure-transfer.js"></script>
+<script type="module" src="./login.js?v=20261017-4"></script>
 </body></html>
