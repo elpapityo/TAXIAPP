@@ -32,6 +32,10 @@ assert.match(page,/id="loginUid"[^>]+readonly/);
 assert.match(page,/src="\.\/login\.js\?v=20261017-4"/);
 
 assert.match(page,/既存の日報・同期設定は変更しません/);
+assert.match(page,/普段のGoogleログインと日報入力はTAXIAPP本体で行います/);
+assert.match(page,/再ログインする必要はありません/);
+assert.equal((page.match(/href="\.\/index\.html/g)||[]).length,1,'single main-app entry in admin diagnostics');
+
 assert.match(page,/type="module" src="\.\/login\.js\?v=20261017-4"/);
 const js=fs.readFileSync(path.join(root,'login.js'),'utf8');
 assert.match(js,/signInWithPopup\(/);
