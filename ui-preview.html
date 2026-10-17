@@ -134,6 +134,33 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
 }
 @media(max-width:350px){.demoFlag{max-width:135px;font-size:9px}.brandText strong{font-size:13px}}
 @media print{.rightPanel,.bottomNav,.topRight{display:none}}
+
+.srOnly{position:absolute;clip:rect(0,0,0,0);width:1px;height:1px;overflow:hidden;white-space:nowrap}
+/* A single actual responsive viewport shared by ALL pages, not only the comparison card. */
+body.workspace-active>#appShell{display:none!important}
+.deviceWorkspace[hidden]{display:none!important}
+.deviceWorkspace{min-height:100dvh;padding:12px 14px 22px;background:#06101b;color:var(--text);display:flex;align-items:center;flex-direction:column;gap:12px;overflow-x:auto}
+.deviceWorkspaceTools{width:min(1200px,100%);background:#182b40;border:1px solid #4b6d88;border-radius:14px;padding:12px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.deviceWorkspaceTitle{margin-right:auto;min-width:170px}
+.deviceWorkspaceTitle strong{display:block;font-size:17px}
+.deviceWorkspaceTitle small{display:block;color:#b6d1e4;font-size:12px}
+.deviceWorkspaceTools select{min-height:46px;height:46px;width:auto;max-width:185px;font-size:14px;padding:6px 12px}
+.deviceWorkspaceTools button{min-height:46px;font-size:14px}
+.deviceWorkspaceTools .closeWorkspace{background:#087b5e}
+.deviceWorkspaceScreen{max-width:100%;overflow:auto;width:100%;display:flex;justify-content:center;align-items:flex-start;padding-bottom:8px}
+.deviceWorkspaceFrame{flex:none;box-sizing:content-box;display:block;border:3px solid #85a7c2;border-radius:22px;box-shadow:0 24px 62px #000a;background:#07121e;max-width:none}
+.deviceWorkspaceHelp{font-size:12px;color:#bfd3e5;text-align:center;max-width:100%}
+@media(max-width:600px){.deviceWorkspace{padding:6px 4px 12px;gap:5px}.deviceWorkspaceTools{padding:7px;gap:5px;border-radius:9px}.deviceWorkspaceTitle{width:100%;min-width:0}.deviceWorkspaceTitle strong{font-size:14px}.deviceWorkspaceTitle small{font-size:11px}.deviceWorkspaceTools select{flex:1;min-width:0;font-size:13px;padding:3px;max-width:none}.deviceWorkspaceTools button{padding:5px 9px;min-height:40px}.deviceWorkspaceFrame{border-width:1px;border-radius:7px}.deviceWorkspaceHelp{font-size:11px}}
+
+/* Prevent settings and detailed pages from forcing a desktop-width grid on phones. */
+@media(max-width:780px){
+ #appShell{grid-template-columns:minmax(0,1fr)!important;max-width:100%;min-width:0}
+ .main,.screen,.settingsPage,.settingsShell,.settingsContent,.settingsGrid,.settingBlock,.drivePage,.modePanels,.modePanel{min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+ .settingsSide{max-width:100%;width:100%;overflow-x:auto;white-space:nowrap}
+ .settingsTop{min-width:0;flex-wrap:wrap}
+ .settingBlock .presetGrid{grid-template-columns:minmax(0,1fr)}
+ .formRow,.statusLine{min-width:0;max-width:100%}
+}
 </style>
 </head>
 <body class="high-contrast">
@@ -194,7 +221,7 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
  <div class="screenHead"><div><h1>画面比較</h1><small>通常スマホ・折りたたみ・タブレットの想定サイズを切り替えて確認できます</small></div><button class="outline" id="compareBack">← 営業画面へ戻る</button></div>
  <section class="panel comparePanel">
   <h2>端末サイズプリセット</h2>
-  <p>下のプリセットを押すと、この試作版全体を指定サイズで表示します。営業入力・設定の両画面をそのサイズで確認できます。</p>
+  <p>端末サイズを選ぶと専用プレビューが開きます。営業入力・段階入力・詳細入力・設定まで同じ端末サイズで操作できます。</p>
   <div class="devicePresetGrid" role="group" aria-label="端末サイズプリセット">
    <button type="button" class="devicePreset" data-device="auto" aria-pressed="true"><strong>◎ 実機そのまま</strong><small>現在のブラウザサイズで表示</small><em>まず最初の確認用</em></button>
    <button type="button" class="devicePreset" data-device="phone" aria-pressed="false"><strong>📱 通常スマホ</strong><small>393 × 852 を基準</small><em>1画面入力の基準サイズ</em></button>
@@ -238,11 +265,24 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
 </div>
 <nav class="bottomNav" aria-label="試作画面切り替え"><button id="navDrive" aria-current="true"><strong>🚕</strong>営業入力</button><button id="navSettings" aria-current="false"><strong>⚙</strong>設定</button><button id="navCompare" aria-current="false"><strong>▤</strong>画面比較</button><div class="compactNote">入力内容はデモ用・<br>端末やクラウドへ保存しません</div></nav>
 </div>
+<section id="deviceWorkspace" class="deviceWorkspace" hidden aria-label="端末サイズ固定のUI試作">
+ <div class="deviceWorkspaceTools">
+  <div class="deviceWorkspaceTitle"><strong>🚕 TAXIAPP · 端末サイズ固定プレビュー</strong><small>営業入力・設定・詳細画面も、選んだサイズのまま切り替わります</small></div>
+  <label class="srOnly" for="workspaceDevice">端末サイズ</label>
+  <select id="workspaceDevice" aria-label="端末サイズを切り替える"><option value="phone">📱 通常スマホ</option><option value="fold">▣ 折りたたみ</option><option value="tablet">▤ タブレット</option></select>
+  <label class="srOnly" for="workspaceOrientation">向き</label>
+  <select id="workspaceOrientation" aria-label="画面の向きを切り替える"><option value="auto">向き：自動</option><option value="portrait">縦向き</option><option value="landscape">横向き</option></select>
+  <button type="button" class="closeWorkspace" id="workspaceExit">← サイズ比較へ戻る</button>
+ </div>
+ <div class="deviceWorkspaceScreen"><iframe id="deviceWorkspaceFrame" class="deviceWorkspaceFrame" title="選んだ端末サイズで全ページを操作できるTAXIAPP試作" loading="eager"></iframe></div>
+ <div class="deviceWorkspaceHelp">※ 画面内の下部「設定」からも移動できます。これは保存しないデモです。</div>
+</section>
 <script>
 (() => {
  'use strict';
  const $=id=>document.getElementById(id);
  const isEmbedded=window.self!==window.top;
+ let workspaceActive=false;
  const baseFrameDocument='<!doctype html>'+document.documentElement.outerHTML;
  if(isEmbedded)document.body.classList.add('embedded-ui');
  const demoLocations=['川西能勢口付近','川西池田駅付近','駅前ロータリー'];
@@ -307,6 +347,38 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
   if(model.orientation==='portrait'&&w>h){const tmp=w;w=h;h=tmp;}
   frame.style.width=w+'px';frame.style.height=h+'px';
  }
+ function deviceSize(){
+  const preset=devicePresets[model.device]||devicePresets.phone;
+  let [w,h]=preset.dims||devicePresets.phone.dims;
+  if(model.orientation==='landscape'&&h>w){const t=w;w=h;h=t;}
+  if(model.orientation==='portrait'&&w>h){const t=w;w=h;h=t;}
+  return [w,h];
+ }
+ function resizeWorkspace(){
+  if(!workspaceActive||isEmbedded)return;
+  const [w,h]=deviceSize(), frame=$('deviceWorkspaceFrame');
+  $('workspaceDevice').value=model.device;
+  $('workspaceOrientation').value=model.orientation;
+  frame.style.width=w+'px';frame.style.height=h+'px';
+  frame.dataset.viewport=w+'x'+h;
+ }
+ function openWorkspace(){
+  if(isEmbedded||model.device==='auto')return;
+  workspaceActive=true;
+  document.body.classList.add('workspace-active');
+  $('deviceWorkspace').hidden=false;
+  const frame=$('deviceWorkspaceFrame');
+  // Retain the live iframe when presets change: inputs and current page survive.
+  if(!frame.srcdoc)frame.srcdoc=baseFrameDocument;
+  resizeWorkspace();
+  window.scrollTo(0,0);
+ }
+ function exitWorkspace(){
+  workspaceActive=false;
+  $('deviceWorkspace').hidden=true;
+  document.body.classList.remove('workspace-active');
+  setView('compare');
+ }
  function renderCompare(){
   const preset=devicePresets[model.device]||devicePresets.auto;
   $('compareCurrentName').textContent=preset.name+(model.orientation==='auto'?'':' · '+(model.orientation==='portrait'?'縦向き':'横向き'));
@@ -323,7 +395,7 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
   if(model.view==='compare')applyDeviceFrame();
  }
  function pick(group,value){document.querySelectorAll('[data-'+group+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[group]===value)));}
- document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();return}});
+ document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
  $('compactFare').addEventListener('input',e=>{$('guideFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('guideFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('detailFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('guideFare').value=e.target.value});
@@ -332,6 +404,9 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
  $('compactPay').addEventListener('change',e=>pick('pay',e.target.value));
  $('navSettings').addEventListener('click',()=>{setView('settings');renderSettings()});$('navDrive').addEventListener('click',()=>setView('drive'));$('backToDrive').addEventListener('click',()=>setView('drive'));$('compareBack').addEventListener('click',()=>setView('drive'));
  $('navCompare').addEventListener('click',()=>{if(isEmbedded)return;setView('compare');renderCompare()});
+ $('workspaceDevice').addEventListener('change',e=>{model.device=e.target.value;renderCompare();resizeWorkspace();});
+ $('workspaceOrientation').addEventListener('change',e=>{model.orientation=e.target.value;renderCompare();resizeWorkspace();});
+ $('workspaceExit').addEventListener('click',exitWorkspace);
  $('advancedToggle').addEventListener('click',()=>{model.advanced=!model.advanced;renderSettings()});
  $('settingSearch').addEventListener('input',e=>{model.search=e.target.value;renderSettings()});
  $('highContrast').addEventListener('change',e=>document.body.classList.toggle('high-contrast',e.target.checked));
@@ -340,5 +415,7 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
  render();renderSettings();renderCompare();
 })();
 </script>
+
+
 </body>
 </html>
