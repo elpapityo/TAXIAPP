@@ -88,7 +88,18 @@ function merge(model,remote,options={}){
   }
  };
 }
-function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
+// Object key insertion order is not a settings change. Merge/re-render can
+// construct equivalent objects in a different order; raw JSON.stringify
+// previously caused unnecessary cloud reconciliation.
+function signature(value){
+ if(Array.isArray(value))
+  return '['+value.map(item=>item===undefined?'null':signature(item)).join(',')+']';
+ if(plain(value))
+  return '{'+Object.keys(value).filter(k=>value[k]!==undefined).sort()
+   .map(k=>JSON.stringify(k)+':'+signature(value[k])).join(',')+'}';
+ return JSON.stringify(value);
+}
+function same(a,b){return signature(a)===signature(b);}
 function reconcile(base,local,remote){
  // For distinct preference keys, preserve both devices' changes. If both
  // changed the *same* scalar/list differently, stop instead of losing data.
@@ -111,5 +122,5 @@ function reconcile(base,local,remote){
  }
  return {prefs:join(base,local,remote,''),conflicts};
 }
-root.TAXIAPP_ACCOUNT_SETTINGS=Object.freeze({FORMAT,MAX_BYTES,extract,validate,summary,merge,reconcile,same});
+root.TAXIAPP_ACCOUNT_SETTINGS=Object.freeze({FORMAT,MAX_BYTES,extract,validate,summary,merge,reconcile,same,signature});
 })(typeof window!=='undefined'?window:globalThis);
