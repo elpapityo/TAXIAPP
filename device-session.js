@@ -109,7 +109,7 @@ root.TAXIAPP_DEVICE_SESSION={
   }
   function state(){return mode;}
   function canWrite(){return mode==='writer'||mode==='legacy';}
-  return {begin,claim,viewOnly,clear,state,canWrite};
+  return {begin,claim,viewOnly,clear,state,canWrite,sessionId:()=>mode==='writer'?sessionId:''};
  }
 };
 })(typeof window!=='undefined'?window:globalThis);
