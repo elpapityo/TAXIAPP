@@ -20,6 +20,26 @@ button{border:0;border-radius:14px;color:var(--text);background:#304a64;padding:
 /* settings */
 .settingsPage{display:none}.settingsPage.active{display:block}.comparePage{display:none}.comparePage.active{display:block}.drivePage.hidden{display:none}.settingsShell{display:grid;grid-template-columns:235px minmax(0,1fr);gap:11px}.settingsSide{padding:11px;display:grid;gap:6px;align-content:start}.settingsSide button{text-align:left;background:transparent;min-height:49px}.settingsSide button[aria-current=true]{background:#135f96;border:1px solid #4faae7}.settingsContent{padding:17px;min-height:340px}.settingsTop{display:flex;gap:9px;justify-content:space-between;align-items:center;margin-bottom:13px}.settingsTop h2{font-size:21px;margin:0}.settingsTop button{min-height:45px;font-size:13px}.settingsSearch{margin-bottom:11px}.settingsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.settingBlock{border:1px solid #425e77;border-radius:14px;background:#1c3249;padding:15px}.settingBlock h3{font-size:17px;margin:0 0 7px}.settingBlock p{color:var(--muted);font-size:12px;margin:4px 0 11px}.settingBlock .field{margin-top:11px}.settingBlock .fieldlabel{font-size:12px}.settingBlock label.toggle{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}.settingBlock .toggle input{flex:none}.settingBlock.wide{grid-column:1/-1}.presetGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.preset{border:2px solid var(--border);border-radius:13px;background:#263c53;padding:13px;text-align:left;min-height:120px}.preset[aria-pressed=true]{background:#145b86;border-color:#8adeff}.preset strong{display:block;font-size:16px}.preset small{display:block;font-size:12px;color:#d1e4f5;margin-top:6px}.preset em{display:block;color:#b3ffd5;font-style:normal;font-size:11px;margin-top:7px}.settingBlock .inlineOptions{display:flex;gap:7px;flex-wrap:wrap}.settingBlock .inlineOptions button{font-size:13px;min-height:43px}.settingBlock .inlineOptions button[aria-pressed=true]{background:#147ab9;outline:1px solid #9bdfff}.hiddenBySearch{display:none!important}.settingsEmpty{padding:18px;border:1px dashed var(--border2);border-radius:14px;color:var(--muted)}
 .comparePanel,.compareAdvice{padding:16px}.comparePanel h2,.compareAdvice h2{margin:0 0 8px;font-size:20px}.comparePanel p,.compareAdvice p{margin:5px 0 10px;color:var(--muted)}.devicePresetGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.devicePreset{border:2px solid var(--border);border-radius:16px;background:#243a4f;padding:14px;text-align:left;min-height:132px}.devicePreset[aria-pressed=true]{background:#125e8d;border-color:#9be0ff}.devicePreset strong{display:block;font-size:16px;margin-bottom:5px}.devicePreset small{display:block;color:#d8ecfb}.devicePreset em{display:block;font-style:normal;color:#9de8bf;font-size:11px;margin-top:7px}.orientationRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.orientationRow button[aria-pressed=true]{background:#147ab9;outline:1px solid #9bdfff}.compareCurrent{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:14px}.compareNow{padding:15px;border-radius:14px;border:1px solid #45627a;background:#1b3046}.compareNow strong{display:block;font-size:20px}.compareNow .dim{display:block;font-size:28px;font-weight:800;margin:7px 0 5px;color:#8ddcff;font-variant-numeric:tabular-nums}.compareNow .sub{color:var(--muted);font-size:13px}.compareNow ul{margin:10px 0 0;padding-left:18px;color:#dcebf7}.compareAdviceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.adviceCard{padding:14px;border-radius:14px;background:#1c3249;border:1px solid #425e77}.adviceCard h3{margin:0 0 6px;font-size:17px}.adviceCard .size{display:inline-block;margin-bottom:8px;padding:3px 8px;border-radius:999px;background:#263f56;color:#bfe6ff;font-size:12px;font-weight:800}.adviceCard ul{margin:0;padding-left:18px;color:#d7e7f5}.adviceCard li+li{margin-top:4px}.compareFoot{margin-top:12px;font-size:12px;color:var(--muted)}@media(max-width:900px){.devicePresetGrid,.compareAdviceGrid,.compareCurrent{grid-template-columns:1fr}}
+/* v0.3.49-style legacy mode (demo only) */
+.legacyShell{display:grid;gap:10px}
+.legacyHeading{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.legacyHeading h2{font-size:clamp(19px,2.9vw,25px);margin:0}
+.legacyTag{border-radius:99px;background:#244966;border:1px solid #698ea8;font-size:12px;font-weight:800;padding:6px 11px}
+.legacyCard{background:#1b344b;border:1px solid #486683;padding:13px;border-radius:14px;display:grid;gap:10px}
+.legacyCard h3{font-size:17px;margin:0}
+.legacyActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.legacyActions button{min-height:63px;font-size:17px}
+.legacyActions .legacyPrimary{background:#1482d5;color:#fff}
+.legacyActions .legacyTeal{background:#087d65;color:#fff}
+.legacyActions .legacyDanger{background:#813e40;color:#fff}
+.legacyActions .legacyFull{grid-column:1/-1}
+.legacyFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.legacyFields .field{min-width:0}
+.legacyMessage{padding:9px 12px;font-size:13px;line-height:1.5;border-left:4px solid #88dfff;border-radius:8px;background:#1b3249;color:#d7eafa}
+.legacyCard details{border:1px solid #56728b;border-radius:11px;padding:8px 12px}
+.legacyCard details summary{min-height:35px;font-weight:800;cursor:pointer}
+.legacyCard details .legacyFields{margin-top:9px}
+@media(max-width:650px){.legacyFields,.legacyActions{grid-template-columns:minmax(0,1fr)}.legacyActions button{min-height:61px}.modeSwitch button{font-size:clamp(10px,2.9vw,14px);padding:5px 3px;min-width:0}}
 /* footer */
 .bottomNav{display:flex;gap:7px;background:#122337;border:1px solid #304b66;border-radius:16px;padding:7px;align-items:center;justify-content:space-between}.bottomNav button{flex:1;background:transparent;color:#c6d9e9;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:0;font-size:12px;padding:6px}.bottomNav button strong{font-size:18px}.bottomNav button[aria-current=true]{color:white;background:#20517a}.bottomNav .compactNote{font-size:11px;color:#a6bbcf;flex:1.2;text-align:right}.noScrollTip{color:#b2c6d6;font-size:11px;text-align:right}
 /* modes: immersive/mounted readability */
@@ -190,7 +210,7 @@ body.workspace-active>#appShell{display:none!important}
 <div class="main">
 <main class="screen">
 <div id="drivePage" class="drivePage">
- <div class="screenHead"><div><h1>営業入力</h1><small>車載スタンドからの操作を想定 · 入力方式はいつでも変更可能</small></div><div class="modeSwitch" role="group" aria-label="入力方式"><button type="button" data-mode="compact" aria-pressed="true">1画面</button><button type="button" data-mode="guided" aria-pressed="false">段階入力</button><button type="button" data-mode="detail" aria-pressed="false">詳細入力</button></div></div>
+ <div class="screenHead"><div><h1>営業入力</h1><small>車載スタンドからの操作を想定 · 入力方式はいつでも変更可能</small></div><div class="modeSwitch" role="group" aria-label="入力方式"><button type="button" data-mode="compact" aria-pressed="true">1画面</button><button type="button" data-mode="guided" aria-pressed="false">段階入力</button><button type="button" data-mode="detail" aria-pressed="false">詳細入力</button><button type="button" data-mode="legacy" aria-pressed="false">従来</button></div></div>
  <div class="modePanels">
   <section id="compactMode" class="panel mode modePanel active" aria-label="1画面入力">
    <div class="statusLine"><div class="stat"><label>現在の営業状態</label><strong id="compactState" class="green">空車・待機</strong></div><div class="stat"><label>出庫から</label><strong class="highlight">08:29</strong></div><div class="stat"><label>本日の売上（例）</label><strong>¥31,400</strong></div></div>
@@ -201,6 +221,7 @@ body.workspace-active>#appShell{display:none!important}
    <details class="phoneMore"><summary>その他の操作（戻る・詳細項目など）</summary><div class="phoneExtraActions"><button type="button" data-action="undo">↶ ひとつ戻る</button><button type="button" data-action="openDetail">＋ 詳細項目</button><button type="button" data-action="reset">⟲ デモ初期化</button></div></details>
    <p id="compactMessage" class="note" role="status">操作例：迎車 → 実車 → 降車 → 金額を入力して記録</p>
   </section>
+  <section id="legacyMode" class="panel mode modePanel" aria-label="v0.3.49方式の従来入力"></section>
   <section id="guidedMode" class="panel mode modePanel" aria-label="段階入力">
    <div class="steps" id="steps"><div class="step active"><span>01</span>迎車</div><div class="step"><span>02</span>乗車</div><div class="step"><span>03</span>降車</div><div class="step"><span>04</span>登録</div></div>
    <div class="stageBody"><div class="stageIntro"><h2 id="guideTitle">① 迎車を記録</h2><p id="guideDesc">現在地と時刻をワンタッチで仮入力します。</p></div>
@@ -224,7 +245,7 @@ body.workspace-active>#appShell{display:none!important}
  <div class="settingsShell"><nav class="settingsSide panel" id="settingsNav" aria-label="設定カテゴリ"><button data-category="all" aria-current="true">⚙ すべて</button><button data-category="input">✎ 入力方法</button><button data-category="display">▣ 見た目</button><button data-category="operation">🚕 営業操作</button><button data-category="data">▤ データ管理</button><button data-category="sharing">◎ 共有</button></nav>
   <div class="settingsContent panel"><div class="settingsTop"><h2 id="settingsHeading">かんたん設定</h2><button type="button" class="outline" id="advancedToggle" aria-pressed="false">詳細設定を表示</button></div><div class="settingsSearch"><label class="fieldlabel" for="settingSearch">設定を検索</label><input type="search" id="settingSearch" placeholder="例：文字、ボタン、支払い、GPS、同期" autocomplete="off"></div>
    <div class="settingsGrid" id="settingsGrid">
-    <section class="settingBlock wide" data-category="input" data-advanced="false" data-search="入力 モード 1画面 段階 詳細 テンプレート"><h3>入力画面の方式</h3><p>1画面・段階入力・詳細入力から選べます。画面を切り替えてもデモ入力値は引き継ぎます。</p><div class="presetGrid"><button type="button" class="preset" data-selectmode="compact" aria-pressed="true"><strong>▣ 1画面入力</strong><small>必要な情報と大きなボタンを1画面に集約</small><em>車載スタンド向け</em></button><button type="button" class="preset" data-selectmode="guided" aria-pressed="false"><strong>→ 段階入力</strong><small>迎車・乗車・降車・登録を1つずつ案内</small><em>操作ミスの予防</em></button><button type="button" class="preset" data-selectmode="detail" aria-pressed="false"><strong>▤ 詳細入力</strong><small>料金・距離・高速・手数料などをまとめて管理</small><em>フル機能向け</em></button></div></section>
+    <section class="settingBlock wide" data-category="input" data-advanced="false" data-search="入力 モード 1画面 段階 詳細 従来 0.3.49 テンプレート"><h3>入力画面の方式</h3><p>1画面・段階入力・詳細入力・v0.3.49の従来入力から選べます。従来入力は元の操作順を再現する独立デモです。</p><div class="presetGrid"><button type="button" class="preset" data-selectmode="compact" aria-pressed="true"><strong>▣ 1画面入力</strong><small>必要な情報と大きなボタンを1画面に集約</small><em>車載スタンド向け</em></button><button type="button" class="preset" data-selectmode="guided" aria-pressed="false"><strong>→ 段階入力</strong><small>迎車・乗車・降車・登録を1つずつ案内</small><em>操作ミスの予防</em></button><button type="button" class="preset" data-selectmode="detail" aria-pressed="false"><strong>▤ 詳細入力</strong><small>料金・距離・高速・手数料などをまとめて管理</small><em>フル機能向け</em></button><button type="button" class="preset" data-selectmode="legacy" aria-pressed="false"><strong>🚕 従来入力（v0.3.49）</strong><small>乗車・アプリ迎車・待機から操作し、降車時に精算</small><em>旧画面を使い慣れた方向け</em></button></div></section>
     <section class="settingBlock" data-category="display" data-advanced="false" data-search="文字 サイズ 大きさ 表示 視認性"><h3>文字の大きさ</h3><p>車載スタンドから読み取れる文字サイズを選択。</p><div class="inlineOptions" role="group" aria-label="文字サイズ"><button data-font="normal" aria-pressed="true">標準</button><button data-font="xl" aria-pressed="false">大</button><button data-font="xxl" aria-pressed="false">特大</button></div></section>
     <section class="settingBlock" data-category="display" data-advanced="false" data-search="ボタン 大きさ タップ 押しやすい"><h3>ボタンの大きさ</h3><p>主要操作の押しやすさを調整します。</p><div class="inlineOptions"><button data-buttons="normal" aria-pressed="true">標準</button><button data-buttons="xl" aria-pressed="false">特大</button></div></section>
     <section class="settingBlock" data-category="display" data-advanced="false" data-search="高コントラスト 夜間 昼間 色 テーマ"><h3>配色・見やすさ</h3><p>状態を色だけでなく文字でも表示します。</p><label class="toggle"><input type="checkbox" id="highContrast" checked> くっきり表示（高コントラスト）</label><label class="toggle"><input type="checkbox" id="lightTheme"> 明るい画面（昼間向け）</label></section>
@@ -308,7 +329,7 @@ body.workspace-active>#appShell{display:none!important}
  const baseFrameDocument='<!doctype html>'+document.documentElement.outerHTML;
  if(isEmbedded)document.body.classList.add('embedded-ui');
  const demoLocations=['川西能勢口付近','川西池田駅付近','駅前ロータリー'];
- const modeLabels={compact:'1画面入力',guided:'段階入力',detail:'詳細入力'};
+ const modeLabels={compact:'1画面入力',guided:'段階入力',detail:'詳細入力',legacy:'従来入力（v0.3.49）'};
  const model={mode:'compact',phase:0,from:'',to:'',count:12,locationIndex:0,view:'drive',settingCategory:'all',advanced:false,search:'',fields:{},layout:'auto',device:'auto',orientation:'auto'};
  const devicePresets={auto:{name:'実機そのまま',size:'ブラウザに合わせる',desc:'現在の端末サイズをそのまま使います。',dims:null,checks:['まず最初に実機の見え方を確認','1画面入力の収まりを確認','文字サイズが自然か確認']},phone:{name:'通常スマホ',size:'393 × 852',desc:'通常のスマホサイズを基準にした確認用です。',dims:[393,852],checks:['縦で主要入力が収まるか','大きいボタンが押しやすいか','1画面入力の視認性を確認']},fold:{name:'折りたたみ',size:'673 × 841',desc:'折りたたみ端末を開いたサイズを想定しています。',dims:[673,841],checks:['2列表示が見やすいか','段階入力が広く使えるか','設定の左右分割が有効か']},tablet:{name:'タブレット',size:'834 × 1112',desc:'タブレットでの表示確認用です。',dims:[834,1112],checks:['右サマリーを常時見られるか','設定一覧が探しやすいか','詳細入力でも窮屈でないか']}};
  const phases=['空車・待機','迎車中','実車中','降車・精算'];
@@ -345,7 +366,127 @@ body.workspace-active>#appShell{display:none!important}
   $('sideMode').textContent=modeLabels[model.mode];
   document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===model.mode)));
   document.querySelectorAll('[data-selectmode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.selectmode===model.mode)));
-  for(const [id,name] of [['compactMode','compact'],['guidedMode','guided'],['detailMode','detail']])$(id).classList.toggle('active',model.mode===name);
+  renderLegacy();
+  for(const [id,name] of [['compactMode','compact'],['guidedMode','guided'],['detailMode','detail'],['legacyMode','legacy']])$(id).classList.toggle('active',model.mode===name);
+ }
+
+ // Original v0.3.49 action order recreated as a self-contained visual demo.
+ // This does not use the real daily-report storage, auth, GPS or cloud API.
+ const legacy={stage:'idle',fields:{dispatch:'乗込み',received:'08:29',
+  pickupTime:'08:29',pickupPlace:'',pickupOdo:'',waitingPlace:'',
+  male:'1',female:'0',pay:'現金',dropTime:'',dropPlace:'',dropOdo:'',
+  fare:'',discount:'なし',extraPay:'なし',extraAmount:'',toll:'',
+  highwayKind:'実車',highwayIn:'',highwayOut:'',memo:''},
+  message:'操作確認用のデモです。営業データは保存しません。'};
+ const legacyEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function legacyInput(key,label,type='text'){
+  const attr=type==='number'?'type="number" inputmode="decimal" step="any" min="0"':type==='time'?'type="time"':'type="text"';
+  return `<label class="field"><span class="fieldlabel">${label}</span><input ${attr} data-legacy-field="${key}" value="${legacyEscape(legacy.fields[key])}"></label>`;
+ }
+ function legacySelect(key,label,options){
+  return `<label class="field"><span class="fieldlabel">${label}</span><select data-legacy-field="${key}">${options.map(x=>`<option ${legacy.fields[key]===x?'selected':''}>${legacyEscape(x)}</option>`).join('')}</select></label>`;
+ }
+ const legacyButton=(key,label,style='')=>`<button type="button" data-legacy-action="${key}" class="${style}">${label}</button>`;
+ function renderLegacy(){
+  const root=$('legacyMode');if(!root)return;
+  const stage=legacy.stage,stageNames={idle:'現在：空車・流し',waiting:'現在：待機中',
+   dispatch:'迎車中 / お迎え先の確認',ride:'実車中 / 乗車情報',
+   settle:'降車・精算入力',cancel:'迎車キャンセルの記録'};
+  let body='';
+  if(stage==='idle'||stage==='waiting'){
+   body=`<div class="legacyCard"><h3>次の記録 / № ${model.count+1}</h3>
+    ${stage==='waiting'?'<div class="legacyMessage">待機中：場所と距離を記録します（デモ）。</div><div class="legacyFields">'+legacyInput('waitingPlace','待機場所')+legacyInput('pickupOdo','現在の走行距離（km）','number')+'</div>':''}
+    <div class="legacyActions">${legacyButton('beginRide','🚕 乗車','legacyPrimary')}
+    ${legacyButton('beginDispatch','📲 アプリ迎車','legacyTeal')}
+    ${legacyButton(stage==='waiting'?'stopWait':'beginWait',stage==='waiting'?'🅿 待機終了':'🅿 待機開始')}
+    ${legacyButton('history','▤ 営業履歴')}</div></div>`;
+  }else if(stage==='dispatch'){
+   body=`<div class="legacyCard"><h3>迎車情報</h3>
+    <div class="legacyFields">${legacySelect('dispatch','配車元',['GO','Uber','DiDi','無線','その他'])}
+    ${legacyInput('received','迎車受信時刻','time')}
+    ${legacyInput('pickupPlace','お迎え場所・住所')}
+    ${legacyInput('pickupOdo','迎車先到着時の走行距離（km）','number')}
+    ${legacyInput('memo','依頼メモ（任意）')}</div>
+    <div class="legacyActions">${legacyButton('gpsPickup','⌖ 現在地（仮入力）')}
+    ${legacyButton('boardDispatch','🚕 お客様が乗車','legacyPrimary')}
+    ${legacyButton('cancelDispatch','× 迎車キャンセル','legacyDanger')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }else if(stage==='ride'){
+   body=`<div class="legacyCard"><h3>① 乗車情報</h3><div class="legacyFields">
+    ${legacySelect('dispatch','配車区分',['乗込み','GO','Uber','DiDi','無線','その他'])}
+    ${legacyInput('received','データ受信・待機開始時刻','time')}
+    ${legacyInput('pickupTime','乗車時刻','time')}
+    ${legacyInput('pickupOdo','乗車時の走行距離（km）','number')}
+    ${legacyInput('pickupPlace','乗車地・住所')}
+    ${legacySelect('male','男性人数',['0','1','2','3','4','5'])}
+    ${legacySelect('female','女性人数',['0','1','2','3','4','5'])}
+    ${legacySelect('pay','支払方法',['現金','GO','Uber','カード','QR','チケット','その他'])}</div>
+    <details><summary>🛣 高速道路（使う場合に開く）</summary><div class="legacyFields">
+    ${legacySelect('highwayKind','高速区分',['実車','空車'])}
+    ${legacyInput('highwayIn','乗インター')}
+    ${legacyInput('highwayOut','降インター')}
+    ${legacyInput('toll','高速代（円）','number')}</div></details>
+    <div class="legacyActions">${legacyButton('alight','🚕 降車・精算へ','legacyPrimary legacyFull')}
+    ${legacyButton('gpsPickup','⌖ 現在地（仮入力）')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }else if(stage==='settle'){
+   body=`<div class="legacyCard"><h3>② 降車・精算</h3>
+    <div class="legacyMessage">乗車地：${legacyEscape(legacy.fields.pickupPlace||'未入力')} ／ 乗車：${legacyEscape(legacy.fields.pickupTime)}</div>
+    <div class="legacyFields">
+    ${legacyInput('fare','メーター金額（円）','number')}
+    ${legacyInput('dropOdo','降車時の走行距離（km）','number')}
+    ${legacyInput('dropTime','降車時刻（変更可）','time')}
+    ${legacyInput('dropPlace','降車地・住所')}
+    ${legacySelect('discount','割引',['なし','障がい者','遠距離'])}
+    ${legacySelect('pay','最初の金種',['現金','GO','Uber','カード','QR','チケット','その他'])}
+    ${legacySelect('extraPay','追加金種',['なし','現金','カード','QR','チケット'])}
+    ${legacyInput('extraAmount','追加金種の金額（円）','number')}</div>
+    <details><summary>🛣 高速入力内容を確認</summary><div class="legacyFields">
+    ${legacyInput('highwayIn','乗インター')}
+    ${legacyInput('highwayOut','降インター')}
+    ${legacyInput('toll','高速代（円）','number')}</div></details>
+    <div class="legacyActions">${legacyButton('save','✓ 精算してデモ登録','legacyPrimary legacyFull')}
+    ${legacyButton('backRide','← 乗車情報へ戻る')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }else if(stage==='cancel'){
+   body=`<div class="legacyCard"><h3>迎車キャンセル</h3>
+    <p class="legacyMessage">キャンセルは0円の記録として扱います（デモ）。</p>
+    <div class="legacyFields">${legacyInput('received','迎車受信時刻','time')}
+    ${legacyInput('pickupPlace','迎車場所・補足')}</div>
+    <div class="legacyActions">${legacyButton('saveCancel','✓ キャンセルをデモ登録','legacyPrimary legacyFull')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }
+  root.innerHTML=`<div class="legacyShell"><div class="legacyHeading"><h2>${stageNames[stage]}</h2>
+   <span class="legacyTag">従来入力 / v0.3.49</span></div>
+   <div class="legacyMessage">乗車・迎車・待機から選ぶ従来の流れを再現しています。旧版と同等のGPS・料金計算は未接続です。</div>
+   ${body}<p class="legacyMessage" role="status">${legacyEscape(legacy.message)}</p></div>`;
+ }
+ function legacyAction(action){
+  document.querySelectorAll('#legacyMode [data-legacy-field]').forEach(el=>{
+   legacy.fields[el.dataset.legacyField]=el.value;
+  });
+  const d=legacy.fields;
+  switch(action){
+   case 'beginRide':legacy.stage='ride';d.dispatch='乗込み';break;
+   case 'beginDispatch':legacy.stage='dispatch';d.dispatch='GO';break;
+   case 'beginWait':legacy.stage='waiting';break;
+   case 'stopWait':legacy.stage='idle';break;
+   case 'boardDispatch':legacy.stage='ride';break;
+   case 'cancelDispatch':legacy.stage='cancel';break;
+   case 'alight':legacy.stage='settle';d.dropTime=d.dropTime||'08:39';break;
+   case 'backRide':legacy.stage='ride';break;
+   case 'discard':legacy.stage='idle';break;
+   case 'save':
+    if(!(Number(d.fare)>0)){legacy.message='メーター金額を入力してください。';renderLegacy();return;}
+    model.count++;legacy.stage='idle';d.fare='';break;
+   case 'saveCancel':model.count++;legacy.stage='idle';break;
+   case 'gpsPickup':d.pickupPlace=demoLocations[model.locationIndex++%demoLocations.length];break;
+   case 'history':
+    legacy.message='営業履歴は実アプリに接続していません。この画面では保存されません。';
+    renderLegacy();return;
+  }
+  legacy.message='操作をデモ実行しました。実際の営業データは保存していません。';
+  render();
  }
  function setMode(mode){if(!modeLabels[mode])return;model.mode=mode;const ids=['compactFare','guideFare','detailFare'];const first=ids.map(id=>$(id).value).find(v=>v!=='')||'';ids.forEach(id=>{if(!$(id).value&&first)$(id).value=first});if($('detailFrom').value&&!model.from)model.from=$('detailFrom').value;if($('detailTo').value&&!model.to)model.to=$('detailTo').value;render();setView('drive');}
  // Route every top-level menu choice through the currently selected device
@@ -469,7 +610,7 @@ body.workspace-active>#appShell{display:none!important}
   if(model.view==='compare')applyDeviceFrame();
  }
  function pick(group,value){document.querySelectorAll('[data-'+group+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[group]===value)));}
- document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
+ document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.legacyAction){legacyAction(b.dataset.legacyAction);return}if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
  $('compactFare').addEventListener('input',e=>{$('guideFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('guideFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('detailFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('guideFare').value=e.target.value});
