@@ -53,6 +53,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
     status('設定同期エラー：'+String(e.code||e.message||e));
    });},ms);
   }
+  // Legacy Firebase rules have not been updated yet: do not break existing settings writes.
+  const writerFields=()=>deviceSession?.state()==='writer'
+   ?{writerSessionId:deviceSession.sessionId()}:{};
   function stillCurrent(accountUid){return enabled&&uid===accountUid&&auth.currentUser?.uid===accountUid;}
   async function apply(shared){
    const model=deps.getModel(),newModel=api.merge(model,{
@@ -96,7 +99,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       if(doc.exists())return false;
       if(!deviceSession.canWrite())throw Error('閲覧専用端末から保存できません');
       tx.set(ref(),{format:api.FORMAT,schemaVersion:1,
-       prefs:beginning,writerSessionId:deviceSession.sessionId(),updatedAt:fire.serverTimestamp()});
+       prefs:beginning,...writerFields(),updatedAt:fire.serverTimestamp()});
       return true;
      });
      if(!stillCurrent(accountUid))return;
@@ -124,7 +127,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
         format:api.FORMAT,schemaVersion:1,prefs:freshest
        },{preserveLocalWaiting:true})).prefs;
        if(!api.same(joined,freshest))
-        tx.update(ref(),{prefs:joined,writerSessionId:deviceSession.sessionId(),updatedAt:fire.serverTimestamp()});
+        tx.update(ref(),{prefs:joined,...writerFields(),updatedAt:fire.serverTimestamp()});
        return joined;
       });
      }
@@ -152,7 +155,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       if(resolved.conflicts.length)
        throw Error('別端末と同じ項目が同時変更されました。設定を保護するため停止しました');
       if(!api.same(current,resolved.prefs))
-       tx.update(ref(),{prefs:resolved.prefs,writerSessionId:deviceSession.sessionId(),updatedAt:fire.serverTimestamp()});
+       tx.update(ref(),{prefs:resolved.prefs,...writerFields(),updatedAt:fire.serverTimestamp()});
       return resolved.prefs;
      });
      if(!stillCurrent(accountUid))return;
