@@ -1125,6 +1125,12 @@ function renderNow(){
  const scrollPosition=sameTab&&tab==='settings'
   ? {x:window.scrollX,y:window.scrollY}:null;
  const highwayWasOpen=Boolean(appEl.querySelector('[data-highway-fold]')?.open);
+ // Keep details open across calculations/GPS responses in the SAME compact phase.
+ // Do not carry expanded panels into a different duty state.
+ const previousCompactStage=appEl.querySelector('[data-compact-stage]')?.dataset.compactStage||null;
+ const compactDetailsOpen=lastRenderedTab==='drive'&&tab==='drive'
+  ?[...appEl.querySelectorAll('details.compact-extra,details.compact-secondary')].map(el=>Boolean(el.open))
+  :null;
  for(const panel of appEl.querySelectorAll('[data-operation-panel]')){
   if(panel.dataset.operationPanel in operationPanelOpen)
    operationPanelOpen[panel.dataset.operationPanel]=panel.open;
@@ -1134,6 +1140,11 @@ function renderNow(){
  const shift=selectedShift();
  appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
  lastRenderedTab=tab;
+ if(compactDetailsOpen&&previousCompactStage&&previousCompactStage===appEl.querySelector('[data-compact-stage]')?.dataset.compactStage){
+  appEl.querySelectorAll('details.compact-extra,details.compact-secondary').forEach((panel,index)=>{
+   if(index<compactDetailsOpen.length)panel.open=compactDetailsOpen[index];
+  });
+ }
  if(highwayWasOpen){
   const highway=appEl.querySelector('[data-highway-fold]');
   if(highway)highway.open=true;
@@ -1221,7 +1232,7 @@ function renderCompactRide(shift,d){
     return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 実車中</div>${pickup}<div class="compact-primary-actions">${alight}</div><details class="details compact-extra"><summary>人数・高速道路・その他詳細</summary><div class="inner"><div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div>${renderCompactHighway(shift,d)}${renderAllFields(d)}</div></details><div class="actions"><button class="btn red" type="button" data-action="discardDraft">入力を取り消す</button></div></section>`;
   }
   const uber=rideUber?`<details class="details compact-extra"><summary>Uberアプリ精算額・手数料</summary><div class="inner"><label class="field"><span class="field-label">Uberアプリ表示額（円）</span><input class="control" data-meta="uberAppDisplayed" data-number-kind="money" inputmode="none" type="text" value="${safeText(d.meta?.uberAppDisplayed??'')}"></label><div class="uber-summary"><div>Uberアプリ決済額（差額）<strong data-uber-app-payment>${uberAppAmounts(d)?.valid?money(uberAppAmounts(d).appPaid):'—'}</strong></div><div>車内決済（運賃分）<strong data-uber-cabin-fare>${number(d.meta?.uberAppDisplayed)!==null?money(number(d.meta.uberAppDisplayed)):'—'}</strong></div><div>Uber配車手数料（納金不要）<strong data-uber-dispatch>${uberDispatchFeeApplies(d,shift.date,shift.settings)?money(cfg.uberSurcharge):'¥0'}</strong></div></div></div></details>`:'';
-  return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 降車・精算</div><div class="compact-ride-summary"><span>乗車地：${safeText(r.AL||'未記録')}</span><span>${safeText(shortTime(r.G))} 乗車</span></div><div class="compact-main-price">${field('K',r,{label:'メーター金額（円）',required:true})}</div><div class="compact-field-grid">${field('M',r,{label:'降車時刻（変更可）'})}${field('L',r,{label:'降車時の走行距離（km）'})}</div>${locationField('AM',r,'降車地・住所','gpsDrop')}${renderPaymentSplit(shift,d)}<div class="compact-primary-actions"><button class="btn primary big" type="button" data-action="saveDraft">✓ 精算して保存</button></div>${renderCompactCash(shift,d)}${uber}<details class="details compact-extra"><summary>割引・高速・乗車情報の修正・全項目</summary><div class="inner"><div class="form-grid"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額（円）'})}</div>${renderCompactHighway(shift,d)}<details class="details compact-extra"><summary>乗車情報を修正</summary><div class="inner">${pickup}<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div></div></details>${renderAllFields(d)}</div></details><div class="actions"><button class="btn red" type="button" data-action="discardDraft">入力を取り消す</button></div></section>`;
+  return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 降車・精算</div><div class="compact-ride-summary"><span>乗車地：${safeText(r.AL||'未記録')}</span><span>${safeText(shortTime(r.G))} 乗車</span></div><div class="compact-main-price">${field('K',r,{label:'メーター金額（円）',required:true})}</div><div class="compact-field-grid">${field('M',r,{label:'降車時刻（変更可）'})}${field('L',r,{label:'降車時の走行距離（km）'})}</div>${locationField('AM',r,'降車地・住所','gpsDrop')}${renderPaymentSplit(shift,d)}<div class="actions compact-primary-actions"><button class="btn primary big" type="button" data-action="saveDraft">✓ 精算して保存</button></div>${renderCompactCash(shift,d)}${uber}<details class="details compact-extra"><summary>割引・高速・乗車情報の修正・全項目</summary><div class="inner"><div class="form-grid"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額（円）'})}</div>${renderCompactHighway(shift,d)}<details class="details compact-extra"><summary>乗車情報を修正</summary><div class="inner">${pickup}<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div></div></details>${renderAllFields(d)}</div></details><div class="actions"><button class="btn red" type="button" data-action="discardDraft">入力を取り消す</button></div></section>`;
 }
 function renderCompactOther(shift,d){
   const r=d.raw;
@@ -1238,7 +1249,7 @@ function renderCompactDrive(shift){
   const status=renderCompactStatus(shift);
   const d=shift.draft;
   const body=!d?renderCompactWaiting(shift):d.kind==='dispatch'?renderCompactDispatch(shift,d):d.kind==='ride'?renderCompactRide(shift,d):renderCompactOther(shift,d);
-  return `<div class="compact-workspace">${status}${body}${!d?`<details class="details compact-secondary"><summary>▤ 営業集計・直近の記録</summary><div class="inner">${metrics(shift)}${renderRecent(shift)}</div></details>`:''}</div>`;
+  return `<div class="compact-workspace" data-compact-stage="${safeText(compactStageName(shift))}">${status}${body}${!d?`<details class="details compact-secondary"><summary>▤ 営業集計・直近の記録</summary><div class="inner">${metrics(shift)}${renderRecent(shift)}</div></details>`:''}</div>`;
 }
 function renderDriveLayoutChooser(){const mode=displayPrefs().driveLayout;return `<div class="drive-layout-choice" role="group" aria-label="入力画面の切り替え"><strong>入力方式</strong>${[['compact','1画面'],['legacy','従来']].map(([key,label])=>`<button class="btn ${mode===key?'active':''}" data-ui-key="driveLayout" data-ui-value="${key}" type="button" aria-pressed="${mode===key}">${label}</button>`).join('')}</div>`;}
 function renderDrive(shift){if(displayPrefs().driveLayout==='compact')return `${renderDriveLayoutChooser()}${renderCompactDrive(getShift())}`;const active=getShift();if(!active){return `${renderDriveLayoutChooser()}${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
