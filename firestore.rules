@@ -30,14 +30,34 @@ service cloud.firestore {
    return signedIn() && request.auth.uid == uid &&
     (isAdmin() || activeUser(uid));
   }
-  match /accountSettings/{uid} {
+  // Last-login-wins editing session. Older devices may only read.
+  // A server timestamp is required; no background heartbeat is needed.
+  match /deviceSessions/{uid} {
    allow get: if ownerEnabled(uid);
    allow list, delete: if false;
    allow create, update: if ownerEnabled(uid) &&
-    request.resource.data.keys().hasOnly(['format','schemaVersion','prefs','updatedAt']) &&
+    request.resource.data.keys().hasOnly(['sessionId','updatedAt']) &&
+    request.resource.data.keys().hasAll(['sessionId','updatedAt']) &&
+    request.resource.data.sessionId is string &&
+    request.resource.data.sessionId.size() >= 32 &&
+    request.resource.data.sessionId.size() <= 128 &&
+    request.resource.data.updatedAt == request.time;
+  }
+  function isCurrentEditor(uid) {
+   return exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+    request.resource.data.writerSessionId ==
+      get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId;
+  }
+  match /accountSettings/{uid} {
+   allow get: if ownerEnabled(uid);
+   allow list, delete: if false;
+   allow create, update: if ownerEnabled(uid) && isCurrentEditor(uid) &&
+    request.resource.data.keys().hasOnly(['format','schemaVersion','prefs','updatedAt','writerSessionId']) &&
+    request.resource.data.keys().hasAll(['format','schemaVersion','prefs','updatedAt','writerSessionId']) &&
     request.resource.data.format == 'TAXIAPP_ACCOUNT_SETTINGS_V1' &&
     request.resource.data.schemaVersion == 1 &&
     request.resource.data.prefs is map &&
+    request.resource.data.writerSessionId is string &&
     request.resource.data.updatedAt == request.time;
   }
   // Protected user records, Drive file references and future features
