@@ -6,11 +6,11 @@ android {
   namespace = "jp.taxiapp.dailyapp"
   compileSdk = 35
   defaultConfig {
-    applicationId = "jp.taxiapp.dailyapp"
+    applicationId = "jp.taxiapp.dailyapp.syncpilot"
     minSdk = 26
     targetSdk = 35
-    versionCode = 1
-    versionName = "0.1.0-pilot"
+    versionCode = 2
+    versionName = "0.2.0-syncpilot"
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
