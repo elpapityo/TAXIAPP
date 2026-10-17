@@ -40,7 +40,7 @@ const config=fs.readFileSync(path.join(root,'firebase-config.js'),'utf8');
 assert.match(config,/projectId: "taxiapp-2b6bd"/);
 const configContext={window:{}};vm.createContext(configContext);vm.runInContext(config,configContext);
 assert.equal(u.firebaseConfigReady(configContext.window.TAXIAPP_FIREBASE_CONFIG),true);
-assert.equal(configContext.TAXIAPP_FIREBASE_CONFIG.authDomain,'taxiapp-2b6bd.firebaseapp.com');
+assert.equal(configContext.window.TAXIAPP_FIREBASE_CONFIG.authDomain,'taxiapp-2b6bd.firebaseapp.com');
 assert.doesNotMatch(config,/PRIVATE KEY|BEGIN RSA PRIVATE KEY/);
 const check=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
 assert.equal(check.status,0,check.stderr);
