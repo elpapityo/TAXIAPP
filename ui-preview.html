@@ -52,6 +52,8 @@ button{border:0;border-radius:14px;color:var(--text);background:#304a64;padding:
 .foldSubModes small{color:#c0d8e7;font-size:11px}
 .workspaceWidthAdjust{width:100%;background:#1c354b;border-radius:9px;padding:5px 8px}
 @media(max-width:430px){.foldSubChoices{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:380px){.bottomNav .compactNote{display:none!important}.bottomNav button{min-width:0;font-size:11px;padding:4px 1px}.topRight .demoFlag{max-width:95px;overflow:hidden;text-overflow:ellipsis}}
+
 /* footer */
 .bottomNav{display:flex;gap:7px;background:#122337;border:1px solid #304b66;border-radius:16px;padding:7px;align-items:center;justify-content:space-between}.bottomNav button{flex:1;background:transparent;color:#c6d9e9;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:0;font-size:12px;padding:6px}.bottomNav button strong{font-size:18px}.bottomNav button[aria-current=true]{color:white;background:#20517a}.bottomNav .compactNote{font-size:11px;color:#a6bbcf;flex:1.2;text-align:right}.noScrollTip{color:#b2c6d6;font-size:11px;text-align:right}
 /* modes: immersive/mounted readability */
@@ -283,7 +285,7 @@ body.workspace-active>#appShell{display:none!important}
    <button type="button" class="devicePreset" data-device="tablet" aria-pressed="false"><strong>📟 タブレット</strong><small>834 × 1112 を基準</small><em>設定一覧・比較表示向け</em></button>
   </div>
   <div class="foldSubModes" id="foldSubModes" hidden>
-  <strong>折りたたみ端末の表示範囲</strong>
+  <strong>折りたたみ端末の表示範囲（下から選択）</strong>
   <div class="foldSubChoices" role="group" aria-label="折りたたみ表示範囲">
    <button type="button" data-fold-view="full" aria-pressed="true">▣ 全画面（673px）</button>
    <button type="button" data-fold-view="half" aria-pressed="false">▥ 半画面（狭い1カラム）</button>
@@ -641,7 +643,7 @@ body.workspace-active>#appShell{display:none!important}
   if(model.view==='compare')applyDeviceFrame();
  }
  function pick(group,value){document.querySelectorAll('[data-'+group+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[group]===value)));}
- document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.legacyAction){legacyAction(b.dataset.legacyAction);return}if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();openWorkspace();return}if(b.dataset.foldView){model.device=b.dataset.foldView==='half'?'foldHalf':'fold';renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
+ document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.legacyAction){legacyAction(b.dataset.legacyAction);return}if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();if(model.device!=='fold')openWorkspace();return}if(b.dataset.foldView){model.device=b.dataset.foldView==='half'?'foldHalf':'fold';renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
  $('compactFare').addEventListener('input',e=>{$('guideFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('guideFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('detailFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('guideFare').value=e.target.value});
