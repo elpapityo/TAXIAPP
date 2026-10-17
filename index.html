@@ -376,8 +376,9 @@ html[data-ui-theme="night"] .operations-fold>summary{background:#243a54;color:#e
 <script src="./gps-trip-ui.js?v=0.3.35"></script>
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-report.js?v=0.3.36"></script>
-<script src="./bidirectional-sync.js?v=0.3.37"></script>
-<script src="./cloud-sync-ui.js?v=0.3.45"></script>
+<script src="./bidirectional-sync.js?v=20261017-10"></script>
+<script src="./cloud-sync-ui.js?v=20261017-10"></script>
+<script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
 <script src="./login-core.js?v=20261017-2"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
@@ -727,6 +728,7 @@ const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
 let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab='drive',db=null,persistTimer=0,toastTimer=0;
 let accountSettingsAuto=null,deviceMode='legacy',deviceNoticeAt=0;
+let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 function canEditNow(){return deviceMode==='writer'||deviceMode==='legacy';}
 function setDeviceMode(next,previous='',detail=''){
  const prior=deviceMode;
@@ -735,7 +737,20 @@ function setDeviceMode(next,previous='',detail=''){
   // Preserve the unfinished local shift before losing editing rights.
   save(true).catch(e=>console.warn('save-before-viewer',e));
  }
+ if(prior==='viewer'&&next!=='viewer'&&viewerLocalModel){
+  model=viewerLocalModel;viewerLocalModel=null;
+  viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
+  syncUI.cancelViewer();
+ }
  deviceMode=next;
+ if(next==='viewer'&&prior!=='viewer'){
+  // Hold original model untouched. Never show stale local shifts as a cloud view.
+  viewerLocalModel=model;model={...model,shifts:[],activeId:null};
+  viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
+  if(sheetTargetPrefs().syncMode==='on'&&googleIsConfigured())syncUI.viewSchedule();
+  else{viewerCloudError=true;setGoogleStatus('閲覧受信には双方向同期とGoogle接続設定が必要です');}
+ }
+ if(prior!==next&&(next==='viewer'||prior==='viewer'))render();
  document.body.classList.toggle('taxi-viewer',!canEditNow());
  const status=document.getElementById('deviceSessionStatus');
  if(status)status.textContent=(next==='writer'?'操作可能':next==='viewer'?'閲覧専用':
@@ -754,7 +769,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -979,7 +994,14 @@ async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)
 async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model);try{if(db){await idbPut(db,data);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem('taxiapp-v1',JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem('taxiapp-v1',JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
-function header(){const shift=getShift();const displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><span class="status-pill ${shift?'':'stop'}">${shift?'● 乗務中':'○ 出庫前 / 帰庫済'}</span></header>`;}
+function header(){
+ const shift=getShift(),displayVersion=(document.title.match(/v\\d+\\.\\d+\\.\\d+/)||['v?'])[0];
+ const state=deviceMode==='viewer'&&viewerCloudError?'△ 閲覧データの受信エラー':
+  deviceMode==='viewer'&&!viewerCloudLoaded?'◌ 閲覧データ受信待ち':
+  deviceMode==='viewer'&&viewerOpenCount>1?'△ 未入庫乗務が複数':
+  shift?'● 乗務中':'○ 出庫前 / 帰庫済';
+ return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><span class="status-pill ${shift?'':'stop'}">${state}</span></header>`;
+}
 let pendingRender=false, renderAfterKeypad=false;
 let saveTouchPress=null,saveRenderPending=false,saveTouchTimeout=null,skipSaveClick=null;
 
@@ -1373,7 +1395,7 @@ function googleShiftPacket(shift){
 // The receiver returns an HTML acknowledgement via postMessage; opaque fetch success
 // is NEVER treated as evidence that records reached Google Sheets.
 function googlePostRequest(action,fields={}){
- if(!canEditNow())return Promise.reject(Error('閲覧専用端末ではGoogleへ送受信しません'));
+ if(!canEditNow()&&!['syncList','syncGet'].includes(action))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
  const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
  if(!endpoint||key.length<24)return Promise.reject(Error('WebアプリURLと接続キーを設定してください'));
  const nonce='tx-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -1473,11 +1495,29 @@ async function googleSendAllShifts(){
  */
 const syncUI=window.TAXIAPP_SYNC_UI({
  canSync:()=>canEditNow(),
+ canView:()=>deviceMode==='viewer'&&Boolean(accountSettingsAuto?.status().enabled),
  getModel:()=>model,
  getPacket:googleShiftPacket,
  endpoint:()=>googleWebAppUrl(sheetTargetPrefs().webAppUrl),
  configured:googleIsConfigured,
  prefs:sheetTargetPrefs,
+ onViewerSnapshot:async shifts=>{
+  if(deviceMode!=='viewer'||!viewerLocalModel)return;
+  const projected=window.TAXIAPP_SHIFT_MIRROR.viewerProjection(viewerLocalModel,shifts);
+  model=projected.model;viewerOpenCount=projected.openCount;
+  viewerCloudLoaded=true;viewerCloudError=false;render();
+ },
+ onViewerStatus:(message,error)=>{
+  if(deviceMode!=='viewer')return;
+  viewerCloudError=Boolean(error);setGoogleStatus(message);
+  if(error)render();
+ },
+ onWriterSynced:async conflicts=>{
+  if(!canEditNow())return;
+  const blocked=(conflicts||[]).map(x=>x.id);
+  const nextId=window.TAXIAPP_SHIFT_MIRROR.selectActive(model.shifts,model.activeId,blocked);
+  if(nextId!==model.activeId){model.activeId=nextId;await save(true);render();}
+ },
  request:async(action,fields)=>{
   const result=await googlePostRequest(action,fields);
   return result.data;
