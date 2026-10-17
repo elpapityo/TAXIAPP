@@ -20,6 +20,7 @@ function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
   getEndpoint,toast,localStorage:storage}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
+ let viewerBusy=false,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
  const localKey=()=>KEY_PREFIX+digest(String(getEndpoint()||''));
  function getSaved(){
   try{
@@ -145,6 +146,42 @@ function create(deps){
    return false;
   }finally{busy=false;}
  }
+ // A viewer NEVER changes the local IndexedDB or server. Cloud data lives only
+ // in an isolated in-memory snapshot; incomplete requests retain the prior view.
+ async function readOnly(){
+  if(viewerBusy)return null;
+  const endpoint=String(getEndpoint()||'');
+  if(!endpoint){viewerLastError='Google接続先が設定されていません';return null;}
+  viewerBusy=true;
+  try{
+   const listing=await request('syncList',{});
+   if(!Array.isArray(listing?.shifts))throw Error('Googleから乗務一覧を取得できません');
+   const previous=viewerEndpoint===endpoint?viewerCache:new Map();
+   const updated=new Map();
+   for(const item of listing.shifts){
+    const id=String(item?.id||''),revision=Number(item?.revision);
+    if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||
+       !Number.isSafeInteger(revision)||revision<1||updated.has(id))
+     throw Error('Googleの乗務一覧が不正です');
+    let entry=previous.get(id);
+    if(!entry||entry.revision!==revision){
+     const result=await request('syncGet',{shiftId:id});
+     if(!result?.shift||result.id!==id||result.shift.id!==id||
+        Number(result.revision)!==revision||!Array.isArray(result.shift.records)||
+        !result.shift.settings)
+      throw Error('乗務の受信中に更新されました。次の照合で再取得します');
+     entry={revision,shift:result.shift};
+    }
+    updated.set(id,entry);
+   }
+   viewerCache=updated;viewerEndpoint=endpoint;viewerLastSyncAt=Date.now();viewerLastError='';
+   return [...updated.values()].map(item=>JSON.parse(JSON.stringify(item.shift)));
+  }catch(error){
+   viewerLastError=String(error?.message||error);
+   return null;
+  }finally{viewerBusy=false;}
+ }
+ function viewerStatus(){return {lastError:viewerLastError,lastSyncAt:viewerLastSyncAt};}
  async function resolve(id,preferLocal,onBackup){
   if(busy||!conflict[id]||typeof onBackup!=='function')return false;
   busy=true;
@@ -179,7 +216,7 @@ function create(deps){
   }catch(e){lastError=String(e?.message||e);return false;}
   finally{busy=false;}
  }
- return {run,resolve,status,isConflict,digest};
+ return {run,readOnly,viewerStatus,resolve,status,isConflict,digest};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);

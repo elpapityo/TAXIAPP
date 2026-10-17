@@ -93,5 +93,39 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
  assert.match(rules,/isCurrentEditor\(uid\)/);
  assert.match(rules,/allow list, delete: if false/);
  assert.equal(listenerCount,6,'only one listener per new authenticated browser instance');
+ // Explicit viewing must stay non-editable even when the Firestore rules
+ // have not been deployed and the browser has a formerly valid session ID.
+ function denied(viewer){
+  const fakeStorage=new Map([['taxiapp-current-session-v1-'+user.uid,
+    '00000000-0000-4000-a000-000000000123']]);
+  const ctx={
+   sessionStorage:{getItem:k=>fakeStorage.get(k)||null,setItem:(k,v)=>fakeStorage.set(k,v)},
+   crypto:{randomUUID:()=> '00000000-0000-4000-a000-000000000321'},
+   Uint8Array
+  };
+  vm.createContext(ctx);vm.runInContext(js,ctx);
+  let state='pending';
+  const deniedFirestore={
+   doc:()=> 'deviceSessions/'+user.uid,
+   onSnapshot:(_ref,_options,_onNext,onError)=>{
+    queueMicrotask(()=>onError({code:'permission-denied'}));
+    return ()=>{};
+   },
+   serverTimestamp:()=> 'server',
+   setDoc:async()=>{throw Error('must not claim without server rules');}
+  };
+  const obj=ctx.TAXIAPP_DEVICE_SESSION.create({
+   f:deniedFirestore,db:{},auth:{currentUser:user},onMode:next=>{state=next;}
+  });
+  return {obj,state:()=>state,viewer};
+ }
+ const deniedViewer=denied(true);
+ await deniedViewer.obj.begin(user,{viewer:true});await flush();
+ assert.equal(deniedViewer.state(),'viewer','requested viewer must not fall into editable legacy mode');
+ assert.equal(deniedViewer.obj.canWrite(),false);
+ const deniedWriter=denied(false);
+ await deniedWriter.obj.begin(user,{viewer:false});await flush();
+ assert.equal(deniedWriter.state(),'legacy','unconfigured writer remains in legacy compatibility mode');
+
  console.log('Device sessions passed: last login wins, viewer remains read-only, explicit takeover, stale reload protection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

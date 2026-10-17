@@ -2,36 +2,75 @@
 (function(root){
 'use strict';
 root.TAXIAPP_SYNC_UI=function(d){
- let timer=null;
+ let timer=null,viewerTimer=null,viewerBusy=false;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
  });
  const enabled=()=>d.prefs().syncMode==='on'&&d.configured()&&(!d.canSync||d.canSync());
  const status=()=>engine.status();
+ const viewEnabled=()=>d.prefs().syncMode==='on'&&d.configured()&&Boolean(d.canView?.());
  function message(){
+  if(viewEnabled()){
+   const v=engine.viewerStatus();
+   return v.lastError?'閲覧受信エラー：'+v.lastError:
+    v.lastSyncAt?'閲覧データ最終照合 '+new Date(v.lastSyncAt).toLocaleString('ja-JP'):'閲覧データの受信待ち';
+  }
   const s=status();
   if(s.lastError)return '同期エラー：'+s.lastError;
   if(s.conflicts.length)return s.conflicts.length+'乗務で競合。両方の記録を保持しています。';
   return s.lastSyncAt?'最終照合 '+new Date(s.lastSyncAt).toLocaleString('ja-JP'):'未同期';
  }
  async function run(manual=false){
+  if(viewEnabled())return viewNow(manual);
   if(!enabled()){
    if(manual)d.toast('Google接続情報と双方向同期の設定を確認してください',true);
    return false;
   }
+  const before=status().lastSyncAt;
   const ok=await engine.run();
+  if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
   d.setStatus(message());
   if(manual)d.toast(message(),!ok);
   refreshPanel();
   return ok;
  }
  function schedule(){
+  if(viewEnabled()){viewSchedule();return;}
   if(!enabled()||timer!==null)return;
   timer=setTimeout(async()=>{
    timer=null;
    if(document.visibilityState==='visible')await run(false);
   },1500);
+ }
+ async function viewNow(manual=false){
+  if(!viewEnabled()||viewerBusy)return false;
+  viewerBusy=true;
+  try{
+   const shifts=await engine.readOnly();
+   if(!viewEnabled())return false;
+   if(shifts===null){
+    d.onViewerStatus?.(message(),true);
+    if(manual)d.toast(message(),true);
+    return false;
+   }
+   await d.onViewerSnapshot?.(shifts);
+   d.onViewerStatus?.(message(),false);
+   if(manual)d.toast(message());
+   refreshPanel();
+   return true;
+  }catch(error){
+   if(viewEnabled())d.onViewerStatus?.('閲覧データの反映エラー：'+String(error?.message||error),true);
+   return false;
+  }finally{viewerBusy=false;}
+ }
+ function viewSchedule(){
+  if(!viewEnabled()||viewerTimer!==null||viewerBusy)return;
+  viewerTimer=setTimeout(async()=>{viewerTimer=null;await viewNow();},1500);
+ }
+ function cancelViewer(){
+  if(viewerTimer!==null)clearTimeout(viewerTimer);
+  viewerTimer=null;
  }
  async function resolve(id,localWins){
   if(!enabled())return;
@@ -82,6 +121,6 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,panel,resolve,status,message};
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message};
 };
 })(typeof window!=='undefined'?window:globalThis);
