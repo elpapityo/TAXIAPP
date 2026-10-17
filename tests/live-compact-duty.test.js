@@ -9,7 +9,7 @@ new Function(script);
 assert.match(script,/driveLayout:'legacy'/,'preserve legacy as the default');
 assert.match(script,/driveLayout:\['legacy','compact'\]/);
 assert.match(script,/if\(key==='driveLayout'\)render\(\)/);
-assert.match(script,/appEl\.classList\.toggle\('drive-compact'/);
+assert.match(script,/appEl\.classList\?\.toggle\('drive-compact'/);
 assert.match(source,/\.drive-compact \.hero \.action-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
 assert.match(source,/\.drive-compact \.wait-inputs/);
 assert.match(script,/renderDriveLayoutChooser\(\)/);
