@@ -7,6 +7,16 @@ const status=$('loginStatus'),login=$('googleLogin'),logout=$('googleLogout');
 const core=window.TAXIAPP_LOGIN_UTILS;
 const config=window.TAXIAPP_FIREBASE_CONFIG;
 function message(text){status.textContent=text;}
+$('copyLoginUid').addEventListener('click',async()=>{
+ const uid=$('loginUid').textContent.trim();
+ if(!uid)return;
+ try{
+  await navigator.clipboard.writeText(uid);
+  message('利用者ID（UID）をコピーしました。FirebaseのドキュメントID欄へ貼り付けてください。');
+ }catch{
+  message('コピーできませんでした。上に表示されたUIDを選択してコピーしてください。');
+ }
+});
 function showIdentity(user,state){
  $('loginDetails').hidden=!user;
  logout.hidden=!user;
