@@ -112,7 +112,7 @@ function client(name,svc,model,failReceive=false){
  assert.equal(await E.app.run(),false);
  assert.equal(E.model.shifts[0].startingOdo,'8');
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
- for(const literal of ['bidirectional-sync.js?v=0.3.37','cloud-sync-ui.js?v=0.3.45',
+ for(const literal of ['bidirectional-sync.js?v=20261017-10','cloud-sync-ui.js?v=20261017-10',
   'syncUI.panel()','syncUI.run(true)','syncMode','googlePostRequest(',
   'if(sheetTargetPrefs().syncMode===\'on\'){syncUI.schedule();return;}']){
   assert.ok(html.includes(literal),'missing '+literal);
