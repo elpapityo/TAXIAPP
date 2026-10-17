@@ -24,6 +24,11 @@ function extract(model){
  if(model?.version!==1||!Array.isArray(model?.shifts)||!plain(model.prefs))
   throw Error('既存のTAXIAPP設定を確認できません');
  const prefs=clean(model.prefs);
+ // Secrets and per-device Google bridge settings must never leave this device.
+ if(plain(prefs.sheetTarget)){
+  for(const k of ['webAppUrl','spreadsheetUrl','mode','syncMode'])
+   delete prefs.sheetTarget[k];
+ }
  const bytes=new TextEncoder().encode(JSON.stringify(prefs)).length;
  if(bytes>MAX_BYTES)throw Error('設定データが大きすぎます（上限350KB）。送信しません。');
  return {format:FORMAT,schemaVersion:1,prefs};
@@ -47,7 +52,7 @@ function summary(prefs){
   settingGroups:Object.keys(p).length
  };
 }
-function merge(model,remote){
+function merge(model,remote,options={}){
  const prefs=validate(remote);
  if(model?.version!==1||!Array.isArray(model?.shifts)||!plain(model.prefs))
   throw Error('この端末の既存データを確認できません');
@@ -64,12 +69,15 @@ function merge(model,remote){
  // Do not silently drop overflow beyond the app's 30-location UI limit.
  const remotePlaces=Array.isArray(prefs.waitPlaces)?prefs.waitPlaces:[];
  const localPlaces=Array.isArray(current.waitPlaces)?current.waitPlaces:[];
- const combined=[...new Set([...remotePlaces,...localPlaces].filter(
-  n=>typeof n==='string'&&n.trim()))];
+ const combined=options.preserveLocalWaiting===false
+  ? remotePlaces.filter(n=>typeof n==='string'&&n.trim())
+  : [...new Set([...remotePlaces,...localPlaces].filter(
+     n=>typeof n==='string'&&n.trim()))];
  if(combined.length>30)
   throw Error('待機所が合計30件を超えるため自動統合できません。どちらの端末も変更せず停止しました。');
  const remoteCoords=plain(prefs.waitPlaceCoords)?prefs.waitPlaceCoords:{};
- const localCoords=plain(current.waitPlaceCoords)?current.waitPlaceCoords:{};
+ const localCoords=options.preserveLocalWaiting===false?{}:
+  (plain(current.waitPlaceCoords)?current.waitPlaceCoords:{});
  return {
   ...model,
   prefs:{
@@ -80,5 +88,28 @@ function merge(model,remote){
   }
  };
 }
-root.TAXIAPP_ACCOUNT_SETTINGS=Object.freeze({FORMAT,MAX_BYTES,extract,validate,summary,merge});
+function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
+function reconcile(base,local,remote){
+ // For distinct preference keys, preserve both devices' changes. If both
+ // changed the *same* scalar/list differently, stop instead of losing data.
+ const conflicts=[];
+ function join(b,l,r,key){
+  if(same(l,b))return r;
+  if(same(r,b)||same(l,r))return l;
+  if(plain(l)&&plain(r)&&(plain(b)||b===undefined)){
+   const merged={};
+   const names=new Set([...Object.keys(b||{}),...Object.keys(l),...Object.keys(r)]);
+   for(const name of names){
+    if(['__proto__','prototype','constructor'].includes(name))continue;
+    const result=join(b?.[name],l[name],r[name],key?key+'.'+name:name);
+    if(result!==undefined)merged[name]=result;
+   }
+   return merged;
+  }
+  conflicts.push(key||'設定');
+  return l;
+ }
+ return {prefs:join(base,local,remote,''),conflicts};
+}
+root.TAXIAPP_ACCOUNT_SETTINGS=Object.freeze({FORMAT,MAX_BYTES,extract,validate,summary,merge,reconcile,same});
 })(typeof window!=='undefined'?window:globalThis);
