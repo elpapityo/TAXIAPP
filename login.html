@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TAXIAPP 管理者ログイン・移行準備</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;line-height:1.65;color:#233752;background:#f1f5fa}
+*{box-sizing:border-box}body{margin:0;padding:24px 12px}main{max-width:680px;margin:auto}
+h1{font-size:1.5rem;margin:0 0 8px}h2{font-size:1.13rem;margin:0 0 12px}
+section{background:#fff;border:1px solid #cbd8e5;border-radius:14px;padding:19px;margin:18px 0}
+p{margin:8px 0}small,.note{color:#52657b}
+button,a.action{display:inline-block;background:#1768b8;color:white;border:none;border-radius:9px;padding:13px 18px;font-size:1rem;font-weight:650;text-decoration:none;cursor:pointer;min-height:46px}
+button[disabled]{opacity:.6;cursor:not-allowed}
+button.alt{background:#43556e}
+a:not(.action){color:#065fae}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{background:#e9f2fd;border-radius:8px;padding:10px;overflow-wrap:anywhere}
+.warning{border-left:4px solid #a26100;padding-left:12px}
+code{overflow-wrap:anywhere;font-size:.88rem}
+dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
+</style>
+</head>
+<body><main>
+<header><h1>🚕 TAXIAPP｜管理者ログイン準備</h1>
+<p>現在のTAXIAPPとは別の準備画面です。既存の日報・同期設定は変更しません。</p></header>
+<section aria-labelledby="signin-title">
+<h2 id="signin-title">Googleアカウントでログイン</h2>
+<p id="loginStatus" class="status" role="status" aria-live="polite">ログイン準備を確認しています…</p>
+<div class="row"><button id="googleLogin" type="button" disabled>Googleでログイン</button><button id="googleLogout" class="alt" type="button" hidden>ログアウト</button></div>
+<dl id="loginDetails" hidden>
+<dt>Googleアカウント</dt><dd id="loginEmail"></dd>
+<dt>利用者ID（UID）</dt><dd><code id="loginUid"></code></dd>
+<dt>登録状態</dt><dd id="loginRole"></dd>
+</dl>
+<p class="note">パスワードはTAXIAPPでは受け取りません。メールアドレスは管理者が確認する登録情報です。</p>
+</section>
+<section aria-labelledby="legacy-title">
+<h2 id="legacy-title">これまでの日報の確認（読み取り専用）</h2>
+<p id="legacyStatus" class="status">端末内の営業記録を確認中です…</p>
+<p class="note">同じブラウザ・同じドメインで開いたときだけ、既存の端末保存データを確認できます。データの送信・削除・上書きは一切行いません。</p>
+<p class="warning">別端末の記録はここでは見えません。PCとスマホの引き継ぎは必ずバックアップと件数照合後に行います。</p>
+</section>
+<section>
+<h2>従来の日報アプリ</h2>
+<p>新しい認証が設定・検証されるまで、従来のTAXIAPPは引き続き利用できます。</p>
+<a class="action" href="./index.html">従来版のTAXIAPPを開く</a>
+<p class="note">※現時点では従来版にログイン制限は適用されません。正式切替までは他の利用者に公開・招待しません。</p>
+</section>
+</main>
+<script src="./firebase-config.js"></script>
+<script src="./login-core.js"></script>
+<script type="module" src="./login.js"></script>
+</body></html>
