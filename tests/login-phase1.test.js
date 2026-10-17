@@ -27,10 +27,13 @@ assert.match(rules,/match \/users\/\{uid\} \{[\s\S]*?allow create, update, delet
 assert.match(rules,/match \/\{document=\*\*\} \{ allow read, write: if false; \}/);
 const page=fs.readFileSync(path.join(root,'login.html'),'utf8');
 assert.match(page,/Googleでログイン/);
+assert.match(page,/id="copyLoginUid"/);
+
 assert.match(page,/既存の日報・同期設定は変更しません/);
 assert.match(page,/type="module" src="\.\/login.js"/);
 const js=fs.readFileSync(path.join(root,'login.js'),'utf8');
 assert.match(js,/signInWithPopup\(/);
+assert.match(js,/navigator\.clipboard\.writeText\(uid\)/);
 assert.match(js,/getDoc\(f\.doc\(db,'admins',user\.uid\)\)/);
 assert.match(js,/transaction\('state','readonly'\)/);
 assert.match(js,/request\.transaction\.abort\(\)/);
