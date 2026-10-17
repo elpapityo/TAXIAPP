@@ -8,7 +8,7 @@
 root.TAXIAPP_DEVICE_SESSION={
  create(d){
   let currentUid='',sessionId='',unsubscribe=null,mode='legacy';
-  let viewerRequested=false,claimedOnce=false,claimInFlight=false;
+  let viewerRequested=false,claimedOnce=false,claimInFlight=false,sessionRulesConfirmed=false;
   const STORAGE='taxiapp-current-session-v1-';
   const f=d.f,db=d.db;
   const ref=()=>f.doc(db,'deviceSessions',currentUid);
@@ -82,6 +82,7 @@ root.TAXIAPP_DEVICE_SESSION={
       if(mode==='pending')set('pending','通信中：操作権を確認しています…');
       return;
      }
+     sessionRulesConfirmed=true;
      if(!snap.exists()){
       if(viewerRequested){
        set('viewer','閲覧専用でログイン中');return;
@@ -101,7 +102,7 @@ root.TAXIAPP_DEVICE_SESSION={
       set('viewer','別の端末が操作中。この端末は閲覧専用です');
      }
     },error=>{
-     if(error.code==='permission-denied'){
+     if(error.code==='permission-denied'&&!sessionRulesConfirmed){
       set('legacy','端末制限のFirestoreルールが未公開です（従来方式で利用中）');
      }else{
       set('viewer','端末状態を確認できません：'+String(error.code||error.message||error));
