@@ -138,7 +138,40 @@ function create(deps){
    return false;
   }finally{busy=false;}
  }
- return {run,status,isConflict,digest};
+ async function resolve(id,preferLocal,onBackup){
+  if(busy||!conflict[id]||typeof onBackup!=='function')return false;
+  busy=true;
+  try{
+   const local=getModel()?.shifts?.find(s=>s.id===id);
+   const remote=await request('syncGet',{shiftId:id});
+   if(!local||!remote?.shift||remote.id!==id)throw Error('競合した乗務データを取得できません');
+   const before=localHash(local);
+   // A password-encrypted, user-verified backup of BOTH versions is required
+   // before either side is overwritten. The backup is never uploaded.
+   if(!await onBackup({id,local,remote:remote.shift,revision:remote.revision}))return false;
+   if(localHash(getModel()?.shifts?.find(s=>s.id===id))!==before)
+    throw Error('バックアップ中にこの端末の記録が変わりました。もう一度確認してください');
+   const saved=getSaved();
+   if(preferLocal){
+    const packet=getPacket(local);
+    const ack=await request('syncPut',{baseRevision:remote.revision,payload:JSON.stringify(packet)});
+    if(!ack||ack.revision!==remote.revision+1||ack.id!==id)
+     throw Error('クラウドの更新を確認できません');
+    if(!setSaved({...saved,[id]:{revision:ack.revision,hash:before}}))throw Error(lastError);
+   }else{
+    // Prevent accepting a superseded cloud snapshot.
+    const listing=await request('syncList',{});
+    if(!listing.shifts?.some(x=>x.id===id&&x.revision===remote.revision))
+     throw Error('バックアップ中にクラウドが更新されました。再確認してください');
+    const hash=remoteHash(remote.shift);
+    if(!setSaved({...saved,[id]:{revision:remote.revision,hash}}))throw Error(lastError);
+    await replaceRemoteShift(id,remote.shift,true);
+   }
+   delete conflict[id];lastError='';lastSyncAt=Date.now();return true;
+  }catch(e){lastError=String(e?.message||e);return false;}
+  finally{busy=false;}
+ }
+ return {run,resolve,status,isConflict,digest};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
