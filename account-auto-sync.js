@@ -262,7 +262,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       deps.onDeviceMode?.(next,previous,detail);
       // A repeated Firestore session snapshot must NOT cause another
       // settings read when the editing permission has not changed.
-      if((next==='writer'||next==='legacy')&&next!==previous)schedule(0);
+      if(next==='writer'&&next!==previous)schedule(0);
       else if(next!=='writer'&&next!=='legacy')clearTimeout(timer);
      }
     });
