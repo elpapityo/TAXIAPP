@@ -25,7 +25,7 @@ root.TAXIAPP_DEVICE_SESSION={
    mode=next;
    d.onMode?.(next,previous,detail);
   }
-  function viewOnly(){viewerRequested=true;}
+  function viewOnly(){viewerRequested=true; if(currentUid)set('viewer','閲覧専用で利用中');}
   function clear(){
    if(unsubscribe){unsubscribe();unsubscribe=null;}
    currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;
@@ -54,7 +54,8 @@ root.TAXIAPP_DEVICE_SESSION={
     setSession(newId);
     claimedOnce=true;
     viewerRequested=false;
-    // A server-acknowledged listener snapshot will grant writer mode.
+    set('writer','操作可能（この端末が有効です）');
+    // Subsequent server snapshots revoke this state if another device wins.
    }catch(error){
     if(uid===currentUid)set('viewer','操作権の切り替えに失敗：'+String(error.code||error.message||error));
    }finally{claimInFlight=false;}
