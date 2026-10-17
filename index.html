@@ -1417,6 +1417,15 @@ function handleSheetTargetSetting(target){const field=target.dataset.cloudSettin
  if(field==='webAppUrl'&&value&&!googleWebAppUrl(value)){toast('Googleの /exec WebアプリURLを入力してください',true);target.value=sheetTargetPrefs().webAppUrl;return;}
  if(field==='mode'&&!['off','manual','auto'].includes(value))return;
  if(field==='syncMode'&&!['off','on'].includes(value))return;
+ if(field==='syncMode'&&value==='on'){
+  if(!googleIsConfigured()){
+   toast('双方向同期の開始前にGoogle接続URLとキーを設定してください',true);
+   target.value=sheetTargetPrefs().syncMode||'off';return;
+  }
+  if(!confirm('この端末の保存済み '+model.shifts.length+' 乗務とGoogle側を照合します。初回に内容が異なる乗務は自動上書きせず競合で停止します。Google側の受信コードを更新済みですか？')){
+   target.value=sheetTargetPrefs().syncMode||'off';return;
+  }
+ }
  if(field==='printMode'&&!['off','manual','auto'].includes(value))return;
  if(field==='fileNamePattern'&&(!value||value.length>180)){toast('ファイル名の書式を入力してください。',true);target.value=sheetTargetPrefs().fileNamePattern;return;}
  if(field==='fileBaseName'&&!safeFilenamePart(value)){toast('ファイル名の先頭部分を入力してください。',true);target.value=sheetTargetPrefs().fileBaseName;return;}
