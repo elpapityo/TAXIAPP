@@ -60,9 +60,24 @@ function merge(model,remote){
  for(const field of ['webAppUrl','spreadsheetUrl','syncMode','mode'])
   if(Object.hasOwn(localSheet,field))sheetTarget[field]=localSheet[field];
   else delete sheetTarget[field];
+ // Keep waiting locations registered on this particular device too.
+ // Do not silently drop overflow beyond the app's 30-location UI limit.
+ const remotePlaces=Array.isArray(prefs.waitPlaces)?prefs.waitPlaces:[];
+ const localPlaces=Array.isArray(current.waitPlaces)?current.waitPlaces:[];
+ const combined=[...new Set([...remotePlaces,...localPlaces].filter(
+  n=>typeof n==='string'&&n.trim()))];
+ if(combined.length>30)
+  throw Error('待機所が合計30件を超えるため自動統合できません。どちらの端末も変更せず停止しました。');
+ const remoteCoords=plain(prefs.waitPlaceCoords)?prefs.waitPlaceCoords:{};
+ const localCoords=plain(current.waitPlaceCoords)?current.waitPlaceCoords:{};
  return {
   ...model,
-  prefs:{...current,...prefs,sheetTarget}
+  prefs:{
+   ...current,...prefs,
+   waitPlaces:combined,
+   waitPlaceCoords:{...localCoords,...remoteCoords},
+   sheetTarget
+  }
  };
 }
 root.TAXIAPP_ACCOUNT_SETTINGS=Object.freeze({FORMAT,MAX_BYTES,extract,validate,summary,merge});
