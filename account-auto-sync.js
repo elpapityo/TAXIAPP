@@ -8,7 +8,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
  create(deps){
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
-  let deviceSession=null,viewerLogin=false,lastCloudRead=0;
+  let deviceSession=null,viewerLogin=false,explicitWriterLogin=false,lastCloudRead=0;
   let busy=false,again=false,timer=null,booted=false;
   // A single per-UID session listener revokes old editors.
   // User settings use one-off server reads only, never continuous watching.
@@ -210,8 +210,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
     baseline=readBase();
     localSignature=JSON.stringify(currentPrefs());
     status('ログイン済み：操作端末を確認しています');
-    await deviceSession.begin(next,{viewer:viewerLogin});
-    viewerLogin=false;
+    await deviceSession.begin(next,{viewer:!explicitWriterLogin});
+    viewerLogin=false;explicitWriterLogin=false;
     if(deviceSession.canWrite())schedule(0);
    }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));}
   }
@@ -222,7 +222,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    }
    $('accountSignIn')?.addEventListener('click',async()=>{
     if(!auth){status('ログイン機能を読み込み中です…');return;}
-    viewerLogin=false;
+    viewerLogin=false;explicitWriterLogin=true;
     try{
      await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
      if(deviceSession?.state()==='viewer')await deviceSession.claim();
@@ -230,13 +230,14 @@ root.TAXIAPP_ACCOUNT_AUTO={
    });
    $('accountViewSignIn')?.addEventListener('click',async()=>{
     if(!auth)return;
-    viewerLogin=true;
+    viewerLogin=true;explicitWriterLogin=false;
     try{
      await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
      deviceSession?.viewOnly();
     }catch(e){status('閲覧ログイン失敗：'+String(e.code||e.message||e));}
    });
    $('accountTakeOver')?.addEventListener('click',()=>{
+    explicitWriterLogin=true;
     deviceSession?.claim().catch(e=>status('切替失敗：'+String(e.message||e)));
    });
    $('accountSignOut')?.addEventListener('click',()=>{
