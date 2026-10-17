@@ -349,6 +349,11 @@ html[data-ui-theme="night"] .operations-fold>summary{background:#243a54;color:#e
 #deviceSessionStatus{font-weight:700}
 #accountTakeOver{background:#095c7e}
 .taxi-viewer .account-top{border:2px solid #a26100}
+.viewer-header-right{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px;min-width:0}
+.viewer-sync-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.viewer-sync-controls .btn{min-height:44px;padding:8px 14px}
+.viewer-sync-time{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+@media(max-width:650px){.topbar{flex-wrap:wrap}.viewer-header-right{justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -770,7 +775,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -1002,7 +1007,9 @@ function header(){
   deviceMode==='viewer'&&!viewerCloudLoaded?'◌ 閲覧データ受信待ち':
   deviceMode==='viewer'&&viewerOpenCount>1?'△ 未入庫乗務が複数':
   shift?'● 乗務中':'○ 出庫前 / 帰庫済';
- return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><span class="status-pill ${shift?'':'stop'}">${state}</span></header>`;
+ const viewerTools=deviceMode==='viewer'
+  ?`<div class="viewer-sync-controls"><button class="btn" type="button" data-action="viewerRefresh">↻ 最新データを取得</button><span class="viewer-sync-time">${safeText(syncUI.message())}</span></div>`:'';
+ return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}</div></header>`;
 }
 let pendingRender=false, renderAfterKeypad=false;
 let saveTouchPress=null,saveRenderPending=false,saveTouchTimeout=null,skipSaveClick=null;
@@ -1918,6 +1925,10 @@ function discardInvalidAutoDropDistance(draft){
 }
 let gpsAlightPending=false;
 function handleAction(action,id){
+  if(action==='viewerRefresh'){
+   if(deviceMode==='viewer')syncUI.viewNow(true);
+   return;
+  }
   if(!canEditNow()&&action!=='bidirectionalSyncNow'){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
@@ -2558,9 +2569,14 @@ appEl.addEventListener('focusout',()=>{
  accountSettingsAuto?.editingEnded();
 });
 if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
-window.addEventListener('online',()=>{if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
-document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();if(document.visibilityState==='visible'){if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();}});
-setInterval(()=>{if(document.visibilityState==='visible'&&sheetTargetPrefs().syncMode==='on')syncUI.schedule();},20000);
+window.addEventListener('online',()=>{
+  // Retry unsent edits when connectivity returns, but do not auto-refresh viewers.
+  if(!canEditNow())return;
+  if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();
+  else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
+ });
+document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();});
+// No periodic duty polling. Writer sends when changed; viewer pulls on login or button.
 
 })().catch(function (err) {
   console.error('TAXIAPP startup error:',err);
