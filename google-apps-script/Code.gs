@@ -130,6 +130,9 @@ function doPost(e) {
    var version=syncRevisionV2_(ss,String(data.shift.id));
    if(version.managed)throw Error('この乗務は双方向同期で管理されています。端末のTAXIAPPを更新してください。');
    var summary=savePacket_(data);
+   // Legacy writes MUST increment the server revision too. A modern client
+   // can never unknowingly overwrite a concurrent write from an older app.
+   syncWriteRevisionV2_(ss,String(data.shift.id),version.revision+1,false);
    return replyToPhone_(nonce,true,summary,null,audience);
   }finally{lock.releaseLock();}
  }catch(err){
@@ -154,10 +157,10 @@ function replyToPhone_(nonce,success,detail,data,origin) {
 function syncRevisionV2_(ss,id) {
  var s=ss.getSheetByName(TAXIAPP_REVISION_SHEET);
  if(s&&s.getLastRow()>1){
-  var rows=s.getRange(2,1,s.getLastRow()-1,3).getValues();
+  var rows=s.getRange(2,1,s.getLastRow()-1,4).getValues();
   for(var i=0;i<rows.length;i++){
    if(String(rows[i][0])===id)
-    return {revision:Number(rows[i][1])||0,managed:true,updatedAt:String(rows[i][2]||'')};
+    return {revision:Number(rows[i][1])||0,managed:String(rows[i][3])==='v2',updatedAt:String(rows[i][2]||'')};
   }
  }
  var originals=ss.getSheetByName('TAXIAPP_同期原本');
@@ -205,17 +208,21 @@ function syncPutV2_(packet,baseRevision) {
  // the revision after all sheets have been successfully written.
  savePacket_(packet);
  var rev=base+1,now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
+ syncWriteRevisionV2_(ss,id,rev,true);
+ return {id:id,revision:rev,updatedAt:now};
+}
+function syncWriteRevisionV2_(ss,id,revision,modern){
  var state=ss.getSheetByName(TAXIAPP_REVISION_SHEET);
  if(!state){
   state=ss.insertSheet(TAXIAPP_REVISION_SHEET);
-  state.getRange(1,1,1,3).setValues([['乗務ID','更新番号','更新日時']]);
+  state.getRange(1,1,1,4).setValues([['乗務ID','更新番号','更新日時','同期方式']]);
   state.hideSheet();
  }
  var rows=state.getLastRow()>1?state.getRange(2,1,state.getLastRow()-1,1).getValues():[];
  var index=rows.findIndex(function(row){return String(row[0])===id;});
  var rowNumber=index<0?state.getLastRow()+1:index+2;
- state.getRange(rowNumber,1,1,3).setValues([[id,rev,now]]);
- return {id:id,revision:rev,updatedAt:now};
+ var now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
+ state.getRange(rowNumber,1,1,4).setValues([[id,revision,now,modern?'v2':'legacy']]);
 }
 function validatePacket_(packet) {
  if (!packet || packet.kind !== 'TAXIAPP_SHIFT_V1' || !packet.shift)
