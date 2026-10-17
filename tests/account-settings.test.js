@@ -48,8 +48,11 @@ assert.equal(JSON.stringify(phone),oldJson,'merge must not mutate previous local
 assert.equal(merged.shifts,phone.shifts,'the exact local duty list is preserved');
 assert.equal(merged.activeId,phone.activeId);
 assert.equal(merged.prefs.driver,'乗務員A');
-assert.deepEqual(Array.from(merged.prefs.waitPlaces),['大阪空港','伊丹駅','梅田']);
+assert.deepEqual(Array.from(merged.prefs.waitPlaces),['大阪空港','伊丹駅','梅田','旧候補']);
 assert.equal(merged.prefs.waitPlaceCoords.大阪空港.lng,135.45);
+const overcrowded=copy(phone);
+overcrowded.prefs.waitPlaces=Array.from({length:30},(_,i)=>'別端末の待機所'+i);
+assert.throws(()=>api.merge(overcrowded,stored),/30件/,'must not discard waiting places when total exceeds 30');
 assert.equal(merged.prefs.ui.theme,'night');
 assert.equal(merged.prefs.sheetTarget.mode,'manual','device sync mode must stay manual');
 assert.equal(merged.prefs.sheetTarget.syncMode,'off','device two-way sync setting must be preserved');
