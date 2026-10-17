@@ -70,7 +70,9 @@ root.TAXIAPP_DEVICE_SESSION={
    currentUid=user.uid;
    const oldId=readStored();
    sessionId=oldId;
-   viewerRequested=viewer||viewerRequested;
+   // An already-owned tab keeps its editing session on reload;
+   // an automatically restored login on a new browser is view-only until takeover.
+   viewerRequested=Boolean(viewer&&!oldId);
    claimedOnce=Boolean(oldId);
    set('pending','操作権を確認しています…');
    try{
