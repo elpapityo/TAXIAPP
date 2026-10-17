@@ -174,6 +174,17 @@ root.TAXIAPP_ACCOUNT_AUTO={
     const admin=adminSnap.exists()&&adminSnap.data()?.enabled===true;
     const active=userSnap.exists()&&userSnap.data()?.status==='active';
     if(!admin&&!active){status('利用登録待ち：設定同期は停止中');return;}
+    // A shared browser must not send the previous driver's preferences to
+    // a different Firebase account. Full account-switch isolation comes later.
+    const bound=localStorage.getItem('taxiapp-bound-account-uid-v1');
+    if(bound&&bound!==uid){
+     status('別のGoogleアカウントです。端末データ保護のため自動同期を停止しました');
+     return;
+    }
+    try{localStorage.setItem('taxiapp-bound-account-uid-v1',uid);}catch{
+     status('アカウント識別を保存できません。安全のため同期を停止しました');
+     return;
+    }
     enabled=true;
     baseline=readBase();
     status('Googleログイン済み・設定を同期します');
