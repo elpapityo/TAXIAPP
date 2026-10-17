@@ -31,7 +31,7 @@ const ss={
 const context={
  SpreadsheetApp:{openById:()=>ss},
  Utilities:{formatDate:()=> '2026-10-17 10:00:00'},
- HtmlService:{createHtmlOutput:()=>({setXFrameOptionsMode(){return this}}),XFrameOptionsMode:{ALLOWALL:1}},
+ HtmlService:{createHtmlOutput:html=>({html,setXFrameOptionsMode(){return this}}),XFrameOptionsMode:{ALLOWALL:1}},
  PropertiesService:{getScriptProperties:()=>({getProperty:()=> 'x'.repeat(64)})},
  LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
  console,JSON,Array,Object,Number,String,Date,Math,RegExp,Error,Set
@@ -68,7 +68,8 @@ assert.equal(context.syncRevisionV2_(ss,'shift-999-xxx').revision,0);
 const legacy={kind:'TAXIAPP_SHIFT_V1',shift:{id:'shift-789-legacy',date:'2026-10-17',records:[]}};
 const message=JSON.stringify(legacy);
 const param={parameter:{key:'x'.repeat(64),action:'sync',nonce:'n',payload:message,origin:'https://elpapityo.github.io'}};
-context.doPost(param);
+const response=context.doPost(param);
+assert.match(response.html,/"ok":true/,response.html);
 assert.equal(context.syncRevisionV2_(ss,legacy.shift.id).revision,1);
 assert.equal(context.syncRevisionV2_(ss,legacy.shift.id).managed,false);
 context.doPost(param);
