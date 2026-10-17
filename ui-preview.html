@@ -369,6 +369,125 @@ body.workspace-active>#appShell{display:none!important}
   renderLegacy();
   for(const [id,name] of [['compactMode','compact'],['guidedMode','guided'],['detailMode','detail'],['legacyMode','legacy']])$(id).classList.toggle('active',model.mode===name);
  }
+
+ // Original v0.3.49 action order recreated as a self-contained visual demo.
+ // This does not use the real daily-report storage, auth, GPS or cloud API.
+ const legacy={stage:'idle',fields:{dispatch:'乗込み',received:'08:29',
+  pickupTime:'08:29',pickupPlace:'',pickupOdo:'',waitingPlace:'',
+  male:'1',female:'0',pay:'現金',dropTime:'',dropPlace:'',dropOdo:'',
+  fare:'',discount:'なし',extraPay:'なし',extraAmount:'',toll:'',
+  highwayKind:'実車',highwayIn:'',highwayOut:'',memo:''},
+  message:'操作確認用のデモです。営業データは保存しません。'};
+ const legacyEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function legacyInput(key,label,type='text'){
+  const attr=type==='number'?'type="number" inputmode="decimal" step="any" min="0"':type==='time'?'type="time"':'type="text"';
+  return `<label class="field"><span class="fieldlabel">${label}</span><input ${attr} data-legacy-field="${key}" value="${legacyEscape(legacy.fields[key])}"></label>`;
+ }
+ function legacySelect(key,label,options){
+  return `<label class="field"><span class="fieldlabel">${label}</span><select data-legacy-field="${key}">${options.map(x=>`<option ${legacy.fields[key]===x?'selected':''}>${legacyEscape(x)}</option>`).join('')}</select></label>`;
+ }
+ const legacyButton=(key,label,style='')=>`<button type="button" data-legacy-action="${key}" class="${style}">${label}</button>`;
+ function renderLegacy(){
+  const root=$('legacyMode');if(!root)return;
+  const stage=legacy.stage,stageNames={idle:'現在：空車・流し',waiting:'現在：待機中',
+   dispatch:'迎車中 / お迎え先の確認',ride:'実車中 / 乗車情報',
+   settle:'降車・精算入力',cancel:'迎車キャンセルの記録'};
+  let body='';
+  if(stage==='idle'||stage==='waiting'){
+   body=`<div class="legacyCard"><h3>次の記録 / № ${model.count+1}</h3>
+    ${stage==='waiting'?'<div class="legacyMessage">待機中：場所と距離を記録します（デモ）。</div><div class="legacyFields">'+legacyInput('waitingPlace','待機場所')+legacyInput('pickupOdo','現在の走行距離（km）','number')+'</div>':''}
+    <div class="legacyActions">${legacyButton('beginRide','🚕 乗車','legacyPrimary')}
+    ${legacyButton('beginDispatch','📲 アプリ迎車','legacyTeal')}
+    ${legacyButton(stage==='waiting'?'stopWait':'beginWait',stage==='waiting'?'🅿 待機終了':'🅿 待機開始')}
+    ${legacyButton('history','▤ 営業履歴')}</div></div>`;
+  }else if(stage==='dispatch'){
+   body=`<div class="legacyCard"><h3>迎車情報</h3>
+    <div class="legacyFields">${legacySelect('dispatch','配車元',['GO','Uber','DiDi','無線','その他'])}
+    ${legacyInput('received','迎車受信時刻','time')}
+    ${legacyInput('pickupPlace','お迎え場所・住所')}
+    ${legacyInput('pickupOdo','迎車先到着時の走行距離（km）','number')}
+    ${legacyInput('memo','依頼メモ（任意）')}</div>
+    <div class="legacyActions">${legacyButton('gpsPickup','⌖ 現在地（仮入力）')}
+    ${legacyButton('boardDispatch','🚕 お客様が乗車','legacyPrimary')}
+    ${legacyButton('cancelDispatch','× 迎車キャンセル','legacyDanger')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }else if(stage==='ride'){
+   body=`<div class="legacyCard"><h3>① 乗車情報</h3><div class="legacyFields">
+    ${legacySelect('dispatch','配車区分',['乗込み','GO','Uber','DiDi','無線','その他'])}
+    ${legacyInput('received','データ受信・待機開始時刻','time')}
+    ${legacyInput('pickupTime','乗車時刻','time')}
+    ${legacyInput('pickupOdo','乗車時の走行距離（km）','number')}
+    ${legacyInput('pickupPlace','乗車地・住所')}
+    ${legacySelect('male','男性人数',['0','1','2','3','4','5'])}
+    ${legacySelect('female','女性人数',['0','1','2','3','4','5'])}
+    ${legacySelect('pay','支払方法',['現金','GO','Uber','カード','QR','チケット','その他'])}</div>
+    <details><summary>🛣 高速道路（使う場合に開く）</summary><div class="legacyFields">
+    ${legacySelect('highwayKind','高速区分',['実車','空車'])}
+    ${legacyInput('highwayIn','乗インター')}
+    ${legacyInput('highwayOut','降インター')}
+    ${legacyInput('toll','高速代（円）','number')}</div></details>
+    <div class="legacyActions">${legacyButton('alight','🚕 降車・精算へ','legacyPrimary legacyFull')}
+    ${legacyButton('gpsPickup','⌖ 現在地（仮入力）')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }else if(stage==='settle'){
+   body=`<div class="legacyCard"><h3>② 降車・精算</h3>
+    <div class="legacyMessage">乗車地：${legacyEscape(legacy.fields.pickupPlace||'未入力')} ／ 乗車：${legacyEscape(legacy.fields.pickupTime)}</div>
+    <div class="legacyFields">
+    ${legacyInput('fare','メーター金額（円）','number')}
+    ${legacyInput('dropOdo','降車時の走行距離（km）','number')}
+    ${legacyInput('dropTime','降車時刻（変更可）','time')}
+    ${legacyInput('dropPlace','降車地・住所')}
+    ${legacySelect('discount','割引',['なし','障がい者','遠距離'])}
+    ${legacySelect('pay','最初の金種',['現金','GO','Uber','カード','QR','チケット','その他'])}
+    ${legacySelect('extraPay','追加金種',['なし','現金','カード','QR','チケット'])}
+    ${legacyInput('extraAmount','追加金種の金額（円）','number')}</div>
+    <details><summary>🛣 高速入力内容を確認</summary><div class="legacyFields">
+    ${legacyInput('highwayIn','乗インター')}
+    ${legacyInput('highwayOut','降インター')}
+    ${legacyInput('toll','高速代（円）','number')}</div></details>
+    <div class="legacyActions">${legacyButton('save','✓ 精算してデモ登録','legacyPrimary legacyFull')}
+    ${legacyButton('backRide','← 乗車情報へ戻る')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }else if(stage==='cancel'){
+   body=`<div class="legacyCard"><h3>迎車キャンセル</h3>
+    <p class="legacyMessage">キャンセルは0円の記録として扱います（デモ）。</p>
+    <div class="legacyFields">${legacyInput('received','迎車受信時刻','time')}
+    ${legacyInput('pickupPlace','迎車場所・補足')}</div>
+    <div class="legacyActions">${legacyButton('saveCancel','✓ キャンセルをデモ登録','legacyPrimary legacyFull')}
+    ${legacyButton('discard','入力を取り消す')}</div></div>`;
+  }
+  root.innerHTML=`<div class="legacyShell"><div class="legacyHeading"><h2>${stageNames[stage]}</h2>
+   <span class="legacyTag">従来入力 / v0.3.49</span></div>
+   <div class="legacyMessage">乗車・迎車・待機から選ぶ従来の流れを再現しています。旧版と同等のGPS・料金計算は未接続です。</div>
+   ${body}<p class="legacyMessage" role="status">${legacyEscape(legacy.message)}</p></div>`;
+ }
+ function legacyAction(action){
+  document.querySelectorAll('#legacyMode [data-legacy-field]').forEach(el=>{
+   legacy.fields[el.dataset.legacyField]=el.value;
+  });
+  const d=legacy.fields;
+  switch(action){
+   case 'beginRide':legacy.stage='ride';d.dispatch='乗込み';break;
+   case 'beginDispatch':legacy.stage='dispatch';d.dispatch='GO';break;
+   case 'beginWait':legacy.stage='waiting';break;
+   case 'stopWait':legacy.stage='idle';break;
+   case 'boardDispatch':legacy.stage='ride';break;
+   case 'cancelDispatch':legacy.stage='cancel';break;
+   case 'alight':legacy.stage='settle';d.dropTime=d.dropTime||'08:39';break;
+   case 'backRide':legacy.stage='ride';break;
+   case 'discard':legacy.stage='idle';break;
+   case 'save':
+    if(!(Number(d.fare)>0)){legacy.message='メーター金額を入力してください。';renderLegacy();return;}
+    model.count++;legacy.stage='idle';d.fare='';break;
+   case 'saveCancel':model.count++;legacy.stage='idle';break;
+   case 'gpsPickup':d.pickupPlace=demoLocations[model.locationIndex++%demoLocations.length];break;
+   case 'history':
+    legacy.message='営業履歴は実アプリに接続していません。この画面では保存されません。';
+    renderLegacy();return;
+  }
+  legacy.message='操作をデモ実行しました。実際の営業データは保存していません。';
+  render();
+ }
  function setMode(mode){if(!modeLabels[mode])return;model.mode=mode;const ids=['compactFare','guideFare','detailFare'];const first=ids.map(id=>$(id).value).find(v=>v!=='')||'';ids.forEach(id=>{if(!$(id).value&&first)$(id).value=first});if($('detailFrom').value&&!model.from)model.from=$('detailFrom').value;if($('detailTo').value&&!model.to)model.to=$('detailTo').value;render();setView('drive');}
  // Route every top-level menu choice through the currently selected device
  // viewport. Otherwise the outer desktop shell silently replaces the preview.
