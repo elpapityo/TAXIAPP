@@ -52,8 +52,10 @@ assert.doesNotMatch(config,/PRIVATE KEY|BEGIN RSA PRIVATE KEY/);
 const check=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
 assert.equal(check.status,0,check.stderr);
 const live=fs.readFileSync(path.join(root,'index.html'),'utf8');
-assert.match(live,/TAXIAPP v0\.3\.43/);
-assert.doesNotMatch(live,/login\.html|TAXIAPP_FIREBASE_CONFIG/);
+assert.match(live,/TAXIAPP v0\.3\.44/);
+assert.match(live,/account-auto-sync\.js/);
+assert.match(live,/id="accountSignIn"/);
+assert.doesNotMatch(live,/TAXIAPP_WRITE_KEY/);
 console.log('Login phase1 tests passed: admin isolated, default deny, legacy read-only and no main-app disruption.');
 
 // Execute the real click handler with older and modern browser clipboard mocks.
