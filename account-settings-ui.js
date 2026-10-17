@@ -101,7 +101,7 @@ root.TAXIAPP_ACCOUNT_SETTINGS_UI=function(d){
   const a=document.createElement('a');
   a.href=objectUrl;a.download=filename;
   document.body.appendChild(a);
-  try{a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),2000);}
+  try{a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);}
  }
  $('backupBeforeSettings').addEventListener('click',()=>controlled(async()=>{
   if(!remote)throw Error('クラウドに設定がありません');
