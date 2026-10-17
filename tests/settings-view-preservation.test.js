@@ -88,7 +88,7 @@ const cloudSource=fs.readFileSync(path.join(__dirname,'..','cloud-sync-ui.js'),'
 const cloudStatus={busy:false,conflicts:[],lastError:'',lastSyncAt:0};
 const node={
  status:{textContent:''},
- conflicts:{dataset:{},innerHTML:'',contains(){return false;}}
+ conflicts:{dataset:{},innerHTML:'',querySelector(){return null;}}
 };
 let fullRedraws=0;
 const syncWindow={
