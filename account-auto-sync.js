@@ -176,7 +176,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     busy=false;
     // Applying a remote update is not a user edit.
     if(stillCurrent(accountUid)){
-     try{localSignature=JSON.stringify(currentPrefs());}catch{}
+     try{localSignature=api.signature(currentPrefs());}catch{}
     }
     if(again){again=false;schedule(300);}
    }
@@ -211,7 +211,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     }
     enabled=true;
     baseline=readBase();
-    localSignature=JSON.stringify(currentPrefs());
+    localSignature=api.signature(currentPrefs());
     status('ログイン済み：操作端末を確認しています');
     await deviceSession.begin(next,{viewer:!explicitWriterLogin});
     viewerLogin=false;explicitWriterLogin=false;
@@ -279,7 +279,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   function localSaved(){
    if(!enabled)return;
    try{
-    const nextSignature=JSON.stringify(currentPrefs());
+    const nextSignature=api.signature(currentPrefs());
     // Duty records and GPS events are saved often; they must not
     // trigger settings traffic when preferences are unchanged.
     if(nextSignature===localSignature)return;
