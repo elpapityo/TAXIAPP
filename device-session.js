@@ -72,7 +72,7 @@ root.TAXIAPP_DEVICE_SESSION={
    sessionId=oldId;
    // An already-owned tab keeps its editing session on reload;
    // an automatically restored login on a new browser is view-only until takeover.
-   viewerRequested=Boolean(viewer&&!oldId);
+   viewerRequested=Boolean(viewer);
    claimedOnce=Boolean(oldId);
    set('pending','操作権を確認しています…');
    try{
@@ -103,7 +103,7 @@ root.TAXIAPP_DEVICE_SESSION={
      }
     },error=>{
      if(error.code==='permission-denied'&&!sessionRulesConfirmed){
-      set('legacy','端末制限のFirestoreルールが未公開です（従来方式で利用中）');
+      set(viewerRequested?'viewer':'legacy',viewerRequested?'Firestoreルール未公開のため閲覧専用で利用中':'端末制限のFirestoreルールが未公開です（従来方式で利用中）');
      }else{
       set('viewer','端末状態を確認できません：'+String(error.code||error.message||error));
      }
