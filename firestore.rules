@@ -20,6 +20,26 @@ service cloud.firestore {
    // Future invitations and suspension must run on a trusted backend.
    allow create, update, delete: if false;
   }
+  // Only an active account can read/write its OWN settings document.
+  // Admin privileges cannot be granted here and other accounts stay private.
+  function activeUser(uid) {
+   return exists(/databases/$(database)/documents/users/$(uid)) &&
+    get(/databases/$(database)/documents/users/$(uid)).data.status == 'active';
+  }
+  function ownerEnabled(uid) {
+   return signedIn() && request.auth.uid == uid &&
+    (isAdmin() || activeUser(uid));
+  }
+  match /accountSettings/{uid} {
+   allow get: if ownerEnabled(uid);
+   allow list, delete: if false;
+   allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly(['format','schemaVersion','prefs','updatedAt']) &&
+    request.resource.data.format == 'TAXIAPP_ACCOUNT_SETTINGS_V1' &&
+    request.resource.data.schemaVersion == 1 &&
+    request.resource.data.prefs is map &&
+    request.resource.data.updatedAt == request.time;
+  }
   // Protected user records, Drive file references and future features
   // remain CLOSED until data-owner rules and backend are separately tested.
   match /{document=**} { allow read, write: if false; }
