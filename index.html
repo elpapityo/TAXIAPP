@@ -1300,6 +1300,7 @@ function googlePostRequest(action,fields={}){
 
 function googlePostShift(packet){return googlePostRequest('sync',{payload:JSON.stringify(packet)}).then(x=>x.message);}
 async function googleSendShift(shift,manual=false){
+ if(sheetTargetPrefs().syncMode==='on'){return syncUI.run(manual);}
  if(!shift){if(manual)toast('送信する乗務データがありません',true);return false;}
  if(!googleIsConfigured()){if(manual)toast('先にWebアプリURLと接続キーを設定してください',true);return false;}
  if(cloudRunning){if(manual)toast('送信中です。完了後に再試行してください');return false;}
@@ -1320,6 +1321,7 @@ async function googleSendShift(shift,manual=false){
  }finally{cloudRunning=false;}
 }
 function scheduleGoogleSync(){
+ if(sheetTargetPrefs().syncMode==='on'){syncUI.schedule();return;}
  if(sheetTargetPrefs().mode!=='auto'||!googleIsConfigured())return;
  clearTimeout(cloudTimer);
  cloudTimer=setTimeout(()=>{
@@ -1330,6 +1332,7 @@ function scheduleGoogleSync(){
  },3000);
 }
 async function googleSendAllShifts(){
+ if(sheetTargetPrefs().syncMode==='on'){await syncUI.run(true);return;}
  if(!googleIsConfigured()){toast('Googleの接続設定を完了してください',true);return;}
  const shifts=[...(model.shifts||[])];
  if(!shifts.length){toast('送信する乗務データがありません',true);return;}
@@ -2330,9 +2333,10 @@ if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheet
 if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
 await load();if(upgradeWaitingHistory())await save();render();if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
-if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
-window.addEventListener('online',()=>{if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
-document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();if(document.visibilityState==='visible'&&sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
+if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
+window.addEventListener('online',()=>{if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
+document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();if(document.visibilityState==='visible'){if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();}});
+setInterval(()=>{if(document.visibilityState==='visible'&&sheetTargetPrefs().syncMode==='on')syncUI.schedule();},20000);
 
 })().catch(function (err) {
   console.error('TAXIAPP startup error:',err);
