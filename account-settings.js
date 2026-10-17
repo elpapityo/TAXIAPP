@@ -61,7 +61,7 @@ function merge(model,remote,options={}){
  // each device. A login on a new phone must not inherit a live auto-sync mode.
  const localSheet=plain(current.sheetTarget)?current.sheetTarget:{};
  const remoteSheet=plain(prefs.sheetTarget)?prefs.sheetTarget:{};
- const sheetTarget={...remoteSheet,...localSheet};
+ const sheetTarget={...localSheet,...remoteSheet};
  for(const field of ['webAppUrl','spreadsheetUrl','syncMode','mode'])
   if(Object.hasOwn(localSheet,field))sheetTarget[field]=localSheet[field];
   else delete sheetTarget[field];
