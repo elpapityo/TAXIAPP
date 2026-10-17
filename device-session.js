@@ -8,7 +8,7 @@
 root.TAXIAPP_DEVICE_SESSION={
  create(d){
   let currentUid='',sessionId='',unsubscribe=null,mode='pending';
-  let viewerRequested=false,claimedOnce=false,claimInFlight=false;
+  let viewerRequested=false,claimedOnce=false,claimInFlight=false,listenerHealthy=false;
   const STORAGE='taxiapp-current-session-v1-';
   const f=d.f,db=d.db;
   const ref=()=>f.doc(db,'deviceSessions',currentUid);
@@ -28,7 +28,7 @@ root.TAXIAPP_DEVICE_SESSION={
   function viewOnly(){viewerRequested=true; if(currentUid)set('viewer','閲覧専用で利用中');}
   function clear(){
    if(unsubscribe){unsubscribe();unsubscribe=null;}
-   currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;
+   currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;listenerHealthy=false;
    set('pending','Googleログインと操作権の確認待ち');
   }
   function sessionKey(){return STORAGE+currentUid;}
@@ -51,11 +51,16 @@ root.TAXIAPP_DEVICE_SESSION={
     // Do not persist newId until the server has acknowledged the takeover.
     await f.setDoc(ref(),{sessionId:newId,updatedAt:f.serverTimestamp()});
     if(uid!==currentUid)return;
+    // A successful write alone is not proof that the listener can revoke
+    // this session later. Verify server read access and current ownership.
+    const checked=await f.getDocFromServer(ref());
+    if(uid!==currentUid)return;
+    if(!listenerHealthy||!checked.exists()||checked.data().sessionId!==newId)
+     throw Error('サーバーで操作権を確認できません。閲覧専用で利用してください');
     setSession(newId);
     claimedOnce=true;
     viewerRequested=false;
-    set('writer','操作可能（この端末が有効です）');
-    // Subsequent server snapshots revoke this state if another device wins.
+    set('writer','操作可能（サーバー確認済み）');
    }catch(error){
     if(uid===currentUid)set('viewer','操作権の切り替えに失敗：'+String(error.code||error.message||error));
    }finally{claimInFlight=false;}
@@ -81,9 +86,11 @@ root.TAXIAPP_DEVICE_SESSION={
      // The editor's lease must be based on a server-confirmed snapshot;
      // cached or pending local snapshots cannot prove exclusive ownership.
      if(snap.metadata.fromCache||snap.metadata.hasPendingWrites){
+      listenerHealthy=false;
       set('pending','サーバーから操作権を確認できません。編集を停止しています');
       return;
      }
+     listenerHealthy=true;
      if(!snap.exists()){
       if(viewerRequested){
        set('viewer','閲覧専用でログイン中');return;
@@ -103,6 +110,7 @@ root.TAXIAPP_DEVICE_SESSION={
       set('viewer','別の端末が操作中。この端末は閲覧専用です');
      }
     },error=>{
+     listenerHealthy=false;
      // Never fall back to editable legacy mode after a Firestore denial.
      // Multiple devices could otherwise both edit the same duty.
      set('viewer','操作権を確認できません：'+String(error.code||error.message||error)+
