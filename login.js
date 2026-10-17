@@ -97,12 +97,13 @@ if(!core.firebaseConfigReady(config)){
   ]);
   const auth=a.getAuth(initializeApp(config)),db=f.getFirestore();
   const provider=new a.GoogleAuthProvider();
+  const settingsController=window.TAXIAPP_ACCOUNT_SETTINGS_UI({auth,db,f,readLocal:legacyLocal});
   login.disabled=false;
   // A popup can finish without triggering another auth-state notification
   // when the same Google user is already signed in. Refresh the visible
   // account and permissions explicitly after every successful popup.
   const refreshIdentity=async user=>{
-   if(!user){showIdentity(null,'signed-out');message('未ログインです。Googleでログインしてください。');return;}
+   if(!user){showIdentity(null,'signed-out');await settingsController.refresh(null,'signed-out');message('未ログインです。Googleでログインしてください。');return;}
    let admin=null,profile=null;
    try{
     const [adminSnap,userSnap]=await Promise.all([
@@ -113,11 +114,13 @@ if(!core.firebaseConfigReady(config)){
     profile=userSnap.exists()?userSnap.data():null;
    }catch(error){
     showIdentity(user,'pending');
+    await settingsController.refresh(user,'pending');
     message('権限の確認ができません。Firestoreルールと接続設定をご確認ください。');
     return;
    }
    const state=core.accessState(user,admin,profile);
    showIdentity(user,state);
+   await settingsController.refresh(user,state);
    message(state==='admin'?
     'Googleログインと管理者権限の確認に成功しました。営業データの移行はまだ行っていません。':
     state==='suspended'?'このアカウントは利用停止中です。':
