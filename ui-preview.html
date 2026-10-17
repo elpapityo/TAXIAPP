@@ -326,7 +326,30 @@ body.workspace-active>#appShell{display:none!important}
   for(const [id,name] of [['compactMode','compact'],['guidedMode','guided'],['detailMode','detail']])$(id).classList.toggle('active',model.mode===name);
  }
  function setMode(mode){if(!modeLabels[mode])return;model.mode=mode;const ids=['compactFare','guideFare','detailFare'];const first=ids.map(id=>$(id).value).find(v=>v!=='')||'';ids.forEach(id=>{if(!$(id).value&&first)$(id).value=first});if($('detailFrom').value&&!model.from)model.from=$('detailFrom').value;if($('detailTo').value&&!model.to)model.to=$('detailTo').value;render();setView('drive');}
- function setView(view){model.view=view;const settings=view==='settings',compare=view==='compare',drive=view==='drive';$('drivePage').classList.toggle('hidden',!drive);$('settingsPage').classList.toggle('active',settings);$('comparePage').classList.toggle('active',compare);$('asidePanel').style.display=drive?'':'none';if(drive)document.querySelector('.main').style.removeProperty('grid-template-columns');else document.querySelector('.main').style.gridTemplateColumns='minmax(0,1fr)';$('navDrive').setAttribute('aria-current',String(drive));$('navSettings').setAttribute('aria-current',String(settings));$('navCompare').setAttribute('aria-current',String(compare)); if(drive)render();if(settings)renderSettings();if(compare)renderCompare();window.scrollTo({top:0,behavior:'instant'});}
+ // Route every top-level menu choice through the currently selected device
+ // viewport. Otherwise the outer desktop shell silently replaces the preview.
+ let pendingWorkspaceView=null;
+ function setView(view){
+  if(!isEmbedded&&view!=='compare'&&model.device!=='auto'){
+   pendingWorkspaceView=view;
+   openWorkspace();
+   navigateWorkspaceWhenReady();
+   return;
+  }
+  model.view=view;
+  const settings=view==='settings',compare=view==='compare',drive=view==='drive';
+  $('drivePage').classList.toggle('hidden',!drive);
+  $('settingsPage').classList.toggle('active',settings);
+  $('comparePage').classList.toggle('active',compare);
+  $('asidePanel').style.display=drive?'':'none';
+  if(drive)document.querySelector('.main').style.removeProperty('grid-template-columns');
+  else document.querySelector('.main').style.gridTemplateColumns='minmax(0,1fr)';
+  $('navDrive').setAttribute('aria-current',String(drive));
+  $('navSettings').setAttribute('aria-current',String(settings));
+  $('navCompare').setAttribute('aria-current',String(compare));
+  if(drive)render();if(settings)renderSettings();if(compare)renderCompare();
+  window.scrollTo({top:0,behavior:'instant'});
+ }
  function renderSettings(){let count=0;for(const block of document.querySelectorAll('.settingBlock')){
    const matchesCat=model.settingCategory==='all'||block.dataset.category===model.settingCategory;
    const matchesLevel=model.advanced||block.dataset.advanced==='false';
@@ -369,11 +392,32 @@ body.workspace-active>#appShell{display:none!important}
   $('deviceWorkspace').hidden=false;
   const frame=$('deviceWorkspaceFrame');
   // Retain the live iframe when presets change: inputs and current page survive.
-  if(!frame.srcdoc)frame.srcdoc=baseFrameDocument;
+  if(!frame.srcdoc){
+   frame.dataset.ready='false';
+   frame.srcdoc=baseFrameDocument;
+  }
   resizeWorkspace();
   window.scrollTo(0,0);
  }
+ function navigateWorkspaceWhenReady(){
+  if(!pendingWorkspaceView||!workspaceActive||isEmbedded)return;
+  const frame=$('deviceWorkspaceFrame');
+  if(frame.dataset.ready!=='true')return; // avoid sending to initial about:blank
+  frame.contentWindow?.postMessage({source:'taxiapp-ui-preview',action:'navigate',view:pendingWorkspaceView},'*');
+  pendingWorkspaceView=null;
+ }
+ window.addEventListener('message',event=>{
+  if(event.data?.source!=='taxiapp-ui-preview')return;
+  if(isEmbedded){
+   if(event.source!==window.parent)return;
+   if(event.data.action==='navigate'&&['drive','settings'].includes(event.data.view))setView(event.data.view);
+  }else if(event.source===$('deviceWorkspaceFrame')?.contentWindow&&event.data.action==='ready'){
+   $('deviceWorkspaceFrame').dataset.ready='true';
+   navigateWorkspaceWhenReady();
+  }
+ });
  function exitWorkspace(){
+  pendingWorkspaceView=null;
   workspaceActive=false;
   $('deviceWorkspace').hidden=true;
   document.body.classList.remove('workspace-active');
@@ -413,6 +457,7 @@ body.workspace-active>#appShell{display:none!important}
  $('lightTheme').addEventListener('change',e=>document.body.classList.toggle('theme-light',e.target.checked));
  document.querySelectorAll('.fieldToggle').forEach(b=>b.addEventListener('change',e=>{model.fields[e.target.dataset.field]=e.target.checked}));
  render();renderSettings();renderCompare();
+ if(isEmbedded)window.parent.postMessage({source:'taxiapp-ui-preview',action:'ready'},'*');
 })();
 </script>
 
