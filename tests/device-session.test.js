@@ -150,8 +150,52 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
  })();
  await suspicious.obj.begin(user,{viewer:false});await flush();
  await suspicious.obj.claim();await flush();
- assert.equal(suspicious.writes(),1);
+ assert.equal(suspicious.writes(),0,'a denied watcher must prevent even attempting a takeover write');
  assert.equal(suspicious.state(),'viewer');
  assert.equal(suspicious.obj.canWrite(),false);
+ // Regression: on a denied listener, clicking takeover re-subscribes.
+ // Once server permissions are corrected, the SAME tab must recover without
+ // logging out or reloading; until then both devices stay read-only.
+ let permit=false,reconnections=0,deniedWriteCount=0;
+ const recoverContext={sessionStorage:{getItem:()=>null,setItem(){}},
+  crypto:{randomUUID:()=> '00000000-0000-4000-a000-000000000777'},Uint8Array};
+ vm.createContext(recoverContext);vm.runInContext(js,recoverContext);
+ let recoverMode='pending',recoverDoc='';
+ const recovery=recoverContext.TAXIAPP_DEVICE_SESSION.create({
+  auth:{currentUser:user},db:{},
+  f:{
+   doc:()=> 'deviceSessions/'+user.uid,serverTimestamp:()=> 'server',
+   onSnapshot(_r,_o,next,error){
+    reconnections++;
+    queueMicrotask(()=>{
+     if(permit)next({exists:()=>Boolean(recoverDoc),
+      data:()=>({sessionId:recoverDoc}),
+      metadata:{fromCache:false,hasPendingWrites:false}});
+     else error({code:'permission-denied'});
+    });
+    return ()=>{};
+   },
+   async setDoc(_r,data){
+    if(!permit)throw Object.assign(Error('denied'),{code:'permission-denied'});
+    deniedWriteCount++;recoverDoc=data.sessionId;
+   },
+   async getDocFromServer(){
+    if(!permit)throw Object.assign(Error('denied'),{code:'permission-denied'});
+    return {exists:()=>true,data:()=>({sessionId:recoverDoc})};
+   }
+  },
+  onMode:next=>{recoverMode=next;}
+ });
+ await recovery.begin(user,{viewer:true});await flush();
+ assert.equal(recoverMode,'viewer');
+ await recovery.claim();await flush();
+ assert.equal(recoverMode,'viewer','denied takeover must remain view-only');
+ assert.equal(deniedWriteCount,0,'cannot write without server permission');
+ assert.equal(reconnections,2,'explicit click retries exactly one listener');
+ permit=true;await recovery.claim();await flush();
+ assert.equal(recoverMode,'writer','same tab must recover after permission repair');
+ assert.equal(recovery.canWrite(),true);
+ assert.equal(deniedWriteCount,1);
+ assert.equal(reconnections,3,'no periodic reader/poller needed');
  console.log('Device sessions passed: single editor, no legacy bypass, denied watcher and takeover safety.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

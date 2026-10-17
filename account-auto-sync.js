@@ -28,7 +28,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(signOut)signOut.hidden=!user;
    if(signOut)signOut.disabled=!user;
    const takeOver=$('accountTakeOver');
-   if(takeOver)takeOver.hidden=!user||deviceSession?.state()!=='viewer';
+   if(takeOver)takeOver.hidden=!user||!enabled||deviceSession?.state()!=='viewer';
   }
   function currentPrefs(){return api.extract(deps.getModel()).prefs;}
   function readBase(){
@@ -191,13 +191,13 @@ root.TAXIAPP_ACCOUNT_AUTO={
    status('Googleアカウントを確認しています…');
    try{
     const [adminSnap,userSnap]=await Promise.all([
-     fire.getDoc(fire.doc(db,'admins',uid)),
-     fire.getDoc(fire.doc(db,'users',uid))
+     fire.getDocFromServer(fire.doc(db,'admins',uid)),
+     fire.getDocFromServer(fire.doc(db,'users',uid))
     ]);
     if(auth.currentUser?.uid!==uid)return;
     const admin=adminSnap.exists()&&adminSnap.data()?.enabled===true;
     const active=userSnap.exists()&&userSnap.data()?.status==='active';
-    if(!admin&&!active){status('利用登録待ち：設定同期は停止中');return;}
+    if(!admin&&!active){status('利用登録が確認できません：Googleログインだけでは操作権を取得できません');deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;}
     // A shared browser must not send the previous driver's preferences to
     // a different Firebase account. Full account-switch isolation comes later.
     const bound=localStorage.getItem('taxiapp-bound-account-uid-v1');
@@ -217,7 +217,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     viewerLogin=false;explicitWriterLogin=false;
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
-   }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));}
+   }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');}
   }
   async function start(){
    if(booted)return;booted=true;
@@ -242,6 +242,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    });
    $('accountTakeOver')?.addEventListener('click',()=>{
     explicitWriterLogin=true;
+    if(!enabled){status('利用者登録を確認できないため操作権を取得できません');return;}
     deviceSession?.claim().catch(e=>status('切替失敗：'+String(e.message||e)));
    });
    $('accountSignOut')?.addEventListener('click',()=>{
