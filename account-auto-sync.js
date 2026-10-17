@@ -59,6 +59,11 @@ root.TAXIAPP_ACCOUNT_AUTO={
    await deps.applyPrefs(newModel.prefs);
   }
   async function reconcile(){
+   if(enabled&&deps.isEditing?.()){
+    status('入力中のため設定同期を一時保留しています');
+    schedule(2500);
+    return;
+   }
    if(!enabled||!navigator.onLine){if(enabled)status('オフライン：設定は端末に保存中');return;}
    if(busy){again=true;return;}
    busy=true;
@@ -91,12 +96,34 @@ root.TAXIAPP_ACCOUNT_AUTO={
      return;
     }
     if(!base){
-     // On the first login, an existing cloud profile is authoritative.
-     // Back up local settings and preserve all duty records before adopting.
+     // First login on a device: adopt the account profile but retain waiting
+     // locations that were registered here before this device was linked.
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
-     await apply(remote);
+     const model=deps.getModel();
+     const adopted=api.extract(api.merge(model,{
+      format:api.FORMAT,schemaVersion:1,prefs:remote
+     },{preserveLocalWaiting:true})).prefs;
+     let selected=adopted;
+     if(!api.same(adopted,remote)){
+      selected=await fire.runTransaction(db,async tx=>{
+       const latest=await tx.get(ref());
+       if(!latest.exists())throw Error('クラウド設定が見つかりません');
+       const freshest=api.extract({
+        version:1,shifts:[],prefs:api.validate(latest.data())
+       }).prefs;
+       const joined=api.extract(api.merge(model,{
+        format:api.FORMAT,schemaVersion:1,prefs:freshest
+       },{preserveLocalWaiting:true})).prefs;
+       if(!api.same(joined,freshest))
+        tx.update(ref(),{prefs:joined,updatedAt:fire.serverTimestamp()});
+       return joined;
+      });
+     }
      if(!stillCurrent(accountUid))return;
-     storeBase(remote);
+     if(!api.same(currentPrefs(),beginning)){again=true;return;}
+     await apply(selected);
+     if(!stillCurrent(accountUid))return;
+     storeBase(selected);
      status('Googleの設定を自動で反映しました');
      return;
     }
