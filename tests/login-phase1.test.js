@@ -29,10 +29,10 @@ const page=fs.readFileSync(path.join(root,'login.html'),'utf8');
 assert.match(page,/Googleでログイン/);
 assert.match(page,/id="copyLoginUid"/);
 assert.match(page,/id="loginUid"[^>]+readonly/);
-assert.match(page,/src="\.\/login\.js\?v=20261017-3"/);
+assert.match(page,/src="\.\/login\.js\?v=20261017-4"/);
 
 assert.match(page,/既存の日報・同期設定は変更しません/);
-assert.match(page,/type="module" src="\.\/login\.js\?v=20261017-3"/);
+assert.match(page,/type="module" src="\.\/login\.js\?v=20261017-4"/);
 const js=fs.readFileSync(path.join(root,'login.js'),'utf8');
 assert.match(js,/signInWithPopup\(/);
 assert.match(js,/const credential=await a\.signInWithPopup\(auth,provider\);\s*await refreshIdentity\(credential\.user\);/);
