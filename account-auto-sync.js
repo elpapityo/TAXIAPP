@@ -9,6 +9,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
   let busy=false,again=false,timer=null,unsubscribe=null,booted=false;
+  // onSnapshot is itself a real-time network listener. Reuse its document
+  // instead of adding a second charged getDocFromServer for every event.
+  let liveSnapshot=null,liveSignature=null,localSignature=null;
   const KEY='taxiapp-account-pref-base-v1-',BACKUP='taxiapp-account-pref-backup-v1-';
   const $=id=>document.getElementById(id);
   function status(message){
@@ -59,6 +62,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    await deps.applyPrefs(newModel.prefs);
   }
   async function reconcile(){
+   if(!liveSnapshot){return;}
    if(enabled&&deps.isEditing?.()){
     status('入力中のため設定同期を一時保留しています');
     schedule(2500);
@@ -71,7 +75,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
    try{
     status('設定を照合しています…');
     const beginning=currentPrefs();
-    const cloud=await fire.getDocFromServer(ref());
+    // The listener delivered a server-confirmed snapshot already.
+    // Do not issue another document read for every reconciliation.
+    const cloud=liveSnapshot;
     if(!stillCurrent(accountUid))return;
     const remote=cloud.exists()?api.extract({
      version:1,shifts:[],prefs:api.validate(cloud.data())
@@ -155,6 +161,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
     status('設定はGoogleと同期済み');
    }finally{
     busy=false;
+    // Applying a remote update is not a user edit.
+    if(stillCurrent(accountUid)){
+     try{localSignature=JSON.stringify(currentPrefs());}catch{}
+    }
     if(again){again=false;schedule(300);}
    }
   }
@@ -162,6 +172,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    clearTimeout(timer);
    if(unsubscribe){unsubscribe();unsubscribe=null;}
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
+   liveSnapshot=null;liveSignature=null;localSignature=null;
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
    status('Googleアカウントを確認しています…');
@@ -187,12 +198,20 @@ root.TAXIAPP_ACCOUNT_AUTO={
     }
     enabled=true;
     baseline=readBase();
-    status('Googleログイン済み・設定を同期します');
-    // One listener, not periodic polling; updates in another browser trigger
-    // automatic reconciliation without rebuilding the currently open menu.
-    unsubscribe=fire.onSnapshot(ref(),()=>schedule(300),e=>
-     status('クラウド監視エラー：'+String(e.code||e.message||e)));
-    schedule(0);
+    localSignature=JSON.stringify(currentPrefs());
+    status('Googleに接続しています…');
+    // A single document listener covers initial load and remote changes.
+    // Ignore metadata-only events and local pending writes; never add a
+    // getDocFromServer call for each snapshot or ordinary duty save.
+    unsubscribe=fire.onSnapshot(ref(),{includeMetadataChanges:true},snap=>{
+     if(!enabled||uid!==next.uid)return;
+     if(snap.metadata.fromCache||snap.metadata.hasPendingWrites)return;
+     const signature=snap.exists()?JSON.stringify(snap.data().prefs):'__missing__';
+     if(signature===liveSignature)return;
+     liveSignature=signature;
+     liveSnapshot=snap;
+     schedule(250);
+    },e=>status('クラウド監視エラー：'+String(e.code||e.message||e)));
    }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));}
   }
   async function start(){
@@ -226,7 +245,18 @@ root.TAXIAPP_ACCOUNT_AUTO={
     if(document.visibilityState==='visible')schedule(300);
    });
   }
-  return {start,localSaved:()=>schedule(1000),status:()=>({enabled,uid})};
+  function localSaved(){
+   if(!enabled)return;
+   try{
+    const nextSignature=JSON.stringify(currentPrefs());
+    // Duty records and GPS events are saved often; they must not
+    // trigger settings traffic when preferences are unchanged.
+    if(nextSignature===localSignature)return;
+    localSignature=nextSignature;
+    schedule(1000);
+   }catch(e){status('設定の確認エラー：'+String(e.message||e));}
+  }
+  return {start,localSaved,status:()=>({enabled,uid})};
  }
 };
 })(typeof window!=='undefined'?window:globalThis);
