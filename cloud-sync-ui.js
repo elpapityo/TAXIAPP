@@ -7,7 +7,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
  });
- const enabled=()=>d.prefs().syncMode==='on'&&d.configured();
+ const enabled=()=>d.prefs().syncMode==='on'&&d.configured()&&(!d.canSync||d.canSync());
  const status=()=>engine.status();
  function message(){
   const s=status();
