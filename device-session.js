@@ -74,7 +74,7 @@ root.TAXIAPP_DEVICE_SESSION={
   // and may briefly contain local pending writes. Never depend on callback order.
   function promoteIfConfirmed(){
    if(!claimCandidate||!claimWriteAck||!listenerHealthy||
-      confirmedSession!==claimCandidate||viewerRequested===null)return false;
+      confirmedSession!==claimCandidate)return false;
    const acceptedId=claimCandidate;
    setSession(acceptedId);
    claimedOnce=true;viewerRequested=false;
