@@ -29,7 +29,7 @@ function server(){
  }
  return {cloud,request,events};
 }
-function client(name,svc,model){
+function client(name,svc,model,failReceive=false){
  const localStorage={
   getItem:key=>store.get(name+key)||null,
   setItem:(key,value)=>store.set(name+key,value)
@@ -42,6 +42,7 @@ function client(name,svc,model){
   getEndpoint:()=>'/same-endpoint',
   localStorage,
   replaceRemoteShift:async(id,s)=>{
+   if(failReceive)throw Error('local save refused');
    const index=model.shifts.findIndex(x=>x.id===id);
    if(index>=0)model.shifts[index]=clone(s);
    else model.shifts.push(clone(s));
@@ -95,6 +96,17 @@ function client(name,svc,model){
  const D=client('d',svc,{shifts:[{id,records:[],settings:{},startingOdo:'3'}]});
  assert.equal(await D.app.run(),true);
  assert.equal(D.app.status().conflicts.length,0);
+ // A failed download/import must NOT turn an old local duty into
+ // a valid base for overwriting the newer cloud copy.
+ const svc2=server(),fid='shift-222-abc';
+ const F=client('fail-receive',svc2,{shifts:[{id:fid,records:[],settings:{},startingOdo:'1'}]},true);
+ assert.equal(await F.app.run(),true); // initial upload does not call the receiver
+ svc2.cloud.set(fid,{revision:2,shift:{id:fid,records:[],settings:{},startingOdo:'20'}});
+ assert.equal(await F.app.run(),false);
+ assert.equal(F.model.shifts[0].startingOdo,'1');
+ assert.equal(await F.app.run(),false);
+ assert.equal(F.app.status().conflicts.length,1);
+ assert.equal(svc2.cloud.get(fid).shift.startingOdo,'20');
  // Offline server read failure does not delete local contents.
  const E=client('e',{request:()=>Promise.reject(Error('offline'))},{shifts:[{id,records:[],settings:{},startingOdo:'8'}]});
  assert.equal(await E.app.run(),false);
