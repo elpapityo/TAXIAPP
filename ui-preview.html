@@ -543,13 +543,17 @@ body.workspace-active>#appShell{display:none!important}
   }$('settingsEmpty').hidden=count>0;$('settingsHeading').textContent=model.advanced?'すべての設定':'かんたん設定';$('advancedToggle').textContent=model.advanced?'かんたん設定に戻す':'詳細設定を表示';$('advancedToggle').setAttribute('aria-pressed',String(model.advanced));document.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.category===model.settingCategory)));}
  function applyDeviceFrame(){
   const preset=devicePresets[model.device]||devicePresets.auto;
-  document.querySelectorAll('[data-device]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.device===model.device)));
+  document.querySelectorAll('[data-device]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.device===model.device||(b.dataset.device==='fold'&&model.device==='foldHalf'))));
+  $('foldSubModes').hidden=!['fold','foldHalf'].includes(model.device);
+  document.querySelectorAll('[data-fold-view]').forEach(b=>b.setAttribute('aria-pressed',String((model.device==='foldHalf'?'half':'full')===b.dataset.foldView)));
+  $('foldHalfWidth').value=String(model.foldHalfWidth);
+  $('foldHalfWidthLabel').textContent=model.foldHalfWidth+'px';
   document.querySelectorAll('[data-orient]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.orient===model.orientation)));
   if(isEmbedded)return;
   const frame=$('compareFrame');
   if(!frame)return;
   if(!frame.srcdoc)frame.srcdoc=baseFrameDocument;
-  let w=preset.dims?.[0]??Math.min(Math.max(320,window.innerWidth-75),760);
+  let w=(model.device==='foldHalf'?model.foldHalfWidth:preset.dims?.[0])??Math.min(Math.max(320,window.innerWidth-75),760);
   let h=preset.dims?.[1]??Math.min(Math.max(520,window.innerHeight-130),900);
   if(model.orientation==='landscape'&&h>w){const tmp=w;w=h;h=tmp;}
   if(model.orientation==='portrait'&&w>h){const tmp=w;w=h;h=tmp;}
@@ -558,6 +562,7 @@ body.workspace-active>#appShell{display:none!important}
  function deviceSize(){
   const preset=devicePresets[model.device]||devicePresets.phone;
   let [w,h]=preset.dims||devicePresets.phone.dims;
+  if(model.device==='foldHalf')w=model.foldHalfWidth;
   if(model.orientation==='landscape'&&h>w){const t=w;w=h;h=t;}
   if(model.orientation==='portrait'&&w>h){const t=w;w=h;h=t;}
   return [w,h];
@@ -567,6 +572,9 @@ body.workspace-active>#appShell{display:none!important}
   const [w,h]=deviceSize(), frame=$('deviceWorkspaceFrame');
   $('workspaceDevice').value=model.device;
   $('workspaceOrientation').value=model.orientation;
+  $('workspaceHalfWidthWrap').hidden=model.device!=='foldHalf';
+  $('workspaceHalfWidth').value=String(model.foldHalfWidth);
+  $('workspaceHalfWidthLabel').textContent=model.foldHalfWidth+'px';
   frame.style.width=w+'px';frame.style.height=h+'px';
   frame.dataset.viewport=w+'x'+h;
  }
@@ -619,9 +627,10 @@ body.workspace-active>#appShell{display:none!important}
  function renderCompare(){
   const preset=devicePresets[model.device]||devicePresets.auto;
   $('compareCurrentName').textContent=preset.name+(model.orientation==='auto'?'':' · '+(model.orientation==='portrait'?'縦向き':'横向き'));
-  let sizeText=preset.size;
+  let sizeText=model.device==='foldHalf'?model.foldHalfWidth+' × 841':preset.size;
   if(preset.dims&&model.orientation!=='auto'){
    let [w,h]=preset.dims;
+   if(model.device==='foldHalf')w=model.foldHalfWidth;
    if(model.orientation==='landscape'&&h>w){const t=w;w=h;h=t;}
    if(model.orientation==='portrait'&&w>h){const t=w;w=h;h=t;}
    sizeText=w+' × '+h;
@@ -632,7 +641,7 @@ body.workspace-active>#appShell{display:none!important}
   if(model.view==='compare')applyDeviceFrame();
  }
  function pick(group,value){document.querySelectorAll('[data-'+group+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[group]===value)));}
- document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.legacyAction){legacyAction(b.dataset.legacyAction);return}if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
+ document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.legacyAction){legacyAction(b.dataset.legacyAction);return}if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}if(b.dataset.device){model.device=b.dataset.device;renderCompare();openWorkspace();return}if(b.dataset.foldView){model.device=b.dataset.foldView==='half'?'foldHalf':'fold';renderCompare();openWorkspace();return}if(b.dataset.orient){model.orientation=b.dataset.orient;renderCompare();resizeWorkspace();return}});
  $('compactFare').addEventListener('input',e=>{$('guideFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('guideFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('detailFare').value=e.target.value});
  $('detailFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('guideFare').value=e.target.value});
@@ -642,6 +651,15 @@ body.workspace-active>#appShell{display:none!important}
  $('navSettings').addEventListener('click',()=>{setView('settings');renderSettings()});$('navDrive').addEventListener('click',()=>setView('drive'));$('backToDrive').addEventListener('click',()=>setView('drive'));$('compareBack').addEventListener('click',()=>setView('drive'));
  $('navCompare').addEventListener('click',()=>{if(isEmbedded)return;setView('compare');renderCompare()});
  $('workspaceDevice').addEventListener('change',e=>{model.device=e.target.value;renderCompare();resizeWorkspace();});
+ const changeFoldWidth=value=>{
+  model.foldHalfWidth=Math.max(300,Math.min(380,Number(value)||340));
+  devicePresets.foldHalf.dims[0]=model.foldHalfWidth;
+  $('foldHalfWidth').value=String(model.foldHalfWidth);
+  $('workspaceHalfWidth').value=String(model.foldHalfWidth);
+  renderCompare();resizeWorkspace();
+ };
+ $('foldHalfWidth').addEventListener('input',e=>changeFoldWidth(e.target.value));
+ $('workspaceHalfWidth').addEventListener('input',e=>changeFoldWidth(e.target.value));
  $('workspaceOrientation').addEventListener('change',e=>{model.orientation=e.target.value;renderCompare();resizeWorkspace();});
  $('workspaceExit').addEventListener('click',exitWorkspace);
  $('workspaceToolsToggle').addEventListener('click',()=>toggleWorkspaceTools($('workspaceToolsToggle').getAttribute('aria-expanded')!=='true'));
