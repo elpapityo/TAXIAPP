@@ -10,7 +10,7 @@ const main=fs.readFileSync(path.join(root,'index.html'),'utf8');
 // and actively focused settings fields must NOT generate periodic cloud reads.
 assert.doesNotMatch(auto,/document\.addEventListener\('visibilitychange'/);
 assert.doesNotMatch(auto,/schedule\(2500\)/);
-assert.match(auto,/\(next==='writer'\|\|next==='legacy'\)\&\&next!==previous/);
+assert.match(auto,/next==='writer'\&\&next!==previous/);
 assert.match(auto,/function editingEnded\(\)/);
 assert.match(main,/accountSettingsAuto\?\.editingEnded\(\)/);
 assert.match(main,/account-auto-sync\.js\?v=20261017-9/);
