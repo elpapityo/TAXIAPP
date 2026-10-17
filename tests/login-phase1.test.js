@@ -56,7 +56,7 @@ assert.doesNotMatch(config,/PRIVATE KEY|BEGIN RSA PRIVATE KEY/);
 const check=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
 assert.equal(check.status,0,check.stderr);
 const live=fs.readFileSync(path.join(root,'index.html'),'utf8');
-assert.match(live,/TAXIAPP v0\.3\.46/);
+assert.match(live,/TAXIAPP v0\.3\.47/);
 assert.match(live,/device-session\.js/);
 assert.match(live,/id="accountTakeOver"/);
 assert.match(live,/account-auto-sync\.js/);
