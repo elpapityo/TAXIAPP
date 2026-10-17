@@ -2,7 +2,7 @@ name: TAXIAPP native Android daily pilot
 on:
   push:
     branches:
-      - feature/taxiapp-native-android-20261017
+      - feature/taxiapp-native-sync-20261017
     paths:
       - 'android-prototype/**'
       - '.github/workflows/taxiapp-native-android.yml'
@@ -38,6 +38,7 @@ jobs:
           TARGET="android-prototype/dailyapp/src/main/assets"
           mkdir -p "$TARGET"
           for name in index.html gps-trip.js gps-trip-ui.js daily-reference.js device-management.js \
+             highway-report.js bidirectional-sync.js cloud-sync-ui.js \
              elapsed-alight-clock.js secure-transfer.js map.html map-shared.js map-view.js municipalities.json; do
             git show "origin/main:$name" > "$TARGET/$name"
           done
@@ -67,6 +68,8 @@ jobs:
         run: |
           node --check android-prototype/dailyapp/src/main/assets/native-gps-ui.js
           node --check android-prototype/dailyapp/src/main/assets/gps-trip-ui.js
+          node --check android-prototype/dailyapp/src/main/assets/bidirectional-sync.js
+          node --check android-prototype/dailyapp/src/main/assets/cloud-sync-ui.js
           node --test android-prototype/dailyapp/src/test/native-gps-ui.test.js
       - name: Install Android 35
         run: |
@@ -79,7 +82,7 @@ jobs:
           gradle --no-daemon :core:test :dailyapp:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: TAXIAPP-Android-daily-GPS-pilot-APK
+          name: TAXIAPP-Android-daily-SYNC-pilot-APK
           path: android-prototype/dailyapp/build/outputs/apk/debug/dailyapp-debug.apk
           if-no-files-found: error
           retention-days: 14
@@ -88,13 +91,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          FILE="$RUNNER_TEMP/TAXIAPP-Android-native-pilot-v0.1.0.apk"
+          FILE="$RUNNER_TEMP/TAXIAPP-Android-sync-pilot-v0.2.0.apk"
           cp android-prototype/dailyapp/build/outputs/apk/debug/dailyapp-debug.apk "$FILE"
-          TAG="taxiapp-android-native-pilot-v0.1.0"
+          TAG="taxiapp-android-sync-pilot-v0.2.0"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" --title "TAXIAPP 日報Android版 GPS統合試験 v0.1.0" \
-              --notes "本番とは別インストールの試験版。日報画面はAPK内で動作し、GPS距離はAndroidフォアグラウンドサービスで測定。現行ブラウザの保存記録は自動移行されません。業務利用前に暗号化バックアップから移行し件数・金額を必ず確認してください。GPS/降車精度は実機検証が必要です。" --prerelease
+              --target "$GITHUB_SHA" --title "TAXIAPP 日報Android版 3端末同期試験 v0.2.0" \
+              --notes "既存Android試験版と別パッケージの双方向同期試験用APK。スマホHTML・PCと共通のGoogle Apps Script v2を利用。同期は初期OFFで、Googleスクリプト更新後に有効化してください。入力データは端末に保存します。旧アプリのデータは自動移行されません。GPS/同期は実機検証が必要です。" --prerelease
           fi
