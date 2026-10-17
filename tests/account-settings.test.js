@@ -39,6 +39,14 @@ assert.equal(stored.prefs.nested.nested.important,'keep');
 const info=api.summary(stored.prefs);
 assert.equal(info.waitPlaceCount,3);
 assert.equal(info.driver,'乗務員A');
+assert.equal(api.same({driver:'A',waitPlaces:['伊丹駅'],ui:{text:'large',contrast:'high'}},
+                      {ui:{contrast:'high',text:'large'},waitPlaces:['伊丹駅'],driver:'A'}),true,
+ 'reordered object keys must not look like a settings update');
+assert.equal(api.same({waitPlaces:['伊丹駅','大阪空港']},
+                      {waitPlaces:['大阪空港','伊丹駅']}),false,
+ 'waiting-place order remains a meaningful change');
+assert.equal(api.signature({x:1,y:2}),api.signature({y:2,x:1}));
+
 const phone={
  version:1,activeId:null,
  shifts:[{id:'existing-phone-record',records:[{kind:'ride',raw:{K:'4000'}}]}],
