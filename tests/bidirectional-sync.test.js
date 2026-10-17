@@ -117,6 +117,12 @@ function client(name,svc,model,failReceive=false){
   'if(sheetTargetPrefs().syncMode===\'on\'){syncUI.schedule();return;}']){
   assert.ok(html.includes(literal),'missing '+literal);
  }
+ const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+) — 乗務日報<\/title>/)?.[1];
+ assert.ok(pageVersion,'document title must contain the release version');
+ assert.ok(html.includes('乗務日報 · ${displayVersion}'),
+  'header must display the version read from the title, not a hard-coded older version');
+ assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+/)'),
+  'header must derive version from document title');
  assert.match(html,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'/);
  console.log('Bidirectional sync tests passed: send, receive, CAS, conflict hold and resolution, first-use guard, offline safety, web wiring.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
