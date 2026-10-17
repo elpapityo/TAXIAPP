@@ -136,6 +136,17 @@ body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}bod
 @media print{.rightPanel,.bottomNav,.topRight{display:none}}
 
 .srOnly{position:absolute;clip:rect(0,0,0,0);width:1px;height:1px;overflow:hidden;white-space:nowrap}
+
+/* All demo pages share one scroll viewport, preserving the bottom navigation. */
+html,body{height:100%;overflow:hidden}
+#appShell{height:100dvh;min-height:0;max-height:100dvh;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+#appShell>.main{min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+#appShell>.bottomNav{min-height:0;position:relative;z-index:4;flex-shrink:0;box-shadow:0 -8px 22px #020b1870}
+#appShell>.main>.screen{min-height:0}
+/* The selected device frame always holds the navigation inside its own viewport. */
+body.workspace-active{height:auto;overflow:auto}
+@media(max-width:780px){#appShell{height:100dvh;grid-template-rows:auto minmax(0,1fr) auto}}
+
 /* A single actual responsive viewport shared by ALL pages, not only the comparison card. */
 body.workspace-active>#appShell{display:none!important}
 .deviceWorkspace[hidden]{display:none!important}
@@ -151,6 +162,16 @@ body.workspace-active>#appShell{display:none!important}
 .deviceWorkspaceFrame{flex:none;box-sizing:content-box;display:block;border:3px solid #85a7c2;border-radius:22px;box-shadow:0 24px 62px #000a;background:#07121e;max-width:none}
 .deviceWorkspaceHelp{font-size:12px;color:#bfd3e5;text-align:center;max-width:100%}
 @media(max-width:600px){.deviceWorkspace{padding:6px 4px 12px;gap:5px}.deviceWorkspaceTools{padding:7px;gap:5px;border-radius:9px}.deviceWorkspaceTitle{width:100%;min-width:0}.deviceWorkspaceTitle strong{font-size:14px}.deviceWorkspaceTitle small{font-size:11px}.deviceWorkspaceTools select{flex:1;min-width:0;font-size:13px;padding:3px;max-width:none}.deviceWorkspaceTools button{padding:5px 9px;min-height:40px}.deviceWorkspaceFrame{border-width:1px;border-radius:7px}.deviceWorkspaceHelp{font-size:11px}}
+
+
+/* Preview-only device toolbar: hidden unless deliberately requested. */
+.deviceWorkspace{gap:6px;padding-top:9px}
+.workspaceToolsToggle{position:fixed;top:10px;right:12px;z-index:35;width:auto!important;min-height:38px;padding:7px 12px!important;border:1px solid #7498b6!important;border-radius:11px;background:#21445f!important;font-size:13px!important;font-weight:750;box-shadow:0 3px 15px #0008}
+.deviceWorkspaceTools{display:none;position:fixed;top:55px;right:12px;z-index:34;width:min(450px,calc(100vw - 24px));max-height:calc(100dvh - 70px);overflow-y:auto;box-shadow:0 15px 60px #000c}
+.deviceWorkspaceTools.is-open{display:flex}
+.deviceWorkspaceTitle{width:100%}
+.deviceWorkspaceHelp{margin-top:2px}
+@media(max-width:600px){.workspaceToolsToggle{top:6px;right:6px;min-height:35px;padding:5px 9px!important;font-size:12px!important}.deviceWorkspaceTools{top:47px;right:6px;width:calc(100vw - 12px)}}
 
 /* Prevent settings and detailed pages from forcing a desktop-width grid on phones. */
 @media(max-width:780px){
@@ -266,7 +287,8 @@ body.workspace-active>#appShell{display:none!important}
 <nav class="bottomNav" aria-label="試作画面切り替え"><button id="navDrive" aria-current="true"><strong>🚕</strong>営業入力</button><button id="navSettings" aria-current="false"><strong>⚙</strong>設定</button><button id="navCompare" aria-current="false"><strong>▤</strong>画面比較</button><div class="compactNote">入力内容はデモ用・<br>端末やクラウドへ保存しません</div></nav>
 </div>
 <section id="deviceWorkspace" class="deviceWorkspace" hidden aria-label="端末サイズ固定のUI試作">
- <div class="deviceWorkspaceTools">
+ <button type="button" id="workspaceToolsToggle" class="workspaceToolsToggle" aria-expanded="false" aria-controls="workspaceTools">⚙ サイズ変更</button>
+ <div class="deviceWorkspaceTools" id="workspaceTools">
   <div class="deviceWorkspaceTitle"><strong>🚕 TAXIAPP · 端末サイズ固定プレビュー</strong><small>営業入力・設定・詳細画面も、選んだサイズのまま切り替わります</small></div>
   <label class="srOnly" for="workspaceDevice">端末サイズ</label>
   <select id="workspaceDevice" aria-label="端末サイズを切り替える"><option value="phone">📱 通常スマホ</option><option value="fold">▣ 折りたたみ</option><option value="tablet">▤ タブレット</option></select>
@@ -275,7 +297,7 @@ body.workspace-active>#appShell{display:none!important}
   <button type="button" class="closeWorkspace" id="workspaceExit">← サイズ比較へ戻る</button>
  </div>
  <div class="deviceWorkspaceScreen"><iframe id="deviceWorkspaceFrame" class="deviceWorkspaceFrame" title="選んだ端末サイズで全ページを操作できるTAXIAPP試作" loading="eager"></iframe></div>
- <div class="deviceWorkspaceHelp">※ 画面内の下部「設定」からも移動できます。これは保存しないデモです。</div>
+ <div class="deviceWorkspaceHelp">※ サイズ変更は右上の ⚙ から。下部メニューはスクロールしても固定されます。データは保存しません。</div>
 </section>
 <script>
 (() => {
@@ -385,6 +407,13 @@ body.workspace-active>#appShell{display:none!important}
   frame.style.width=w+'px';frame.style.height=h+'px';
   frame.dataset.viewport=w+'x'+h;
  }
+ function toggleWorkspaceTools(show){
+  if(isEmbedded)return;
+  const visible=Boolean(show);
+  $('workspaceTools').classList.toggle('is-open',visible);
+  $('workspaceToolsToggle').setAttribute('aria-expanded',String(visible));
+  $('workspaceToolsToggle').textContent=visible?'✕ 閉じる':'⚙ サイズ変更';
+ }
  function openWorkspace(){
   if(isEmbedded||model.device==='auto')return;
   workspaceActive=true;
@@ -417,6 +446,7 @@ body.workspace-active>#appShell{display:none!important}
   }
  });
  function exitWorkspace(){
+  toggleWorkspaceTools(false);
   pendingWorkspaceView=null;
   workspaceActive=false;
   $('deviceWorkspace').hidden=true;
@@ -451,6 +481,8 @@ body.workspace-active>#appShell{display:none!important}
  $('workspaceDevice').addEventListener('change',e=>{model.device=e.target.value;renderCompare();resizeWorkspace();});
  $('workspaceOrientation').addEventListener('change',e=>{model.orientation=e.target.value;renderCompare();resizeWorkspace();});
  $('workspaceExit').addEventListener('click',exitWorkspace);
+ $('workspaceToolsToggle').addEventListener('click',()=>toggleWorkspaceTools($('workspaceToolsToggle').getAttribute('aria-expanded')!=='true'));
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&workspaceActive)toggleWorkspaceTools(false)});
  $('advancedToggle').addEventListener('click',()=>{model.advanced=!model.advanced;renderSettings()});
  $('settingSearch').addEventListener('input',e=>{model.search=e.target.value;renderSettings()});
  $('highContrast').addEventListener('change',e=>document.body.classList.toggle('high-contrast',e.target.checked));
