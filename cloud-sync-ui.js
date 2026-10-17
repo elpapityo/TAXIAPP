@@ -54,7 +54,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
    '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'">クラウド版を採用</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'">この端末版を採用</button></div></div>').join('');
-  return '<hr class="divider"><h3 class="subsection">スマホ・PC・Android版の双方向同期（試験）</h3>'+
+  return '<hr class="divider"><h3 class="subsection">端末間の双方向同期（ブラウザ版・Android版／試験）</h3>'+
    '<p class="helper">端末内の保存は継続します。Google側の更新番号を照合し、別端末と同時に変更した乗務は自動上書きせず保留します。</p>'+
    '<label class="field"><span class="field-label">同期モード</span><select class="control" data-cloud-setting="syncMode">'+
    '<option value="off" '+(!on?'selected':'')+'>無効（従来どおり）</option>'+
