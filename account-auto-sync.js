@@ -261,6 +261,11 @@ root.TAXIAPP_ACCOUNT_AUTO={
     deviceSession=root.TAXIAPP_DEVICE_SESSION.create({
      auth,f,db,onMode:(next,previous,detail)=>{
       deps.onDeviceMode?.(next,previous,detail);
+      if(next!==previous){
+       if(next==='writer')status('操作可能：この端末が営業入力できます');
+       else if(next==='viewer')status('閲覧専用：操作する端末の切り替えは画面上部から');
+       else status('ログイン済み：操作権をサーバーで確認しています');
+      }
       // A repeated Firestore session snapshot must NOT cause another
       // settings read when the editing permission has not changed.
       if(next==='writer'&&next!==previous)schedule(0);

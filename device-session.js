@@ -1,4 +1,4 @@
-/* TAXIAPP v0.3.48: fail-closed, recoverable one-editor session per Google UID.
+/* TAXIAPP v0.3.49: server-acknowledged and watcher-confirmed editor session.
  * Later explicit takeover wins; all previous sessions remain view-only.
  * A Firestore listener is required to revoke old devices promptly.
  * This is a UI/storage gate, NOT a revocation of Firebase Auth tokens.
@@ -10,6 +10,7 @@ root.TAXIAPP_DEVICE_SESSION={
   let currentUid='',sessionId='',unsubscribe=null,mode='pending';
   let viewerRequested=false,claimedOnce=false,claimInFlight=false,listenerHealthy=false;
   let pendingTakeover=false,watchGeneration=0;
+  let claimCandidate='',claimWriteAck=false,confirmedSession='';
   const STORAGE='taxiapp-current-session-v1-';
   const f=d.f,db=d.db;
   const ref=()=>f.doc(db,'deviceSessions',currentUid);
@@ -26,11 +27,15 @@ root.TAXIAPP_DEVICE_SESSION={
    mode=next;
    d.onMode?.(next,previous,detail);
   }
-  function viewOnly(){viewerRequested=true; if(currentUid)set('viewer','閲覧専用で利用中');}
+  function viewOnly(){
+   viewerRequested=true;
+   claimCandidate='';claimWriteAck=false;
+   if(currentUid)set('viewer','閲覧専用で利用中');
+  }
   function clear(){
    watchGeneration++;
    if(unsubscribe){unsubscribe();unsubscribe=null;}
-   currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;listenerHealthy=false;pendingTakeover=false;
+   currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;listenerHealthy=false;pendingTakeover=false;claimCandidate='';claimWriteAck=false;confirmedSession='';
    set('pending','Googleログインと操作権の確認待ち');
   }
   function sessionKey(){return STORAGE+currentUid;}
@@ -65,6 +70,18 @@ root.TAXIAPP_DEVICE_SESSION={
        String(error?.code||error?.message||error)+'）');
    }
   }
+  // An onSnapshot callback can be delivered before or after setDoc resolves,
+  // and may briefly contain local pending writes. Never depend on callback order.
+  function promoteIfConfirmed(){
+   if(!claimCandidate||!claimWriteAck||!listenerHealthy||
+      confirmedSession!==claimCandidate)return false;
+   const acceptedId=claimCandidate;
+   setSession(acceptedId);
+   claimedOnce=true;viewerRequested=false;
+   claimCandidate='';claimWriteAck=false;
+   set('writer','操作可能（サーバー確定済み）');
+   return true;
+  }
   async function claim(){
    if(!currentUid||!d.auth.currentUser||d.auth.currentUser.uid!==currentUid)return;
    if(claimInFlight)return;
@@ -80,22 +97,19 @@ root.TAXIAPP_DEVICE_SESSION={
    claimInFlight=true;
    set('pending','操作する端末を切り替えています…');
    const uid=currentUid,newId=id();
+   const generation=watchGeneration;
+   claimCandidate=newId;claimWriteAck=false;
    try{
-    // Do not persist newId until the server has acknowledged the takeover.
+    // A completed write AND a fresh server listener snapshot naming the
+    // same session are both necessary; neither alone grants editing rights.
     await f.setDoc(ref(),{sessionId:newId,updatedAt:f.serverTimestamp()});
-    if(uid!==currentUid)return;
-    // A successful write alone is not proof that the listener can revoke
-    // this session later. Verify server read access and current ownership.
-    const checked=await f.getDocFromServer(ref());
-    if(uid!==currentUid)return;
-    if(!listenerHealthy||!checked.exists()||checked.data().sessionId!==newId)
-     throw Error('サーバーで操作権を確認できません。閲覧専用で利用してください');
-    setSession(newId);
-    claimedOnce=true;
-    viewerRequested=false;
-    set('writer','操作可能（サーバー確認済み）');
+    if(uid!==currentUid||generation!==watchGeneration||claimCandidate!==newId)return;
+    claimWriteAck=true;
+    if(!promoteIfConfirmed())
+     set('pending','Googleへの書き込み完了・操作権の確定通知を待っています…');
    }catch(error){
-    if(uid===currentUid){
+    if(uid===currentUid&&generation===watchGeneration&&claimCandidate===newId){
+     claimCandidate='';claimWriteAck=false;
      set('viewer','操作権の切り替えに失敗：'+String(error.code||error.message||error));
      if(String(error.code||'').includes('permission-denied'))
       void diagnosePermission(uid,watchGeneration);
@@ -107,16 +121,22 @@ root.TAXIAPP_DEVICE_SESSION={
    if(!uid)return;
    const generation=++watchGeneration;
    if(unsubscribe){unsubscribe();unsubscribe=null;}
-   listenerHealthy=false;
+   listenerHealthy=false;confirmedSession='';
    try{
     unsubscribe=f.onSnapshot(ref(),{includeMetadataChanges:true},snap=>{
      if(generation!==watchGeneration||uid!==currentUid||d.auth.currentUser?.uid!==uid)return;
      if(snap.metadata.fromCache||snap.metadata.hasPendingWrites){
-      listenerHealthy=false;
+      listenerHealthy=false;confirmedSession='';
       set('pending','通信中：操作権をサーバーで確認しています…');
       return;
      }
      listenerHealthy=true;
+     confirmedSession=snap.exists()?snap.data().sessionId:'';
+     if(claimCandidate){
+      if(promoteIfConfirmed())return;
+      set('pending','Google側で操作権を確定しています…');
+      return;
+     }
      if(pendingTakeover){
       pendingTakeover=false;
       claimedOnce=true;
@@ -142,7 +162,7 @@ root.TAXIAPP_DEVICE_SESSION={
      }
     },error=>{
      if(generation!==watchGeneration||uid!==currentUid)return;
-     listenerHealthy=false;
+     listenerHealthy=false;confirmedSession='';claimCandidate='';claimWriteAck=false;
      pendingTakeover=false;
      set('viewer','操作権の確認が拒否されました：'+String(error.code||error.message||error)+
       '（Firestoreの利用者登録・ルールをご確認ください）');
@@ -151,7 +171,7 @@ root.TAXIAPP_DEVICE_SESSION={
     });
    }catch(error){
     if(generation!==watchGeneration||uid!==currentUid)return;
-    listenerHealthy=false;pendingTakeover=false;
+    listenerHealthy=false;confirmedSession='';claimCandidate='';claimWriteAck=false;pendingTakeover=false;
     set('viewer','操作権の監視を開始できません：'+String(error.code||error.message||error));
    }
   }

@@ -160,13 +160,13 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
  const recoverContext={sessionStorage:{getItem:()=>null,setItem(){}},
   crypto:{randomUUID:()=> '00000000-0000-4000-a000-000000000777'},Uint8Array};
  vm.createContext(recoverContext);vm.runInContext(js,recoverContext);
- let recoverMode='pending',recoverDoc='';
+ let recoverMode='pending',recoverDoc='',recoverNotify=null;
  const recovery=recoverContext.TAXIAPP_DEVICE_SESSION.create({
   auth:{currentUser:user},db:{},
   f:{
    doc:()=> 'deviceSessions/'+user.uid,serverTimestamp:()=> 'server',
    onSnapshot(_r,_o,next,error){
-    reconnections++;
+    reconnections++;recoverNotify=next;
     queueMicrotask(()=>{
      if(permit)next({exists:()=>Boolean(recoverDoc),
       data:()=>({sessionId:recoverDoc}),
@@ -178,6 +178,7 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
    async setDoc(_r,data){
     if(!permit)throw Object.assign(Error('denied'),{code:'permission-denied'});
     deniedWriteCount++;recoverDoc=data.sessionId;
+    queueMicrotask(()=>recoverNotify?.({exists:()=>true,data:()=>({sessionId:recoverDoc}),metadata:{fromCache:false,hasPendingWrites:false}}));
    },
    async getDocFromServer(){
     if(!permit)throw Object.assign(Error('denied'),{code:'permission-denied'});
