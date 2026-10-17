@@ -382,7 +382,7 @@ html[data-ui-theme="night"] .operations-fold>summary{background:#243a54;color:#e
 <script src="./login-core.js?v=20261017-2"></script>
 <script src="./account-settings.js?v=20261017-6"></script>
 <script src="./device-session.js?v=20261017-7"></script>
-<script src="./account-auto-sync.js?v=20261017-7"></script>
+<script src="./account-auto-sync.js?v=20261017-8"></script>
 <script>
 (async function () {
   'use strict';
@@ -2505,7 +2505,10 @@ accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
  }
 });
 accountSettingsAuto.start().catch(e=>console.warn('Account sync initialization',e));
-appEl.addEventListener('focusout',()=>accountSettingsAuto?.localSaved());
+appEl.addEventListener('focusout',()=>{
+ accountSettingsAuto?.localSaved();
+ accountSettingsAuto?.editingEnded();
+});
 if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
 window.addEventListener('online',()=>{if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();});
 document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();if(document.visibilityState==='visible'){if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();}});
