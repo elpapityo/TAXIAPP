@@ -8,7 +8,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
  create(deps){
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
-  let deviceSession=null,viewerLogin=false,explicitWriterLogin=false,lastCloudRead=0;
+  let deviceSession=null,viewerLogin=false,explicitWriterLogin=false;
+  let deferredWhileEditing=false;
   let busy=false,again=false,timer=null,booted=false;
   // A single per-UID session listener revokes old editors.
   // User settings use one-off server reads only, never continuous watching.
@@ -72,10 +73,13 @@ root.TAXIAPP_ACCOUNT_AUTO={
   async function reconcile(){
    if(!deviceSession?.canWrite())return;
    if(enabled&&deps.isEditing?.()){
-    status('入力中のため設定同期を一時保留しています');
-    schedule(2500);
+    // Wait until editing actually ends. Polling every 2.5 seconds generates
+    // repeated status changes and may turn into endless cloud reads.
+    deferredWhileEditing=true;
+    status('入力中：設定の保存は入力終了まで保留');
     return;
    }
+   deferredWhileEditing=false;
    if(!enabled||!navigator.onLine){if(enabled)status('オフライン：設定は端末に保存中');return;}
    if(busy){again=true;return;}
    busy=true;
@@ -86,7 +90,6 @@ root.TAXIAPP_ACCOUNT_AUTO={
     // The listener delivered a server-confirmed snapshot already.
     // Do not issue another document read for every reconciliation.
     const cloud=await fire.getDocFromServer(ref());
-    lastCloudRead=Date.now();
     if(!stillCurrent(accountUid)||!deviceSession.canWrite())return;
     const remote=cloud.exists()?api.extract({
      version:1,shifts:[],prefs:api.validate(cloud.data())
@@ -181,7 +184,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   async function authChanged(next){
    clearTimeout(timer);
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
-   lastCloudRead=0;localSignature=null;
+   deferredWhileEditing=false;localSignature=null;
    if(!next){deviceSession?.clear();deps.onDeviceMode?.('viewer','','ログインすると操作できます');}
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
@@ -212,7 +215,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
     status('ログイン済み：操作端末を確認しています');
     await deviceSession.begin(next,{viewer:!explicitWriterLogin});
     viewerLogin=false;explicitWriterLogin=false;
-    if(deviceSession.canWrite())schedule(0);
+    // The session transition to writer/legacy schedules the initial read.
+    // Do not schedule the same login fetch a second time here.
    }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));}
   }
   async function start(){
@@ -256,8 +260,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
     deviceSession=root.TAXIAPP_DEVICE_SESSION.create({
      auth,f,db,onMode:(next,previous,detail)=>{
       deps.onDeviceMode?.(next,previous,detail);
-      if(next==='writer'||next==='legacy')schedule(0);
-      else clearTimeout(timer);
+      // A repeated Firestore session snapshot must NOT cause another
+      // settings read when the editing permission has not changed.
+      if((next==='writer'||next==='legacy')&&next!==previous)schedule(0);
+      else if(next!=='writer'&&next!=='legacy')clearTimeout(timer);
      }
     });
     a.onAuthStateChanged(auth,next=>{
@@ -267,9 +273,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
      e=>status('Google認証エラー：'+String(e.code||e.message||e)));
    }catch(e){status('Googleログインの準備ができません：'+String(e.message||e));}
    window.addEventListener('online',()=>schedule(0));
-   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'&&Date.now()-lastCloudRead>120000)schedule(300);
-   });
+   // No visibility/focus polling: reload settings when login obtains an
+   // editing session, and on actual preference changes only.
   }
   function localSaved(){
    if(!enabled)return;
@@ -282,7 +287,14 @@ root.TAXIAPP_ACCOUNT_AUTO={
     schedule(1000);
    }catch(e){status('設定の確認エラー：'+String(e.message||e));}
   }
-  return {start,localSaved,status:()=>({enabled,uid,mode:deviceSession?.state()})};
+  function editingEnded(){
+   // Focus-out is an event, not a polling interval. The previous scheduled
+   // read may have stopped while the driver was actively editing a field.
+   if(!deferredWhileEditing||deps.isEditing?.())return;
+   deferredWhileEditing=false;
+   schedule(200);
+  }
+  return {start,localSaved,editingEnded,status:()=>({enabled,uid,mode:deviceSession?.state()})};
  }
 };
 })(typeof window!=='undefined'?window:globalThis);
