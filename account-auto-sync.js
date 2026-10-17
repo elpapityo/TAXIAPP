@@ -8,10 +8,11 @@ root.TAXIAPP_ACCOUNT_AUTO={
  create(deps){
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
-  let busy=false,again=false,timer=null,unsubscribe=null,booted=false;
-  // onSnapshot is itself a real-time network listener. Reuse its document
-  // instead of adding a second charged getDocFromServer for every event.
-  let liveSnapshot=null,liveSignature=null,localSignature=null;
+  let deviceSession=null,viewerLogin=false,lastCloudRead=0;
+  let busy=false,again=false,timer=null,booted=false;
+  // A single per-UID session listener revokes old editors.
+  // User settings use one-off server reads only, never continuous watching.
+  let localSignature=null;
   const KEY='taxiapp-account-pref-base-v1-',BACKUP='taxiapp-account-pref-backup-v1-';
   const $=id=>document.getElementById(id);
   function status(message){
@@ -46,7 +47,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   }
   const ref=()=>fire.doc(db,'accountSettings',uid);
   function schedule(ms=900){
-   if(!enabled)return;
+   if(!enabled||!deviceSession?.canWrite())return;
    clearTimeout(timer);
    timer=setTimeout(()=>{timer=null;reconcile().catch(e=>{
     status('設定同期エラー：'+String(e.code||e.message||e));
@@ -62,7 +63,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    await deps.applyPrefs(newModel.prefs);
   }
   async function reconcile(){
-   if(!liveSnapshot){return;}
+   if(!deviceSession?.canWrite())return;
    if(enabled&&deps.isEditing?.()){
     status('入力中のため設定同期を一時保留しています');
     schedule(2500);
@@ -77,8 +78,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
     const beginning=currentPrefs();
     // The listener delivered a server-confirmed snapshot already.
     // Do not issue another document read for every reconciliation.
-    const cloud=liveSnapshot;
-    if(!stillCurrent(accountUid))return;
+    const cloud=await fire.getDocFromServer(ref());
+    lastCloudRead=Date.now();
+    if(!stillCurrent(accountUid)||!deviceSession.canWrite())return;
     const remote=cloud.exists()?api.extract({
      version:1,shifts:[],prefs:api.validate(cloud.data())
     }).prefs:null;
@@ -92,8 +94,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
      const result=await fire.runTransaction(db,async tx=>{
       const doc=await tx.get(ref());
       if(doc.exists())return false;
+      if(!deviceSession.canWrite())throw Error('閲覧専用端末から保存できません');
       tx.set(ref(),{format:api.FORMAT,schemaVersion:1,
-       prefs:beginning,updatedAt:fire.serverTimestamp()});
+       prefs:beginning,writerSessionId:deviceSession.sessionId(),updatedAt:fire.serverTimestamp()});
       return true;
      });
      if(!stillCurrent(accountUid))return;
@@ -121,7 +124,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
         format:api.FORMAT,schemaVersion:1,prefs:freshest
        },{preserveLocalWaiting:true})).prefs;
        if(!api.same(joined,freshest))
-        tx.update(ref(),{prefs:joined,updatedAt:fire.serverTimestamp()});
+        tx.update(ref(),{prefs:joined,writerSessionId:deviceSession.sessionId(),updatedAt:fire.serverTimestamp()});
        return joined;
       });
      }
@@ -149,7 +152,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       if(resolved.conflicts.length)
        throw Error('別端末と同じ項目が同時変更されました。設定を保護するため停止しました');
       if(!api.same(current,resolved.prefs))
-       tx.update(ref(),{prefs:resolved.prefs,updatedAt:fire.serverTimestamp()});
+       tx.update(ref(),{prefs:resolved.prefs,writerSessionId:deviceSession.sessionId(),updatedAt:fire.serverTimestamp()});
       return resolved.prefs;
      });
      if(!stillCurrent(accountUid))return;
@@ -170,9 +173,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
   }
   async function authChanged(next){
    clearTimeout(timer);
-   if(unsubscribe){unsubscribe();unsubscribe=null;}
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
-   liveSnapshot=null;liveSignature=null;localSignature=null;
+   lastCloudRead=0;localSignature=null;
+   if(!next){deviceSession?.clear();deps.onDeviceMode?.('viewer','','ログインすると操作できます');}
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
    status('Googleアカウントを確認しています…');
@@ -199,19 +202,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
     enabled=true;
     baseline=readBase();
     localSignature=JSON.stringify(currentPrefs());
-    status('Googleに接続しています…');
-    // A single document listener covers initial load and remote changes.
-    // Ignore metadata-only events and local pending writes; never add a
-    // getDocFromServer call for each snapshot or ordinary duty save.
-    unsubscribe=fire.onSnapshot(ref(),{includeMetadataChanges:true},snap=>{
-     if(!enabled||uid!==next.uid)return;
-     if(snap.metadata.fromCache||snap.metadata.hasPendingWrites)return;
-     const signature=snap.exists()?JSON.stringify(snap.data().prefs):'__missing__';
-     if(signature===liveSignature)return;
-     liveSignature=signature;
-     liveSnapshot=snap;
-     schedule(250);
-    },e=>status('クラウド監視エラー：'+String(e.code||e.message||e)));
+    status('ログイン済み：操作端末を確認しています');
+    await deviceSession.begin(next,{viewer:viewerLogin});
+    viewerLogin=false;
+    if(deviceSession.canWrite())schedule(0);
    }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));}
   }
   async function start(){
@@ -221,8 +215,22 @@ root.TAXIAPP_ACCOUNT_AUTO={
    }
    $('accountSignIn')?.addEventListener('click',async()=>{
     if(!auth){status('ログイン機能を読み込み中です…');return;}
-    try{await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());}
-    catch(e){status('ログイン失敗：'+String(e.code||e.message||e));}
+    viewerLogin=false;
+    try{
+     await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
+     if(deviceSession?.state()==='viewer')await deviceSession.claim();
+    }catch(e){status('ログイン失敗：'+String(e.code||e.message||e));}
+   });
+   $('accountViewSignIn')?.addEventListener('click',async()=>{
+    if(!auth)return;
+    viewerLogin=true;
+    try{
+     await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
+     deviceSession?.viewOnly();
+    }catch(e){status('閲覧ログイン失敗：'+String(e.code||e.message||e));}
+   });
+   $('accountTakeOver')?.addEventListener('click',()=>{
+    deviceSession?.claim().catch(e=>status('切替失敗：'+String(e.message||e)));
    });
    $('accountSignOut')?.addEventListener('click',()=>{
     if(auth)fb.signOut(auth).catch(e=>status('ログアウト失敗：'+String(e.code||e.message||e)));
@@ -237,12 +245,22 @@ root.TAXIAPP_ACCOUNT_AUTO={
     fb=a;fire=f;
     const firebaseApp=getApps().length?getApp():initializeApp(conf);
     auth=a.getAuth(firebaseApp);db=f.getFirestore(firebaseApp);
-    a.onAuthStateChanged(auth,next=>authChanged(next),
+    deviceSession=root.TAXIAPP_DEVICE_SESSION.create({
+     auth,f,db,onMode:(next,previous,detail)=>{
+      deps.onDeviceMode?.(next,previous,detail);
+      if(next==='writer'||next==='legacy')schedule(0);
+      else clearTimeout(timer);
+     }
+    });
+    a.onAuthStateChanged(auth,next=>{
+     if(next)deps.onDeviceMode?.('pending','','操作権を確認しています…');
+     return authChanged(next);
+    },
      e=>status('Google認証エラー：'+String(e.code||e.message||e)));
    }catch(e){status('Googleログインの準備ができません：'+String(e.message||e));}
    window.addEventListener('online',()=>schedule(0));
    document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible')schedule(300);
+    if(document.visibilityState==='visible'&&Date.now()-lastCloudRead>120000)schedule(300);
    });
   }
   function localSaved(){
@@ -256,7 +274,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     schedule(1000);
    }catch(e){status('設定の確認エラー：'+String(e.message||e));}
   }
-  return {start,localSaved,status:()=>({enabled,uid})};
+  return {start,localSaved,status:()=>({enabled,uid,mode:deviceSession?.state()})};
  }
 };
 })(typeof window!=='undefined'?window:globalThis);
