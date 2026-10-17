@@ -66,7 +66,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(!holder)return;
   const signature=JSON.stringify(status().conflicts);
   if(holder.dataset.syncSignature===signature)return;
-  if(holder.contains(document.activeElement))return;
+  if(holder.querySelector('input:focus,textarea:focus,select:focus'))return;
   holder.innerHTML=conflictMarkup(status());
   holder.dataset.syncSignature=signature;
  }
