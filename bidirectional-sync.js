@@ -96,6 +96,10 @@ function create(deps){
      saved[id]={revision:got.revision,hash:currentHash};
      continue;
     }
+    if(base.receiving){
+     nextConflict[id]={id,reason:'前回のクラウド受信が完了しませんでした。安全のため照合を保留します',localRevision:base.revision,remoteRevision:remote.revision};
+     continue;
+    }
     const localChanged=currentHash!==base.hash;
     const remoteChanged=remote.revision!==base.revision;
     if(localChanged&&remoteChanged){
@@ -111,9 +115,12 @@ function create(deps){
       continue;
      }
      const nextBase={revision:got.revision,hash:remoteHash(got.shift)};
+     const pending={...nextBase,receiving:true};
+     if(!setSaved({...saved,[id]:pending}))throw Error(lastError);
+     saved[id]=pending;
+     await replaceRemoteShift(id,got.shift,true);
      if(!setSaved({...saved,[id]:nextBase}))throw Error(lastError);
      saved[id]=nextBase;
-     await replaceRemoteShift(id,got.shift,true);
      continue;
     }
     if(localChanged){
@@ -163,9 +170,10 @@ function create(deps){
     const listing=await request('syncList',{});
     if(!listing.shifts?.some(x=>x.id===id&&x.revision===remote.revision))
      throw Error('バックアップ中にクラウドが更新されました。再確認してください');
-    const hash=remoteHash(remote.shift);
-    if(!setSaved({...saved,[id]:{revision:remote.revision,hash}}))throw Error(lastError);
+    const hash=remoteHash(remote.shift),base={revision:remote.revision,hash};
+    if(!setSaved({...saved,[id]:{...base,receiving:true}}))throw Error(lastError);
     await replaceRemoteShift(id,remote.shift,true);
+    if(!setSaved({...saved,[id]:base}))throw Error(lastError);
    }
    delete conflict[id];lastError='';lastSyncAt=Date.now();return true;
   }catch(e){lastError=String(e?.message||e);return false;}
