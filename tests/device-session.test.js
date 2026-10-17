@@ -150,7 +150,7 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
  })();
  await suspicious.obj.begin(user,{viewer:false});await flush();
  await suspicious.obj.claim();await flush();
- assert.equal(suspicious.writes(),1);
+ assert.equal(suspicious.writes(),0,'a denied watcher must prevent even attempting a takeover write');
  assert.equal(suspicious.state(),'viewer');
  assert.equal(suspicious.obj.canWrite(),false);
  // Regression: on a denied listener, clicking takeover re-subscribes.
