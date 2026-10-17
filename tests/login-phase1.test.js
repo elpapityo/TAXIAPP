@@ -32,7 +32,7 @@ assert.match(page,/id="loginUid"[^>]+readonly/);
 assert.match(page,/src="\.\/login\.js\?v=20261017-2"/);
 
 assert.match(page,/既存の日報・同期設定は変更しません/);
-assert.match(page,/type="module" src="\.\/login.js"/);
+assert.match(page,/type="module" src="\.\/login\.js\?v=20261017-2"/);
 const js=fs.readFileSync(path.join(root,'login.js'),'utf8');
 assert.match(js,/signInWithPopup\(/);
 assert.match(js,/navigator\.clipboard\.writeText\(uid\)/);
