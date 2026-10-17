@@ -995,7 +995,7 @@ async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
- const shift=getShift(),displayVersion=(document.title.match(/v\\d+\\.\\d+\\.\\d+/)||['v?'])[0];
+ const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
  const state=deviceMode==='viewer'&&viewerCloudError?'△ 閲覧データの受信エラー':
   deviceMode==='viewer'&&!viewerCloudLoaded?'◌ 閲覧データ受信待ち':
   deviceMode==='viewer'&&viewerOpenCount>1?'△ 未入庫乗務が複数':
