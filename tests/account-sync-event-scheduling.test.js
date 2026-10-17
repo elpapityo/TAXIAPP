@@ -13,7 +13,7 @@ assert.doesNotMatch(auto,/schedule\(2500\)/);
 assert.match(auto,/\(next==='writer'\|\|next==='legacy'\)\&\&next!==previous/);
 assert.match(auto,/function editingEnded\(\)/);
 assert.match(main,/accountSettingsAuto\?\.editingEnded\(\)/);
-assert.match(main,/account-auto-sync\.js\?v=20261017-8/);
+assert.match(main,/account-auto-sync\.js\?v=20261017-9/);
 function between(a,b){
  const start=auto.indexOf(a);
  assert.ok(start>=0,'missing '+a);
@@ -24,13 +24,17 @@ function between(a,b){
 const schedule=between('  function schedule(ms=900){','  // Legacy Firebase rules');
 const funcs=between('  function localSaved(){','  return {start,localSaved,editingEnded');
 const preflight=between('  async function reconcile(){','   busy=true;')+'   busy=true;\n   reads++;busy=false;\n  }';
+const settingsContext={TextEncoder};vm.createContext(settingsContext);
+vm.runInContext(fs.readFileSync(path.join(root,'account-settings.js'),'utf8'),settingsContext);
+const api=settingsContext.TAXIAPP_ACCOUNT_SETTINGS;
 const tasks=new Map();let sequence=0,editing=false;
 const prefs={driver:'既存の乗務員名',waitPlaces:['伊丹駅']};
 const context={
  enabled:true,uid:'same-uid',
  deviceSession:{canWrite:()=>true},
  deps:{isEditing:()=>editing},navigator:{onLine:true},
- busy:false,again:false,timer:null,localSignature:JSON.stringify(prefs),
+ busy:false,again:false,timer:null,localSignature:api.signature(prefs),
+ api,
  deferredWhileEditing:false,reads:0,
  currentPrefs:()=>prefs,status:()=>{},
  setTimeout(fn){const id=++sequence;tasks.set(id,fn);return id;},
@@ -46,6 +50,10 @@ function firePending(){
 evaluate('localSaved()');
 assert.equal(tasks.size,0,'unchanged preferences must not trigger a sync');
 assert.equal(context.reads,0);
+// Equivalent prefs with differently ordered keys are not real changes.
+const sameDriver=prefs.driver;delete prefs.driver;prefs.driver=sameDriver;
+evaluate('localSaved()');
+assert.equal(tasks.size,0,'object key order alone must not cause a sync');
 prefs.driver='変更された乗務員名';
 evaluate('localSaved()');
 assert.equal(tasks.size,1);
