@@ -38,7 +38,7 @@ assert.doesNotMatch(js,/\b(?:setDoc|addDoc|updateDoc|deleteDoc|setItem|put\()\s*
 assert.doesNotMatch(js,/TAXIAPP_WRITE_KEY/);
 const config=fs.readFileSync(path.join(root,'firebase-config.js'),'utf8');
 assert.match(config,/projectId: "taxiapp-2b6bd"/);
-const configContext={};vm.createContext(configContext);vm.runInContext(config,configContext);
+const configContext={window:{}};vm.createContext(configContext);vm.runInContext(config,configContext);
 assert.equal(u.firebaseConfigReady(configContext.TAXIAPP_FIREBASE_CONFIG),true);
 assert.equal(configContext.TAXIAPP_FIREBASE_CONFIG.authDomain,'taxiapp-2b6bd.firebaseapp.com');
 assert.doesNotMatch(config,/PRIVATE KEY|BEGIN RSA PRIVATE KEY/);
