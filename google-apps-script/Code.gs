@@ -15,6 +15,8 @@
  */
 var TAXIAPP_SHEET_ID = '1tBoPSm_hni7VE_TcP3n0gvGXexX9G4KSKUD3xPJZNS4';
 var TAXIAPP_ORIGIN = 'https://elpapityo.github.io';
+var TAXIAPP_ANDROID_ORIGIN = 'https://appassets.androidplatform.net';
+var TAXIAPP_REVISION_SHEET = 'TAXIAPP_同期版管理';
 var TAXIAPP_MAX_RECORDS = 60;
 var TAXIAPP_MAX_CHUNKS = 20;
 var TAXIAPP_CHUNK_SIZE = 30000;
@@ -90,46 +92,138 @@ function doGet(e) {
   '<html><body><p>TAXIAPP bridge. Send signed requests from the TAXIAPP app.</p></body></html>');
 }
 
+/**
+ * v2 transport uses the same authenticated POST/iframe acknowledgement as v1.
+ * No unauthenticated GET exposes shifts; a write key also authorizes reads.
+ * Version checks and writes share the same Apps Script lock.
+ */
 function doPost(e) {
- var nonce = String((e && e.parameter && e.parameter.nonce) || '').slice(0, 100);
- try {
-  var token = PropertiesService.getScriptProperties().getProperty('TAXIAPP_WRITE_KEY');
-  if (!token || !e || !e.parameter ||
-   String(e.parameter.key || '') !== token) throw Error('接続キーが違います');
-  if (e.parameter.action !== 'sync') throw Error('未対応の処理です');
-  var raw = String(e.parameter.payload || '');
-  if (!raw || raw.length > 650000) throw Error('送信データのサイズが不正です');
-  var data = JSON.parse(raw);
-  validatePacket_(data);
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(25000)) throw Error('別の送信を処理中です。再試行してください');
-  try {
-   var summary = savePacket_(data);
-   return replyToPhone_(nonce, true, summary);
-  } finally {
-   lock.releaseLock();
-  }
- } catch (err) {
-  return replyToPhone_(nonce, false, String(err && err.message || err).slice(0, 250));
+ var params=e&&e.parameter||{};
+ var nonce=String(params.nonce||'').slice(0,100);
+ var origin=String(params.origin||'');
+ var audience=origin===TAXIAPP_ANDROID_ORIGIN?TAXIAPP_ANDROID_ORIGIN:TAXIAPP_ORIGIN;
+ try{
+  var key=PropertiesService.getScriptProperties().getProperty('TAXIAPP_WRITE_KEY');
+  if(!key||String(params.key||'')!==key)throw Error('接続キーが違います');
+  var action=String(params.action||'');
+  if(['syncList','syncGet','syncPut'].indexOf(action)<0&&action!=='sync')
+   throw Error('未対応の処理です');
+  var lock=LockService.getScriptLock();
+  if(!lock.tryLock(25000))throw Error('別の同期を処理中です');
+  try{
+   if(action==='syncList')return replyToPhone_(nonce,true,'乗務一覧を取得しました',
+    syncListV2_(),audience);
+   if(action==='syncGet'){
+    var id=String(params.shiftId||'');
+    if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('乗務IDが不正です');
+    return replyToPhone_(nonce,true,'乗務を取得しました',syncGetV2_(id),audience);
+   }
+   var raw=String(params.payload||'');
+   if(!raw||raw.length>650000)throw Error('送信データのサイズが不正です');
+   var data=JSON.parse(raw);
+   validatePacket_(data);
+   if(action==='syncPut')return replyToPhone_(nonce,true,'同期を保存しました',
+    syncPutV2_(data,params.baseRevision),audience);
+   // Legacy v1 clients can still send unversioned *unmanaged* shifts.
+   // Once a shift is managed by v2, v1 must never silently overwrite it.
+   var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+   var version=syncRevisionV2_(ss,String(data.shift.id));
+   if(version.managed)throw Error('この乗務は双方向同期で管理されています。端末のTAXIAPPを更新してください。');
+   var summary=savePacket_(data);
+   // Legacy writes MUST increment the server revision too. A modern client
+   // can never unknowingly overwrite a concurrent write from an older app.
+   syncWriteRevisionV2_(ss,String(data.shift.id),version.revision+1,false);
+   return replyToPhone_(nonce,true,summary,null,audience);
+  }finally{lock.releaseLock();}
+ }catch(err){
+  return replyToPhone_(nonce,false,String(err&&err.message||err).slice(0,250),null,audience);
  }
 }
-
-function replyToPhone_(nonce, success, detail) {
- var reply = {
-  type: 'TAXIAPP_SYNC_RESULT',
-  nonce: nonce,
-  ok: Boolean(success),
-  message: String(detail || '')
+function replyToPhone_(nonce,success,detail,data,origin) {
+ var result={
+  type:'TAXIAPP_SYNC_RESULT',nonce:nonce,ok:Boolean(success),
+  message:String(detail||'')
  };
- var json = JSON.stringify(reply).replace(/</g, '\\u003c');
- var html = '<!doctype html><html><body><script>' +
-  'window.top.postMessage(' + json + ',' +
-  JSON.stringify(TAXIAPP_ORIGIN) + ');' +
-  '</scr' + 'ipt></body></html>';
+ if(data!==undefined&&data!==null)result.data=data;
+ var json=JSON.stringify(result).replace(/</g,'\\u003c');
+ var target=(origin===TAXIAPP_ANDROID_ORIGIN)?TAXIAPP_ANDROID_ORIGIN:TAXIAPP_ORIGIN;
+ var html='<!doctype html><html><body><script>'+
+  'window.top.postMessage('+json+','+JSON.stringify(target)+');'+
+  '</scr'+'ipt></body></html>';
  return HtmlService.createHtmlOutput(html)
   .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
-
+/** Treat legacy rows as revision 1. Never rewrite them on a list/get call. */
+function syncRevisionV2_(ss,id) {
+ var s=ss.getSheetByName(TAXIAPP_REVISION_SHEET);
+ if(s&&s.getLastRow()>1){
+  var rows=s.getRange(2,1,s.getLastRow()-1,4).getValues();
+  for(var i=0;i<rows.length;i++){
+   if(String(rows[i][0])===id)
+    return {revision:Number(rows[i][1])||0,managed:String(rows[i][3])==='v2',updatedAt:String(rows[i][2]||'')};
+  }
+ }
+ var originals=ss.getSheetByName('TAXIAPP_同期原本');
+ if(originals&&originals.getLastRow()>1){
+  var ids=originals.getRange(2,1,originals.getLastRow()-1,1).getValues();
+  if(ids.some(function(row){return String(row[0])===id;}))
+   return {revision:1,managed:false,updatedAt:''};
+ }
+ return {revision:0,managed:false,updatedAt:''};
+}
+function syncListV2_() {
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var originals=ss.getSheetByName('TAXIAPP_同期原本');
+ if(!originals||originals.getLastRow()<2)return {shifts:[]};
+ var rows=originals.getRange(2,1,originals.getLastRow()-1,2).getValues();
+ var states=ss.getSheetByName(TAXIAPP_REVISION_SHEET),lookup={};
+ if(states&&states.getLastRow()>1){
+  states.getRange(2,1,states.getLastRow()-1,3).getValues().forEach(function(r){
+   lookup[String(r[0])]={revision:Number(r[1])||1,updatedAt:String(r[2]||'')};
+  });
+ }
+ var result=rows.filter(function(r){return /^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(r[0]));})
+  .map(function(r){
+   var id=String(r[0]),info=lookup[id];
+   return {id:id,revision:info?info.revision:1,
+    updatedAt:info?info.updatedAt:String(r[1]||'')};
+  });
+ return {shifts:result};
+}
+function syncGetV2_(id) {
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var shift=loadShift_(ss,id);
+ var rev=syncRevisionV2_(ss,id);
+ return {id:id,revision:rev.revision,shift:shift,updatedAt:rev.updatedAt};
+}
+function syncPutV2_(packet,baseRevision) {
+ var base=Number(baseRevision);
+ if(!Number.isInteger(base)||base<0||base>2147483646)
+  throw Error('同期の基準版が不正です');
+ var id=String(packet.shift.id),ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var current=syncRevisionV2_(ss,id);
+ if(current.revision!==base)
+  throw Error('SYNC_CONFLICT:'+current.revision+':他端末で更新されたため、上書きを停止しました');
+ // Validate the packet before changing sheet content, and only increment
+ // the revision after all sheets have been successfully written.
+ savePacket_(packet);
+ var rev=base+1,now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
+ syncWriteRevisionV2_(ss,id,rev,true);
+ return {id:id,revision:rev,updatedAt:now};
+}
+function syncWriteRevisionV2_(ss,id,revision,modern){
+ var state=ss.getSheetByName(TAXIAPP_REVISION_SHEET);
+ if(!state){
+  state=ss.insertSheet(TAXIAPP_REVISION_SHEET);
+  state.getRange(1,1,1,4).setValues([['乗務ID','更新番号','更新日時','同期方式']]);
+  state.hideSheet();
+ }
+ var rows=state.getLastRow()>1?state.getRange(2,1,state.getLastRow()-1,1).getValues():[];
+ var index=rows.findIndex(function(row){return String(row[0])===id;});
+ var rowNumber=index<0?state.getLastRow()+1:index+2;
+ var now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
+ state.getRange(rowNumber,1,1,4).setValues([[id,revision,now,modern?'v2':'legacy']]);
+}
 function validatePacket_(packet) {
  if (!packet || packet.kind !== 'TAXIAPP_SHIFT_V1' || !packet.shift)
   throw Error('不明なデータ形式です');
