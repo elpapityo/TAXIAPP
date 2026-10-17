@@ -98,22 +98,10 @@ if(!core.firebaseConfigReady(config)){
   const auth=a.getAuth(initializeApp(config)),db=f.getFirestore();
   const provider=new a.GoogleAuthProvider();
   login.disabled=false;
-  login.addEventListener('click',async()=>{
-   login.disabled=true;
-   message('Googleログイン画面を開いています…');
-   try{
-    await a.signInWithPopup(auth,provider);
-   }catch(error){
-    message(error.code==='auth/popup-blocked'?
-     'ポップアップが制限されています。ブラウザのポップアップ許可を確認してください。':
-     error.code==='auth/unauthorized-domain'?
-     'Firebaseの承認済みドメインに elpapityo.github.io を追加してください。':
-     'ログインに失敗しました：'+String(error.code||error.message||error));
-   }finally{login.disabled=false;}
-  });
-  logout.addEventListener('click',()=>a.signOut(auth).catch(
-   ()=>message('ログアウトできませんでした。再度お試しください。')));
-  a.onAuthStateChanged(auth,async user=>{
+  // A popup can finish without triggering another auth-state notification
+  // when the same Google user is already signed in. Refresh the visible
+  // account and permissions explicitly after every successful popup.
+  const refreshIdentity=async user=>{
    if(!user){showIdentity(null,'signed-out');message('未ログインです。Googleでログインしてください。');return;}
    let admin=null,profile=null;
    try{
@@ -135,7 +123,24 @@ if(!core.firebaseConfigReady(config)){
     state==='suspended'?'このアカウントは利用停止中です。':
     state==='active'?'認証を確認しました。アプリ本体への認証連携は今後の実装です。':
     'Googleログイン成功。管理者登録はまだ完了していません。UIDを控え、Firebase Consoleで初期管理者を設定してください。');
-  },error=>message('認証状態を取得できません：'+String(error.code||error.message||error)));
+  };
+  login.addEventListener('click',async()=>{
+   login.disabled=true;
+   message('Googleログイン画面を開いています…');
+   try{
+    const credential=await a.signInWithPopup(auth,provider);
+    await refreshIdentity(credential.user);
+   }catch(error){
+    message(error.code==='auth/popup-blocked'?
+     'ポップアップが制限されています。ブラウザのポップアップ許可を確認してください。':
+     error.code==='auth/unauthorized-domain'?
+     'Firebaseの承認済みドメインに elpapityo.github.io を追加してください。':
+     'ログインに失敗しました：'+String(error.code||error.message||error));
+   }finally{login.disabled=false;}
+  });
+  logout.addEventListener('click',()=>a.signOut(auth).catch(
+   ()=>message('ログアウトできませんでした。再度お試しください。')));
+  a.onAuthStateChanged(auth,refreshIdentity,error=>message('認証状態を取得できません：'+String(error.code||error.message||error)));
  }catch(error){
   message('Googleログイン用ライブラリを読み込めませんでした。通信状態を確認してください。');
   console.error('TAXIAPP login initialization',error);
