@@ -40,7 +40,7 @@ vm.createContext(context);vm.runInContext(src,context);
 context.savePacket_=(packet)=>{
  const originals=sheet('TAXIAPP_同期原本');
  if(originals.getLastRow()===0)originals.getRange(1,1,1,3).setValues([['ID','更新','分割数']]);
- const id=packet.shift.id,existing=values.get('TAXIAPP_同期原本').findIndex((x,i)=>i>0&&x[0]===id);
+ const id=packet.shift.id,existing=values.get('TAXIAPP_同期原本').findIndex((x,i)=>i>0&&x&&x[0]===id);
  const at=existing>0?existing+1:originals.getLastRow()+1;
  const json=JSON.stringify(packet.shift);
  originals.getRange(at,1,1,4).setValues([[id,'2026-10-17 10:00',1,json]]);
