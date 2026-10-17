@@ -10,7 +10,7 @@
 - `login.html`：ログイン画面、利用状態確認、同一ブラウザの旧データ件数確認。
 - `login.js`：Firebase Authentication の Googleポップアップ認証、Firestore `admins/{uid}` と `users/{uid}` の読み取り。
 - `login-core.js`：管理者・利用者状態判定、旧モデルの件数集計。
-- `firebase-config.js`：未設定。FirebaseのWeb用設定をユーザーが確認後に反映する。Web用apiKeyは**秘密キーではない**が API キーの制限は検討する。
+- `firebase-config.js`：TAXIAPPプロジェクト（`taxiapp-2b6bd`）の公開Web設定を開発ブランチに反映済み。Web用apiKeyは**秘密キーではない**が API キーの制限は検討する。スクリーンショット由来の値は初回接続で実機照合する。
 - `firestore.rules`：未承認の操作をすべて拒否。利用者・管理者の登録・編集はクライアントに許可しない。
 
 ## 初期設定（Firebaseへの接続ができたら）
@@ -18,7 +18,7 @@
 2. Authentication → ログイン方法 → Googleを有効化し、承認済みドメインに `elpapityo.github.io` を登録する。
 3. Firestore Database を作成する。**テストモードで公開しない**。本ブランチの `firestore.rules` を設置し、公開する。
 4. プロジェクト設定 → マイアプリ → ウェブアプリを登録し、Firebase Web設定値（`apiKey`, `authDomain`, `projectId`, `appId` など）を取得する。これはFirebaseの**ウェブ公開設定**であり、Apps ScriptやGoogle Driveの秘密キーではない。
-5. `firebase-config.js` の `null` を `{ apiKey: '...', authDomain: '...', projectId: '...', appId: '...' }` に置き換える。**本番へ反映する前に**ログイン画面をGitHub Pagesと同じドメインでテストする。開発ブランチは通常のPages公開先には反映されない。
+5. `firebase-config.js` の公開設定値は開発ブランチへ入力済み。**本番へ反映する前に**ログイン画面をGitHub Pagesと同じドメインでテストする。開発ブランチは通常のPages公開先には反映されない。
 6. 管理者本人がGoogleログインし、画面に表示された **UID** を確認する。まだこの時点では管理者ではない。
 7. Firebase Console → Firestore → `admins` コレクション → UID をドキュメントIDとして作成し、フィールド `enabled`（boolean）を `true` に設定する。**これは管理者自身による手動の初期権限付与**であり、画面から権限を与える機能は存在しない。
 8. 再ログイン後「管理者登録を確認しました」が表示されたことを確認する。**この後でも旧アプリのログイン制限はまだ未実装**。
