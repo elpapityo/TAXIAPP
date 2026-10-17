@@ -23,7 +23,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   const ok=await engine.run();
   d.setStatus(message());
   if(manual)d.toast(message(),!ok);
-  if(d.isSettings())d.render();
+  if(d.isSettings()&&!d.root.querySelector('input:focus,textarea:focus,select:focus'))d.render();
   return ok;
  }
  function schedule(){
