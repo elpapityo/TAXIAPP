@@ -19,6 +19,8 @@ a:not(.action){color:#065fae}
 .status{background:#e9f2fd;border-radius:8px;padding:10px;overflow-wrap:anywhere}
 .warning{border-left:4px solid #a26100;padding-left:12px}
 code{overflow-wrap:anywhere;font-size:.88rem}
+.uid-input{width:min(100%,360px);padding:12px;border:1px solid #9eb5ce;border-radius:9px;background:#f9fbfe;color:#233752;font:500 1rem ui-monospace,Consolas,monospace;min-height:46px}
+.uid-input:focus{outline:3px solid #84b8ef;outline-offset:2px}
 dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 </style>
 </head>
@@ -31,7 +33,7 @@ dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 <div class="row"><button id="googleLogin" type="button" disabled>Googleでログイン</button><button id="googleLogout" class="alt" type="button" hidden>ログアウト</button></div>
 <dl id="loginDetails" hidden>
 <dt>Googleアカウント</dt><dd id="loginEmail"></dd>
-<dt>利用者ID（UID）</dt><dd><code id="loginUid"></code> <button id="copyLoginUid" class="alt" type="button">UIDをコピー</button></dd>
+<dt>利用者ID（UID）</dt><dd><div class="row"><input id="loginUid" class="uid-input" aria-label="利用者ID（UID）" type="text" readonly spellcheck="false" autocomplete="off"><button id="copyLoginUid" class="alt" type="button">UIDをコピー</button></div><p id="uidCopyStatus" class="note" role="status" aria-live="polite">コピーできない場合はUIDの欄を選択し、Ctrl+Cでコピーできます。</p></dd>
 <dt>登録状態</dt><dd id="loginRole"></dd>
 </dl>
 <p class="note">パスワードはTAXIAPPでは受け取りません。メールアドレスは管理者が確認する登録情報です。</p>
@@ -49,7 +51,7 @@ dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 <p class="note">※現時点では従来版にログイン制限は適用されません。正式切替までは他の利用者に公開・招待しません。</p>
 </section>
 </main>
-<script src="./firebase-config.js"></script>
-<script src="./login-core.js"></script>
-<script type="module" src="./login.js"></script>
+<script src="./firebase-config.js?v=20261017-2"></script>
+<script src="./login-core.js?v=20261017-2"></script>
+<script type="module" src="./login.js?v=20261017-2"></script>
 </body></html>
