@@ -40,6 +40,18 @@ button{border:0;border-radius:14px;color:var(--text);background:#304a64;padding:
 .legacyCard details summary{min-height:35px;font-weight:800;cursor:pointer}
 .legacyCard details .legacyFields{margin-top:9px}
 @media(max-width:650px){.legacyFields,.legacyActions{grid-template-columns:minmax(0,1fr)}.legacyActions button{min-height:61px}.modeSwitch button{font-size:clamp(10px,2.9vw,14px);padding:5px 3px;min-width:0}}
+/* Galaxy Fold half-window simulation: narrow single-column variant. */
+.foldSubModes{display:grid;gap:10px;background:#193348;border:1px solid #5b86a3;border-radius:14px;padding:12px;margin-top:10px}
+.foldSubModes[hidden],.workspaceWidthAdjust[hidden]{display:none!important}
+.foldSubModes>strong{font-size:15px}
+.foldSubChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.foldSubChoices button{font-size:14px;padding:8px;min-height:52px}
+.foldSubChoices button[aria-pressed="true"]{background:#116fa8;outline:2px solid #a6e7ff}
+.foldWidthLabel,.workspaceWidthAdjust{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+.foldWidthLabel input,.workspaceWidthAdjust input{flex:1 1 130px;min-width:110px}
+.foldSubModes small{color:#c0d8e7;font-size:11px}
+.workspaceWidthAdjust{width:100%;background:#1c354b;border-radius:9px;padding:5px 8px}
+@media(max-width:430px){.foldSubChoices{grid-template-columns:minmax(0,1fr)}}
 /* footer */
 .bottomNav{display:flex;gap:7px;background:#122337;border:1px solid #304b66;border-radius:16px;padding:7px;align-items:center;justify-content:space-between}.bottomNav button{flex:1;background:transparent;color:#c6d9e9;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:0;font-size:12px;padding:6px}.bottomNav button strong{font-size:18px}.bottomNav button[aria-current=true]{color:white;background:#20517a}.bottomNav .compactNote{font-size:11px;color:#a6bbcf;flex:1.2;text-align:right}.noScrollTip{color:#b2c6d6;font-size:11px;text-align:right}
 /* modes: immersive/mounted readability */
@@ -267,10 +279,19 @@ body.workspace-active>#appShell{display:none!important}
   <div class="devicePresetGrid" role="group" aria-label="端末サイズプリセット">
    <button type="button" class="devicePreset" data-device="auto" aria-pressed="true"><strong>◎ 実機そのまま</strong><small>現在のブラウザサイズで表示</small><em>まず最初の確認用</em></button>
    <button type="button" class="devicePreset" data-device="phone" aria-pressed="false"><strong>📱 通常スマホ</strong><small>393 × 852 を基準</small><em>1画面入力の基準サイズ</em></button>
-   <button type="button" class="devicePreset" data-device="fold" aria-pressed="false"><strong>🗂 折りたたみ</strong><small>673 × 841 を基準</small><em>2列情報・段階入力向け</em></button>
+   <button type="button" class="devicePreset" data-device="fold" aria-pressed="false"><strong>🗂 折りたたみ</strong><small>全画面・半画面の2方式</small><em>開いた画面と狭い片側画面を切り替え</em></button>
    <button type="button" class="devicePreset" data-device="tablet" aria-pressed="false"><strong>📟 タブレット</strong><small>834 × 1112 を基準</small><em>設定一覧・比較表示向け</em></button>
   </div>
-  <div class="orientationRow" role="group" aria-label="向きの切り替え">
+  <div class="foldSubModes" id="foldSubModes" hidden>
+  <strong>折りたたみ端末の表示範囲</strong>
+  <div class="foldSubChoices" role="group" aria-label="折りたたみ表示範囲">
+   <button type="button" data-fold-view="full" aria-pressed="true">▣ 全画面（673px）</button>
+   <button type="button" data-fold-view="half" aria-pressed="false">▥ 半画面（狭い1カラム）</button>
+  </div>
+  <label class="foldWidthLabel" for="foldHalfWidth">半画面の横幅 <strong id="foldHalfWidthLabel">340px</strong><input id="foldHalfWidth" type="range" min="300" max="380" step="10" value="340" aria-label="折りたたみ半画面の横幅"></label>
+  <small>※ 分割の割合で幅が変わるため、300～380pxから選択できます。実機の自動判定ではありません。</small>
+ </div>
+ <div class="orientationRow" role="group" aria-label="向きの切り替え">
    <button type="button" class="outline" data-orient="auto" aria-pressed="true">向き：自動</button>
    <button type="button" class="outline" data-orient="portrait" aria-pressed="false">縦向きで確認</button>
    <button type="button" class="outline" data-orient="landscape" aria-pressed="false">横向きで確認</button>
@@ -312,7 +333,8 @@ body.workspace-active>#appShell{display:none!important}
  <div class="deviceWorkspaceTools" id="workspaceTools">
   <div class="deviceWorkspaceTitle"><strong>🚕 TAXIAPP · 端末サイズ固定プレビュー</strong><small>営業入力・設定・詳細画面も、選んだサイズのまま切り替わります</small></div>
   <label class="srOnly" for="workspaceDevice">端末サイズ</label>
-  <select id="workspaceDevice" aria-label="端末サイズを切り替える"><option value="phone">📱 通常スマホ</option><option value="fold">▣ 折りたたみ</option><option value="tablet">▤ タブレット</option></select>
+  <select id="workspaceDevice" aria-label="端末サイズを切り替える"><option value="phone">📱 通常スマホ</option><optgroup label="折りたたみ"><option value="fold">▣ 全画面</option><option value="foldHalf">▥ 半画面</option></optgroup><option value="tablet">▤ タブレット</option></select>
+  <label class="workspaceWidthAdjust" for="workspaceHalfWidth" id="workspaceHalfWidthWrap" hidden>半画面幅 <input id="workspaceHalfWidth" type="range" min="300" max="380" step="10" value="340" aria-label="折りたたみ半画面の横幅"><strong id="workspaceHalfWidthLabel">340px</strong></label>
   <label class="srOnly" for="workspaceOrientation">向き</label>
   <select id="workspaceOrientation" aria-label="画面の向きを切り替える"><option value="auto">向き：自動</option><option value="portrait">縦向き</option><option value="landscape">横向き</option></select>
   <button type="button" class="closeWorkspace" id="workspaceExit">← サイズ比較へ戻る</button>
@@ -330,8 +352,8 @@ body.workspace-active>#appShell{display:none!important}
  if(isEmbedded)document.body.classList.add('embedded-ui');
  const demoLocations=['川西能勢口付近','川西池田駅付近','駅前ロータリー'];
  const modeLabels={compact:'1画面入力',guided:'段階入力',detail:'詳細入力',legacy:'従来入力（v0.3.49）'};
- const model={mode:'compact',phase:0,from:'',to:'',count:12,locationIndex:0,view:'drive',settingCategory:'all',advanced:false,search:'',fields:{},layout:'auto',device:'auto',orientation:'auto'};
- const devicePresets={auto:{name:'実機そのまま',size:'ブラウザに合わせる',desc:'現在の端末サイズをそのまま使います。',dims:null,checks:['まず最初に実機の見え方を確認','1画面入力の収まりを確認','文字サイズが自然か確認']},phone:{name:'通常スマホ',size:'393 × 852',desc:'通常のスマホサイズを基準にした確認用です。',dims:[393,852],checks:['縦で主要入力が収まるか','大きいボタンが押しやすいか','1画面入力の視認性を確認']},fold:{name:'折りたたみ',size:'673 × 841',desc:'折りたたみ端末を開いたサイズを想定しています。',dims:[673,841],checks:['2列表示が見やすいか','段階入力が広く使えるか','設定の左右分割が有効か']},tablet:{name:'タブレット',size:'834 × 1112',desc:'タブレットでの表示確認用です。',dims:[834,1112],checks:['右サマリーを常時見られるか','設定一覧が探しやすいか','詳細入力でも窮屈でないか']}};
+ const model={mode:'compact',phase:0,from:'',to:'',count:12,locationIndex:0,view:'drive',settingCategory:'all',advanced:false,search:'',fields:{},layout:'auto',device:'auto',orientation:'auto',foldHalfWidth:340};
+ const devicePresets={auto:{name:'実機そのまま',size:'ブラウザに合わせる',desc:'現在の端末サイズをそのまま使います。',dims:null,checks:['まず最初に実機の見え方を確認','1画面入力の収まりを確認','文字サイズが自然か確認']},phone:{name:'通常スマホ',size:'393 × 852',desc:'通常のスマホサイズを基準にした確認用です。',dims:[393,852],checks:['縦で主要入力が収まるか','大きいボタンが押しやすいか','1画面入力の視認性を確認']},fold:{name:'折りたたみ・全画面',size:'673 × 841',desc:'折りたたみ端末を開いて全画面で利用する想定です。',dims:[673,841],checks:['2列表示が見やすいか','段階入力が広く使えるか','設定の左右分割が有効か']},foldHalf:{name:'折りたたみ・半画面',size:'340 × 841',desc:'画面を分割して片側だけで利用する想定です。狭い1カラム表示に切り替えます。',dims:[340,841],checks:['通常スマホより狭い画面でも押しやすいか','1カラムで横はみ出しがないか','下部メニューと入力項目が見えるか']},tablet:{name:'タブレット',size:'834 × 1112',desc:'タブレットでの表示確認用です。',dims:[834,1112],checks:['右サマリーを常時見られるか','設定一覧が探しやすいか','詳細入力でも窮屈でないか']}};
  const phases=['空車・待機','迎車中','実車中','降車・精算'];
  const actionLabels=['🚕 迎車する','▶ 実車開始','◉ 降車する','✓ デモ登録'];
  const guideTitle=['① 迎車を記録','② 実車を開始','③ 降車を記録','④ 料金を確認して登録'];
