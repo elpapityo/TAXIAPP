@@ -1,4 +1,4 @@
-/* TAXIAPP v0.3.45: one editing browser session per Google UID.
+/* TAXIAPP v0.3.47: fail-closed one editing browser session per Google UID.
  * Later explicit takeover wins; all previous sessions remain view-only.
  * A Firestore listener is required to revoke old devices promptly.
  * This is a UI/storage gate, NOT a revocation of Firebase Auth tokens.
@@ -7,8 +7,8 @@
 'use strict';
 root.TAXIAPP_DEVICE_SESSION={
  create(d){
-  let currentUid='',sessionId='',unsubscribe=null,mode='legacy';
-  let viewerRequested=false,claimedOnce=false,claimInFlight=false,sessionRulesConfirmed=false;
+  let currentUid='',sessionId='',unsubscribe=null,mode='pending';
+  let viewerRequested=false,claimedOnce=false,claimInFlight=false,listenerHealthy=false;
   const STORAGE='taxiapp-current-session-v1-';
   const f=d.f,db=d.db;
   const ref=()=>f.doc(db,'deviceSessions',currentUid);
@@ -28,8 +28,8 @@ root.TAXIAPP_DEVICE_SESSION={
   function viewOnly(){viewerRequested=true; if(currentUid)set('viewer','閲覧専用で利用中');}
   function clear(){
    if(unsubscribe){unsubscribe();unsubscribe=null;}
-   currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;
-   set('legacy');
+   currentUid='';sessionId='';claimedOnce=false;claimInFlight=false;viewerRequested=false;listenerHealthy=false;
+   set('pending','Googleログインと操作権の確認待ち');
   }
   function sessionKey(){return STORAGE+currentUid;}
   function setSession(value){
@@ -51,11 +51,16 @@ root.TAXIAPP_DEVICE_SESSION={
     // Do not persist newId until the server has acknowledged the takeover.
     await f.setDoc(ref(),{sessionId:newId,updatedAt:f.serverTimestamp()});
     if(uid!==currentUid)return;
+    // A successful write alone is not proof that the listener can revoke
+    // this session later. Verify server read access and current ownership.
+    const checked=await f.getDocFromServer(ref());
+    if(uid!==currentUid)return;
+    if(!listenerHealthy||!checked.exists()||checked.data().sessionId!==newId)
+     throw Error('サーバーで操作権を確認できません。閲覧専用で利用してください');
     setSession(newId);
     claimedOnce=true;
     viewerRequested=false;
-    set('writer','操作可能（この端末が有効です）');
-    // Subsequent server snapshots revoke this state if another device wins.
+    set('writer','操作可能（サーバー確認済み）');
    }catch(error){
     if(uid===currentUid)set('viewer','操作権の切り替えに失敗：'+String(error.code||error.message||error));
    }finally{claimInFlight=false;}
@@ -78,11 +83,14 @@ root.TAXIAPP_DEVICE_SESSION={
    try{
     unsubscribe=f.onSnapshot(ref(),{includeMetadataChanges:true},snap=>{
      if(d.auth.currentUser?.uid!==currentUid)return;
+     // The editor's lease must be based on a server-confirmed snapshot;
+     // cached or pending local snapshots cannot prove exclusive ownership.
      if(snap.metadata.fromCache||snap.metadata.hasPendingWrites){
-      if(mode==='pending')set('pending','通信中：操作権を確認しています…');
+      listenerHealthy=false;
+      set('pending','サーバーから操作権を確認できません。編集を停止しています');
       return;
      }
-     sessionRulesConfirmed=true;
+     listenerHealthy=true;
      if(!snap.exists()){
       if(viewerRequested){
        set('viewer','閲覧専用でログイン中');return;
@@ -102,16 +110,16 @@ root.TAXIAPP_DEVICE_SESSION={
       set('viewer','別の端末が操作中。この端末は閲覧専用です');
      }
     },error=>{
-     if(error.code==='permission-denied'&&!sessionRulesConfirmed){
-      set(viewerRequested?'viewer':'legacy',viewerRequested?'Firestoreルール未公開のため閲覧専用で利用中':'端末制限のFirestoreルールが未公開です（従来方式で利用中）');
-     }else{
-      set('viewer','端末状態を確認できません：'+String(error.code||error.message||error));
-     }
+     listenerHealthy=false;
+     // Never fall back to editable legacy mode after a Firestore denial.
+     // Multiple devices could otherwise both edit the same duty.
+     set('viewer','操作権を確認できません：'+String(error.code||error.message||error)+
+      '（Firestoreルールと利用者登録を確認してください）');
     });
    }catch(error){set('viewer','端末制限の準備に失敗：'+String(error.message||error));}
   }
   function state(){return mode;}
-  function canWrite(){return mode==='writer'||mode==='legacy';}
+  function canWrite(){return mode==='writer';}
   return {begin,claim,viewOnly,clear,state,canWrite,sessionId:()=>mode==='writer'?sessionId:''};
  }
 };

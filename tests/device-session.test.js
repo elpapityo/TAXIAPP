@@ -15,6 +15,7 @@ function snapshot(){
   data:()=>({sessionId:current.sessionId}),metadata:{fromCache:false,hasPendingWrites:false}};
 }
 const f={
+ async getDocFromServer(){return snapshot();},
  doc(_db,path,uid){assert.equal(path,'deviceSessions');assert.equal(uid,user.uid);return path+'/'+uid;},
  serverTimestamp(){return 'server';},
  async setDoc(ref,data){
@@ -125,7 +126,32 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
  assert.equal(deniedViewer.obj.canWrite(),false);
  const deniedWriter=denied(false);
  await deniedWriter.obj.begin(user,{viewer:false});await flush();
- assert.equal(deniedWriter.state(),'legacy','unconfigured writer remains in legacy compatibility mode');
+ assert.equal(deniedWriter.state(),'viewer','unverified writer must not fall back to editing');
+ assert.equal(deniedWriter.obj.canWrite(),false);
 
- console.log('Device sessions passed: last login wins, viewer remains read-only, explicit takeover, stale reload protection.');
+ // A denied server listener plus a successful write must never grant editing.
+ const suspicious=(()=>{
+  const c={sessionStorage:{getItem:()=>null,setItem(){}},
+    crypto:{randomUUID:()=> '00000000-0000-4000-a000-000000000432'},Uint8Array};
+  vm.createContext(c);vm.runInContext(js,c);
+  let state='pending',writes=0;
+  const obj=c.TAXIAPP_DEVICE_SESSION.create({
+   auth:{currentUser:user},db:{},
+   f:{doc:()=> 'session',serverTimestamp:()=> 'server',
+    onSnapshot(_ref,_opts,_next,fail){
+     queueMicrotask(()=>fail({code:'permission-denied'}));
+     return ()=>{};
+    },
+    async setDoc(){writes++;},
+    async getDocFromServer(){return {exists:()=>true,data:()=>({sessionId:'00000000-0000-4000-a000-000000000432'})};}},
+   onMode:next=>{state=next;}
+  });
+  return {obj,state:()=>state,writes:()=>writes};
+ })();
+ await suspicious.obj.begin(user,{viewer:false});await flush();
+ await suspicious.obj.claim();await flush();
+ assert.equal(suspicious.writes(),1);
+ assert.equal(suspicious.state(),'viewer');
+ assert.equal(suspicious.obj.canWrite(),false);
+ console.log('Device sessions passed: single editor, no legacy bypass, denied watcher and takeover safety.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
