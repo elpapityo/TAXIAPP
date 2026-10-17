@@ -47,9 +47,10 @@ dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 <section>
 <h2>普段の利用はこちら</h2>
 <p>Googleログインと設定の自動同期は、現在のTAXIAPP本体に組み込みました。乗務員名・待機所・料金・画面設定は、通常の設定画面で変更するだけで同じGoogleアカウントの端末に反映されます。</p>
-<a class="action" href="./index.html?v=0.3.44">TAXIAPPを開く（自動同期）</a>
+<p class="note">同じGoogleアカウントでは後から操作を始めた端末が操作可能になり、前の端末は閲覧専用です。閲覧でログインした場合は既存端末の操作権を奪いません。</p>
+<a class="action" href="./index.html?v=0.3.45">TAXIAPPを開く（端末切替・自動同期）</a>
 </section>
-<details style="margin:18px 0;border:1px solid #cbd8e5;border-radius:14px;background:#fff;padding:12px">
+<details hidden style="margin:18px 0;border:1px solid #cbd8e5;border-radius:14px;background:#fff;padding:12px">
 <summary style="cursor:pointer;font-weight:bold">旧方式の手動設定移行・復旧（通常は不要）</summary>
 <section id="settingsTransfer" hidden aria-labelledby="settingsTransferTitle">
 <h2 id="settingsTransferTitle">設定データの引き継ぎ</h2>
@@ -71,7 +72,7 @@ dt{font-weight:650;margin-top:10px}dd{margin-left:0;overflow-wrap:anywhere}
 </section>
 </details>
 <section>
-<h2>TAXIAPPの従来の営業データ</h2>
+<h2>これまでの営業データ</h2>
 <p>現在のTAXIAPP本体では、Googleログイン後の設定同期が動作します。営業データの双方向同期は従来のGoogle連携を引き続き利用します。</p>
 <a class="action" href="./index.html">従来版のTAXIAPPを開く</a>
 <p class="note">※現時点では従来版にログイン制限は適用されません。正式切替までは他の利用者に公開・招待しません。</p>
