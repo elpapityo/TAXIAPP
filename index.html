@@ -1182,6 +1182,7 @@ function renderShiftManager(lastShift){
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫日時（変更可能）</span><input id="shiftStartAt" class="control" type="datetime-local" value="${localDateTime(new Date())}"></label>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時走行距離（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"></label>
  <button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
+ ${model.shifts.filter(x=>!x.endedAt&&!x.endedIso).map(x=>'<section class="card"><h2 class="h2">他端末から受信した乗務を編集</h2><p class="helper">'+safeText(x.date)+'　出庫 '+shortTime(x.startedAt)+' ／ '+x.records.length+'件。編集競合を避けるため他端末との同時入力にご注意ください。</p><button class="btn teal" data-action="resumeSyncedShift" data-id="'+safeText(x.id)+'">この端末で乗務入力を開く</button></section>').join('')}
  ${lastShift?`<section class="card"><h2 class="h2">前回の入庫記録</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(lastShift.date)}</b></div><div class="statline"><span>出庫</span><b>${shortTime(lastShift.startedAt)}</b></div><div class="statline"><span>出庫距離</span><b>${number(lastShift.startingOdo)===null?'未記録':safeText(lastShift.startingOdo)+' km'}</b></div><div class="statline"><span>入庫</span><b>${shortTime(lastShift.endedAt)}</b></div><div class="statline"><span>入庫距離</span><b>${number(lastShift.endingOdo)===null?'未記録':safeText(lastShift.endingOdo)+' km'}</b></div>${lastShift.endedAt?`<div class="actions" style="margin-top:14px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(lastShift.id)}">↶ 入庫を取り消して乗務を再開</button></div><p class="footnote">直近の乗務のみ取り消せます。営業記録は残り、入庫時刻・距離は再入力できます。</p>`:''}</section>`:''}`;
  const departure=number(active.startingOdo),arrival=number(active.endingOdo);
  return `${titleBlock('出庫・入庫','SHIFT MANAGEMENT','出庫距離の修正と入庫処理はこの画面で行えます。')}
@@ -1776,7 +1777,13 @@ function handleAction(action,id){const shift=getShift(),latest=selectedShift();
   if(action==='deleteShift'){deleteWholeShift(id);return;}
   if(action==='bidirectionalSyncNow'){syncUI.run(true);return;}
  if(action==='syncCurrentShift'){googleSendShift(latest,true);return;}
- if(action==='syncAllShifts'){googleSendAllShifts();return;}if(action==='checkGpsPermission'){requestGpsPermission();return;}if(action==='addWaitPlace'){addWaitingPlace(document.getElementById('newWaitPlace')?.value||'');return;}if(action==='resetUi'){model.prefs.ui={...UI_DEFAULTS};applyUi();saveLater();render();toast('表示設定を初期値に戻しました');return;}if(action==='startShift'){
+ if(action==='syncAllShifts'){googleSendAllShifts();return;}if(action==='checkGpsPermission'){requestGpsPermission();return;}if(action==='addWaitPlace'){addWaitingPlace(document.getElementById('newWaitPlace')?.value||'');return;}if(action==='resetUi'){model.prefs.ui={...UI_DEFAULTS};applyUi();saveLater();render();toast('表示設定を初期値に戻しました');return;}if(action==='resumeSyncedShift'){
+  if(getShift())return;
+  const found=model.shifts.find(s=>s.id===id&&!s.endedAt&&!s.endedIso);
+  if(!found||!confirm('他の端末で入力中の場合は競合が発生します。'+found.date+'の乗務をこの端末で編集しますか？'))return;
+  found.gpsTrip??={};found.gpsTrip.enabled=false;model.activeId=id;tab='drive';
+  save();render();toast('同期乗務を開きました。距離は実際の車両トリップを確認してください。');return;
+ }if(action==='startShift'){
   if(shift)return;
   const entered=document.getElementById('shiftStartAt')?.value;
   const when=entered?new Date(entered):new Date();
