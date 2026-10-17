@@ -8,14 +8,28 @@ const core=window.TAXIAPP_LOGIN_UTILS;
 const config=window.TAXIAPP_FIREBASE_CONFIG;
 function message(text){status.textContent=text;}
 $('copyLoginUid').addEventListener('click',async()=>{
- const uid=$('loginUid').textContent.trim();
- if(!uid)return;
+ const input=$('loginUid'),uid=input.value.trim(),feedback=$('uidCopyStatus');
+ if(!uid){feedback.textContent='先にGoogleログインしてください。';return;}
+ // Select first so the user can always press Ctrl+C / long-press Copy.
+ // execCommand is the best synchronous fallback on older Android browsers.
  try{
-  await navigator.clipboard.writeText(uid);
-  message('利用者ID（UID）をコピーしました。FirebaseのドキュメントID欄へ貼り付けてください。');
- }catch{
-  message('コピーできませんでした。上に表示されたUIDを選択してコピーしてください。');
+  input.focus({preventScroll:true});
+  input.select();
+  input.setSelectionRange(0,uid.length);
+ }catch{}
+ let copied=false;
+ try{copied=Boolean(document.execCommand?.('copy'));}catch{}
+ if(!copied){
+  try{
+   if(navigator.clipboard?.writeText){
+    await navigator.clipboard.writeText(uid);
+    copied=true;
+   }
+  }catch{}
  }
+ feedback.textContent=copied
+  ? 'UIDをコピーしました。FirebaseのドキュメントIDへ貼り付けてください。'
+  : 'UIDの文字を選択しました。Ctrl+C（スマホは長押し→コピー）でコピーできます。';
 });
 function showIdentity(user,state){
  $('loginDetails').hidden=!user;
@@ -23,7 +37,7 @@ function showIdentity(user,state){
  login.hidden=!!user;
  if(!user)return;
  $('loginEmail').textContent=user.email||'メールアドレスなし';
- $('loginUid').textContent=user.uid;
+ $('loginUid').value=user.uid;
  $('loginRole').textContent={
   admin:'管理者登録を確認しました（準備段階）',
   active:'利用可能（準備段階）',
