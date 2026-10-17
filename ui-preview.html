@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1725">
+<title>TAXIAPP UI試作｜3つの入力画面と設定</title>
+<style>
+:root{color-scheme:dark;--bg:#07121e;--surface:#132436;--surface2:#1c3147;--border:#36516a;--border2:#55718a;--muted:#b6c7d8;--text:#f5faff;--accent:#66c4ff;--lime:#56dfaa;--gold:#ffc56a;--danger:#ff9991;--base:16px;--press:68px;--radius:18px;--shadow:0 15px 50px #020b1869}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:var(--base)/1.4 system-ui,-apple-system,'Noto Sans JP','Meiryo',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.42}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:4px solid var(--gold);outline-offset:3px}button,input,select{touch-action:manipulation}input,select{border:1.7px solid #62809b;background:#091b2c;color:var(--text);border-radius:12px;padding:12px 14px;min-height:52px;width:100%;min-width:0}input::placeholder{color:#a1b6ca}input[type=number]{font-variant-numeric:tabular-nums}input[type=checkbox]{width:24px;min-height:24px;height:24px;accent-color:#58c4ff}select{appearance:auto}
+button{border:0;border-radius:14px;color:var(--text);background:#304a64;padding:10px 15px;min-height:52px;font-weight:780;letter-spacing:.01em}button:hover{filter:brightness(1.12)}button:active{transform:translateY(1px)}.big{min-height:var(--press);font-size:calc(var(--base) * 1.22)}.primary{background:#1482d5;color:#fff}.positive{background:#087b5e;color:#fff}.warnbtn{background:#80502a;color:#fff}.outline{background:transparent;border:1.5px solid var(--border2)}.ghost{background:#233a50}.danger{background:#7c3340;color:#fff}.nowrap{white-space:nowrap}
+#appShell{width:min(1450px,100%);margin:auto;min-height:100dvh;display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:11px 16px calc(10px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;gap:16px;justify-content:space-between;background:linear-gradient(110deg,#142c44,#122135);border:1px solid var(--border);border-radius:17px;padding:10px 15px;min-height:64px}.brand{display:flex;align-items:center;gap:11px}.brandMark{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:#096eab;font-size:26px}.brandText strong{display:block;font-size:21px;letter-spacing:.03em}.brandText small{font-weight:650;color:var(--muted)}.topRight{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.pill{background:#184a41;color:#aaf4d9;border:1px solid #369d7f;padding:7px 11px;border-radius:100px;font-size:13px;font-weight:800}.topRight .minor{font-size:13px;color:var(--muted)}.demoFlag{color:#ffc56a;background:#382b19;border:1px solid #7e643a;border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800}
+.main{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:12px;align-items:start}.screen{min-width:0}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}.screenHead{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 8px}.screenHead h1{font-size:clamp(21px,2.2vw,30px);line-height:1.15;margin:0}.screenHead small{display:block;font-size:12px;color:var(--muted);margin-top:4px}.modeSwitch{display:flex;gap:5px;padding:5px;border:1px solid var(--border);border-radius:14px;background:#13263a;flex-wrap:wrap}.modeSwitch button{font-size:13px;min-height:42px;padding:7px 11px;border-radius:9px;background:transparent}.modeSwitch button[aria-pressed=true]{background:#1680c7;color:#fff}
+.modePanel{padding:12px}.modePanels .mode{display:none}.modePanels .mode.active{display:block}.miniRow{display:flex;align-items:center;gap:8px;justify-content:space-between;min-width:0}.statusLine{display:grid;grid-template-columns:1.15fr .9fr .9fr;gap:8px;margin-bottom:10px}.stat{padding:10px 13px;border-radius:13px;background:#203850;border:1px solid #45647e;min-width:0}.stat label{display:block;color:var(--muted);font-size:11px;margin-bottom:3px}.stat strong{display:block;font-size:clamp(20px,2.8vw,32px);font-variant-numeric:tabular-nums;white-space:nowrap}.stat strong.highlight{color:#8bd8ff}.stat strong.green{color:#87ebba}.fieldlabel{font-size:12px;color:#c3d3e4;font-weight:800;display:block;margin-bottom:5px}.formRow{display:grid;gap:8px}.formRow.three{grid-template-columns:repeat(3,minmax(0,1fr))}.formRow.two{grid-template-columns:repeat(2,minmax(0,1fr))}.formRow.wide{grid-template-columns:1.15fr 1fr}.field input,.field select{height:52px}.field{min-width:0}.field.withButton{display:grid;grid-template-columns:1fr 54px;gap:5px;align-items:end}.field.withButton label{grid-column:1/-1}.field.withButton button{min-height:52px;padding:5px}.placeSummary{background:#203750;border:1px solid #47657d;display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border-radius:13px;min-height:62px}.placeSummary .routeName{min-width:0;overflow:hidden}.placeSummary small{font-size:11px;color:#c6d7e5;display:block}.placeSummary strong{font-size:16px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.placeSummary .arrow{font-size:19px;color:#74caff}.mainAction{margin:11px 0 8px;display:grid;grid-template-columns:1.6fr .8fr;gap:8px}.mainAction button{min-height:77px}.mainAction .mainButton{font-size:clamp(22px,2.5vw,34px);letter-spacing:.03em}.subActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.subActions button{font-size:13px;padding:7px 3px;min-height:53px}.stageTag{font-size:12px;font-weight:850;display:inline-flex;align-items:center;gap:5px;color:#c9e5f6}.stageTag .dot{width:8px;height:8px;border-radius:100px;background:#6bd6f6}.note{font-size:12px;color:#b9d0e3;margin:8px 0 0}.alert{color:#ffb9a9}.sectionCaption{display:flex;align-items:center;gap:9px;margin:9px 0 8px;font-weight:850}.sectionCaption span{font-size:11px;font-weight:600;color:var(--muted)}.rightPanel{padding:17px;display:grid;gap:12px}.rightPanel h2{font-size:16px;margin:0}.rightPanel .summaryValue{font-size:36px;font-weight:850;color:#93d7ff;font-variant-numeric:tabular-nums}.rightPanel dl{margin:0;display:grid;gap:10px}.rightPanel dl div{border-top:1px solid #35536d;padding-top:9px;display:flex;justify-content:space-between;gap:9px}.rightPanel dt{font-size:12px;color:var(--muted)}.rightPanel dd{margin:0;font-weight:800}.sideTip{border:1px solid #5e6449;background:#2c352d;color:#f4ebc3;border-radius:11px;padding:12px;font-size:12px}.rightPanel .outline{width:100%}
+/* Sequential workflow */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:12px}.step{border:1px solid var(--border);background:#21374a;border-radius:11px;padding:10px 4px;text-align:center;font-size:13px;font-weight:800}.step.done{background:#174c42;color:#aaf3d9}.step.active{background:#115e96;border-color:#7cccff}.step>span{font-size:11px;opacity:.8;display:block}.stageBody{border:1px solid #45647e;background:#1b344b;border-radius:13px;padding:14px;display:grid;gap:11px}.stageIntro h2{margin:0 0 5px;font-size:23px}.stageIntro p{margin:0;color:var(--muted);font-size:13px}.stepGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stageActions{display:grid;grid-template-columns:1fr 2fr;gap:9px;margin-top:5px}.stageActions button{min-height:74px}.stageActions button:last-child{font-size:22px}
+/* Full entry */
+.fullSections{display:grid;gap:11px}.fullBlock{padding:13px 15px;background:#193048;border:1px solid #3e5a75;border-radius:13px}.fullBlock h3{font-size:16px;margin:0 0 9px;display:flex;gap:8px;align-items:center}.fullBlock h3 small{color:var(--muted);font-size:11px;font-weight:500}.fullGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.chipRow{display:flex;flex-wrap:wrap;gap:8px}.selectChip{min-height:46px;border:1px solid var(--border2);font-size:14px;background:#1d334b}.selectChip[aria-pressed=true]{border-color:#90deff;background:#135b90}.fullBottom{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fullBottom button{min-height:69px}
+/* settings */
+.settingsPage{display:none}.settingsPage.active{display:block}.drivePage.hidden{display:none}.settingsShell{display:grid;grid-template-columns:235px minmax(0,1fr);gap:11px}.settingsSide{padding:11px;display:grid;gap:6px;align-content:start}.settingsSide button{text-align:left;background:transparent;min-height:49px}.settingsSide button[aria-current=true]{background:#135f96;border:1px solid #4faae7}.settingsContent{padding:17px;min-height:340px}.settingsTop{display:flex;gap:9px;justify-content:space-between;align-items:center;margin-bottom:13px}.settingsTop h2{font-size:21px;margin:0}.settingsTop button{min-height:45px;font-size:13px}.settingsSearch{margin-bottom:11px}.settingsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.settingBlock{border:1px solid #425e77;border-radius:14px;background:#1c3249;padding:15px}.settingBlock h3{font-size:17px;margin:0 0 7px}.settingBlock p{color:var(--muted);font-size:12px;margin:4px 0 11px}.settingBlock .field{margin-top:11px}.settingBlock .fieldlabel{font-size:12px}.settingBlock label.toggle{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}.settingBlock .toggle input{flex:none}.settingBlock.wide{grid-column:1/-1}.presetGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.preset{border:2px solid var(--border);border-radius:13px;background:#263c53;padding:13px;text-align:left;min-height:120px}.preset[aria-pressed=true]{background:#145b86;border-color:#8adeff}.preset strong{display:block;font-size:16px}.preset small{display:block;font-size:12px;color:#d1e4f5;margin-top:6px}.preset em{display:block;color:#b3ffd5;font-style:normal;font-size:11px;margin-top:7px}.settingBlock .inlineOptions{display:flex;gap:7px;flex-wrap:wrap}.settingBlock .inlineOptions button{font-size:13px;min-height:43px}.settingBlock .inlineOptions button[aria-pressed=true]{background:#147ab9;outline:1px solid #9bdfff}.hiddenBySearch{display:none!important}.settingsEmpty{padding:18px;border:1px dashed var(--border2);border-radius:14px;color:var(--muted)}
+/* footer */
+.bottomNav{display:flex;gap:7px;background:#122337;border:1px solid #304b66;border-radius:16px;padding:7px;align-items:center;justify-content:space-between}.bottomNav button{flex:1;background:transparent;color:#c6d9e9;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:0;font-size:12px;padding:6px}.bottomNav button strong{font-size:18px}.bottomNav button[aria-current=true]{color:white;background:#20517a}.bottomNav .compactNote{font-size:11px;color:#a6bbcf;flex:1.2;text-align:right}.noScrollTip{color:#b2c6d6;font-size:11px;text-align:right}
+/* modes: immersive/mounted readability */
+body.font-xl{--base:18px;--press:76px}body.font-xxl{--base:20px;--press:84px}body.buttons-xl{--press:82px}body.high-contrast{--surface:#0b253b;--surface2:#1a3b53;--border:#7798b3;--muted:#d5e2ec;--accent:#a6e3ff}body.theme-light{color-scheme:light;--bg:#eaf2f8;--surface:#fff;--surface2:#e2edf5;--border:#9db5c7;--border2:#779bb5;--muted:#415b71;--text:#0c263f;--accent:#046eae;--shadow:0 10px 35px #23445c1c}body.theme-light .top{background:linear-gradient(100deg,#e1f1fa,#fff)}body.theme-light .stat,body.theme-light .placeSummary,body.theme-light .stageBody,body.theme-light .fullBlock,body.theme-light .settingBlock{background:#e8f2f9;color:#0c263f}body.theme-light .brandText small,body.theme-light .fieldlabel{color:#395b74}body.theme-light .pill{color:#075b43}body.theme-light button.outline,body.theme-light button.ghost,body.theme-light .modeSwitch button:not([aria-pressed=true]),body.theme-light .bottomNav button:not([aria-current=true]){color:#0b304c;background:#c7dbe9}body.theme-light .bottomNav{background:#ddeaf4}body.theme-light input,body.theme-light select{background:#fff;color:#183550}body.theme-light .stageIntro p,body.theme-light .settingBlock p{color:#466179}
+@media(max-width:1000px){.main{grid-template-columns:minmax(0,1fr) 225px}.rightPanel{padding:12px}.settingsShell{grid-template-columns:185px 1fr}}
+@media(max-width:780px){#appShell{padding:7px 9px calc(7px + env(safe-area-inset-bottom));gap:7px}.top{padding:7px 10px;min-height:52px}.brandMark{width:40px;height:40px}.brandText strong{font-size:17px}.brandText small{font-size:10px}.topRight .minor{display:none}.main{display:block}.rightPanel{display:none}.screenHead{align-items:stretch;gap:7px}.screenHead h1{font-size:21px}.screenHead small{display:none}.modeSwitch{gap:3px;padding:3px}.modeSwitch button{padding:6px 7px;min-height:41px;font-size:12px}.modePanel{padding:9px}.statusLine{gap:5px;margin-bottom:8px}.stat{padding:7px 9px}.stat strong{font-size:clamp(19px,5.2vw,25px)}.placeSummary{padding:8px;min-height:53px}.placeSummary strong{font-size:13px}.mainAction{margin:8px 0 6px}.mainAction button{min-height:68px}.subActions button{min-height:47px}.bottomNav button{min-height:47px}.bottomNav .compactNote{display:none}.settingsShell{display:block}.settingsSide{display:flex;overflow-x:auto;gap:5px;padding:5px;margin-bottom:9px}.settingsSide button{white-space:nowrap;padding:8px 11px;min-height:42px}.settingsContent{padding:12px}.settingsGrid{grid-template-columns:1fr}.settingsTop h2{font-size:18px}.settingBlock.wide{grid-column:auto}}
+@media(max-width:430px){.topRight .pill{display:none}.screenHead{display:block}.modeSwitch{margin-top:7px;width:100%;justify-content:space-between}.modeSwitch button{flex:1;font-size:12px}.screenHead{margin-bottom:7px}.screenHead h1{font-size:19px}.stat strong{font-size:19px}.stat label{font-size:10px}.placeSummary small{font-size:10px}.placeSummary strong{font-size:12px}.sectionCaption{margin:7px 0}.presetGrid{grid-template-columns:1fr}.preset{min-height:80px}.fullGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.formRow.three{grid-template-columns:repeat(2,minmax(0,1fr))}.bottomNav button{font-size:10px}.bottomNav button strong{font-size:17px}}
+@media (max-height:740px) and (max-width:780px){.top{min-height:45px;padding:5px 9px}.brandMark{height:35px;width:35px;font-size:21px}.brandText small{display:none}.screenHead h1{font-size:18px}.modeSwitch{margin-top:4px}.statusLine{margin-bottom:5px}.stat{padding:6px 8px}.stat strong{font-size:18px}.field input,.field select{height:45px;min-height:45px;padding:6px 10px}.placeSummary{min-height:49px;padding:6px 9px}.mainAction button{min-height:61px}.subActions button{min-height:43px}.bottomNav button{min-height:43px}.modePanel{padding:7px}}
+@media(min-width:781px) and (max-height:780px){.mainAction button{min-height:67px}.modePanel{padding:10px}.stat{padding:8px 11px}}
+@media(min-width:780px) and (orientation:landscape){#appShell{max-width:1600px}.main{grid-template-columns:minmax(0,1fr) 230px}.statusLine{grid-template-columns:repeat(3,1fr)}}
+/* Mounted-phone landscape: fit the entire frequent-action form in one viewport. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:650px){
+ #appShell{gap:4px;padding:4px 7px 5px;grid-template-rows:39px minmax(0,1fr) 44px}
+ .top{min-height:39px;height:39px;padding:2px 9px;border-radius:10px}
+ .brandMark{width:30px;height:30px;font-size:19px;border-radius:9px}
+ .brandText strong{font-size:15px}.brandText small{display:none}
+ .demoFlag{font-size:10px;padding:3px 6px}.topRight .pill{font-size:11px;padding:4px 8px}
+ .main{display:block;min-height:0}.rightPanel{display:none}
+ .screenHead{margin:0 0 4px;display:flex;align-items:center}
+ .screenHead h1{font-size:18px}.screenHead small{display:none}
+ .modeSwitch{margin:0;padding:2px;gap:3px}.modeSwitch button{min-height:32px;font-size:11px;padding:3px 11px}
+ #compactMode{display:grid;grid-template-columns:1fr 1fr;gap:5px 11px;padding:7px 10px}
+ #compactMode:not(.active){display:none}
+ #compactMode .statusLine{grid-column:1/-1;grid-row:1;margin:0;gap:7px}
+ #compactMode .stat{padding:4px 9px}
+ #compactMode .stat label{font-size:10px;margin:0}
+ #compactMode .stat strong{font-size:17px}
+ #compactMode .placeSummary{grid-column:1;grid-row:2;min-height:48px;padding:5px 10px}
+ #compactMode .placeSummary strong{font-size:12px}
+ #compactMode .formRow{grid-column:1;grid-row:3;margin:0!important;gap:6px}
+ #compactMode .fieldlabel{font-size:10px;margin-bottom:3px}
+ #compactMode .field input,#compactMode .field select{height:42px;min-height:42px;padding:7px 9px;font-size:14px}
+ #compactMode .mainAction{grid-column:2;grid-row:2;margin:0;gap:6px}
+ #compactMode .mainAction button{min-height:51px;height:100%;padding:5px;font-size:17px}
+ #compactMode .mainAction button:last-child{font-size:12px}
+ #compactMode .subActions{grid-column:2;grid-row:3;gap:6px;align-self:end}
+ #compactMode .subActions button{min-height:54px;font-size:11px;padding:4px}
+ #compactMode .note{display:none}
+ .bottomNav{height:44px;border-radius:11px;padding:2px 5px}
+ .bottomNav button{min-height:37px;font-size:10px;flex-direction:row;justify-content:center;gap:5px}
+ .bottomNav button strong{font-size:15px}.bottomNav .compactNote{display:none}
+}
+@media print{.rightPanel,.bottomNav,.topRight{display:none}}
+</style>
+</head>
+<body class="high-contrast">
+<div id="appShell">
+<header class="top"><div class="brand"><div class="brandMark">🚕</div><div class="brandText"><strong>TAXIAPP <span style="font-size:13px;color:var(--muted)">UI LAB</span></strong><small>見やすさ・操作性の試作版</small></div></div><div class="topRight"><span class="demoFlag">試作デモ・営業記録は保存しません</span><span class="pill">● 乗務中（仮データ）</span></div></header>
+<div class="main">
+<main class="screen">
+<div id="drivePage" class="drivePage">
+ <div class="screenHead"><div><h1>営業入力</h1><small>車載スタンドからの操作を想定 · 入力方式はいつでも変更可能</small></div><div class="modeSwitch" role="group" aria-label="入力方式"><button type="button" data-mode="compact" aria-pressed="true">1画面</button><button type="button" data-mode="guided" aria-pressed="false">段階入力</button><button type="button" data-mode="detail" aria-pressed="false">詳細入力</button></div></div>
+ <div class="modePanels">
+  <section id="compactMode" class="panel mode modePanel active" aria-label="1画面入力">
+   <div class="statusLine"><div class="stat"><label>現在の営業状態</label><strong id="compactState" class="green">空車・待機</strong></div><div class="stat"><label>出庫から</label><strong class="highlight">08:29</strong></div><div class="stat"><label>本日の売上（例）</label><strong>¥31,400</strong></div></div>
+   <div class="placeSummary"><div class="routeName"><small>乗車地</small><strong id="compactFrom">未記録</strong></div><div class="arrow">➜</div><div class="routeName" style="text-align:right"><small>降車地</small><strong id="compactTo">未記録</strong></div></div>
+   <div class="formRow two" style="margin-top:8px"><div class="field"><label class="fieldlabel" for="compactFare">メーター料金</label><input id="compactFare" type="number" inputmode="numeric" min="0" max="999999" placeholder="例：2,400"></div><div class="field"><label class="fieldlabel" for="compactPay">支払い方法</label><select id="compactPay"><option value="cash">現金</option><option value="app">アプリ決済</option><option value="credit">クレジット</option><option value="ticket">チケット</option></select></div></div>
+   <div class="mainAction"><button class="big primary mainButton" id="compactMain" type="button" data-action="advance">🚕 迎車する</button><button class="big outline" id="compactLocation" type="button" data-action="location">⌖ 地点記録</button></div>
+   <div class="subActions"><button type="button" data-action="undo">↶ ひとつ戻る</button><button type="button" data-action="openDetail">＋ 詳細項目</button><button type="button" data-action="reset">⟲ デモ初期化</button></div>
+   <p id="compactMessage" class="note" role="status">操作例：迎車 → 実車 → 降車 → 金額を入力して記録</p>
+  </section>
+  <section id="guidedMode" class="panel mode modePanel" aria-label="段階入力">
+   <div class="steps" id="steps"><div class="step active"><span>01</span>迎車</div><div class="step"><span>02</span>乗車</div><div class="step"><span>03</span>降車</div><div class="step"><span>04</span>登録</div></div>
+   <div class="stageBody"><div class="stageIntro"><h2 id="guideTitle">① 迎車を記録</h2><p id="guideDesc">現在地と時刻をワンタッチで仮入力します。</p></div>
+    <div class="stepGrid"><div class="field"><label class="fieldlabel" for="guidePlace">現在地（デモ）</label><input id="guidePlace" value="川西能勢口付近" autocomplete="off"></div><div class="field"><label class="fieldlabel" for="guideTime">時刻</label><input id="guideTime" type="time" value="08:29"></div></div>
+    <div class="field" id="guideFareBlock" hidden><label class="fieldlabel" for="guideFare">メーター料金</label><input id="guideFare" type="number" min="0" placeholder="例：2,400" inputmode="numeric"></div>
+    <div class="stageActions"><button type="button" data-action="undo">← 戻る</button><button type="button" class="primary" id="guideNext" data-action="advance">迎車を記録 →</button></div>
+   </div><p class="note" id="guideMessage" role="status">この入力方式では、次に必要な操作だけを大きく表示します。</p>
+  </section>
+  <section id="detailMode" class="panel mode modePanel" aria-label="詳細入力">
+   <div class="fullSections">
+    <div class="fullBlock"><h3>① 乗降場所と時刻 <small>現在地ボタンは疑似入力</small></h3><div class="fullGrid"><div class="field"><label class="fieldlabel" for="detailFrom">乗車地</label><input id="detailFrom" placeholder="乗車地"></div><div class="field"><label class="fieldlabel" for="detailTo">降車地</label><input id="detailTo" placeholder="降車地"></div><div class="field"><label class="fieldlabel" for="detailBoardTime">乗車時刻</label><input id="detailBoardTime" type="time" value="08:29"></div></div></div>
+    <div class="fullBlock"><h3>② 料金と決済</h3><div class="fullGrid"><div class="field"><label class="fieldlabel" for="detailFare">メーター料金</label><input id="detailFare" type="number" inputmode="numeric" placeholder="0"></div><div class="field"><label class="fieldlabel" for="detailTip">チップ</label><input id="detailTip" type="number" inputmode="numeric" placeholder="0"></div><div class="field"><label class="fieldlabel" for="detailToll">高速料金</label><input id="detailToll" type="number" inputmode="numeric" placeholder="0"></div></div><div class="sectionCaption">決済方法 <span>変更可能</span></div><div class="chipRow" role="group" aria-label="決済方式"><button class="selectChip" aria-pressed="true" data-pay="cash">現金</button><button class="selectChip" aria-pressed="false" data-pay="app">アプリ</button><button class="selectChip" aria-pressed="false" data-pay="credit">カード</button><button class="selectChip" aria-pressed="false" data-pay="ticket">チケット</button></div></div>
+    <div class="fullBlock"><h3>③ 配車・距離・追加項目</h3><div class="fullGrid"><div class="field"><label class="fieldlabel" for="detailDispatch">配車区分</label><select id="detailDispatch"><option>乗込み</option><option>GO</option><option>Uber</option><option>DiDi</option></select></div><div class="field"><label class="fieldlabel" for="detailTrip">実車距離（km）</label><input id="detailTrip" type="number" step="0.1" placeholder="0.0"></div><div class="field"><label class="fieldlabel" for="detailPeople">乗車人数</label><select id="detailPeople"><option>1人</option><option>2人</option><option>3人</option><option>4人</option></select></div></div></div>
+    <div class="fullBottom"><button data-action="reset">デモを初期化</button><button class="big primary" data-action="register">✓ デモ登録</button></div>
+   </div><p id="detailMessage" class="note" role="status">詳細項目をすべて扱う画面です。必要に応じてスクロールします。</p>
+  </section>
+ </div>
+</div>
+<div id="settingsPage" class="settingsPage">
+ <div class="screenHead"><div><h1>設定</h1><small>検索・カテゴリ分類・かんたん設定と詳細設定を用意</small></div><button class="outline" id="backToDrive">← 営業画面へ戻る</button></div>
+ <div class="settingsShell"><nav class="settingsSide panel" id="settingsNav" aria-label="設定カテゴリ"><button data-category="all" aria-current="true">⚙ すべて</button><button data-category="input">✎ 入力方法</button><button data-category="display">▣ 見た目</button><button data-category="operation">🚕 営業操作</button><button data-category="data">▤ データ管理</button><button data-category="sharing">◎ 共有</button></nav>
+  <div class="settingsContent panel"><div class="settingsTop"><h2 id="settingsHeading">かんたん設定</h2><button type="button" class="outline" id="advancedToggle" aria-pressed="false">詳細設定を表示</button></div><div class="settingsSearch"><label class="fieldlabel" for="settingSearch">設定を検索</label><input type="search" id="settingSearch" placeholder="例：文字、ボタン、支払い、GPS、同期" autocomplete="off"></div>
+   <div class="settingsGrid" id="settingsGrid">
+    <section class="settingBlock wide" data-category="input" data-advanced="false" data-search="入力 モード 1画面 段階 詳細 テンプレート"><h3>入力画面の方式</h3><p>1画面・段階入力・詳細入力から選べます。画面を切り替えてもデモ入力値は引き継ぎます。</p><div class="presetGrid"><button type="button" class="preset" data-selectmode="compact" aria-pressed="true"><strong>▣ 1画面入力</strong><small>必要な情報と大きなボタンを1画面に集約</small><em>車載スタンド向け</em></button><button type="button" class="preset" data-selectmode="guided" aria-pressed="false"><strong>→ 段階入力</strong><small>迎車・乗車・降車・登録を1つずつ案内</small><em>操作ミスの予防</em></button><button type="button" class="preset" data-selectmode="detail" aria-pressed="false"><strong>▤ 詳細入力</strong><small>料金・距離・高速・手数料などをまとめて管理</small><em>フル機能向け</em></button></div></section>
+    <section class="settingBlock" data-category="display" data-advanced="false" data-search="文字 サイズ 大きさ 表示 視認性"><h3>文字の大きさ</h3><p>車載スタンドから読み取れる文字サイズを選択。</p><div class="inlineOptions" role="group" aria-label="文字サイズ"><button data-font="normal" aria-pressed="true">標準</button><button data-font="xl" aria-pressed="false">大</button><button data-font="xxl" aria-pressed="false">特大</button></div></section>
+    <section class="settingBlock" data-category="display" data-advanced="false" data-search="ボタン 大きさ タップ 押しやすい"><h3>ボタンの大きさ</h3><p>主要操作の押しやすさを調整します。</p><div class="inlineOptions"><button data-buttons="normal" aria-pressed="true">標準</button><button data-buttons="xl" aria-pressed="false">特大</button></div></section>
+    <section class="settingBlock" data-category="display" data-advanced="false" data-search="高コントラスト 夜間 昼間 色 テーマ"><h3>配色・見やすさ</h3><p>状態を色だけでなく文字でも表示します。</p><label class="toggle"><input type="checkbox" id="highContrast" checked> くっきり表示（高コントラスト）</label><label class="toggle"><input type="checkbox" id="lightTheme"> 明るい画面（昼間向け）</label></section>
+    <section class="settingBlock" data-category="operation" data-advanced="false" data-search="現在地 GPS ワンタッチ 時刻 迎車 乗車 降車"><h3>ワンタッチ記録</h3><p>操作を減らすための画面設定です。実際のGPS取得はこの試作版では行いません。</p><label class="toggle"><input type="checkbox" id="locationShortcut" checked> 地点記録ボタンを表示</label><label class="toggle"><input type="checkbox" id="confirmBeforeRegister" checked> デモ登録時に確認する</label></section>
+    <section class="settingBlock" data-category="display" data-advanced="true" data-search="縦 横 画面 端末 選択 スマホ タブレット PC"><h3>表示レイアウト</h3><p>実際の画面回転は端末で操作。将来的に縦向け・横向け配置を手動選択できます。</p><div class="inlineOptions"><button data-layout="auto" aria-pressed="true">自動</button><button data-layout="portrait" aria-pressed="false">縦向け</button><button data-layout="landscape" aria-pressed="false">横向け</button></div></section>
+    <section class="settingBlock" data-category="input" data-advanced="true" data-search="非表示 支払 方法 割引 チップ 高速 距離 項目"><h3>入力項目のカスタマイズ</h3><p>将来の本実装ではON/OFFと保存データを分離します。この画面では希望する項目を試しに選択します。</p><label class="toggle"><input type="checkbox" checked class="fieldToggle" data-field="高速道路">高速道路</label><label class="toggle"><input type="checkbox" checked class="fieldToggle" data-field="チップ・割引">チップ・割引</label><label class="toggle"><input type="checkbox" checked class="fieldToggle" data-field="走行距離">走行距離</label><label class="toggle"><input type="checkbox" checked class="fieldToggle" data-field="GO・Uber手数料">GO・Uber手数料</label></section>
+    <section class="settingBlock" data-category="operation" data-advanced="true" data-search="GPS 距離 走行 メーター ODO 精度"><h3>GPS距離の扱い</h3><p>現在のTAXIAPPではGPS距離と車両メーターの差を検証中。自動記録・手動補正はデモの対象外です。</p><label class="toggle"><input type="checkbox" disabled> GPS自動記録（本アプリ連携前）</label></section>
+    <section class="settingBlock" data-category="data" data-advanced="true" data-search="バックアップ 復元 同期 Google 保存 データ"><h3>保存・同期・バックアップ</h3><p>この試作版は日報を一切保存・送信しません。現行TAXIAPPのバックアップ機能も変更していません。</p><button class="outline" type="button" disabled>本アプリで設定予定</button></section>
+    <section class="settingBlock" data-category="sharing" data-advanced="true" data-search="共有 公開 仲間 位置 ランキング プライバシー"><h3>利用者間の公開設定</h3><p>将来機能。個人の位置や営業情報は初期状態を非公開にします。</p><label class="toggle"><input type="checkbox" disabled> 位置情報を公開（未実装）</label><label class="toggle"><input type="checkbox" disabled> 営業履歴を公開（未実装）</label></section>
+   </div><div id="settingsEmpty" class="settingsEmpty" hidden>一致する設定がありません。検索語を短くしてみてください。</div><p class="note">この試作版では、文字・ボタン・表示テーマ・入力方式の設定のみ画面に反映します。実際の営業情報やGoogle設定は変更しません。</p>
+  </div>
+ </div>
+</div>
+</main>
+<aside class="panel rightPanel" id="asidePanel"><div class="miniRow"><h2>現在の営業状態</h2><span class="stageTag"><span class="dot"></span><span id="sideState">空車・待機</span></span></div><div><span class="fieldlabel">本日の売上（例）</span><div class="summaryValue">¥31,400</div></div><dl><div><dt>出庫から</dt><dd>08時間29分</dd></div><div><dt>本日の営業回数</dt><dd id="sideCount">12件</dd></div><div><dt>現在の乗車地</dt><dd id="sideFrom">未記録</dd></div><div><dt>入力方式</dt><dd id="sideMode">1画面入力</dd></div></dl><div class="sideTip">車載スタンドで操作することを前提に、主要ボタンを大きくしています。1画面入力では補足項目を隠し、常に現在の操作を優先表示します。</div><button class="outline" id="resetSide" data-action="reset">⟲ デモ初期化</button></aside>
+</div>
+<nav class="bottomNav" aria-label="試作画面切り替え"><button id="navDrive" aria-current="true"><strong>🚕</strong>営業入力</button><button id="navSettings" aria-current="false"><strong>⚙</strong>設定</button><button id="navCompare" aria-current="false"><strong>▤</strong>画面比較</button><div class="compactNote">入力内容はデモ用・<br>端末やクラウドへ保存しません</div></nav>
+</div>
+<script>
+(() => {
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const demoLocations=['川西能勢口付近','川西池田駅付近','駅前ロータリー'];
+ const modeLabels={compact:'1画面入力',guided:'段階入力',detail:'詳細入力'};
+ const model={mode:'compact',phase:0,from:'',to:'',count:12,locationIndex:0,view:'drive',settingCategory:'all',advanced:false,search:'',fields:{},layout:'auto'};
+ const phases=['空車・待機','迎車中','実車中','降車・精算'];
+ const actionLabels=['🚕 迎車する','▶ 実車開始','◉ 降車する','✓ デモ登録'];
+ const guideTitle=['① 迎車を記録','② 実車を開始','③ 降車を記録','④ 料金を確認して登録'];
+ const guideDescriptions=['迎車の地点・時刻を確認します。','乗車位置と時刻を確認します。','降車地点と時刻を確認します。','メーター料金と支払い方法を入力します。'];
+ const nextLabels=['迎車を記録 →','実車を開始 →','降車を記録 →','デモ登録する ✓'];
+ const getFare=()=>Number($('compactFare').value||$('guideFare').value||$('detailFare').value||0);
+ function ensureInput(){if(model.phase===3&&getFare()<=0){message('メーター料金を入力してください。',true);return false;}return true;}
+ function message(msg,error=false){for(const id of ['compactMessage','guideMessage','detailMessage']){$(id).textContent=msg;$(id).classList.toggle('alert',error)}}
+ function demoAction(action){
+  if(action==='reset'){if(!confirm('試作版の入力デモを初期化しますか？（実際の日報には影響しません）'))return;model.phase=0;model.from='';model.to='';for(const id of ['compactFare','detailFare','guideFare','detailFrom','detailTo'])$(id).value='';message('試作データを初期状態に戻しました。');render();return}
+  if(action==='undo'){if(model.phase>0)model.phase--;message('ひとつ前の操作へ戻しました（デモ）。');render();return}
+  if(action==='openDetail'){setMode('detail');return}
+  if(action==='location'){const loc=demoLocations[model.locationIndex++%demoLocations.length];if(model.phase<2){model.from=loc;$('detailFrom').value=loc;}else{model.to=loc;$('detailTo').value=loc;}message('サンプル地点「'+loc+'」を仮入力しました。GPSは利用していません。');render();return}
+  if(action==='register'){if(!ensureInput())return;if($('confirmBeforeRegister').checked&&!confirm('試作デモとして登録完了にしますか？ 実際の日報には一切保存しません。'))return;model.count++;model.phase=0;model.from='';model.to='';for(const id of ['compactFare','detailFare','guideFare'])$(id).value='';message('デモ登録が完了しました（営業データは保存していません）。');render();return}
+  if(action==='advance'){
+   if(model.phase===3){demoAction('register');return;}
+   if(model.phase===0&&!model.from)model.from=$('guidePlace').value||'川西能勢口付近';
+   if(model.phase===1&&!model.from)model.from='川西能勢口付近';
+   if(model.phase===2&&!model.to)model.to=$('guidePlace').value||'川西池田駅付近';
+   model.phase++;message(phases[model.phase]+'になりました（デモ）。');render();
+  }
+ }
+ function render(){
+  $('compactState').textContent=phases[model.phase];$('sideState').textContent=phases[model.phase];
+  $('compactState').className=model.phase===2?'highlight':'green';
+  $('compactFrom').textContent=model.from||'未記録';$('compactTo').textContent=model.to||'未記録';
+  $('sideFrom').textContent=model.from||'未記録';$('sideCount').textContent=model.count+'件';
+  $('compactMain').textContent=actionLabels[model.phase];$('compactMain').className='big mainButton '+(model.phase===3?'positive':'primary');
+  $('compactLocation').hidden=!$('locationShortcut').checked;
+  $('guideTitle').textContent=guideTitle[model.phase];$('guideDesc').textContent=guideDescriptions[model.phase];$('guideNext').textContent=nextLabels[model.phase];$('guideFareBlock').hidden=model.phase!==3;
+  document.querySelectorAll('#steps .step').forEach((x,i)=>{x.classList.toggle('active',i===model.phase);x.classList.toggle('done',i<model.phase)});
+  $('sideMode').textContent=modeLabels[model.mode];
+  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===model.mode)));
+  document.querySelectorAll('[data-selectmode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.selectmode===model.mode)));
+  for(const [id,name] of [['compactMode','compact'],['guidedMode','guided'],['detailMode','detail']])$(id).classList.toggle('active',model.mode===name);
+ }
+ function setMode(mode){if(!modeLabels[mode])return;model.mode=mode;const ids=['compactFare','guideFare','detailFare'];const first=ids.map(id=>$(id).value).find(v=>v!=='')||'';ids.forEach(id=>{if(!$(id).value&&first)$(id).value=first});if($('detailFrom').value&&!model.from)model.from=$('detailFrom').value;if($('detailTo').value&&!model.to)model.to=$('detailTo').value;render();setView('drive');}
+ function setView(view){model.view=view;const settings=view==='settings';$('drivePage').classList.toggle('hidden',settings);$('settingsPage').classList.toggle('active',settings);$('asidePanel').style.display=settings?'none':'';if(settings)document.querySelector('.main').style.gridTemplateColumns='minmax(0,1fr)';else document.querySelector('.main').style.removeProperty('grid-template-columns');$('navDrive').setAttribute('aria-current',String(!settings));$('navSettings').setAttribute('aria-current',String(settings));$('navCompare').setAttribute('aria-current','false'); if(!settings)render();window.scrollTo({top:0,behavior:'instant'});}
+ function renderSettings(){let count=0;for(const block of document.querySelectorAll('.settingBlock')){
+   const matchesCat=model.settingCategory==='all'||block.dataset.category===model.settingCategory;
+   const matchesLevel=model.advanced||block.dataset.advanced==='false';
+   const hay=(block.dataset.search+' '+block.textContent).toLowerCase();const matchesText=hay.includes(model.search.toLowerCase());
+   const visible=matchesCat&&matchesLevel&&matchesText;block.classList.toggle('hiddenBySearch',!visible);if(visible)count++;
+  }$('settingsEmpty').hidden=count>0;$('settingsHeading').textContent=model.advanced?'すべての設定':'かんたん設定';$('advancedToggle').textContent=model.advanced?'かんたん設定に戻す':'詳細設定を表示';$('advancedToggle').setAttribute('aria-pressed',String(model.advanced));document.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.category===model.settingCategory)));}
+ function pick(group,value){document.querySelectorAll('[data-'+group+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[group]===value)));}
+ document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.action){demoAction(b.dataset.action);return}if(b.dataset.mode){setMode(b.dataset.mode);return}if(b.dataset.selectmode){setMode(b.dataset.selectmode);return}if(b.dataset.category){model.settingCategory=b.dataset.category;renderSettings();return}if(b.dataset.pay){pick('pay',b.dataset.pay);$('compactPay').value=b.dataset.pay;return}if(b.dataset.font){pick('font',b.dataset.font);document.body.classList.toggle('font-xl',b.dataset.font==='xl');document.body.classList.toggle('font-xxl',b.dataset.font==='xxl');return}if(b.dataset.buttons){pick('buttons',b.dataset.buttons);document.body.classList.toggle('buttons-xl',b.dataset.buttons==='xl');return}if(b.dataset.layout){model.layout=b.dataset.layout;pick('layout',b.dataset.layout);return}});
+ $('compactFare').addEventListener('input',e=>{$('guideFare').value=e.target.value;$('detailFare').value=e.target.value});
+ $('guideFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('detailFare').value=e.target.value});
+ $('detailFare').addEventListener('input',e=>{$('compactFare').value=e.target.value;$('guideFare').value=e.target.value});
+ $('detailFrom').addEventListener('change',e=>{model.from=e.target.value;render()});$('detailTo').addEventListener('change',e=>{model.to=e.target.value;render()});
+ $('guidePlace').addEventListener('change',e=>{if(model.phase>=2)model.to=e.target.value;else model.from=e.target.value;render()});
+ $('compactPay').addEventListener('change',e=>pick('pay',e.target.value));
+ $('navSettings').addEventListener('click',()=>{setView('settings');renderSettings()});$('navDrive').addEventListener('click',()=>setView('drive'));$('backToDrive').addEventListener('click',()=>setView('drive'));
+ $('navCompare').addEventListener('click',()=>{setView('drive');setMode(model.mode==='compact'?'guided':model.mode==='guided'?'detail':'compact')});
+ $('advancedToggle').addEventListener('click',()=>{model.advanced=!model.advanced;renderSettings()});
+ $('settingSearch').addEventListener('input',e=>{model.search=e.target.value;renderSettings()});
+ $('highContrast').addEventListener('change',e=>document.body.classList.toggle('high-contrast',e.target.checked));
+ $('lightTheme').addEventListener('change',e=>document.body.classList.toggle('theme-light',e.target.checked));
+ document.querySelectorAll('.fieldToggle').forEach(b=>b.addEventListener('change',e=>{model.fields[e.target.dataset.field]=e.target.checked}));
+ render();renderSettings();
+})();
+</script>
+</body>
+</html>
