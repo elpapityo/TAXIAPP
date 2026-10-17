@@ -28,6 +28,8 @@ assert.match(rules,/match \/\{document=\*\*\} \{ allow read, write: if false; \}
 const page=fs.readFileSync(path.join(root,'login.html'),'utf8');
 assert.match(page,/Googleでログイン/);
 assert.match(page,/id="copyLoginUid"/);
+assert.match(page,/id="loginUid"[^>]+readonly/);
+assert.match(page,/src="\.\/login\.js\?v=20261017-2"/);
 
 assert.match(page,/既存の日報・同期設定は変更しません/);
 assert.match(page,/type="module" src="\.\/login.js"/);
@@ -51,3 +53,37 @@ const live=fs.readFileSync(path.join(root,'index.html'),'utf8');
 assert.match(live,/TAXIAPP v0\.3\.43/);
 assert.doesNotMatch(live,/login\.html|TAXIAPP_FIREBASE_CONFIG/);
 console.log('Login phase1 tests passed: admin isolated, default deny, legacy read-only and no main-app disruption.');
+
+// Execute the real click handler with older and modern browser clipboard mocks.
+const copyStart=js.indexOf("$('copyLoginUid').addEventListener");
+const copyEnd=js.indexOf('function showIdentity(',copyStart);
+assert.ok(copyStart>=0&&copyEnd>copyStart);
+const copyCode=js.slice(copyStart,copyEnd);
+async function copyTest({legacy,modern,expectedCopied}){
+ let handler=null,selected=0,write='',value='test-uid-ABC',focus=0;
+ const input={
+  value,
+  focus(){focus++;},
+  select(){selected++;},
+  setSelectionRange(a,b){assert.equal(a,0);assert.equal(b,value.length);}
+ };
+ const feedback={textContent:''};
+ const nodes={copyLoginUid:{addEventListener(name,cb){assert.equal(name,'click');handler=cb;}},loginUid:input,uidCopyStatus:feedback};
+ const scope={
+  $:id=>nodes[id],document:{execCommand(){return legacy;}},
+  navigator:{clipboard:modern?{writeText:async v=>{write=v;}}:undefined}
+ };
+ vm.createContext(scope);vm.runInContext(copyCode,scope);
+ await handler();
+ assert.equal(selected,1,'UID must stay selectable even when copying fails');
+ assert.equal(focus,1);
+ assert.match(feedback.textContent,expectedCopied?/コピーしました/:/選択しました/);
+ assert.equal(write,modern&&!legacy?value:'');
+}
+Promise.resolve().then(async()=>{
+ await copyTest({legacy:true,modern:false,expectedCopied:true});
+ await copyTest({legacy:false,modern:true,expectedCopied:true});
+ await copyTest({legacy:false,modern:false,expectedCopied:false});
+ console.log('UID clipboard fallback tests passed: legacy, modern and manual selection.');
+}).catch(error=>{console.error(error);process.exitCode=1;});
+
