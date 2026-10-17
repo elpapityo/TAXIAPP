@@ -91,7 +91,7 @@ root.TAXIAPP_DEVICE_SESSION={
       return;
      }
      const active=snap.data().sessionId;
-     if(active===sessionId&&sessionId){
+     if(active===sessionId&&sessionId&&!viewerRequested){
       set('writer','操作可能（この端末が有効です）');
      }else if(!claimedOnce&&!viewerRequested&&!claimInFlight){
       // A genuinely new device login takes priority over the old device.
