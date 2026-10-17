@@ -1377,7 +1377,9 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   try{
    await save(true);
    const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
-   if(!stored?.shifts?.some(x=>x.id===id))throw Error('受信した乗務を保存できませんでした');
+   const savedShift=stored?.shifts?.find(x=>x.id===id);
+   const expectedShift=model.shifts.find(x=>x.id===id);
+   if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
   }catch(error){
    model=previous;await save(true);throw error;
   }
