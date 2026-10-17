@@ -123,6 +123,12 @@ function client(name,svc,model,failReceive=false){
   'header must display the version read from the title, not a hard-coded older version');
  assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+/)'),
   'header must derive version from document title');
- assert.match(html,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'/);
+ assert.doesNotMatch(html,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'/,
+  'periodic bidirectional cloud polling must stay disabled');
+ assert.match(html,/data-action="viewerRefresh"/,'viewer refresh control must exist');
+ assert.match(html,/if\(action==='viewerRefresh'\)/,'viewer refresh must have an action');
+ assert.match(html,/syncUI\.viewNow\(true\)/,'manual reload must receive from cloud');
+ assert.match(html,/if\(!canEditNow\(\)\)return;[\s\S]*syncUI\.schedule\(\)/,
+  'offline to online retry is for writer only');
  console.log('Bidirectional sync tests passed: send, receive, CAS, conflict hold and resolution, first-use guard, offline safety, web wiring.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
