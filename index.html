@@ -393,6 +393,57 @@ html[data-ui-theme="night"] .drive-layout-choice{background:#182a3f}
 }
 @media(max-width:380px){.drive-compact .drive-layout-choice .btn{font-size:12px;padding:5px 7px}.drive-compact .wait-clock strong{font-size:21px}}
 
+
+/* Compact stage view: each duty state has one dedicated top-level interface. */
+.drive-compact .compact-workspace{display:grid;gap:9px;max-width:720px;margin:auto}
+.drive-compact .compact-status{padding:9px;border:1px solid #99bfd6;background:#eaf4fb;border-radius:13px;display:grid;gap:5px}
+.drive-compact .compact-status-line{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:7px 10px;border:1px solid #c7d8e5;border-radius:9px;background:#f9fcff}
+.drive-compact .compact-status-line span{font-size:13px}
+.drive-compact .compact-status-line strong{font-size:16px;min-width:0;text-align:right;overflow-wrap:anywhere}
+.drive-compact .compact-stage-card{min-width:0;display:grid;gap:10px}
+.drive-compact .compact-stage-label{font-size:14px;font-weight:800;color:var(--blue)}
+.drive-compact .compact-primary-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:6px 0}
+.drive-compact .compact-primary-actions .btn{width:100%;min-width:0;min-height:60px;white-space:normal;font-size:clamp(17px,4.4vw,21px)}
+.drive-compact .compact-ride-summary{display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between;padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-weight:650;font-size:13px}
+.drive-compact .compact-main-price .field-label{font-size:17px}
+.drive-compact .compact-main-price .control{font-size:clamp(22px,5vw,30px);font-weight:800;min-height:64px}
+.drive-compact .compact-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.drive-compact .compact-field-grid>.field{min-width:0}
+.drive-compact .compact-extra{margin:6px 0}
+.drive-compact .compact-extra>summary{font-size:15px;min-height:47px;padding:10px}
+.drive-compact .compact-extra>.inner{padding:10px}
+.drive-compact .compact-extra-fields{margin-top:12px}
+.drive-compact .compact-extra-fields h3{font-size:16px}
+.drive-compact .compact-extra .form-grid{margin-top:7px}
+.drive-compact .compact-secondary{margin-top:4px}
+.drive-compact .compact-secondary>summary{font-size:15px;padding:9px}
+.drive-compact .payment-split{margin-top:4px;padding:12px}
+.drive-compact .pay-total{margin-top:7px}
+.drive-compact .compact-stage-card .actions{margin-top:4px}
+html[data-ui-theme="night"] .drive-compact .compact-status{background:#172d42;border-color:#6086a3}
+html[data-ui-theme="night"] .drive-compact .compact-status-line{background:#243b54;border-color:#507391}
+@media(max-width:700px){
+ .drive-compact .compact-workspace{gap:5px}
+ .drive-compact .compact-status{padding:5px;gap:4px}
+ .drive-compact .compact-status-line{padding:5px 8px}
+ .drive-compact .compact-status-line span{font-size:12px}
+ .drive-compact .compact-status-line strong{font-size:15px}
+ .drive-compact .compact-stage-card{padding:10px;gap:8px}
+ .drive-compact .compact-field-grid{grid-template-columns:minmax(0,1fr)}
+ .drive-compact .compact-primary-actions .btn{min-height:57px}
+ .drive-compact .compact-main-price .control{min-height:61px}
+ .drive-compact .compact-extra .form-grid{grid-template-columns:minmax(0,1fr)}
+ .drive-compact .compact-extra .passenger-control .selector{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:380px){
+ .drive-compact .compact-status-line span{font-size:11px}
+ .drive-compact .compact-status-line strong{font-size:13px}
+ .drive-compact .compact-stage-card{padding:7px}
+ .drive-compact .compact-primary-actions .btn{font-size:17px}
+ .drive-compact .compact-stage-card .payment-split{padding:7px}
+ .drive-compact .compact-ride-summary{font-size:12px}
+}
+
 </style>
 </head>
 <body>
@@ -1120,8 +1171,77 @@ function field(key,raw,opts={}){const info=RAW_COLUMNS.find(x=>x[0]===key)||[key
  return `<label class="field">${labelText}${control}</label>`;}
 function locationField(key,raw,label,action){return `<div class="inline-location-field">${field(key,raw,{label})}<button class="btn inline-field-icon" data-action="${action}" type="button" aria-label="${safeText(label)}の現在地を取得" title="${safeText(label)}の現在地を取得">⌖</button></div>`;}
 function userFields(keys,raw,config={}){return `<div class="form-grid ${config.three?'three':''}">${keys.map(k=>field(k,raw,config.options?.[k]||{})).join('')}</div>`;}
+function compactStageName(shift){
+  if(!shift)return '出庫前・帰庫済';
+  const d=shift.draft;
+  if(!d)return shift.waiting?'待機中':'空車・流し';
+  if(d.kind==='dispatch')return '迎車中';
+  if(d.kind==='cancel')return '迎車キャンセル';
+  if(d.kind==='empty')return '空車高速';
+  if(d.kind==='ride')return d.raw.M||d.status==='alighted'?'降車・精算':'実車中';
+  return '営業入力';
+}
+function renderCompactStatus(shift){
+  const status=compactStageName(shift),t=shift?totals(shift.records,shift.settings,shift.date):null;
+  const d=shift?.draft;
+  return `<div class="compact-status" aria-label="営業状況"><div class="compact-status-line"><span>現在の営業状態</span><strong>${safeText(status)}</strong></div>${shift?`<div class="compact-status-line"><span>出庫から</span><strong>${safeText(shortTime(shift.startedAt))} 出庫</strong></div><div class="compact-status-line"><span>本日のメーター売上</span><strong>${money(t.meter)}</strong></div>`:''}${d?.kind==='ride'?`<div class="compact-status-line"><span>今回の乗車</span><strong>${safeText(shortTime(d.raw.G))} ・ №${safeText(d.raw.A)}</strong></div>`:''}</div>`;
+}
+function renderCompactWaiting(shift){
+  const w=shift.waiting, count=shift.records.length, places=waitingPlaces();
+  const waiting=w?`<div class="wait-display"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(w.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(w)}</strong></div></div><div class="wait-inputs"><label class="field"><span class="field-label">待機場所</span><input class="control" type="text" data-wait-field="place" list="waitPlaceCandidates" maxlength="60" autocomplete="off" value="${safeText(w.place||'')}" placeholder="待機場所を選択・入力"><datalist id="waitPlaceCandidates">${places.map(p=>`<option value="${safeText(p)}"></option>`).join('')}</datalist></label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(w.odometer??'')}" placeholder="走行距離"></label></div><div class="wait-gps"><button class="btn" type="button" data-action="gpsWait">⌖ GPSで現在地</button><button class="btn" type="button" data-action="registerWaitPlace">＋ 待機場所を登録</button><span role="status" data-wait-gps-status>${safeText(w.gpsStatus||'位置未取得')}</span></div></div>`:'';
+  const other=`<details class="details compact-extra"><summary>その他の操作・営業履歴</summary><div class="inner"><button type="button" class="btn fill" data-tab="history">▤ 営業履歴を見る</button><p class="caption-note">流し中は操作不要です。GPSによるトリップ計測は設定に従って記録します。</p></div></details>`;
+  return `<section class="card hero compact-stage-card" aria-label="${w?'待機入力':'空車入力'}"><div class="compact-stage-label">次の記録 / № ${count+1}</div>${waiting}<div class="compact-primary-actions"><button class="btn primary big" type="button" data-action="beginRide" ${count>=MAX_RECORDS?'disabled':''}>🚕 乗車</button><button class="btn teal big" type="button" data-action="beginDispatch" ${count>=MAX_RECORDS?'disabled':''}>📲 アプリ迎車</button>${w?'':`<button class="btn big" type="button" data-action="beginWait">🅿 待機開始</button>`}</div>${count>=MAX_RECORDS?'<div class="warn">1乗務60件に達したため、新しい記録は作れません。</div>':''}${other}</section>`;
+}
+function renderCompactHighway(shift,d){
+  const r=d.raw,real=hasRealHighway(r),empty=hasEmptyHighway(r);
+  const toggle=(key,label,checked)=>`<button class="btn highway-choice" type="button" data-highway-mode="${key}" aria-pressed="${checked}">${checked?'✓ ':''}${label}</button>`;
+  const realFields=real?`<div class="compact-extra-fields"><h3>実車高速（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター'})}${field('R',r,{label:'乗時間'})}${field('S',r,{label:'乗距離（km）'})}${field('T',r,{label:'降インター'})}${field('U',r,{label:'降時間'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円）'})}</div></div>`:'';
+  const amountRow=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r)}</div>`;
+  const has=k=>number(r[k])!==null;
+  const emptyFields=empty?`<div class="compact-extra-fields"><h3>空車高速（雑損）</h3><div class="form-grid">${userFields(['Z','AA','AB','AC','AD','AE'],r)}</div><div class="empty-toll-progress"><div class="empty-toll-fields">${amountRow('AF',true)}${amountRow('AG',has('AF')||has('AG')||has('AH'))}${amountRow('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速 合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((sum,k)=>sum+amount(r[k]),0))}</strong></div></div></div>`:'';
+  return `<details class="details highway-fold compact-extra" data-highway-fold><summary>🛣 高速道路 ${real||empty?'（入力あり）':''}</summary><div class="inner"><div class="highway-choices" role="group" aria-label="高速道路の区分">${toggle('実','実車分',real)}${toggle('空','空車分',empty)}</div>${realFields}${emptyFields}<p class="caption-note">高速区間の距離・免除距離は既存の日報計算を使用します。</p></div></details>`;
+}
+function renderCompactCash(shift,d){
+  const p=paymentBreakdown(d,shift.settings,shift.date);
+  if(!p.items.some(item=>item.type==='現'))return '';
+  const r=d.raw, change=cashChange(d,shift.settings,shift.date),txt=v=>v===null?'—':money(v);
+  return `<details class="details compact-extra"><summary>💴 預り金・おつり（現金精算）</summary><div class="inner"><div class="cash-checkout" aria-label="預り金とおつり"><div class="cash-due"><span>現金で支払う額</span><strong data-estimate>${txt(change.due)}</strong></div><label class="field"><span class="field-label">預り金（円）</span><input class="control cash-deposit" type="text" inputmode="none" data-number-kind="money" data-col="AO" value="${safeText(r.AO??'')}" placeholder="0"></label><div class="deposit-buttons"><button class="btn" data-deposit="exact" type="button">ちょうど</button><button class="btn" data-deposit="1000" type="button">千円</button><button class="btn" data-deposit="5000" type="button">五千円</button><button class="btn" data-deposit="10000" type="button">一万円</button><button class="btn deposit-clear" data-deposit="clear" type="button">クリア</button></div><div class="cash-change" role="status"><span>おつり</span><strong data-change>${txt(change.change)}</strong><span class="cash-shortfall" data-shortfall>${change.shortage>0?'不足 '+money(change.shortage):''}</span></div></div></div></details>`;
+}
+function renderCompactDispatch(shift,d){
+  const r=d.raw;
+  return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / アプリ迎車</div><div class="field-label">配車元</div>${selector('E',DISPATCH_TYPES,r.E,true)}<div class="compact-field-grid">${field('C',r,{label:'迎車受信時刻（変更可）'})}${field('F',r,{label:'迎車先到着時の走行距離（km）'})}</div>${locationField('AL',r,'お迎え場所・住所','gpsPickup')}<div class="compact-primary-actions"><button class="btn primary big" data-action="boardDispatch" type="button">🚕 お客様が乗車</button><button class="btn red big" data-action="cancelDispatch" type="button">× 迎車キャンセル</button></div><details class="details compact-extra"><summary>迎車メモ・全入力項目</summary><div class="inner"><label class="field"><span class="field-label">依頼メモ（任意）</span><input class="control" data-meta="dispatchNote" value="${safeText(d.meta?.dispatchNote??'')}" placeholder="待ち合わせ場所・目印"></label>${renderAllFields(d)}</div></details><div class="actions"><button type="button" class="btn red" data-action="discardDraft">迎車入力を取り消す</button></div></section>`;
+}
+function renderCompactRide(shift,d){
+  const r=d.raw,settle=Boolean(r.M)||d.status==='alighted',cfg=feeSettings(shift.settings),rideUber=r.E==='U';
+  const pickup=`<div class="compact-field-grid">${field('C',r,{label:'データ受信・待機開始時刻'})}${field('G',r,{label:'乗車時刻'})}${field('F',r,{label:'乗車時の走行距離（km）'})}</div><div class="field-label">配車区分</div>${selector('E',TYPES,r.E)}${locationField('AL',r,'乗車地・住所','gpsPickup')}`;
+  if(!settle){
+    const alight=gpsTripUI?.active(shift)
+      ?`<button class="btn teal big" type="button" data-action="gpsTripAlight">🚕 GPS確認して降車・精算へ</button>`
+      :`<button class="btn teal big" type="button" data-time-now="M">🚕 降車して精算へ</button>`;
+    return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 実車中</div>${pickup}<div class="compact-primary-actions">${alight}</div><details class="details compact-extra"><summary>人数・高速道路・その他詳細</summary><div class="inner"><div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div>${renderCompactHighway(shift,d)}${renderAllFields(d)}</div></details><div class="actions"><button class="btn red" type="button" data-action="discardDraft">入力を取り消す</button></div></section>`;
+  }
+  const uber=rideUber?`<details class="details compact-extra"><summary>Uberアプリ精算額・手数料</summary><div class="inner"><label class="field"><span class="field-label">Uberアプリ表示額（円）</span><input class="control" data-meta="uberAppDisplayed" data-number-kind="money" inputmode="none" type="text" value="${safeText(d.meta?.uberAppDisplayed??'')}"></label><div class="uber-summary"><div>Uberアプリ決済額（差額）<strong data-uber-app-payment>${uberAppAmounts(d)?.valid?money(uberAppAmounts(d).appPaid):'—'}</strong></div><div>車内決済（運賃分）<strong data-uber-cabin-fare>${number(d.meta?.uberAppDisplayed)!==null?money(number(d.meta.uberAppDisplayed)):'—'}</strong></div><div>Uber配車手数料（納金不要）<strong data-uber-dispatch>${uberDispatchFeeApplies(d,shift.date,shift.settings)?money(cfg.uberSurcharge):'¥0'}</strong></div></div></div></details>`:'';
+  return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 降車・精算</div><div class="compact-ride-summary"><span>乗車地：${safeText(r.AL||'未記録')}</span><span>${safeText(shortTime(r.G))} 乗車</span></div><div class="compact-main-price">${field('K',r,{label:'メーター金額（円）',required:true})}</div><div class="compact-field-grid">${field('M',r,{label:'降車時刻（変更可）'})}${field('L',r,{label:'降車時の走行距離（km）'})}</div>${locationField('AM',r,'降車地・住所','gpsDrop')}${renderPaymentSplit(shift,d)}<div class="compact-primary-actions"><button class="btn primary big" type="button" data-action="saveDraft">✓ 精算して保存</button></div>${renderCompactCash(shift,d)}${uber}<details class="details compact-extra"><summary>割引・高速・乗車情報の修正・全項目</summary><div class="inner"><div class="form-grid"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額（円）'})}</div>${renderCompactHighway(shift,d)}<details class="details compact-extra"><summary>乗車情報を修正</summary><div class="inner">${pickup}<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div></div></details>${renderAllFields(d)}</div></details><div class="actions"><button class="btn red" type="button" data-action="discardDraft">入力を取り消す</button></div></section>`;
+}
+function renderCompactOther(shift,d){
+  const r=d.raw;
+  if(d.kind==='cancel')return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 迎車キャンセル</div><p class="panel-strip">キャンセルは0円の営業記録として保存します。売上・納金には含めません。</p><div class="field-label">配車区分</div>${selector('E',TYPES,r.E)}<div class="compact-field-grid">${field('C',r,{label:'受信／待機開始時刻'})}${field('B',r,{label:'キャンセル'})}${field('N',r,{label:'金種（キ）'})}</div>${locationField('AL',r,'迎車場所・住所','gpsPickup')}<div class="compact-primary-actions"><button class="btn primary big" type="button" data-action="saveDraft">✓ キャンセルを保存</button></div><details class="details compact-extra"><summary>その他の入力項目</summary><div class="inner">${renderAllFields(d)}</div></details><div class="actions"><button class="btn red" data-action="discardDraft" type="button">入力を取り消す</button></div></section>`;
+  if(d.kind==='empty'){
+    const amountRow=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r)}</div>`;
+    const has=k=>number(r[k])!==null;
+    return `<section class="card hero compact-stage-card"><div class="compact-stage-label">営業 № ${safeText(r.A)} / 空車高速</div><p class="panel-strip">空車高速は雑損として記録します。</p>${userFields(['Z','AA','AB','AC','AD','AE'],r)}<div class="empty-toll-progress"><div class="empty-toll-fields">${amountRow('AF',true)}${amountRow('AG',has('AF')||has('AG')||has('AH'))}${amountRow('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速 合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((sum,k)=>sum+amount(r[k]),0))}</strong></div></div><div class="compact-primary-actions"><button class="btn primary big" type="button" data-action="saveDraft">✓ 空車高速を保存</button></div>${renderAllFields(d)}<div class="actions"><button class="btn red" type="button" data-action="discardDraft">入力を取り消す</button></div></section>`;
+  }
+  return '<section class="card hero"><p>入力状態を確認してください。</p></section>';
+}
+function renderCompactDrive(shift){
+  if(!shift)return `<section class="card hero compact-stage-card">${renderCompactStatus(null)}<div class="compact-primary-actions"><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></div></section>`;
+  const status=renderCompactStatus(shift);
+  const d=shift.draft;
+  const body=!d?renderCompactWaiting(shift):d.kind==='dispatch'?renderCompactDispatch(shift,d):d.kind==='ride'?renderCompactRide(shift,d):renderCompactOther(shift,d);
+  return `<div class="compact-workspace">${status}${body}${!d?`<details class="details compact-secondary"><summary>▤ 営業集計・直近の記録</summary><div class="inner">${metrics(shift)}${renderRecent(shift)}</div></details>`:''}</div>`;
+}
 function renderDriveLayoutChooser(){const mode=displayPrefs().driveLayout;return `<div class="drive-layout-choice" role="group" aria-label="入力画面の切り替え"><strong>入力方式</strong>${[['compact','1画面'],['legacy','従来']].map(([key,label])=>`<button class="btn ${mode===key?'active':''}" data-ui-key="driveLayout" data-ui-value="${key}" type="button" aria-pressed="${mode===key}">${label}</button>`).join('')}</div>`;}
-function renderDrive(shift){const active=getShift();if(!active){return `${renderDriveLayoutChooser()}${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
+function renderDrive(shift){if(displayPrefs().driveLayout==='compact')return `${renderDriveLayoutChooser()}${renderCompactDrive(getShift())}`;const active=getShift();if(!active){return `${renderDriveLayoutChooser()}${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
 const t=totals(active.records,active.settings,active.date);
  return `${renderDriveLayoutChooser()}${displayPrefs().driveLayout==='compact'?'':titleBlock('乗務入力','DAILY OPERATIONS',`${friendlyDate(active.date)}　出庫 ${shortTime(active.startedAt)}　・　${active.vehicle?safeText(active.vehicle):'車両未設定'}`)}${paymentElapsedPanel(active)}${active.draft?renderDraft(active):`${renderNewAction(active)}${displayPrefs().driveLayout==='compact'?'<details class="details compact-secondary"><summary>▤ 日報集計・直近の営業記録</summary><div class="inner">'+metrics(active)+renderRecent(active)+'</div></details>':metrics(active)+renderRecent(active)}`}`;}
 
