@@ -29,6 +29,10 @@ assert.equal(stored.prefs.waitPlaces.length,3);
 assert.equal(stored.prefs.waitPlaceCoords.大阪空港.lat,34.78);
 assert.equal(stored.prefs.ui.text,'extra');
 assert.equal(stored.prefs.sheetTarget.fileBaseName,'日報A');
+assert.equal(stored.prefs.sheetTarget.webAppUrl,undefined,'never export device Google endpoint');
+assert.equal(stored.prefs.sheetTarget.spreadsheetUrl,undefined);
+assert.equal(stored.prefs.sheetTarget.mode,undefined);
+assert.equal(stored.prefs.sheetTarget.syncMode,undefined);
 assert.equal(stored.prefs.nested.apiKey,undefined);
 assert.equal(stored.prefs.nested.nested.refreshToken,undefined);
 assert.equal(stored.prefs.nested.nested.important,'keep');
@@ -59,6 +63,27 @@ assert.equal(merged.prefs.sheetTarget.syncMode,'off','device two-way sync settin
 assert.equal(merged.prefs.sheetTarget.webAppUrl,phone.prefs.sheetTarget.webAppUrl);
 assert.equal(merged.prefs.sheetTarget.spreadsheetUrl,phone.prefs.sheetTarget.spreadsheetUrl);
 assert.equal(merged.prefs.sheetTarget.fileBaseName,'日報A','print-specific settings still migrate');
+const modifiedPhone=copy(phone);
+modifiedPhone.prefs.sheetTarget.fileBaseName='端末独自のファイル名';
+const mergedPrint=api.merge(modifiedPhone,stored);
+assert.equal(mergedPrint.prefs.sheetTarget.fileBaseName,'日報A','the shared file name must beat local device defaults');
+const afterRemoteRemove=api.merge(phone,{format:api.FORMAT,schemaVersion:1,prefs:{
+ driver:'乗務員A',waitPlaces:['伊丹駅'],waitPlaceCoords:{}
+}},{preserveLocalWaiting:false});
+assert.deepEqual(Array.from(afterRemoteRemove.prefs.waitPlaces),['伊丹駅'],
+ 'deletions from cloud must propagate when account sync is enabled');
+const base={driver:'Alice',waitPlaces:['伊丹駅'],ui:{text:'normal',theme:'day'}};
+const local={driver:'Alice',waitPlaces:['伊丹駅','空港'],ui:{text:'normal',theme:'day'}};
+const remote={driver:'Alice',waitPlaces:['伊丹駅'],ui:{text:'extra',theme:'day'}};
+const combined=api.reconcile(base,local,remote);
+assert.deepEqual(Array.from(combined.conflicts),[]);
+assert.deepEqual(Array.from(combined.prefs.waitPlaces),['伊丹駅','空港']);
+assert.equal(combined.prefs.ui.text,'extra');
+const clashing=api.reconcile(base,{...base,driver:'Bob'},{...base,driver:'Charlie'});
+assert.deepEqual(Array.from(clashing.conflicts),['driver'],'same-setting simultaneous edits must be preserved as conflicts');
+const identical=api.reconcile(base,{...base,driver:'Bob'},{...base,driver:'Bob'});
+assert.deepEqual(Array.from(identical.conflicts),[]);
+
 assert.throws(()=>api.validate({format:'wrong',schemaVersion:1,prefs:{}}));
 assert.throws(()=>api.extract({version:1,prefs:{},shifts:'invalid'}));
 const rules=fs.readFileSync(path.join(root,'firestore.rules'),'utf8');
@@ -79,4 +104,14 @@ assert.match(ui,/JSON\.stringify\(existing\)!==backupFingerprint/);
 assert.match(ui,/settings\.merge\(get\.result,remoteSnapshot\)/);
 assert.doesNotMatch(ui,/TAXIAPP_WRITE_KEY/);
 new vm.Script(ui);
+
+const auto=fs.readFileSync(path.join(root,'account-auto-sync.js'),'utf8');
+new vm.Script(auto);
+assert.match(auto,/onAuthStateChanged/);
+assert.match(auto,/getDocFromServer/);
+assert.match(auto,/runTransaction/);
+assert.match(auto,/taxiapp-bound-account-uid-v1/,'reject signing in with another user's account on a shared device');
+assert.match(auto,/settings?\.merge|api\.merge/);
+assert.match(html,/id="accountStatus"|Google/);
 console.log('Account settings migration passed: name, waiting places, inputs, display, fares, credentials and shift preservation.');
+console.log('Account settings automatic synchronization regression passed.');
