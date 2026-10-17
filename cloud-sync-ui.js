@@ -96,8 +96,8 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<label class="field"><span class="field-label">バックアップ用パスワード（12文字以上）</span>'+
    '<input class="control" type="password" data-sync-backup-password autocomplete="new-password"></label>'+conflicts:'';
  }
- // A cloud poll may finish every ~20 seconds. Never rebuild the whole Settings
- // page: that would collapse native <details>, steal focus and reset scrolling.
+ // Refresh the status in place after login or a manual viewer refresh.
+ // Never rebuild Settings: that would collapse details and reset the scroll.
  function refreshPanel(){
   const text=d.root.querySelector('[data-sync-status]');
   if(text)text.textContent=message();
