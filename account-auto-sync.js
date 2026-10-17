@@ -22,8 +22,12 @@ root.TAXIAPP_ACCOUNT_AUTO={
   function controls(){
    const signIn=$('accountSignIn'),signOut=$('accountSignOut');
    if(signIn)signIn.hidden=!!user;
+   const viewLogin=$('accountViewSignIn');
+   if(viewLogin)viewLogin.hidden=!!user;
    if(signOut)signOut.hidden=!user;
    if(signOut)signOut.disabled=!user;
+   const takeOver=$('accountTakeOver');
+   if(takeOver)takeOver.hidden=!user||deviceSession?.state()!=='viewer';
   }
   function currentPrefs(){return api.extract(deps.getModel()).prefs;}
   function readBase(){
