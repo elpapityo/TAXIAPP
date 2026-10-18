@@ -1,0 +1,35 @@
+name: GPS HTML bridge regression
+on:
+  push:
+    branches:
+      - feat/html-native-gps-loopback-20261018
+    paths:
+      - 'index.html'
+      - 'gps-native-bridge.js'
+      - 'tests/gps-native-bridge.test.js'
+      - '.github/workflows/gps-html-bridge-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gps-bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check GPS correction math and isolation
+        run: node tests/gps-native-bridge.test.js
+      - name: Verify source integration guards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('index.html').read_text()
+          assert '<script src="./gps-native-bridge.js?v=1"></script>' in html
+          assert "if(!shift?.draft||shift.draft.editId)" in html
+          assert "active.draft?.editId" in html
+          assert "window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue)" in html
+          assert "String(active.draft.raw[id]??'')!==originalField" in html
+          print('HTML guard checks PASS')
+          PY
