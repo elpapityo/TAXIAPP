@@ -2015,7 +2015,6 @@ function handleAction(action,id){
    active.draft.raw[id]=km;
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
    active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
-   try{sessionStorage.setItem('taxiapp-external-gps-last:'+shiftId,String(data.tripKm))}catch{}
    saveLater();render();toast('GPSアプリの走行距離 '+km+'km を取得しました。');
   }).catch(e=>toast('外部GPS：'+e.message,true)).finally(()=>{if(btn&&btn.isConnected)btn.disabled=false;});
   return;
@@ -2318,13 +2317,18 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}
   saveLater();return;
  }
- if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&!s.draft.editId)gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&!s.draft.editId&&window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
-   const last=sessionStorage.getItem('taxiapp-external-gps-last:'+s.id);
-   if(last!==null&&last!==''){
-    try{window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,s.id,Number(last),target.value);toast('手入力距離を基準として以降のGPS増加分を加算します。');}
-    catch(err){toast('GPS基準設定失敗：'+err.message,true);}
-   }
-  }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';}if(e.type==='change'&&target.value&&gpsTripUI?.trusted(s)&&!s.draft.editId){
+ if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&!s.draft.editId){
+  if(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
+   // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
+   const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
+   window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+    const active=getShift();
+    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[col])!==manualValue)return;
+    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue);
+    toast('GPS新基準を設定しました。以降は増加分を加算します。');
+   }).catch(err=>toast('距離入力は保存しましたがGPS基準は未変更：'+err.message,true));
+  }else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
+ }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';}if(e.type==='change'&&target.value&&gpsTripUI?.trusted(s)&&!s.draft.editId){
   const paired={R:'S',U:'V',AA:'AB',AD:'AE'}[col];
   if(paired&&gpsTripUI?.fillDistance(s,s.draft,paired,'timeChange:'+col)){
    const distanceInput=appEl.querySelector('[data-col="'+paired+'"]');
