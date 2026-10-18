@@ -41,7 +41,7 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 <label class="hint">取り込む行：<select id="pasteTarget"><option value="start">スタート</option></select></label><textarea id="pasted" placeholder="TAXIAPP GPS距離測定試験&#10;GPS累計 3.450 km..."></textarea>
 <button class="secondary" type="button" id="readPaste">コピーしたGPS累計を選択中の行へ取り込む</button>
 </details></div>
-<div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。安全のため必ず停車中に操作してください。</div>
+<div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。GPS位置座標はブラウザへ渡しません。安全のため必ず停車中に操作してください。</div>
 </main><script src="gps-bridge-test.js"></script><script src="gps-test-rows.js"></script><script>
 'use strict';
 const B=window.TaxiGpsBridge, R=window.GpsTestRows;
