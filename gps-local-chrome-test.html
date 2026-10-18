@@ -1,7 +1,14 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GPS Chrome通信試験</title><style>body{font:16px system-ui,sans-serif;max-width:650px;margin:auto;padding:18px;background:#0b2438;color:#fff}input,button{font:inherit;padding:12px;border-radius:8px;margin:5px 0}input{width:95%}button{background:#187ec1;color:#fff;border:0}section{padding:12px;border:1px solid #8ab;border-radius:12px;margin:12px 0}.ok{color:#9fdaaf}.err{color:#ffbd9a}</style></head><body><h1>GPS Chrome 直接取得テスト</h1><p>GPSアプリの計測を開始しておき、連携キーを入力してから取得します。Chromeのタブは移動せず、このページ内で表示します。まだ本番日報とは連携しません。</p><section><label>GPSアプリに表示された試験キー<input id="token" autocomplete="off" spellcheck="false" placeholder="32桁のキー"></label><button id="get">現在のGPS距離を取得</button><p id="status" role="status">待機中</p><p id="value" style="font-size:28px"></p><p id="quality"></p></section><section><p>基準距離を手動変更する場合（この試験ページのみ）</p><input id="manual" type="number" step=".001" min="0" placeholder="例: 50"><button id="correct">ここから再加算</button><p id="result"></p></section><script>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GPS Chrome通信試験</title><style>body{font:16px system-ui,sans-serif;max-width:650px;margin:auto;padding:18px;background:#0b2438;color:#fff}input,button{font:inherit;padding:12px;border-radius:8px;margin:5px 0}input{width:95%}button{background:#187ec1;color:#fff;border:0}section{padding:12px;border:1px solid #8ab;border-radius:12px;margin:12px 0}.ok{color:#9fdaaf}.err{color:#ffbd9a}</style></head><body><h1>GPS Chrome 直接取得テスト</h1><p>GPSアプリの計測を開始し、初回だけ連携キーを入力してください。取得成功後、この端末のブラウザに保存し、次回から自動復元します。共有端末では登録キーを削除してください。Chromeのタブは移動せず、このページ内で表示します。まだ本番日報とは連携しません。</p><section><label>GPSアプリ連携キー（初回のみ）<input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="初回のみ32桁のキー"></label><button id="forget" type="button">登録キーを削除</button><p id="saved" aria-live="polite"></p><button id="get">現在のGPS距離を取得</button><p id="status" role="status">待機中</p><p id="value" style="font-size:28px"></p><p id="quality"></p></section><section><p>基準距離を手動変更する場合（この試験ページのみ）</p><input id="manual" type="number" step=".001" min="0" placeholder="例: 50"><button id="correct">ここから再加算</button><p id="result"></p></section><script>
 'use strict';
 let current=null, correction=null;
+const KEY_STORAGE="taxiapp-gps-local-test-key-v1";
+function storedKey(){try{return localStorage.getItem(KEY_STORAGE)||""}catch{return ""}}
+function saveKey(key){try{localStorage.setItem(KEY_STORAGE,key);return true}catch{return false}}
+function dropKey(){try{localStorage.removeItem(KEY_STORAGE)}catch{}}
+function showKeyState(){document.getElementById("saved").textContent=storedKey()?"この端末には連携キーを保存済みです。次回から自動使用します。":"連携キーは未登録です。初回だけ貼り付けてください。"}
 const $=id=>document.getElementById(id);
+$('token').value=storedKey();showKeyState();
+$('forget').onclick=()=>{dropKey();$('token').value='';showKeyState();$('status').textContent='登録キーを削除しました。';};
 function error(s){$('status').textContent=s;$('status').className='err'}
 function render(){
  if(!current)return;
@@ -21,7 +28,7 @@ $('get').onclick=async()=>{
   const d=await r.json();
   if(d.format!=='TAXIAPP_GPS_LOOPBACK_V1'||!Number.isFinite(d.tripKm)||d.tripKm<0)throw Error('GPSデータ形式が不正です');
   if(current&&d.tripKm<current.tripKm){correction=null;error('GPS累計がリセットされています。計測基準を再設定してください');return}
-  current=d;render();$('status').textContent='取得成功（画面遷移なし）';$('status').className='ok';
+  current=d;if(saveKey(key))showKeyState();render();$('status').textContent='取得成功（画面遷移なし）'+(storedKey()?'・キー保存済み':'・キーを保存できませんでした');$('status').className='ok';
  }catch(e){error('取得できません：'+e.message+'。GPSアプリ起動・Chromeローカルネットワーク権限・試験キーを確認してください')}
  finally{clearTimeout(timeout)}
 };
