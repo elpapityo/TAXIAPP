@@ -28,7 +28,7 @@
    const end=finite(shift.endingOdo);
    return end!==null&&end>=start
     ?{km:rounded(end-start),source:'入庫時の実測トリップ'}
-    :{km:null,source:'入庫トリップ未記録'};
+    :{km:null,source:end!==null&&end<start?'車両トリップが出庫時より小さいため、途中リセットまたは表示一周の確認が必要です':'入庫トリップ未記録'};
   }
   const gps=shift?.gpsTrip;
   if(gps?.enabled){
