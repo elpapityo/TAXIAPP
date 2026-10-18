@@ -2008,7 +2008,7 @@ function handleAction(action,id){
   const shiftId=shift.id,draftId=shift.draft.id,originalField=String(shift.draft.raw[id]??'');
   const btn=appEl.querySelector('[data-action="gpsTripFill"][data-id="'+id+'"]');
   if(btn)btn.disabled=true;
-  bridge.read().then(data=>{
+  bridge.read(localStorage,fetch,{shiftId}).then(data=>{
    if(!canEditNow())return;
    const active=getShift();
    if(active?.endedAt||active?.endedIso)return;
@@ -2342,12 +2342,14 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   if(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
    // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
-   window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+   window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
     if(!canEditNow())return;
     const active=getShift();
     if(active?.endedAt||active?.endedIso)return;
     if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[col])!==manualValue)return;
     window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue);
+    // A fresh GPS position plus vehicle-trip correction reconciles only gaps already observed.
+    if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
     // A driver's corrected vehicle trip must immediately update this shift's remaining distance.
     active.externalGpsSnapshot={tripKm:Number(manualValue),rawGpsKm:data.tripKm,at:new Date().toISOString()};
     saveLater();
