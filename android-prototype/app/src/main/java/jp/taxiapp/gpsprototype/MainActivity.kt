@@ -190,7 +190,11 @@ class MainActivity : Activity() {
     // The bridge performs the native callback automatically, without a second tap.
     private fun offerBrowserDistance(request: Intent?) {
         val data = request?.data ?: return
-        if (data.scheme != "taxiappgpsauto" || data.host != "measure") return
+        if (data.scheme != "taxiappgpsv034" || data.host != "measure") {
+            note.text = "GPS連携エラー：ブラウザとアプリの識別名が一致しません"
+            alert("GPS連携アプリの種類が一致しません。Webの再読み込みとv0.3.4の確認をお願いします。")
+            return
+        }
         val nonce = data.getQueryParameter("nonce") ?: ""
         val metric = data.getQueryParameter("metric") ?: ""
         if (!Regex("^[a-f0-9]{32}$").matches(nonce) ||
