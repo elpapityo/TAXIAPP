@@ -2011,7 +2011,7 @@ function handleAction(action,id){
   bridge.read().then(data=>{
    const active=getShift();
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
-   const km=bridge.calculated(data.tripKm,bridge.baseline(localStorage,shiftId)).toFixed(3);
+   const km=bridge.calculated(data.tripKm,bridge.ensureStart(localStorage,shiftId,data.tripKm)).toFixed(3);
    active.draft.raw[id]=km;
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
    active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
