@@ -63,7 +63,7 @@ class MainActivity : Activity() {
             })
         }
 
-        root.addView(text("🚕 GPS距離テスト v0.3.8", 23f))
+        root.addView(text("🚕 GPS距離テスト v0.3.9", 23f))
         root.addView(text("ブラウザから距離を取得するためのGPS計測アプリ", 14f))
         stats = text("GPS累計 0.000 km", 30f, Color.rgb(10, 84, 139))
         root.addView(stats)
