@@ -11,11 +11,12 @@
  function readKey(storage){try{return storage.getItem(KEY)||''}catch{return ''}}
  function correctionKey(shiftId){return CORRECTION_PREFIX+String(shiftId)}
  function baseline(storage,shiftId){try{const x=JSON.parse(storage.getItem(correctionKey(shiftId))||'null');return x&&Number.isFinite(x.gps)&&Number.isFinite(x.value)&&x.value>=0?x:null}catch{return null}}
- function ensureStart(storage,shiftId,gpsKm){
+ function ensureStart(storage,shiftId,gpsKm,startValue=0){
   const prior=baseline(storage,shiftId);
   if(prior)return prior;
-  if(!Number.isFinite(gpsKm)||gpsKm<0)throw Error('GPS乗務開始基準が不正です');
-  const b={gps:gpsKm,value:0,at:Date.now(),automatic:true};
+  const initial=Number(startValue);
+  if(!Number.isFinite(gpsKm)||gpsKm<0||startValue===''||!Number.isFinite(initial)||initial<0)throw Error('GPS乗務開始基準が不正です');
+  const b={gps:gpsKm,value:initial,at:Date.now(),automatic:true};
   storage.setItem(correctionKey(shiftId),JSON.stringify(b));
   return b;
  }
