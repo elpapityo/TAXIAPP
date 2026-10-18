@@ -9,6 +9,8 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
+import org.json.JSONObject
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -112,10 +114,92 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
+        if (intent?.action == Intent.ACTION_VIEW) {
+            handler.post { offerBrowserDistance(intent) }
+        }
 
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 32)
+        }
+    }
+
+    // Explicit browser-to-app request and callback; no local HTTP server or
+    // permissions to the operational TAXIAPP data. No GPS coordinates shared.
+    private fun offerBrowserDistance(request: Intent?) {
+        val data = request?.data ?: return
+        if (data.scheme != "taxiappgps" || data.host != "measure") return
+        val nonce = data.getQueryParameter("nonce") ?: ""
+        val metric = data.getQueryParameter("metric") ?: ""
+        if (!Regex("^[a-f0-9]{32}$").matches(nonce) ||
+            metric !in setOf("tripKm", "realKm", "emptyKm", "lastRideKm")) {
+            alert("連携依頼が正しくありません。ブラウザ側のボタンからやり直してください。")
+            return
+        }
+        val s = GpsStore.load(this)
+        if (GpsStore.updatedAt(this) <= 0) {
+            alert("GPS測定データがまだありません。GPSを開始してから取得してください。")
+            return
+        }
+        if (metric == "lastRideKm" && s.lastRideKm == null) {
+            alert("直前の実車距離がありません。GPSアプリで乗車→降車を記録してください。")
+            return
+        }
+        val age = GpsStore.lastGpsCallbackAt(this).let {
+            if (it <= 0L) null else (System.currentTimeMillis() - it).coerceAtLeast(0L)
+        }
+        val selected = when (metric) {
+            "tripKm" -> s.tripKm
+            "realKm" -> s.realKm
+            "emptyKm" -> s.emptyKm
+            else -> s.lastRideKm ?: 0.0
+        }
+        val notices = mutableListOf<String>()
+        if (!s.running) notices.add("GPS測定は停止中です")
+        if (s.unresolvedGap) notices.add("未解決のGPS欠測があります")
+        if (age == null || age > 30000L) notices.add("GPSの最終受信から30秒以上経過しています")
+        val extra = if (notices.isEmpty()) "" else "\n\n注意： " + notices.joinToString("・")
+        AlertDialog.Builder(this)
+            .setTitle("距離をブラウザへ送る")
+            .setMessage(String.format(Locale.JAPAN,
+                "送信対象：%s\n距離：%.3f km\n\n送るのは距離・計測状態のみです。位置座標は送信しません。\n日報には保存されません。%s",
+                metric, selected, extra))
+            .setNegativeButton("戻る", null)
+            .setPositiveButton("距離を送る") { _, _ ->
+                runCatching {
+                    val reply = JSONObject()
+                        .put("format", "TAXIAPP_GPS_NATIVE_BRIDGE_V1")
+                        .put("nonce", nonce)
+                        .put("metric", metric)
+                        .put("capturedAt", System.currentTimeMillis())
+                        .put("tripKm", s.tripKm)
+                        .put("realKm", s.realKm)
+                        .put("emptyKm", s.emptyKm)
+                        .put("lastRideKm", s.lastRideKm ?: JSONObject.NULL)
+                        .put("gapCount", s.gapCount)
+                        .put("unresolvedGap", s.unresolvedGap)
+                        .put("running", s.running)
+                        .put("gpsAgeMs", age ?: JSONObject.NULL)
+                        .put("accuracyMeters", s.lastAccuracyMeters ?: JSONObject.NULL)
+                        .put("rideCount", s.completedRides)
+                        .put("mode", s.mode.name)
+                    // Fixed allowlisted return page. Never accept caller-supplied
+                    // return URLs or secrets; fragment is not sent to web server.
+                    val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html" +
+                        "#gps-bridge=" + Uri.encode(reply.toString())
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
+                        .addCategory(Intent.CATEGORY_BROWSABLE))
+                }.onFailure { alert("ブラウザへの受け渡しに失敗しました：" +
+                    (it.message ?: "不明なエラー")) }
+            }
+            .show()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == Intent.ACTION_VIEW) {
+            handler.post { offerBrowserDistance(intent) }
         }
     }
 
