@@ -110,11 +110,12 @@ function readNativeReturn(){
  try{pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||'null');}catch{}
  sessionStorage.removeItem(PENDING_KEY);
  const handoff=readHandoff();
- const copied=B.decodeFragment(hash);
- // Only use a cross-tab fallback when the callback nonce really matches its pending request.
- const useFallback=handoff&&copied?.nonce===handoff.pending?.nonce;
- if(!pending&&useFallback)pending=handoff.pending;
+ let useFallback=false;
  try{
+  const copied=B.decodeFragment(hash);
+  // Only use the cross-tab fallback when the nonce matches the pending request.
+  useFallback=Boolean(handoff&&copied?.nonce===handoff.pending?.nonce);
+  if(!pending&&useFallback)pending=handoff.pending;
   if(!pending)throw Error('元の取得操作が見つかりません。GPSボタンからやり直してください');
   const data=B.validateResponse(copied,pending);
   if(useFallback){state=R.clone(handoff.state);persist();}
