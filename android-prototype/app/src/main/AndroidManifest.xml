@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="true" />
     <application
-        android:label="TAXIAPP GPS終了連動試験"
+        android:label="TAXIAPP GPS連携修正版"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
         android:allowBackup="false">
@@ -23,7 +23,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="taxiappgpsexit" android:host="measure" />
+                <data android:scheme="taxiappgpsv034" android:host="measure" />
             </intent-filter>
         </activity>
         <service
