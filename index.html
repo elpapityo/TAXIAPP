@@ -2015,6 +2015,7 @@ function handleAction(action,id){
    if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
    const km=bridge.calculated(data.tripKm,base).toFixed(3);
    active.draft.raw[id]=km;
+   active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
    active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
    saveLater();render();toast('GPSアプリの走行距離 '+km+'km を取得しました。');
