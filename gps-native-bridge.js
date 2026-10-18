@@ -11,6 +11,14 @@
  function readKey(storage){try{return storage.getItem(KEY)||''}catch{return ''}}
  function correctionKey(shiftId){return CORRECTION_PREFIX+String(shiftId)}
  function baseline(storage,shiftId){try{const x=JSON.parse(storage.getItem(correctionKey(shiftId))||'null');return x&&Number.isFinite(x.gps)&&Number.isFinite(x.value)&&x.value>=0?x:null}catch{return null}}
+ function ensureStart(storage,shiftId,gpsKm){
+  const prior=baseline(storage,shiftId);
+  if(prior)return prior;
+  if(!Number.isFinite(gpsKm)||gpsKm<0)throw Error('GPS乗務開始基準が不正です');
+  const b={gps:gpsKm,value:0,at:Date.now(),automatic:true};
+  storage.setItem(correctionKey(shiftId),JSON.stringify(b));
+  return b;
+ }
  function recordManual(storage,shiftId,gpsKm,value){
   const n=Number(value);
   if(!Number.isFinite(gpsKm)||gpsKm<0||value===''||!Number.isFinite(n)||n<0)throw Error('距離基準が不正です');
@@ -36,5 +44,5 @@
    return data;
   }finally{clearTimeout(timeout)}
  }
- return {read,readKey,baseline,recordManual,calculated,correctionKey};
+ return {read,readKey,baseline,ensureStart,recordManual,calculated,correctionKey};
 });
