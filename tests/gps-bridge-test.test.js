@@ -8,7 +8,7 @@ const now=1792281000000;
 for(const m of metricList){
  const req=B.createRequest(m,nonce,now);
  assert.equal(req.pending.metric,m);
- assert.match(req.uri,/^taxiappgpsauto:\/\/measure\?/);
+ assert.match(req.uri,/^taxiappgpsexit:\/\/measure\?/);
  const reply={format:B.FORMAT,nonce,metric:m,capturedAt:now+3000,
   tripKm:12.34567,realKm:4.12345,emptyKm:8.22222,lastRideKm:3.99991,
   gapCount:2,unresolvedGap:true,running:true,gpsAgeMs:5000,accuracyMeters:15,rideCount:3,mode:'REAL',address:'兵庫県伊丹市北本町',locationAt:now+2000};
