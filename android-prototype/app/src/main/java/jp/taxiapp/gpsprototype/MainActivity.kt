@@ -19,6 +19,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
+import android.window.OnBackInvokedCallback
 import android.view.View
 import java.util.concurrent.atomic.AtomicBoolean
 import android.text.InputType
@@ -77,6 +78,13 @@ class MainActivity : Activity() {
         root.addView(note)
         button(root, "▶ GPS測定を開始") { startTracking() }
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
+        button(root, "🌐 GPSテストWebを開く") {
+            startActivity(Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://elpapityo.github.io/TAXIAPP/gps-import-test.html"))
+                .addCategory(Intent.CATEGORY_BROWSABLE))
+        }
+        button(root, "✕ アプリを終了（GPSも停止）") { exitAppCompletely() }
+        root.addView(text("ホームへ戻る・画面OFF・他アプリ利用中はGPS計測を継続。\n「アプリを終了」または最近使ったアプリから閉じるとGPSも停止します。", 13f))
 
         button(root, "⚙ 詳細・実車計測・比較を開く") {
             val details = detailsView
@@ -133,10 +141,46 @@ class MainActivity : Activity() {
         root.addView(details)
         scroll.addView(root)
         setContentView(scroll)
+        // Android 13+ back gesture: closing this visible app is an explicit exit,
+        // not a home/minimize transition. Browser handoff finish() is separate.
+        if (Build.VERSION.SDK_INT >= 33) {
+            val callback = OnBackInvokedCallback { exitAppCompletely() }
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback)
+            exitBackCallback = callback
+        }
         showStats()
         // Avoid notification-permission prompts during the one-tap browser request.
         // Notification permission is requested only when starting tracking manually.
         if (intent?.action == Intent.ACTION_VIEW) handler.post { offerBrowserDistance(intent) }
+    }
+
+    private var exitBackCallback: OnBackInvokedCallback? = null
+    private var explicitExitStarted = false
+
+    private fun exitAppCompletely() {
+        if (explicitExitStarted) return
+        explicitExitStarted = true
+        // Do not confuse with the automatic browser callback's finish().
+        runCatching {
+            startService(Intent(this, GpsTrackingService::class.java)
+                .setAction(GpsTrackingService.ACTION_STOP))
+        }
+        finishAndRemoveTask()
+    }
+
+    @Deprecated("Legacy back button before Android 13")
+    override fun onBackPressed() {
+        exitAppCompletely()
+    }
+
+    override fun onDestroy() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            exitBackCallback?.let {
+                onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it)
+            }
+        }
+        super.onDestroy()
     }
 
     private var detailsView: LinearLayout? = null

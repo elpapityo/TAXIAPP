@@ -280,6 +280,18 @@ class GpsTrackingService : Service() {
         notifications.notify(NOTIFICATION_ID, notification())
     }
 
+    // User explicitly removes this app from Android recent tasks.
+    // Unlike Home/screen-off/app switching, task removal must end GPS tracking.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        clearAlightRequests()
+        stopListening()
+        engine.stop()
+        GpsStore.save(this, engine.snapshot())
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         clearAlightRequests()
         stopListening()
