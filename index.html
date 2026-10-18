@@ -2352,7 +2352,12 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     active.externalGpsSnapshot={tripKm:Number(manualValue),rawGpsKm:data.tripKm,at:new Date().toISOString()};
     saveLater();
     toast('GPS新基準を設定しました。以降は増加分を加算します。');
-   }).catch(err=>toast('距離入力は保存しましたがGPS基準は未変更：'+err.message,true));
+   }).catch(err=>{
+    // Never overwrite a manually entered vehicle trip or pretend a GPS gap was measured.
+    const active=getShift();
+    if(active?.id===shiftId){active.externalGpsSnapshot=null;saveLater();updateElapsedTimer();}
+    toast('車両トリップの手入力は保存しました。GPS受信の復帰後、現在の車両トリップ値をもう一度入力して計測基準を合わせてください：'+err.message,true);
+   });
   }else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
  }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';}if(e.type==='change'&&target.value&&gpsTripUI?.trusted(s)&&!s.draft.editId){
   const paired={R:'S',U:'V',AA:'AB',AD:'AE'}[col];
