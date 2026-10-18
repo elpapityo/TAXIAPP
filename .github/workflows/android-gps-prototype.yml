@@ -44,11 +44,11 @@ jobs:
           APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridge'"
-          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.1-side-by-side-bridge-test'"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridgeauto'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.2-one-tap-simple-test'"
           # AAPT prints localized app labels differently across runner environments.
           # Verify source label exactly and print the actual APK labels for diagnosis.
-          grep -F 'android:label="TAXIAPP GPS連携試験"' android-prototype/app/src/main/AndroidManifest.xml
+          grep -F 'android:label="TAXIAPP GPSかんたん試験"' android-prototype/app/src/main/AndroidManifest.xml
           "$AAPT" dump badging "$APK" | grep -F 'application-label:' || true
       - name: Upload installable GPS test APK
         uses: actions/upload-artifact@v4
@@ -62,16 +62,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/TAXIAPP-GPS-bridge-side-by-side-v0.3.1.apk"
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-simple-auto-v0.3.2.apk"
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          TAG="gps-distance-bridge-v0.3.1"
+          TAG="gps-distance-auto-v0.3.2"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$APK" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "TAXIAPP GPS距離・住所・時刻連携試験 v0.3.1（旧版と共存）" \
-              --notes "旧版とは異なるアプリIDでインストールする並行テスト専用版です。旧GPS試験アプリを削除せずにインストールできます。ただし、計測データは旧版と共有しません。距離・住所・時刻をWeb試験画面に受け渡します。検証用APKのためGPS精度と安全性を保証するものではありません。業務記録には車両トリップを使ってください。" \
+              --title "TAXIAPP GPSワンタッチ連携試験 v0.3.2" \
+              --notes "GPS開始・停止を中心に整理した試験版です。ブラウザのGPSボタンから距離・住所・時刻を確認操作なしで返します。既存GPS試験アプリを削除せず共存できますが、測定データは共有しません。実運用前に走行距離・ブラウザ復帰の実機検証が必要です。" \
               --prerelease
           fi
