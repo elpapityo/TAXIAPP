@@ -14,7 +14,7 @@ label{font-size:12px;font-weight:750;min-width:0}label input{margin-top:4px}
 input{border:1px solid #759db8;border-radius:9px;background:#081d2f;color:#fff;font-size:19px;min-height:48px;padding:7px;width:100%;min-width:0}
 input[readonly]{background:#213d54;color:#b8f3fc;font-weight:800}
 button{border:1px solid #9ad7ff;color:#fff;background:#157dbf;border-radius:9px;min-height:48px;font-weight:850;padding:7px 12px;font-size:15px;cursor:pointer}
-button.secondary{background:#294c64}button:active{filter:brightness(1.3)}
+button.secondary{background:#294c64}select{font:inherit;background:#19394e;color:#fff;padding:8px;border-radius:8px;border:1px solid #7b9fb9}button:active{filter:brightness(1.3)}
 button[data-gps]{padding:5px 3px;font-size:14px}
 .infoRow{margin-top:8px;border-radius:8px;background:#0c2b41;padding:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;font-size:13px}
 .infoRow .address{overflow-wrap:anywhere}
@@ -38,7 +38,7 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 <div class="panel"><h2>取得状況</h2><div id="status" role="status" aria-live="polite" class="notice">最初にスタート行のGPSを取得してください。</div><div id="quality" aria-live="polite"></div>
 <details><summary>旧GPSアプリの「計測結果をコピー」を貼り付ける</summary>
 <p class="hint">Android GPS試験アプリの「計測結果をコピー」を押して下に貼り付けると、同じ計算を試せます。旧版では住所は取得できません。表示時刻はコピー結果を読み取った時刻です。</p>
-<textarea id="pasted" placeholder="TAXIAPP GPS距離測定試験&#10;GPS累計 3.450 km..."></textarea>
+<label class="hint">取り込む行：<select id="pasteTarget"><option value="start">スタート</option></select></label><textarea id="pasted" placeholder="TAXIAPP GPS距離測定試験&#10;GPS累計 3.450 km..."></textarea>
 <button class="secondary" type="button" id="readPaste">コピーしたGPS累計を選択中の行へ取り込む</button>
 </details></div>
 <div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。安全のため必ず停車中に操作してください。</div>
@@ -60,6 +60,8 @@ function render(){
  '<button type="button" data-gps="start">GPS</button>'+
  '<label>GPS累計（km）<input readonly value="'+(state.startGpsKm===null?'':state.startGpsKm.toFixed(3))+'" placeholder="未取得"></label></div>'+
  '<div class="infoRow"><span class="address">📍 '+escaped(state.startPlace||'住所未取得')+'</span><span class="time">🕒 '+escaped(time(state.startAt))+'</span></div></div>';
+ $('pasteTarget').innerHTML='<option value="start">スタート</option>'+result.rows.map((r,i)=>'<option value="'+i+'">'+(i+1)+' 行目</option>').join('');
+ $('pasteTarget').value=pasteTarget;
  for(let i=0;i<result.rows.length;i++){
   const row=result.rows[i];
   markup+='<div class="row"><h2>'+row.number+'</h2><div class="columns">'+
@@ -108,7 +110,7 @@ function requestNative(target){
   location.href=req.uri;
  }catch(e){status(e.message,true);}
 }
-function fromPaste(){
+function fromPaste(){pasteTarget=$('pasteTarget').value;
  try{
   const copied=$('pasted').value.trim();
   if(!copied)throw Error('GPSアプリの「計測結果をコピー」をこの欄に貼り付けてください');
