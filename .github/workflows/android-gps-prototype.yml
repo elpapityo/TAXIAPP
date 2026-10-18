@@ -128,21 +128,21 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Publish directly installable Android test APK
-        if: github.ref == 'refs/heads/prototype/android-background-gps-20261016'
+        if: github.ref == 'refs/heads/prototype/gps-loopback-chrome-20261018'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/TAXIAPP-GPS-internet-fixed-v0.3.6.apk"
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-Chrome-loopback-v0.3.7.apk"
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          TAG="gps-distance-internet-v0.3.6"
+          TAG="gps-chrome-loopback-v0.3.7"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$APK" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "TAXIAPP GPS距離計 Web表示修正版 v0.3.6" \
-              --notes "GPS距離測定専用。累計・GPS受信状態・開始停止・Webリンク・終了と確認付きリセットのみ。乗車降車・比較・コピーの表示を撤去。明示終了ではGPS停止、他アプリ利用中は継続。旧試験アプリと共存、計測データは別管理。" \
+              --title "TAXIAPP GPS Chrome直接取得 試験版 v0.3.7" \
+              --notes "GPS計測専用v0.3.7独立試験APK。Chromeがローカル読み取りAPIから累計距離を取得する実験。試験キーが必要。既存v0.3.6とは別アプリ、計測値も別管理。実機未検証。" \
               --prerelease
           fi
