@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const B=require('../gps-native-bridge.js');
+const values=new Map();
+const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+assert.equal(B.calculated(10,null),10);
+assert.equal(B.calculated(15,null),15);
+const base=B.recordManual(storage,'shift-A',40,'50');
+assert.equal(B.calculated(60,B.baseline(storage,'shift-A')),70);
+assert.equal(B.calculated(75,B.baseline(storage,'shift-A')),85);
+assert.equal(B.calculated(40,B.baseline(storage,'shift-B')),40);
+assert.throws(()=>B.calculated(30,base),/リセット/);
+const reset=B.recordManual(storage,'shift-A',60,'0');
+assert.equal(B.calculated(65,reset),5);
+assert.equal(B.baseline(storage,'shift-B'),null);
+assert.throws(()=>B.recordManual(storage,'shift-A',65,''),/不正/);
+console.log('GPS baseline isolation, correction and reset: PASS');
