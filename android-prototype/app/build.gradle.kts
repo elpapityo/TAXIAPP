@@ -9,11 +9,11 @@ android {
     defaultConfig {
         // Intentionally new package identity: installs beside legacy GPS test APK.
         // Never overwrites its measurement storage or requires uninstall.
-        applicationId = "jp.taxiapp.gpsprototype.bridgeauto"
+        applicationId = "jp.taxiapp.gpsprototype.bridgeexit"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.3.2-one-tap-simple-test"
+        versionName = "0.3.3-exit-stops-gps-test"
     }
 
     compileOptions {
