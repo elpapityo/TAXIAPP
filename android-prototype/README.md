@@ -109,3 +109,14 @@ Galaxy Z Fold6 で v0.3.0 のインストールがブロックされ、旧版が
 - 「距離をゼロに戻す」は測定停止中のみ可能・確認ダイアログ必須。誤操作でデータを消さない。
 - AndroidのGPS受信スキーム `taxiappgpsv035://measure` とWebの呼び出し名を統一。新APKの識別子は `jp.taxiapp.gpsprototype.bridgev035` で、旧版とは別アプリ。データ移行はしない。
 - 既存のGPS測定アルゴリズムとブラウザ向けJSON項目は変えない。実走試験は別途必要。
+
+## v0.3.5：Chromeタブが増えていく不具合への対応
+
+**GPS試験アプリ内でテストWebを表示するWebViewを実装。** WebのGPSボタンを押すと、Android側で値を取得して同一WebViewの画面内に反映。Chromeの新しいタブは作成しない。
+
+- アプリ内の「🌐 GPSテストWebを開く」を使用。画面上部「← GPS計測画面へ戻る」でGPSアプリの基本画面へ戻る。
+- Chrome側からテストを始めた場合は `taxiappgpsv035://web` でアプリ内Webへ切り替える。以降の測定はアプリ内Webで行う。
+- Android WebViewは `elpapityo.github.io/TAXIAPP/gps-import-test.html` のみ内部表示を許可し、任意のWebサイトからネイティブGPS値を取得させない。
+- Chromeの既存試験データとアプリ内WebViewの試験データは同一保存領域ではないため自動移行しない。元のChromeタブの内容は維持。
+- GPSサービス停止はアプリ内「終了」、Android戻る、最近使ったアプリからタスク削除に限る。Web画面からGPS基本画面へ戻っても停止しない。
+- 現在はGitHub Actionsのビルド・静的整合性確認まで。Android実機での画面復帰とGPS値反映を検証すること。
