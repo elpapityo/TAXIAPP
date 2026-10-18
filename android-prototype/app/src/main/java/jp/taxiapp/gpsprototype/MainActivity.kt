@@ -165,7 +165,7 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle("距離をブラウザへ送る")
             .setMessage(String.format(Locale.JAPAN,
-                "送信対象：%s\n距離：%.3f km\n\n送るのは距離・計測状態のみです。位置座標は送信しません。\n日報には保存されません。%s",
+                "送信対象：%s\n距離：%.3f km\n\n送るのは距離・住所・取得時刻・計測状態です。座標はブラウザに渡さず、住所変換に端末の位置情報サービスを利用します。\n日報には保存されません。%s",
                 metric, selected, extra))
             .setNegativeButton("戻る", null)
             .setPositiveButton("距離を送る") { _, _ ->
