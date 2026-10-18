@@ -78,4 +78,15 @@ assert.ok(resetTrip.distanceSource.includes('途中リセット'));
 const nextShift=daily.calculate({...continued,startingOdo:'540',endingOdo:'550',endedAt:'20:00',endedIso:new Date('2026-10-16T20:00:00+09:00').toISOString()},opts);
 eq(nextShift.travelKm,10);
 eq(nextShift.remainingKm,265);
+
+// Linked Android GPS must drive the duty remaining-distance indicator, not the legacy browser tracker.
+const nativeNow=new Date('2026-10-16T12:00:00+09:00');
+const nativeDuty={...shift,startingOdo:'260',externalGpsSnapshot:{tripKm:302,rawGpsKm:82,at:nativeNow.toISOString()}};
+const nativeLive=daily.calculate(nativeDuty,{...opts,now:nativeNow});
+eq(nativeLive.travelKm,42);
+eq(nativeLive.remainingKm,252); // 275 + 19 expressway exemption - 42 traveled
+const staleNative=daily.calculate(nativeDuty,{...opts,now:new Date(nativeNow.getTime()+61000)});
+assert.equal(staleNative.travelKm,null);
+assert.equal(staleNative.remainingKm,null);
+assert.match(staleNative.distanceSource,/更新待ち/);
 console.log('Daily reference tests passed: 13h elapsed, return freeze, 275km+highway, estimates, unknown GPS.');
