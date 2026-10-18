@@ -2005,12 +2005,12 @@ function handleAction(action,id){
   const bridge=window.TAXIAPP_EXTERNAL_GPS;
   if(!shift?.draft||shift.draft.editId){toast('過去の営業履歴はGPSで自動変更しません。',true);return;}
   if(!['F','L','S','V','AB','AE'].includes(id))return;
-  const shiftId=shift.id,draftId=shift.draft.id;
+  const shiftId=shift.id,draftId=shift.draft.id,originalField=String(shift.draft.raw[id]??'');
   const btn=appEl.querySelector('[data-action="gpsTripFill"][data-id="'+id+'"]');
   if(btn)btn.disabled=true;
   bridge.read().then(data=>{
    const active=getShift();
-   if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId)return;
+   if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const km=bridge.calculated(data.tripKm,bridge.baseline(localStorage,shiftId)).toFixed(3);
    active.draft.raw[id]=km;
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
