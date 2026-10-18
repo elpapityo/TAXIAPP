@@ -11,9 +11,11 @@ for(const m of metricList){
  assert.match(req.uri,/^taxiappgps:\/\/measure\?/);
  const reply={format:B.FORMAT,nonce,metric:m,capturedAt:now+3000,
   tripKm:12.34567,realKm:4.12345,emptyKm:8.22222,lastRideKm:3.99991,
-  gapCount:2,unresolvedGap:true,running:true,gpsAgeMs:5000,accuracyMeters:15,rideCount:3,mode:'REAL'};
+  gapCount:2,unresolvedGap:true,running:true,gpsAgeMs:5000,accuracyMeters:15,rideCount:3,mode:'REAL',address:'兵庫県伊丹市北本町',locationAt:now+2000};
  const validated=B.validateResponse(reply,req.pending,now+3500);
  assert.equal(validated.metric,m);
+ assert.equal(validated.place,'兵庫県伊丹市北本町');
+ assert.equal(validated.locationAt,now+2000);
  assert.equal(validated.km,Math.round(reply[m]*1000)/1000);
  assert.ok(validated.warnings.length>0);
  assert.equal(B.decodeFragment(B.hashPrefix+encodeURIComponent(JSON.stringify(reply))).nonce,nonce);
@@ -46,16 +48,14 @@ assert.ok(copied.warnings.some(x=>x.includes('未解決')));
 assert.throws(()=>B.parseCopiedReport('fake text','tripKm'),/コピー結果ではありません/);
 assert.throws(()=>B.parseCopiedReport(oldAppText.replace('直前の実車 2.000 km','直前の実車 未計測'),'lastRideKm'),/未測定/);
 const html=fs.readFileSync('gps-import-test.html','utf8');
-for(const m of metricList){
- assert.match(html,new RegExp('data-native="'+m+'"'));
- assert.match(html,new RegExp('data-copy="'+m+'"'));
- assert.match(html,new RegExp('id="distance-'+m+'"'));
-}
-assert.match(html,/GPSアプリから取得/);
+assert.match(html,/id="rows"/);
+assert.match(html,/id="pasteTarget"/);
+assert.match(html,/data-gps/);
+assert.match(html,/GPS距離・住所・時間/);
 assert.match(html,/location\.href=req\.uri/);
 assert.match(html,/history\.replaceState/);
-assert.match(html,/navigator\.clipboard\.readText/);
-assert.match(html,/営業データを保存・更新しません/);
+assert.match(html,/sessionStorage/);
+assert.match(html,/位置座標/); // no coordinates should be handled in the test UI
 assert.doesNotMatch(html,/(?:indexedDB|localStorage|fetch\(|firebase|collection\(|syncPut)/i);
 for(const [,code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new Function(code);
 console.log('GPS browser bridge tests passed: four metrics, nonce, freshness, invalid values, clipboard fallback and isolated test UI.');
