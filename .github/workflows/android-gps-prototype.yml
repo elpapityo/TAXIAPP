@@ -85,6 +85,24 @@ jobs:
               assert word not in ui, word
           print("Minimal GPS UI verified")
           PY
+      - name: Verify GPS WebView uses one internal page
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          ui=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt").read_text()
+          page=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTestWebActivity.kt").read_text()
+          manifest=Path("android-prototype/app/src/main/AndroidManifest.xml").read_text()
+          assert 'Intent(this, GpsTestWebActivity::class.java)' in ui
+          assert 'android:name=".GpsTestWebActivity"' in manifest
+          assert 'android:host="web"' in manifest
+          assert 'private val scheme = "taxiappgpsv035"' in page
+          assert 'window.location.hash=' in page
+          assert 'web.evaluateJavascript(' in page
+          assert 'WebViewClient' in page
+          assert 'embedded=1' in page
+          assert 'GPSテストWebを開く' in ui
+          print("In-app GPS WebView link and tab-free callback verified")
+          PY
       - name: Upload installable GPS test APK
         uses: actions/upload-artifact@v4
         with:
