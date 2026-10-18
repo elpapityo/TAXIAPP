@@ -2341,6 +2341,9 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     const active=getShift();
     if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[col])!==manualValue)return;
     window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue);
+    // A driver's corrected vehicle trip must immediately update this shift's remaining distance.
+    active.externalGpsSnapshot={tripKm:Number(manualValue),rawGpsKm:data.tripKm,at:new Date().toISOString()};
+    saveLater();
     toast('GPS新基準を設定しました。以降は増加分を加算します。');
    }).catch(err=>toast('距離入力は保存しましたがGPS基準は未変更：'+err.message,true));
   }else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
