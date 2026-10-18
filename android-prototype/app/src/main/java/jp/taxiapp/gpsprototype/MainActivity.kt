@@ -140,9 +140,9 @@ class MainActivity : Activity() {
     // The bridge performs the native callback automatically, without a second tap.
     private fun offerBrowserDistance(request: Intent?) {
         val data = request?.data ?: return
-        if (data.scheme != "taxiappgpsv035" || data.host != "measure") {
+        if (data.scheme != "taxiappgpsv036" || data.host != "measure") {
             note.text = "GPS連携エラー：ブラウザとアプリの識別名が一致しません"
-            alert("GPS連携アプリの種類が一致しません。Webの再読み込みとv0.3.5の確認をお願いします。")
+            alert("GPS連携アプリの種類が一致しません。Webの再読み込みとv0.3.6の確認をお願いします。")
             return
         }
         val nonce = data.getQueryParameter("nonce") ?: ""
@@ -190,7 +190,7 @@ class MainActivity : Activity() {
                     .put("mode", state.mode.name)
                 // Callback is fixed to our separate, non-business test page.
                 // Never accept a caller-supplied URL. Coordinates are not sent.
-                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=035" +
+                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=036" +
                     "#gps-bridge=" + Uri.encode(reply.toString())
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
                     .addCategory(Intent.CATEGORY_BROWSABLE))
