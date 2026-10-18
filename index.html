@@ -2057,7 +2057,7 @@ function handleAction(action,id){
     window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
      const current=getShift();
      if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
-     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm);
+     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer);
      toast('出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。');
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
    }
