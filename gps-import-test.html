@@ -45,13 +45,28 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 </main><script src="gps-bridge-test.js"></script><script src="gps-test-rows.js"></script><script>
 'use strict';
 const B=window.TaxiGpsBridge, R=window.GpsTestRows;
-const $=id=>document.getElementById(id), PENDING_KEY='taxiapp-gps-pending', STATE_KEY='taxiapp-gps-test-state';
+const $=id=>document.getElementById(id),
+ PENDING_KEY='taxiapp-gps-pending', STATE_KEY='taxiapp-gps-test-state',
+ HANDOFF_KEY='taxiapp-gps-test-handoff-only', HANDOFF_MS=120000;
 let state=R.fresh(), pasteTarget='start';
 function status(message,bad=false){$('status').textContent=message;$('status').className='notice'+(bad?' bad':'');}
 function fmt(v){return v===null||v===undefined?'—':Number(v).toFixed(3)+' km';}
 function time(at){if(!at)return '未取得';try{return new Date(at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch{return '未取得';}}
 function escaped(text){return String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function persist(){try{sessionStorage.setItem(STATE_KEY,JSON.stringify(state));}catch{}}
+function saveHandoff(pending){
+ // This is ONLY a two-minute local fallback for Android returning into a new Chrome tab.
+ // Contains test values, no RAW/daily reports or GPS coordinates. Delete immediately on receipt.
+ try{localStorage.setItem(HANDOFF_KEY,JSON.stringify({pending,state,expiresAt:Date.now()+HANDOFF_MS}));}catch{}
+}
+function readHandoff(){
+ try{const raw=localStorage.getItem(HANDOFF_KEY);if(!raw)return null;
+  const saved=JSON.parse(raw);
+  if(!saved||Date.now()>saved.expiresAt){localStorage.removeItem(HANDOFF_KEY);return null;}
+  return saved;
+ }catch{return null;}
+}
+function clearHandoff(){try{localStorage.removeItem(HANDOFF_KEY);}catch{}}
 function restore(){try{const saved=sessionStorage.getItem(STATE_KEY);if(saved)state=R.clone(JSON.parse(saved));}catch{state=R.fresh();}}
 function render(){
  const result=R.derive(state);
@@ -94,18 +109,28 @@ function readNativeReturn(){
  let pending;
  try{pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||'null');}catch{}
  sessionStorage.removeItem(PENDING_KEY);
- try{if(!pending)throw Error('元の取得操作を確認できません。ブラウザが新しいタブを開いた可能性があります');
-  const data=B.validateResponse(B.decodeFragment(hash),pending);
-  restore();applySnapshot(pending.target,data);
+ const handoff=readHandoff();
+ const copied=B.decodeFragment(hash);
+ // Only use a cross-tab fallback when the callback nonce really matches its pending request.
+ const useFallback=handoff&&copied?.nonce===handoff.pending?.nonce;
+ if(!pending&&useFallback)pending=handoff.pending;
+ try{
+  if(!pending)throw Error('元の取得操作が見つかりません。GPSボタンからやり直してください');
+  const data=B.validateResponse(copied,pending);
+  if(useFallback){state=R.clone(handoff.state);persist();}
+  else restore();
+  applySnapshot(pending.target,data);
  }catch(e){status('GPS受け取り失敗：'+e.message,true);}
+ finally{if(useFallback)clearHandoff();}
 }
 function requestNative(target){
  if(!window.crypto?.getRandomValues){status('安全な取得番号を作成できません。コピー取得をご利用ください',true);return;}
  const nonce=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
  try{
   const req=B.createRequest('tripKm',nonce);
-  sessionStorage.setItem(PENDING_KEY,JSON.stringify({...req.pending,target}));
-  persist();pasteTarget=target;
+  const pending={...req.pending,target};
+  sessionStorage.setItem(PENDING_KEY,JSON.stringify(pending));
+  persist();saveHandoff(pending);pasteTarget=target;
   status('GPSアプリを呼び出しています。アプリの確認画面で「距離を送る」を選んでください。');
   location.href=req.uri;
  }catch(e){status(e.message,true);}
@@ -131,8 +156,8 @@ $('rows').addEventListener('change',event=>{
  }catch(e){status(e.message,true);render();}
 });
 $('add').addEventListener('click',()=>{try{state=R.appendRow(state);persist();render();}catch(e){status(e.message,true);}});
-$('reset').addEventListener('click',()=>{if(confirm('GPSテストの距離・住所・時刻を初期化しますか？')){state=R.fresh();pasteTarget='start';sessionStorage.removeItem(STATE_KEY);sessionStorage.removeItem(PENDING_KEY);render();status('テストを初期化しました。');}});
+$('reset').addEventListener('click',()=>{if(confirm('GPSテストの距離・住所・時刻を初期化しますか？')){state=R.fresh();pasteTarget='start';sessionStorage.removeItem(STATE_KEY);sessionStorage.removeItem(PENDING_KEY);clearHandoff();render();status('テストを初期化しました。');}});
 $('clipboard').addEventListener('click',()=>{$('pasted').focus();status('コピー結果を貼り付け、取得先の行を選択してください。');});
 $('readPaste').addEventListener('click',fromPaste);
-restore();render();readNativeReturn();
+readHandoff();restore();render();readNativeReturn();
 </script></body></html>
