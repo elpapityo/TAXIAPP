@@ -31,7 +31,7 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 @media(max-width:350px){.row{padding:6px}.columns{grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:4px}input{font-size:17px;padding:5px}button[data-gps]{font-size:13px}.infoRow{grid-template-columns:1fr}}
 </style></head><body><main>
 <header><h1>🚕 GPS距離・住所・時間 テスト</h1>
-<div class="hint">スタート→1→2→3…の順にGPSを押してください。各行のGPS取得時に距離・住所・時刻をまとめて表示します。<br><strong>例：1を20kmに修正→2は20km＋1から2までのGPS増加距離</strong>で計算します。</div></header>
+<div class="hint">スタート→1→2→3…の順にGPSを押してください。各行のGPS取得時に距離・住所・時刻をまとめて表示します。GPSかんたん試験v0.3.2ならアプリ側で二度押し不要です。<br><strong>例：1を20kmに修正→2は20km＋1から2までのGPS増加距離</strong>で計算します。</div></header>
 <div class="panel"><div id="rows" aria-label="GPS距離テスト表"></div><button class="add" id="add" type="button">＋ 次の測定行を追加</button>
 <p class="hint">左：入力・補正距離（空欄なら自動計算）／中央：GPS取得／右：計算後の距離。GPSアプリは累計値を返します。途中の行を補正した場合、それ以降の結果も計算し直します。</p>
 <div class="buttons"><button class="secondary" type="button" id="reset">テストを初期化</button><button class="secondary" type="button" id="clipboard">コピー結果を使う</button></div></div>
@@ -132,7 +132,7 @@ function requestNative(target){
   const pending={...req.pending,target};
   sessionStorage.setItem(PENDING_KEY,JSON.stringify(pending));
   persist();saveHandoff(pending);pasteTarget=target;
-  status('GPSアプリを呼び出しています。アプリの確認画面で「距離を送る」を選んでください。');
+  status('GPSアプリから距離を取得しています。ブラウザには自動で戻ります…');
   location.href=req.uri;
  }catch(e){status(e.message,true);}
 }
