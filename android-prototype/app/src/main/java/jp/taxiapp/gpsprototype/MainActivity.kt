@@ -19,6 +19,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
+import android.view.View
+import java.util.concurrent.atomic.AtomicBoolean
 import android.text.InputType
 import android.widget.EditText
 import android.widget.Button
@@ -42,173 +44,171 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val scroll = ScrollView(this)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 32, 24, 40)
+            setPadding(24, 22, 24, 32)
         }
-        fun label(text: String, size: Float, color: Int = Color.BLACK): TextView =
+        fun text(value: String, size: Float, color: Int = Color.BLACK): TextView =
             TextView(this).apply {
-                setText(text)
+                this.text = value
                 textSize = size
                 setTextColor(color)
-                setPadding(0, 6, 0, 14)
+                setPadding(4, 9, 4, 12)
             }
-        root.addView(label("TAXIAPP GPS 計測試験", 22f))
-        root.addView(label(
-            "業務用TAXIAPPとは完全に別の試験アプリです。日報・Google連携・本番の乗務データには触れません。",
-            15f, Color.rgb(128, 52, 15)
-        ))
-        stats = label("", 19f)
-        note = label("", 13f)
-        root.addView(stats)
-        root.addView(note)
-        fun button(text: String, click: () -> Unit) {
-            root.addView(Button(this).apply {
-                this.text = text
+        fun button(container: LinearLayout, title: String, click: () -> Unit) {
+            container.addView(Button(this).apply {
+                this.text = title
+                textSize = 16f
+                isAllCaps = false
                 setOnClickListener { click() }
                 layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
             })
         }
-        button("GPS測定開始（画面表示中に開始）") { startTracking() }
-        button("🚕 お客様乗車・実車計測開始") { command(GpsTrackingService.ACTION_REAL) }
-        button("✓ お客様降車・実車距離を確定") { command(GpsTrackingService.ACTION_EMPTY) }
-        button("GPS測定停止") { command(GpsTrackingService.ACTION_STOP) }
-        root.addView(label("車両トリップと実車距離を比較", 18f))
-        root.addView(label("降車したら、車両の『降車時トリップ − 乗車時トリップ』をkm単位で入力してください。", 14f))
+
+        root.addView(text("🚕 GPS距離テスト", 23f))
+        root.addView(text("ブラウザから距離を取得するためのGPS計測アプリ", 14f))
+        stats = text("GPS累計 0.000 km", 30f, Color.rgb(10, 84, 139))
+        root.addView(stats)
+        note = text("停止中", 17f)
+        root.addView(note)
+        button(root, "▶ GPS測定を開始") { startTracking() }
+        button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
+
+        button(root, "⚙ 詳細・実車計測・比較を開く") {
+            val details = detailsView
+            if (details != null) {
+                val opening = details.visibility != View.VISIBLE
+                details.visibility = if (opening) View.VISIBLE else View.GONE
+                showStats()
+            }
+        }
+        val details = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        detailsView = details
+        details.addView(text("実車・空車距離の測定", 17f))
+        button(details, "🚕 お客様が乗車（実車）") { command(GpsTrackingService.ACTION_REAL) }
+        button(details, "✓ お客様が降車（空車）") { command(GpsTrackingService.ACTION_EMPTY) }
+        extraStats = text("", 14f)
+        details.addView(extraStats)
+        details.addView(text("車両の実トリップとGPS距離を比較", 16f))
         vehicleDistance = EditText(this).apply {
-            hint = "今回の実車距離（例：3.4）"
+            hint = "車両の実車区間距離 km"
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
             setSingleLine(true)
             setText(checks.getString("actualKm", ""))
         }
-        root.addView(vehicleDistance)
-        button("今回の実車距離を比較") { compareRide() }
-        comparison = label(checks.getString("comparison", "まだ比較していません") ?: "", 16f)
-        root.addView(comparison)
-        button("計測結果をコピー") {
+        details.addView(vehicleDistance)
+        button(details, "実車距離を比較") { compareRide() }
+        comparison = text(checks.getString("comparison", "まだ比較していません") ?: "", 14f)
+        details.addView(comparison)
+        button(details, "計測結果をコピー") {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             clipboard.setPrimaryClip(ClipData.newPlainText("GPS計測結果", report()))
-            alert("計測結果をコピーしました。比較結果を送る際に貼り付けてください。")
+            alert("計測結果をコピーしました")
         }
-        button("試験用距離をゼロに戻す（停止後のみ）") {
+        button(details, "試験用のGPS距離をリセット") {
             if (GpsStore.load(this).running) {
                 alert("先にGPS測定を停止してください")
             } else {
                 AlertDialog.Builder(this)
-                    .setTitle("試験用データを消去")
-                    .setMessage("この試験アプリ内の距離だけをゼロにします。業務用TAXIAPPのデータは変更しません。")
-                    .setNegativeButton("やめる", null)
-                    .setPositiveButton("ゼロにする") { _, _ ->
+                    .setTitle("GPS試験データを初期化")
+                    .setMessage("この新しいGPS試験アプリだけの距離をゼロにします。旧GPSアプリや乗務日報は消しません。")
+                    .setNegativeButton("キャンセル", null)
+                    .setPositiveButton("初期化") { _, _ ->
                         GpsStore.clear(this)
                         checks.edit().clear().apply()
                         vehicleDistance.setText("")
                         comparison.text = "まだ比較していません"
                         showStats()
-                    }
-                    .show()
+                    }.show()
             }
         }
-        root.addView(label(
-            "車両トリップメーターと比較してください。停止区間・地下道・電池制御による欠測は補正せず、欠測回数を表示します。位置座標は永続保存しません。",
-            13f
-        ))
-        val scroll = ScrollView(this)
+        details.addView(text("※ GPS距離は参考値です。欠測や受信間隔で車両トリップと差が出ます。", 13f))
+        root.addView(details)
         scroll.addView(root)
         setContentView(scroll)
-        if (intent?.action == Intent.ACTION_VIEW) {
-            handler.post { offerBrowserDistance(intent) }
-        }
-
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 32)
-        }
+        showStats()
+        // Avoid notification-permission prompts during the one-tap browser request.
+        // Notification permission is requested only when starting tracking manually.
+        if (intent?.action == Intent.ACTION_VIEW) handler.post { offerBrowserDistance(intent) }
     }
 
-    // Explicit browser-to-app request and callback; no local HTTP server or
-    // permissions to the operational TAXIAPP data. No GPS coordinates shared.
+    private var detailsView: LinearLayout? = null
+    private var extraStats: TextView? = null
+
+    // The browser GPS button already represents explicit user intent.
+    // The bridge performs the native callback automatically, without a second tap.
     private fun offerBrowserDistance(request: Intent?) {
         val data = request?.data ?: return
-        if (data.scheme != "taxiappgps" || data.host != "measure") return
+        if (data.scheme != "taxiappgpsauto" || data.host != "measure") return
         val nonce = data.getQueryParameter("nonce") ?: ""
         val metric = data.getQueryParameter("metric") ?: ""
         if (!Regex("^[a-f0-9]{32}$").matches(nonce) ||
             metric !in setOf("tripKm", "realKm", "emptyKm", "lastRideKm")) {
-            alert("連携依頼が正しくありません。ブラウザ側のボタンからやり直してください。")
+            alert("GPS受信依頼が正しくありません。ブラウザのGPSボタンからやり直してください。")
             return
         }
-        val s = GpsStore.load(this)
-        if (GpsStore.updatedAt(this) <= 0) {
-            alert("GPS測定データがまだありません。GPSを開始してから取得してください。")
+        val state = GpsStore.load(this)
+        if (GpsStore.updatedAt(this) <= 0L) {
+            alert("GPS測定データがありません。最初に「GPS測定を開始」を押してください。")
             return
         }
-        if (metric == "lastRideKm" && s.lastRideKm == null) {
-            alert("直前の実車距離がありません。GPSアプリで乗車→降車を記録してください。")
+        if (metric == "lastRideKm" && state.lastRideKm == null) {
+            alert("直前の実車距離は未測定です。")
             return
         }
-        val age = GpsStore.lastGpsCallbackAt(this).let {
-            if (it <= 0L) null else (System.currentTimeMillis() - it).coerceAtLeast(0L)
+        val pressedAt = System.currentTimeMillis()
+        val gpsAge = GpsStore.lastGpsCallbackAt(this).let {
+            if (it <= 0L) null else (pressedAt - it).coerceAtLeast(0L)
         }
-        val selected = when (metric) {
-            "tripKm" -> s.tripKm
-            "realKm" -> s.realKm
-            "emptyKm" -> s.emptyKm
-            else -> s.lastRideKm ?: 0.0
-        }
-        val notices = mutableListOf<String>()
-        if (!s.running) notices.add("GPS測定は停止中です")
-        if (s.unresolvedGap) notices.add("未解決のGPS欠測があります")
-        if (age == null || age > 30000L) notices.add("GPSの最終受信から30秒以上経過しています")
-        val extra = if (notices.isEmpty()) "" else "\n\n注意： " + notices.joinToString("・")
-        AlertDialog.Builder(this)
-            .setTitle("距離をブラウザへ送る")
-            .setMessage(String.format(Locale.JAPAN,
-                "送信対象：%s\n距離：%.3f km\n\n送るのは距離・住所・取得時刻・計測状態です。座標はブラウザに渡さず、住所変換に端末の位置情報サービスを利用します。\n日報には保存されません。%s",
-                metric, selected, extra))
-            .setNegativeButton("戻る", null)
-            .setPositiveButton("距離を送る") { _, _ ->
-                // Reverse-geocode only on explicit user request. No raw coordinates
-                // leave the Android app and the result is not saved in duty records.
-                val pressedAt = System.currentTimeMillis()
-                Thread {
-                  val fix = freshLastLocation()
-                  val address = if (fix == null) "住所未取得（新しいGPS位置がありません）"
-                                else addressFromLocation(fix)
-                  val locationAt = fix?.time
-                  handler.post {
-                   runCatching {
-                    val reply = JSONObject()
-                        .put("format", "TAXIAPP_GPS_NATIVE_BRIDGE_V1")
-                        .put("nonce", nonce)
-                        .put("metric", metric)
-                        .put("capturedAt", pressedAt)
-                        .put("address", address)
-                        .put("locationAt", locationAt ?: JSONObject.NULL)
-                        .put("tripKm", s.tripKm)
-                        .put("realKm", s.realKm)
-                        .put("emptyKm", s.emptyKm)
-                        .put("lastRideKm", s.lastRideKm ?: JSONObject.NULL)
-                        .put("gapCount", s.gapCount)
-                        .put("unresolvedGap", s.unresolvedGap)
-                        .put("running", s.running)
-                        .put("gpsAgeMs", age ?: JSONObject.NULL)
-                        .put("accuracyMeters", s.lastAccuracyMeters ?: JSONObject.NULL)
-                        .put("rideCount", s.completedRides)
-                        .put("mode", s.mode.name)
-                    // Fixed allowlisted return page. Never accept caller-supplied
-                    // return URLs or secrets; fragment is not sent to web server.
-                    val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html" +
-                        "#gps-bridge=" + Uri.encode(reply.toString())
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
-                        .addCategory(Intent.CATEGORY_BROWSABLE))
-                   }.onFailure { alert("ブラウザへの受け渡しに失敗しました：" +
-                       (it.message ?: "不明なエラー")) }
-                  }
-                }.start()
+        note.text = "距離・住所・時刻をブラウザへ送っています…"
+        val sent = AtomicBoolean(false)
+        fun complete(address: String, locationAt: Long?) {
+            if (!sent.compareAndSet(false, true)) return
+            runCatching {
+                val reply = JSONObject()
+                    .put("format", "TAXIAPP_GPS_NATIVE_BRIDGE_V1")
+                    .put("nonce", nonce)
+                    .put("metric", metric)
+                    .put("capturedAt", pressedAt)
+                    .put("address", address.take(120))
+                    .put("locationAt", locationAt ?: JSONObject.NULL)
+                    .put("tripKm", state.tripKm)
+                    .put("realKm", state.realKm)
+                    .put("emptyKm", state.emptyKm)
+                    .put("lastRideKm", state.lastRideKm ?: JSONObject.NULL)
+                    .put("gapCount", state.gapCount)
+                    .put("unresolvedGap", state.unresolvedGap)
+                    .put("running", state.running)
+                    .put("gpsAgeMs", gpsAge ?: JSONObject.NULL)
+                    .put("accuracyMeters", state.lastAccuracyMeters ?: JSONObject.NULL)
+                    .put("rideCount", state.completedRides)
+                    .put("mode", state.mode.name)
+                // Callback is fixed to our separate, non-business test page.
+                // Never accept a caller-supplied URL. Coordinates are not sent.
+                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html" +
+                    "#gps-bridge=" + Uri.encode(reply.toString())
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
+                    .addCategory(Intent.CATEGORY_BROWSABLE))
+                finish()
+            }.onFailure {
+                alert("GPS値をブラウザへ返せませんでした：" + (it.message ?: "不明なエラー"))
             }
-            .show()
+        }
+        // Do not block returning to the browser if reverse geocoding hangs.
+        handler.postDelayed({ complete("住所未取得（取得に時間がかかりました）", null) }, 5000L)
+        Thread {
+            val fix = freshLastLocation()
+            val addr = if (fix == null) "住所未取得（新しいGPS位置がありません）"
+                       else addressFromLocation(fix)
+            handler.post { complete(addr, fix?.time) }
+        }.start()
     }
 
     private fun freshLastLocation(): Location? {
@@ -243,6 +243,11 @@ class MainActivity : Activity() {
     }
 
     private fun startTracking() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 32)
+            // GPS foreground service can still run without notification permission.
+        }
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION
@@ -329,29 +334,28 @@ class MainActivity : Activity() {
     private fun showStats() {
         if (!::stats.isInitialized) return
         val state = GpsStore.load(this)
-        val currentRide = if (state.mode == TripMode.REAL && state.rideStartRealKm != null)
-            (state.realKm - (state.rideStartRealKm ?: state.realKm)).coerceAtLeast(0.0) else 0.0
-        stats.text = "GPS累計： " + fmtKm(state.tripKm) + "\n" +
-            "実車累計： " + fmtKm(state.realKm) + "\n" +
-            "空車累計： " + fmtKm(state.emptyKm) + "\n" +
-            "計測中の実車： " + fmtKm(currentRide) + "\n" +
-            "直前の実車： " + (state.lastRideKm?.let { fmtKm(it) } ?: "未計測") + "\n" +
-            "降車完了： " + state.completedRides + "回\n" +
-            "GPS欠測： " + state.gapCount + "回"
-        val gpsAt = GpsStore.lastGpsCallbackAt(this)
-        val age = if (gpsAt > 0L) System.currentTimeMillis() - gpsAt else Long.MAX_VALUE
-        val stateText = when {
-            !state.running -> "停止中"
-            age == Long.MAX_VALUE -> "GPS測位待ち"
-            age > 30000L -> "GPS受信が30秒以上停止（要照合）"
-            else -> "GPS受信 " + (age / 1000) + "秒前"
+        val receivedAt = GpsStore.lastGpsCallbackAt(this)
+        val ageSeconds = if (receivedAt > 0L)
+            (System.currentTimeMillis() - receivedAt).coerceAtLeast(0L) / 1000
+            else null
+        stats.text = "GPS累計\n" + fmtKm(state.tripKm)
+        val status = when {
+            !state.running -> "■ 停止中"
+            ageSeconds == null -> "● 計測中 ／ GPSの受信待ち"
+            ageSeconds > 30L -> "⚠ 計測中 ／ GPSの受信が " + ageSeconds + " 秒前"
+            else -> "● 計測中 ／ GPS受信 " + ageSeconds + " 秒前"
         }
-        note.text = "状態： " + (if (!state.running) "停止中" else if (state.mode == TripMode.REAL) "実車" else "空車") +
-            "\n" + stateText + "／精度：" +
-            (state.lastAccuracyMeters?.let { it.toInt().toString() + "m" } ?: "未測位") +
-            (if (state.unresolvedGap) "\n未計測区間あり（GPS距離は参考値）" else "") +
-            "\n" + state.status
-        if (checks.getInt("rideCount", -1) != state.completedRides) {
+        val warning = if (state.unresolvedGap) "\n⚠ GPS欠測あり。車両トリップと照合" else ""
+        note.text = status + warning
+        extraStats?.text = "実車累計：" + fmtKm(state.realKm) +
+            "\n空車累計：" + fmtKm(state.emptyKm) +
+            "\n直前の実車：" + (state.lastRideKm?.let { fmtKm(it) } ?: "未測定") +
+            "\n完了した実車：" + state.completedRides + "回" +
+            "\nGPS欠測：" + state.gapCount + "回" +
+            "\n推定精度：" + (state.lastAccuracyMeters?.let { String.format(Locale.JAPAN, "%.0f m", it) } ?: "未測位") +
+            "\n計測状態：" + state.status
+        if (::comparison.isInitialized &&
+            checks.getInt("rideCount", -1) != state.completedRides) {
             comparison.text = "今回の実車距離は未比較です"
         }
     }
