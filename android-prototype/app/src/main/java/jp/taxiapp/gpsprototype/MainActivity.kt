@@ -243,11 +243,8 @@ class MainActivity : Activity() {
     }
 
     private fun startTracking() {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 32)
-            // GPS foreground service can still run without notification permission.
-        }
+        // A location foreground service works without prompting for optional
+        // Android 13 notification permission; request only location if needed.
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION
