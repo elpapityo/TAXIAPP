@@ -161,5 +161,8 @@ $('add').addEventListener('click',()=>{try{state=R.appendRow(state);persist();re
 $('reset').addEventListener('click',()=>{if(confirm('GPSテストの距離・住所・時刻を初期化しますか？')){state=R.fresh();pasteTarget='start';sessionStorage.removeItem(STATE_KEY);sessionStorage.removeItem(PENDING_KEY);clearHandoff();render();status('テストを初期化しました。');}});
 $('clipboard').addEventListener('click',()=>{$('pasted').focus();status('コピー結果を貼り付け、取得先の行を選択してください。');});
 $('readPaste').addEventListener('click',fromPaste);
+// Chrome may restore the same tab and change only the URL fragment.
+window.addEventListener('hashchange',readNativeReturn);
+window.addEventListener('pageshow',()=>{if(location.hash.startsWith(B.hashPrefix))readNativeReturn();});
 readHandoff();restore();render();readNativeReturn();
 </script></body></html>
