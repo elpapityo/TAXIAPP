@@ -16,6 +16,8 @@ const mockFetch=(overrides={},status=200)=>async(url,opts)=>{
 async function main(){
  const html=fs.readFileSync('index.html','utf8');
  assert.match(html,/newRecord\.distanceMode='trip'/);
+ assert.match(html,/ensureStart\(localStorage,departingId,data\.tripKm\)/);
+ assert.match(html,/if\(!base\)throw Error\('出庫時のGPS基準が未記録です/);
  assert.match(html,/出庫時の車両トリップ（km）/);
  assert.match(html,/入庫時の車両トリップ（km）/);
  assert.match(html,/出庫時走行距離（旧記録・km）/);
