@@ -2062,10 +2062,13 @@ function handleAction(action,id){
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
    }
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
+  const nativeGpsLinked=Boolean(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage));
   const gpsOptIn=model.prefs.gpsTripAtStart!=='off';
-  save();if(gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
+  save();
+  // When native GPS is paired, don't start the older browser GPS tracker in parallel.
+  if(!nativeGpsLinked&&gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
   else render();
-  toast(gpsOptIn?'出庫しました。GPS試験計測を開始します。':'車両トリップを保存し、乗務を開始しました。');return;
+  toast(nativeGpsLinked?'出庫しました。GPSアプリの出庫基準を取得しています。':gpsOptIn?'出庫しました。ブラウザGPS試験計測を開始します。':'車両トリップを保存し、乗務を開始しました。');return;
  }
  if(action==='showRecordDetails'){
   const details=[...appEl.querySelectorAll('[data-record-detail]')].find(el=>el.dataset.recordDetail===id);
