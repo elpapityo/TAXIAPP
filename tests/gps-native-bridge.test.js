@@ -17,7 +17,7 @@ async function main(){
  const html=fs.readFileSync('index.html','utf8');
  assert.match(html,/newRecord\.distanceMode='trip'/);
  assert.match(html,/if\(!nativeGpsLinked&&gpsOptIn&&gpsTripUI\)gpsTripUI\.start\(newRecord\)/);
- assert.match(html,/ensureStart\(localStorage,departingId,data\.tripKm\)/);
+ assert.match(html,/ensureStart\(localStorage,departingId,data\.tripKm,odometer\)/);
  assert.match(html,/if\(!base\)throw Error\('出庫時のGPS基準が未記録です/);
  assert.match(html,/出庫時の車両トリップ（km）/);
  assert.match(html,/入庫時の車両トリップ（km）/);
@@ -29,6 +29,10 @@ async function main(){
  const day2=B.ensureStart(storage,'duty-2',130);
  assert.equal(B.calculated(130,day2),0);
  assert.equal(B.calculated(132,B.baseline(storage,'duty-2')),2);
+ const day3=B.ensureStart(storage,'duty-3',200,14.6);
+ assert.equal(B.calculated(200,day3),14.6);
+ assert.equal(B.calculated(206.4,day3),21);
+ assert.equal(B.ensureStart(storage,'duty-3',220,99).value,14.6);
  assert.equal(B.ensureStart(storage,'duty-1',130).gps,112.250);
  assert.equal(B.calculated(10,null),10);
  assert.equal(B.calculated(15,null),15);
