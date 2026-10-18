@@ -32,9 +32,8 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 @media(max-width:350px){.row{padding:6px}.columns{grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:4px}input{font-size:17px;padding:5px}button[data-gps]{font-size:13px}.infoRow{grid-template-columns:1fr}}
 </style></head><body><main>
 <header><h1>🚕 GPS距離・住所・時間 テスト</h1>
-<div id="openAppNotice" class="notice"><strong>Chromeからの直接測定はタブが増えるため使いません。</strong>
-<a href="taxiappgpsv036://web" style="display:block;background:#176d82;color:#fff;text-align:center;text-decoration:none;border:1px solid #addfff;border-radius:9px;padding:12px;font-weight:bold;margin-top:8px;">GPSアプリ内でテスト画面を開く</a></div>
-<div class="hint">スタート→1→2→3…の順にGPSを押してください。各行のGPS取得時に距離・住所・時刻をまとめて表示します。GPS距離計修正版v0.3.6のアプリ内Webなら、GPSを押してもChromeのタブは増えません。<br><strong>例：1を20kmに修正→2は20km＋1から2までのGPS増加距離</strong>で計算します。</div></header>
+<div id="openAppNotice" class="notice"><strong>ChromeからGPSボタンで直接取得できます。</strong> GPS測定アプリが一時的に開いてChromeに結果を返します。Androidの動作によってはChromeの別タブに戻る場合があります。</div>
+<div class="hint">スタート→1→2→3…の順にGPSを押してください。各行のGPS取得時に距離・住所・時刻をまとめて表示します。ChromeではGPS測定アプリが距離を取得して結果を返します。アプリ内Webでは同じ画面へ反映します。<br><strong>例：1を20kmに修正→2は20km＋1から2までのGPS増加距離</strong>で計算します。</div></header>
 <div class="panel"><div id="rows" aria-label="GPS距離テスト表"></div><button class="add" id="add" type="button">＋ 次の測定行を追加</button>
 <p class="hint">左：入力・補正距離（空欄なら自動計算）／中央：GPS取得／右：計算後の距離。GPSアプリは累計値を返します。途中の行を補正した場合、それ以降の結果も計算し直します。</p>
 <div class="buttons"><button class="secondary" type="button" id="reset">テストを初期化</button><button class="secondary" type="button" id="clipboard">コピー結果を使う</button></div></div>
@@ -130,11 +129,6 @@ function readNativeReturn(){
 const embedded=new URLSearchParams(location.search).get('embedded')==='1';
 if(embedded)document.getElementById('openAppNotice').hidden=true;
 function requestNative(target){
- if(!embedded){
-  status('GPSアプリ内のWeb画面に切り替えます。開いた後にGPSを押してください。');
-  location.href='taxiappgpsv036://web';
-  return;
- }
  if(!window.crypto?.getRandomValues){status('安全な取得番号を作成できません。コピー取得をご利用ください',true);return;}
  const nonce=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
  try{
