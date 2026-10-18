@@ -80,7 +80,7 @@ class MainActivity : Activity() {
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
         button(root, "🌐 GPSテストWebを開く") {
             startActivity(Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://elpapityo.github.io/TAXIAPP/gps-import-test.html"))
+                Uri.parse("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=034"))
                 .addCategory(Intent.CATEGORY_BROWSABLE))
         }
         button(root, "✕ アプリを終了（GPSも停止）") { exitAppCompletely() }
@@ -240,7 +240,7 @@ class MainActivity : Activity() {
                     .put("mode", state.mode.name)
                 // Callback is fixed to our separate, non-business test page.
                 // Never accept a caller-supplied URL. Coordinates are not sent.
-                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html" +
+                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=034" +
                     "#gps-bridge=" + Uri.encode(reply.toString())
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
                     .addCategory(Intent.CATEGORY_BROWSABLE))
