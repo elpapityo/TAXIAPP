@@ -51,16 +51,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/TAXIAPP-GPS-distance-test-v0.2.0.apk"
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-distance-test-v0.3.0.apk"
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          TAG="gps-distance-test-v0.2.0"
+          TAG="gps-distance-test-v0.3.0"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$APK" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "TAXIAPP GPS距離測定専用テスト v0.2.0" \
-              --notes "日報本体とは完全に独立したAndroid GPS距離測定テスト用アプリです。GPS累計・実車・空車・車両トリップとの誤差・欠測を確認します。検証用APKのため精度は保証しません。業務記録には現行TAXIAPPと車両トリップを使用してください。" \
+              --title "TAXIAPP GPS距離測定・ブラウザ受渡しテスト v0.3.0" \
+              --notes "日報本体とは独立したAndroid GPS試験版です。GPS累計・実車・空車の計測と、試験用Webページへの距離受け渡しに対応します。業務データは変更しません。検証用APKのため精度は保証しません。業務記録には現行TAXIAPPと車両トリップを使用してください。" \
               --prerelease
           fi
