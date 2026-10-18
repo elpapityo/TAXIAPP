@@ -120,3 +120,11 @@ Galaxy Z Fold6 で v0.3.0 のインストールがブロックされ、旧版が
 - Chromeの既存試験データとアプリ内WebViewの試験データは同一保存領域ではないため自動移行しない。元のChromeタブの内容は維持。
 - GPSサービス停止はアプリ内「終了」、Android戻る、最近使ったアプリからタスク削除に限る。Web画面からGPS基本画面へ戻っても停止しない。
 - 現在はGitHub Actionsのビルド・静的整合性確認まで。Android実機での画面復帰とGPS値反映を検証すること。
+
+## v0.3.6：WebViewがERR_CACHE_MISSで開けない不具合への対応
+- **原因確認済み：AndroidManifestに `android.permission.INTERNET` がなかった**。端末内のWebViewはHTTPSへアクセスできず、エラーページが表示される状態だった。
+- `INTERNET` を追加し、APKに実際に含まれていることをAndroid AAPTで自動検証。
+- Web画面に「↻ 再読み込み」、読込エラー時の原因表示を追加。
+- `taxiappgpsv036` と `?v=036&embedded=1` をWebと合わせ、v0.3.5が誤って呼び出されないよう別アプリIDにした。
+- GPS距離の測定処理、実車・空車UI削除、アプリ終了時のGPS停止仕様、営業日報のデータは変更しない。
+- 実機でのWeb画面の読み込みと1画面での複数回GPS取得は未検証。

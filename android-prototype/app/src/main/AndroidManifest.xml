@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- WebView loads only our HTTPS GPS test page. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -7,7 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="true" />
     <application
-        android:label="TAXIAPP GPS距離計"
+        android:label="TAXIAPP GPS距離計 修正版"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
         android:allowBackup="false">
@@ -23,7 +25,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="taxiappgpsv035" android:host="measure" />
+                <data android:scheme="taxiappgpsv036" android:host="measure" />
             </intent-filter>
         </activity>
         <!-- Trusted fixed Web screen; Chrome can launch it once, without
@@ -35,7 +37,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="taxiappgpsv035" android:host="web" />
+                <data android:scheme="taxiappgpsv036" android:host="web" />
             </intent-filter>
         </activity>
         <service
