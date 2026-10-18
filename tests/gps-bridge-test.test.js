@@ -20,7 +20,7 @@ for(const m of metricList){
  assert.ok(validated.warnings.length>0);
  assert.equal(B.decodeFragment(B.hashPrefix+encodeURIComponent(JSON.stringify(reply))).nonce,nonce);
  assert.throws(()=>B.validateResponse({...reply,nonce:'0'.repeat(32)},req.pending,now+3500),/別の取得操作/);
- assert.throws(()=>B.validateResponse(reply,{...req.pending,metric:'emptyKm'},now+3500),/別の取得操作/);
+ assert.throws(()=>B.validateResponse(reply,{...req.pending,metric:m==='emptyKm'?'tripKm':'emptyKm'},now+3500),/別の取得操作/);
  assert.throws(()=>B.validateResponse(reply,req.pending,now+121000),/有効時間/);
  assert.throws(()=>B.validateResponse({...reply,tripKm:NaN},req.pending,now+3500),/GPS距離/);
  assert.throws(()=>B.validateResponse({...reply,tripKm:-5},req.pending,now+3500),/GPS距離/);
