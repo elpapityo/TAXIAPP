@@ -26,6 +26,10 @@
                 <data android:scheme="taxiappgpsv035" android:host="measure" />
             </intent-filter>
         </activity>
+        <!-- One in-app Web test screen, inaccessible directly from external apps. -->
+        <activity
+            android:name=".GpsTestWebActivity"
+            android:exported="false" />
         <service
             android:name=".GpsTrackingService"
             android:exported="false"
