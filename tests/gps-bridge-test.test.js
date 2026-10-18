@@ -56,6 +56,8 @@ assert.match(html,/location\.href=req\.uri/);
 assert.match(html,/history\.replaceState/);
 assert.match(html,/sessionStorage/);
 assert.match(html,/位置座標/); // no coordinates should be handled in the test UI
-assert.doesNotMatch(html,/(?:indexedDB|localStorage|fetch\(|firebase|collection\(|syncPut)/i);
+assert.match(html,/HANDOFF_MS=120000/);
+assert.match(html,/localStorage\.removeItem\(HANDOFF_KEY\)/);
+assert.doesNotMatch(html,/(?:indexedDB|fetch\(|firebase|collection\(|syncPut)/i);
 for(const [,code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new Function(code);
 console.log('GPS browser bridge tests passed: four metrics, nonce, freshness, invalid values, clipboard fallback and isolated test UI.');
