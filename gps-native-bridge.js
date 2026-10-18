@@ -11,6 +11,15 @@
  function readKey(storage){try{return storage.getItem(KEY)||''}catch{return ''}}
  function correctionKey(shiftId){return CORRECTION_PREFIX+String(shiftId)}
  function baseline(storage,shiftId){try{const x=JSON.parse(storage.getItem(correctionKey(shiftId))||'null');return x&&Number.isFinite(x.gps)&&Number.isFinite(x.value)&&x.value>=0?x:null}catch{return null}}
+ function ensureStart(storage,shiftId,gpsKm,startValue=0){
+  const prior=baseline(storage,shiftId);
+  if(prior)return prior;
+  const initial=Number(startValue);
+  if(!Number.isFinite(gpsKm)||gpsKm<0||startValue===''||!Number.isFinite(initial)||initial<0)throw Error('GPS乗務開始基準が不正です');
+  const b={gps:gpsKm,value:initial,at:Date.now(),automatic:true};
+  storage.setItem(correctionKey(shiftId),JSON.stringify(b));
+  return b;
+ }
  function recordManual(storage,shiftId,gpsKm,value){
   const n=Number(value);
   if(!Number.isFinite(gpsKm)||gpsKm<0||value===''||!Number.isFinite(n)||n<0)throw Error('距離基準が不正です');
@@ -30,11 +39,11 @@
    if(!resp.ok)throw Error('GPS通信エラー HTTP '+resp.status);
    const data=await resp.json();
    if(data.format!=='TAXIAPP_GPS_LOOPBACK_V1'||!Number.isFinite(data.tripKm)||data.tripKm<0)throw Error('GPS応答が不正です');
-   if(!data.running)throw Error('GPS計測が停止しています');
-   if(data.gpsAgeMs===null||data.gpsAgeMs>30000)throw Error('GPS受信が古いか取得できていません');
-   if(data.unresolvedGap)throw Error('GPS欠測が未解決です。車両トリップを確認してください');
+   if(data.running!==true)throw Error('GPS計測が停止しています');
+   if(!Number.isFinite(data.gpsAgeMs)||data.gpsAgeMs<0||data.gpsAgeMs>30000)throw Error('GPS受信が古いか取得できていません');
+   if(data.unresolvedGap!==false)throw Error('GPS欠測が未解決です。車両トリップを確認してください');
    return data;
   }finally{clearTimeout(timeout)}
  }
- return {read,readKey,baseline,recordManual,calculated,correctionKey};
+ return {read,readKey,baseline,ensureStart,recordManual,calculated,correctionKey};
 });

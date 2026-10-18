@@ -55,6 +55,8 @@ function factory(deps){
  // The value is always the cumulative vehicle-trip estimate, not the route
  // section length. Auto-filled values can advance, manual values never do.
  function fillDistance(shift,record,field,source='event'){
+  // A linked native GPS device is the sole source of automatic distance values.
+  try{if(root.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage))return false;}catch{}
   if(!trusted(shift)||!record||record.editId||!distanceKeys.has(field))return false;
   const current=String(record.raw?.[field]??'').trim();
   const prior=record.meta?.gpsFilledFields?.[field];
@@ -76,6 +78,7 @@ function factory(deps){
   return fillDistance(shift,record,field,'location');
  }
  function fillWaitDistance(shift,waiting,source='wait'){
+  try{if(root.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage))return false;}catch{}
   if(!trusted(shift)||!waiting)return false;
   const current=String(waiting.odometer??'').trim();
   const prior=waiting.gpsAutoOdometer;

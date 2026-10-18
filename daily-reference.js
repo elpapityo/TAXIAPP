@@ -28,7 +28,16 @@
    const end=finite(shift.endingOdo);
    return end!==null&&end>=start
     ?{km:rounded(end-start),source:'入庫時の実測トリップ'}
-    :{km:null,source:'入庫トリップ未記録'};
+    :{km:null,source:end!==null&&end<start?'車両トリップが出庫時より小さいため、途中リセットまたは表示一周の確認が必要です':'入庫トリップ未記録'};
+  }
+  // Native GPS snapshots are read-only references. Do not treat stale data as current.
+  const native=shift?.externalGpsSnapshot;
+  if(native){
+   const measured=finite(native.tripKm),at=Date.parse(native.at||'');
+   const age=now.getTime()-at;
+   if(measured!==null&&measured>=start&&Number.isFinite(at)&&age>=0&&age<60000)
+    return {km:rounded(measured-start),source:'Android GPSの取得距離（参考値）'};
+   return {km:null,source:'Android GPSの更新待ち：前回の距離を現在値として使用しません'};
   }
   const gps=shift?.gpsTrip;
   if(gps?.enabled){

@@ -57,7 +57,7 @@ assert.match(html,/location\.href=req\.uri/);
 assert.match(html,/history\.replaceState/);
 assert.match(html,/addEventListener\('hashchange',readNativeReturn\)/);
 assert.match(html,/taxiappgpsv036:\/\/web/);
-assert.match(html,/if\(!embedded\)/);
+assert.match(html,/if\(embedded\)document\.getElementById\('openAppNotice'\)\.hidden=true/);
 assert.match(html,/gps-bridge-test\.js\?v=036/);
 assert.match(html,/sessionStorage/);
 assert.match(html,/位置座標/); // no coordinates should be handled in the test UI
