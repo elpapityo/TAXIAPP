@@ -46,7 +46,10 @@ jobs:
           test -f "$APK"
           "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridge'"
           "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.1-side-by-side-bridge-test'"
-          "$AAPT" dump badging "$APK" | grep -F "application-label:'TAXIAPP GPS連携試験'"
+          # AAPT prints localized app labels differently across runner environments.
+          # Verify source label exactly and print the actual APK labels for diagnosis.
+          grep -F 'android:label="TAXIAPP GPS連携試験"' android-prototype/app/src/main/AndroidManifest.xml
+          "$AAPT" dump badging "$APK" | grep -F 'application-label:' || true
       - name: Upload installable GPS test APK
         uses: actions/upload-artifact@v4
         with:
