@@ -65,6 +65,17 @@ async function main(){
  ]){
   await assert.rejects(B.read(storage,mockFetch(value)),undefined,name);
  }
+ // Manual car-trip reconciliation is permitted only after a fresh native fix.
+ const gap={unresolvedGap:true,gapCount:3,gpsAgeMs:1000,tripKm:35};
+ await assert.rejects(B.read(storage,mockFetch(gap)),/欠測/);
+ const freshForManual=await B.read(storage,mockFetch(gap),{allowUnresolvedGap:true,shiftId:'shift-gap'});
+ assert.equal(freshForManual.tripKm,35);
+ B.recordManual(storage,'shift-gap',freshForManual.tripKm,'260.4');
+ B.acknowledgeGap(storage,'shift-gap',freshForManual.gapCount);
+ assert.equal((await B.read(storage,mockFetch(gap),{shiftId:'shift-gap'})).tripKm,35);
+ await assert.rejects(B.read(storage,mockFetch({...gap,gapCount:4}),{shiftId:'shift-gap'}),/欠測/);
+ await assert.rejects(B.read(storage,mockFetch({...gap,gpsAgeMs:55000}),{allowUnresolvedGap:true,shiftId:'shift-gap'}),/受信/);
+ assert.equal(B.gapAcknowledged(storage,'another-shift',3),false);
  await assert.rejects(B.read(storage,mockFetch({},403)),/HTTP 403/);
  const empty={getItem:()=>null};
  await assert.rejects(B.read(empty,mockFetch()),/未登録/);
