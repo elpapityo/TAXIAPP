@@ -26,10 +26,18 @@
                 <data android:scheme="taxiappgpsv035" android:host="measure" />
             </intent-filter>
         </activity>
-        <!-- One in-app Web test screen, inaccessible directly from external apps. -->
+        <!-- Trusted fixed Web screen; Chrome can launch it once, without
+             opening any new Chrome tab for subsequent GPS captures. -->
         <activity
             android:name=".GpsTestWebActivity"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="taxiappgpsv035" android:host="web" />
+            </intent-filter>
+        </activity>
         <service
             android:name=".GpsTrackingService"
             android:exported="false"
