@@ -76,7 +76,7 @@ class GpsTestWebActivity : Activity() {
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(root)
         if (savedInstanceState == null) {
-            web.loadUrl("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=035")
+            web.loadUrl("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=035&embedded=1")
         } else {
             web.restoreState(savedInstanceState)
         }
