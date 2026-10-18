@@ -16,7 +16,7 @@
  function selectKm(data,metric){return km(data[metricOk(metric)],metric==='lastRideKm');}
  function createRequest(metric,nonce,now=Date.now()){
   metricOk(metric);if(!/^[a-f0-9]{32}$/.test(nonce))throw Error('取得番号が不正です');
-  return {pending:{nonce,metric,issuedAt:now},uri:'taxiappgpsv034://measure?metric='+metric+'&nonce='+nonce};
+  return {pending:{nonce,metric,issuedAt:now},uri:'taxiappgpsv035://measure?metric='+metric+'&nonce='+nonce};
  }
  function qualityWarnings(data){
   const msgs=[];
