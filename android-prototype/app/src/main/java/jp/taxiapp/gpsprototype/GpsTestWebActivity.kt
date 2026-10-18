@@ -19,7 +19,6 @@ import android.webkit.WebViewClient
 import android.webkit.WebResourceError
 import android.view.View
 import android.widget.TextView
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
 import org.json.JSONObject
@@ -47,21 +46,6 @@ class GpsTestWebActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val toolbar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        toolbar.addView(Button(this).apply {
-            text = "← GPSへ戻る"
-            isAllCaps = false
-            setOnClickListener { finish() }
-        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        toolbar.addView(Button(this).apply {
-            text = "↻ 再読み込み"
-            isAllCaps = false
-            setOnClickListener {
-                loadError.visibility = View.GONE
-                web.reload()
-            }
-        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        root.addView(toolbar)
         loadError = TextView(this).apply {
             visibility = View.GONE
             textSize = 15f
