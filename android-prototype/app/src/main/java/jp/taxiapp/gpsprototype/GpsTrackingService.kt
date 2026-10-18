@@ -43,6 +43,30 @@ class GpsTrackingService : Service() {
     private lateinit var manager: LocationManager
     private lateinit var engine: TripAccumulator
     private var listening = false
+    // GPS can stop delivering callbacks while the foreground service remains alive.
+    // Re-register the provider after a prolonged silence, without inventing distance.
+    private var lastCallbackElapsedMs = 0L
+    private var lastRecoveryElapsedMs = 0L
+    private val gpsWatchdog = object : Runnable {
+        override fun run() {
+            if (!engine.snapshot().running) return
+            val now = SystemClock.elapsedRealtime()
+            if (listening && lastCallbackElapsedMs > 0L &&
+                now - lastCallbackElapsedMs > 45000L &&
+                now - lastRecoveryElapsedMs > 45000L) {
+                lastRecoveryElapsedMs = now
+                engine.interrupted("GPS受信が45秒以上停止したため再接続しています")
+                GpsStore.save(this@GpsTrackingService, engine.snapshot())
+                stopListening()
+                startListening()
+            } else if (!listening &&
+                now - lastRecoveryElapsedMs > 45000L) {
+                lastRecoveryElapsedMs = now
+                startListening()
+            }
+            mainHandler.postDelayed(this, 15000L)
+        }
+    }
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingAlight = false
     private var alightRequestedAtMs = 0L
@@ -60,6 +84,7 @@ class GpsTrackingService : Service() {
             elapsedRealtimeMs = location.elapsedRealtimeNanos / 1000000L,
             speedMetersPerSecond = if (location.hasSpeed()) location.speed.toDouble() else null
         )
+        lastCallbackElapsedMs = SystemClock.elapsedRealtime()
         GpsStore.noteGpsCallback(this)
         val result = engine.ingest(sample, SystemClock.elapsedRealtime())
         GpsStore.save(this, engine.snapshot())
@@ -170,6 +195,7 @@ class GpsTrackingService : Service() {
         when (intent?.action) {
             ACTION_STOP -> {
                 clearAlightRequests()
+                mainHandler.removeCallbacks(gpsWatchdog)
                 stopListening()
                 engine.stop()
                 GpsStore.save(this, engine.snapshot())
@@ -208,7 +234,11 @@ class GpsTrackingService : Service() {
                     } else {
                         startForeground(NOTIFICATION_ID, notification())
                     }
+                    lastCallbackElapsedMs = SystemClock.elapsedRealtime()
+                    lastRecoveryElapsedMs = 0L
                     startListening()
+                    mainHandler.removeCallbacks(gpsWatchdog)
+                    mainHandler.postDelayed(gpsWatchdog, 15000L)
                     loopback.start()
                 }
             }
@@ -286,6 +316,7 @@ class GpsTrackingService : Service() {
     // Unlike Home/screen-off/app switching, task removal must end GPS tracking.
     override fun onTaskRemoved(rootIntent: Intent?) {
         clearAlightRequests()
+        mainHandler.removeCallbacks(gpsWatchdog)
         stopListening()
         engine.stop()
         GpsStore.save(this, engine.snapshot())
@@ -295,6 +326,7 @@ class GpsTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        mainHandler.removeCallbacks(gpsWatchdog)
         clearAlightRequests()
         stopListening()
         // If killed without ACTION_STOP, mark an incomplete trip for inspection.
