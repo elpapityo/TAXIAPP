@@ -62,3 +62,14 @@ Android試験版GPSアプリに蓄積された「GPS累計距離」を、ブラ�
 - GPSアプリの「テストWebを開く」で試験ページへ移動。ホーム／画面OFF／他アプリへの切り替えは継続、アプリ内「✕終了」／Android戻る／履歴からのタスク削除はGPSを停止。
 - 自動ブラウザ復帰の一瞬のアプリ起動ではGPSを停止しない。v0.3.2とは別アプリで測定データを共有しない。
 - Web試験ページは日報に保存しない。
+
+## 修正 v0.3.4：ボタンを押すとアプリが開くだけでWebへ戻らない問題
+
+原因はAndroid受信処理で `taxiappgpsauto` をチェックしている一方、Web `taxiappgpsexit` ・Android Manifest `taxiappgpsexit` となり、受信処理が何もせずreturnしていたため。
+対応:
+- Web・Android Manifest・Androidの受信ハンドラはすべて `taxiappgpsv034://measure` に統一。
+- Android側のハンドラとManifestの整合性をビルド時検査。Web側も同一のURI文字列でNode回帰テスト。
+- 旧APKが間違って起動しないよう新アプリIDを使用し、既存GPS試験値は旧アプリに残す。
+- 旧HTMLやスクリプトのキャッシュを使わないようWeb呼出し先とJSの読み込みに `?v=034` を付ける。
+- GPS測定の開始前にはアプリで「GPS測定を開始」を押す。GPS未計測を偽の距離で代替しない。
+- 実際のAndroidブラウザ往復・OSによるページ選択はGalaxy Z Fold6実機確認が必要。
