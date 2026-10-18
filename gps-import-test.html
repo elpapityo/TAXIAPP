@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAXIAPP GPSアプリ距離連携テスト</title>
+<style>
+:root{color-scheme:dark;font:16px/1.55 system-ui,"Noto Sans JP",sans-serif;background:#081422;color:#e7f5ff}
+*{box-sizing:border-box}body{margin:0;padding:12px 10px 32px}main{max-width:780px;margin:0 auto}
+h1{font-size:21px;margin:5px 0 6px}h2{font-size:17px;margin:0 0 10px}
+small,.muted{color:#b3c7d8}a{color:#a3dfff}.top{border:1px solid #567f9b;background:#132a43;padding:12px;border-radius:14px;margin-bottom:11px}
+.panel{border:1px solid #56718d;border-radius:13px;background:#142b43;padding:13px;margin-bottom:12px}
+.info{padding:9px 10px;border-radius:9px;background:#1d3b55;font-size:13px}
+.warn{border-left:4px solid #ffca6e;background:#453826;padding:9px 11px;border-radius:7px;margin:9px 0}
+.good{border-left:4px solid #6ad7a5;background:#1a4038;padding:9px 11px;border-radius:7px;margin:9px 0}
+button{font:inherit;border:1px solid #9ccfe9;background:#177bc1;color:#fff;border-radius:11px;min-height:48px;padding:9px 14px;font-weight:800;cursor:pointer}
+button.secondary{background:#24465e}button:active{filter:brightness(1.25)}
+fieldset{border:0;padding:0;margin:0}label{display:block;font-size:14px;font-weight:700}
+input,textarea{width:100%;border:1px solid #7795aa;color:#fff;background:#071e32;border-radius:9px;padding:11px;font:inherit}
+input[readonly]{background:#21354a;color:#c7f2ff;font-size:23px;font-weight:800;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kmrow{border:1px solid #4c7594;padding:10px;border-radius:10px;margin:10px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.kmrow .actions{display:grid;gap:5px}.kmrow button{min-height:44px;font-size:14px;padding:6px 10px}
+.kmrow small{display:block;font-weight:400;margin-bottom:6px}
+.dots{word-break:break-all}
+footer{font-size:12px;color:#bbd0df;padding:7px}
+@media(max-width:390px){body{padding:7px}.panel{padding:9px}.kmrow{grid-template-columns:minmax(0,1fr)}.kmrow .actions{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:minmax(0,1fr)}button{min-height:50px}}
+</style></head><body><main>
+<div class="top"><h1>🚕 TAXIAPP GPS距離連携テスト</h1><div>Android GPSアプリで計測した距離を、ブラウザへ取り込む確認用画面</div><small>業務用の日報・RAW列・Google同期への書き込みは一切行いません。</small></div>
+<div class="panel"><h2>GPSアプリから距離を取得</h2>
+<p class="info">各項目の<strong>「GPSアプリから取得」</strong>を押すと、対応した計測値を取得して、このページの距離欄へ表示します。新しい連携対応APKが必要です。走行中は操作しないでください。</p>
+<div id="rows">
+ <div class="kmrow"><label>GPSトリップ累計（km）<small>出庫から現在までのGPS積算距離。日報の乗降トリップ値の候補</small><input id="distance-tripKm" readonly placeholder="未取得"></label><div class="actions"><button type="button" data-native="tripKm">GPSアプリから取得</button><button class="secondary" type="button" data-copy="tripKm">コピーから取得</button></div></div>
+ <div class="kmrow"><label>実車GPS累計（km）<small>乗客を乗せて走行した累計距離</small><input id="distance-realKm" readonly placeholder="未取得"></label><div class="actions"><button type="button" data-native="realKm">GPSアプリから取得</button><button class="secondary" type="button" data-copy="realKm">コピーから取得</button></div></div>
+ <div class="kmrow"><label>空車GPS累計（km）<small>空車時・お迎え中のGPS積算距離</small><input id="distance-emptyKm" readonly placeholder="未取得"></label><div class="actions"><button type="button" data-native="emptyKm">GPSアプリから取得</button><button class="secondary" type="button" data-copy="emptyKm">コピーから取得</button></div></div>
+ <div class="kmrow"><label>直前の実車距離（km）<small>最後に「降車」を押したとき確定した実車区間（累計とは異なります）</small><input id="distance-lastRideKm" readonly placeholder="未取得"></label><div class="actions"><button type="button" data-native="lastRideKm">GPSアプリから取得</button><button class="secondary" type="button" data-copy="lastRideKm">コピーから取得</button></div></div>
+</div><p class="muted">ブラウザの再読込で値は消えます。このページは日報データを保存・更新しません。</p></div>
+<div class="panel"><h2>車両トリップとの差を比較</h2>
+<div class="grid"><label>車両トリップ（km）<input id="meter" type="number" min="0" step="0.001" inputmode="decimal" placeholder="例：12.500"></label><label>GPS累計との差（km）<input id="diff" readonly placeholder="未計算"></label></div>
+<p id="diff-note" class="muted">車両のトリップを手入力するとGPSとの差を確認できます。</p></div>
+<div class="panel"><h2>取得状況・安全チェック</h2><div id="status" role="status" aria-live="polite" class="info">距離取得待ち。GPS試験アプリを開始してください。</div><div id="quality" aria-live="polite"></div><details><summary>既存GPSアプリの「計測結果をコピー」を手動で貼り付ける</summary><p>GPSアプリ側で「計測結果をコピー」を押し、以下に貼り付けてください。下の「コピーから取得」は、まずクリップボードを読もうとします。失敗時にはこの入力欄を使用します。</p><textarea id="pasted" rows="5" placeholder="TAXIAPP GPS距離測定試験&#10;GPS累計 12.500 km..."></textarea></details></div>
+<footer>これはGPS距離の精度・受信・連携を確認する試験用です。値は参考値であり、正式な乗務距離・メーター値へ自動反映しません。個人情報・位置座標は送信しません。</footer>
+</main><script src="gps-bridge-test.js"></script><script>
+'use strict';
+const B=window.TaxiGpsBridge, PENDING_KEY='taxiapp-gps-bridge-pending';
+const metricNames={tripKm:'GPSトリップ累計',realKm:'実車GPS累計',emptyKm:'空車GPS累計',lastRideKm:'直前の実車距離'};
+const $=id=>document.getElementById(id);
+let lastResult=null;
+function report(message,isError=false){$('status').textContent=message;$('status').className=isError?'warn':'good';}
+function refreshDifference(){
+ const entered=$('meter').value.trim(),measured=Number(entered);
+ const gpsText=$('distance-tripKm').value;
+ if(entered===''||!Number.isFinite(measured)||measured<0||gpsText===''){$('diff').value='';$('diff-note').textContent='車両トリップとGPS累計を入力すると差が出ます。';return;}
+ const delta=Number(gpsText)-measured;
+ $('diff').value=(delta>=0?'+':'')+delta.toFixed(3);
+ $('diff-note').textContent=delta<0?'GPSが車両トリップより '+Math.abs(delta).toFixed(3)+'km 不足しています。':delta>0?'GPSが車両トリップより '+delta.toFixed(3)+'km 多く計測しています。':'車両トリップとGPSが同じ値です。';
+}
+function applyData(data){
+ lastResult=data;
+ $('distance-'+data.metric).value=data.km.toFixed(3);
+ $('quality').replaceChildren();
+ const infos=['距離：'+data.km.toFixed(3)+' km','取得元：'+(data.source==='android'?'GPSアプリ連携':'コピー結果'),
+ 'GPS欠測：'+data.gapCount+'回','実車確定：'+(data.rideCount??'不明')+'回'];
+ const info=document.createElement('p');info.className='info';info.textContent=infos.join(' ／ ');$('quality').append(info);
+ for(const warning of data.warnings){const w=document.createElement('p');w.className='warn';w.textContent='⚠ '+warning;$('quality').append(w);}
+ report(metricNames[data.metric]+' に '+data.km.toFixed(3)+' km を書き込みました。（テスト欄のみ）');
+ refreshDifference();
+}
+function returnFromApp(){
+ if(!location.hash.startsWith(B.hashPrefix))return;
+ const hash=location.hash;history.replaceState(null,'',location.pathname+location.search);
+ let pending;try{pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||'null');}catch{}
+ sessionStorage.removeItem(PENDING_KEY);
+ try{applyData(B.validateResponse(B.decodeFragment(hash),pending));}
+ catch(e){report('GPS受信エラー：'+e.message,true);}
+}
+function invokeApp(metric){
+ if(!B.METRICS.includes(metric))return;
+ if(!window.crypto?.getRandomValues){report('安全な取得番号を作成できないため、コピー取得を使ってください。',true);return;}
+ const bytes=crypto.getRandomValues(new Uint8Array(16));
+ const nonce=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');
+ try{
+  const req=B.createRequest(metric,nonce);
+  sessionStorage.setItem(PENDING_KEY,JSON.stringify(req.pending));
+  report(metricNames[metric]+' の取得をGPSアプリへ依頼しています…');
+  location.href=req.uri;
+ }catch(e){report(e.message,true);}
+}
+async function fromClipboard(metric){
+ try{
+  let copied=$('pasted').value.trim();
+  if(!copied){
+   if(!navigator.clipboard?.readText)throw Error('クリップボードを読めません。下の入力欄へ貼り付けてください');
+   copied=await navigator.clipboard.readText();
+  }
+  applyData(B.parseCopiedReport(copied,metric));
+ }catch(e){report('コピー取得エラー：'+e.message,true);}
+}
+document.getElementById('rows').addEventListener('click',event=>{
+ const native=event.target.closest('[data-native]');
+ const copy=event.target.closest('[data-copy]');
+ if(native)invokeApp(native.dataset.native);
+ else if(copy)fromClipboard(copy.dataset.copy);
+});
+$('meter').addEventListener('input',refreshDifference);
+returnFromApp();
+</script></body></html>
