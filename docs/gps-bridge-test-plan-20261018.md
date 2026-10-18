@@ -81,3 +81,9 @@ GPSアプリ内でWebViewを1画面だけ開き、WebのGPSボタンの `taxiapp
 外部ChromeでGPSボタンを押した場合は `taxiappgpsv035://web` でアプリ内Webへ案内し、ChromeでGPS結果用の新しいタブを開かない。**ただしChrome上の試験データとアプリ内WebViewの試験データは別保存**。未移行データはChrome側に残し、同期しない。ブラウザの戻り口自動連携は外部Chromeには提供しない。
 
 通信はWebViewがGitHub PagesへアクセスするHTTPSのみ。GPS値・住所・時刻はそのWebView内で処理し、既存日報のRAWやGoogle Sheetsには保存しない。走行時の実機確認待ち。
+
+## v0.3.6：WebViewの通信権限修正
+- アプリ内WebViewが `net::ERR_CACHE_MISS` となる原因はアプリの AndroidManifest に `android.permission.INTERNET` が無かったため。Android側に追加。
+- GPSテストページのWeb呼出し先を `taxiappgpsv036://web`、距離取得の連携先を `taxiappgpsv036://measure` に統一。
+- Chrome内テストからアプリ内Webに誘導。アプリ内は同じページでGPS距離・住所・時刻を反映し、Chromeタブを増やさない。
+- 他の営業日報やシート同期には変更を加えない。実機での動作確認は未完了。
