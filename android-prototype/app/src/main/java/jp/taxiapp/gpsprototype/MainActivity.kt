@@ -66,6 +66,7 @@ class MainActivity : Activity() {
         root.addView(stats)
         note = text("停止中", 17f)
         root.addView(note)
+        root.addView(text("Chrome連携試験キー（コピーして試験HTMLに入力）:\n" + GpsLoopbackServer.secret(this), 13f))
         button(root, "▶ GPS測定を開始") { startTracking() }
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
         button(root, "🌐 GPSテストWebを開く") {
