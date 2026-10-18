@@ -469,7 +469,7 @@ const feeSettings=(s={})=>({goFee:number(s.goFee)??DEFAULT_GO_FEE,cancelFee:numb
 function localDateTime(t){const x=t instanceof Date?t:new Date(t);return `${dateStamp(x)}T${stamp(x).slice(0,5)}`;}
 function revisedShiftTime(shift,newTime){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(newTime))throw Error('正しい時刻を指定してください');const old=shift.startedAt;shift.startedAt=newTime+':00';shift.startedIso=new Date(`${shift.date}T${shift.startedAt}`).toISOString();if(shift.draft?.raw?.C===old)shift.draft.raw.C=shift.startedAt;if(!shift.waitSegments?.length&&shift.waiting?.startedAt===old){shift.waiting.startedAt=shift.startedAt;shift.waiting.startedIso=shift.startedIso;}return shift.startedAt;}
 function blankRaw(){return Object.fromEntries(RAW_COLUMNS.map(([key])=>[key,'']));}
-function newShift(now=new Date(),meta={}){return {id:`shift-${now.getTime()}`,date:dateStamp(now),startedAt:stamp(now),startedIso:now.toISOString(),endedAt:'',driver:meta.driver||'',driverNo:meta.driverNo||'',vehicle:meta.vehicle||'',startingOdo:meta.startingOdo??'',settings:feeSettings(),records:[],draft:null,waiting:null,waitTrackingVersion:2,waitSegments:[],createdAt:new Date().toISOString()};}
+function newShift(now=new Date(),meta={}){return {id:`shift-${now.getTime()}`,date:dateStamp(now),startedAt:stamp(now),startedIso:now.toISOString(),endedAt:'',driver:meta.driver||'',driverNo:meta.driverNo||'',vehicle:meta.vehicle||'',startingOdo:meta.startingOdo??'',distanceMode:'trip',settings:feeSettings(),records:[],draft:null,waiting:null,waitTrackingVersion:2,waitSegments:[],createdAt:new Date().toISOString()};}
 function pauseWaiting(shift,now=new Date(),reason='dispatch'){
  const previous=shift.waiting||null;
  if(previous){(shift.waitSegments??=[]).push({...previous,endedAt:stamp(now),endedIso:now.toISOString(),reason});}
@@ -1370,7 +1370,7 @@ function renderShiftManager(lastShift){
  if(!active)return `${titleBlock('出庫・入庫','SHIFT MANAGEMENT','出庫と入庫の走行距離を記録します。')}
  <section class="card hero"><h2 class="h2">出庫・乗務開始</h2>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫日時（変更可能）</span><input id="shiftStartAt" class="control" type="datetime-local" value="${localDateTime(new Date())}"></label>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時走行距離（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"></label>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時の車両トリップ（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"></label>
  <button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
  ${model.shifts.filter(x=>!x.endedAt&&!x.endedIso).map(x=>'<section class="card"><h2 class="h2">他端末から受信した乗務を編集</h2><p class="helper">'+safeText(x.date)+'　出庫 '+shortTime(x.startedAt)+' ／ '+x.records.length+'件。編集競合を避けるため他端末との同時入力にご注意ください。</p><button class="btn teal" data-action="resumeSyncedShift" data-id="'+safeText(x.id)+'">この端末で乗務入力を開く</button></section>').join('')}
  ${lastShift?`<section class="card"><h2 class="h2">前回の入庫記録</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(lastShift.date)}</b></div><div class="statline"><span>出庫</span><b>${shortTime(lastShift.startedAt)}</b></div><div class="statline"><span>出庫距離</span><b>${number(lastShift.startingOdo)===null?'未記録':safeText(lastShift.startingOdo)+' km'}</b></div><div class="statline"><span>入庫</span><b>${shortTime(lastShift.endedAt)}</b></div><div class="statline"><span>入庫距離</span><b>${number(lastShift.endingOdo)===null?'未記録':safeText(lastShift.endingOdo)+' km'}</b></div>${lastShift.endedAt?`<div class="actions" style="margin-top:14px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(lastShift.id)}">↶ 入庫を取り消して乗務を再開</button></div><p class="footnote">直近の乗務のみ取り消せます。営業記録は残り、入庫時刻・距離は再入力できます。</p>`:''}</section>`:''}`;
@@ -1378,8 +1378,8 @@ function renderShiftManager(lastShift){
  return `${titleBlock('出庫・入庫','SHIFT MANAGEMENT','出庫距離の修正と入庫処理はこの画面で行えます。')}
  <section class="card"><h2 class="h2">現在の乗務</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(active.date)}</b></div><div class="statline"><span>記録済み</span><b>${active.records.length}件</b></div>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時刻（後から修正可能）</span><input class="control" data-shiftstart type="time" step="60" value="${shortTime(active.startedAt)}"></label>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時走行距離（km）</span><input class="control" data-shift-odo="start" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.startingOdo??'')}" placeholder="出庫時のメーター値"></label>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">入庫時走行距離（km）</span><input class="control" data-shift-odo="end" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.endingOdo??'')}" placeholder="入庫時のメーター値"></label>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'出庫時の車両トリップ（km）':'出庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="start" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.startingOdo??'')}" placeholder="車両トリップの値"></label>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'入庫時の車両トリップ（km）':'入庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="end" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.endingOdo??'')}" placeholder="車両トリップの値"></label>
  ${departure!==null&&arrival!==null&&arrival>=departure?`<div class="statline"><span>走行距離合計</span><b>${(arrival-departure).toLocaleString('ja-JP')} km</b></div>`:''}
  <button class="btn big red fill" type="button" data-action="endShift" ${active.draft?'disabled title="編集中の営業を保存してから入庫してください"':''}>入庫・乗務終了</button>
  ${active.draft?'<p class="caption-note">編集中の記録があるため入庫できません。営業を保存してください。</p>':''}</section>`;
@@ -2046,14 +2046,14 @@ function handleAction(action,id){
   const when=entered?new Date(entered):new Date();
   if(!Number.isFinite(when.getTime())){toast('乗務開始日時が不正です',true);return;}
   const odometer=String(document.getElementById('shiftStartOdo')?.value??'').trim(),value=number(odometer);
-  if(value===null||value<0){toast('出庫時走行距離（km）を入力してください',true);return;}
+  if(value===null||value<0){toast('出庫時の車両トリップ（km）を入力してください',true);return;}
   const newRecord=newShift(when,model.prefs);
-  newRecord.startingOdo=odometer;newRecord.endingOdo='';
+  newRecord.startingOdo=odometer;newRecord.endingOdo='';newRecord.distanceMode='trip';
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
   const gpsOptIn=model.prefs.gpsTripAtStart!=='off';
   save();if(gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
   else render();
-  toast(gpsOptIn?'出庫しました。GPS試験計測を開始します。':'出庫距離を保存し、乗務を開始しました。');return;
+  toast(gpsOptIn?'出庫しました。GPS試験計測を開始します。':'車両トリップを保存し、乗務を開始しました。');return;
  }
  if(action==='showRecordDetails'){
   const details=[...appEl.querySelectorAll('[data-record-detail]')].find(el=>el.dataset.recordDetail===id);
@@ -2081,7 +2081,7 @@ function handleAction(action,id){
   const startText=String(appEl.querySelector('[data-shift-odo="start"]')?.value??shift.startingOdo??'').trim();
   const endText=String(appEl.querySelector('[data-shift-odo="end"]')?.value??shift.endingOdo??'').trim();
   const start=number(startText),end=number(endText);
-  if(start===null||start<0){toast('出庫時走行距離（km）を入力してください',true);return;}
+  if(start===null||start<0){toast('出庫時の車両トリップ（km）を入力してください',true);return;}
   if(end===null||end<0){toast('入庫時走行距離（km）を入力してください',true);return;}
   if(end<start){toast('入庫距離は出庫距離以上にしてください',true);return;}
   if(!confirm(`乗務を終了しますか？\n営業 ${shift.records.length}件\n出庫距離 ${startText} km → 入庫距離 ${endText} km\n走行距離 ${(end-start).toLocaleString('ja-JP')} km`))return;
