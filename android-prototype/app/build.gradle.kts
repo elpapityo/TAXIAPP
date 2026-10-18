@@ -7,9 +7,9 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        // Intentionally new package identity: installs beside legacy GPS test APK.
+        // New package identity for v0.3.9: CI debug APK signing keys differ between runners.
         // Never overwrites its measurement storage or requires uninstall.
-        applicationId = "jp.taxiapp.gpsprototype.loopbackv038"
+        applicationId = "jp.taxiapp.gpsprototype.loopbackv039"
         minSdk = 26
         targetSdk = 35
         versionCode = 3
