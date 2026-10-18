@@ -10,6 +10,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
+import android.location.Location
+import android.location.LocationManager
+import android.location.Geocoder
 import org.json.JSONObject
 import android.os.Build
 import android.os.Bundle
@@ -166,12 +169,23 @@ class MainActivity : Activity() {
                 metric, selected, extra))
             .setNegativeButton("戻る", null)
             .setPositiveButton("距離を送る") { _, _ ->
-                runCatching {
+                // Reverse-geocode only on explicit user request. No raw coordinates
+                // leave the Android app and the result is not saved in duty records.
+                val pressedAt = System.currentTimeMillis()
+                Thread {
+                  val fix = freshLastLocation()
+                  val address = if (fix == null) "住所未取得（新しいGPS位置がありません）"
+                                else addressFromLocation(fix)
+                  val locationAt = fix?.time
+                  handler.post {
+                   runCatching {
                     val reply = JSONObject()
                         .put("format", "TAXIAPP_GPS_NATIVE_BRIDGE_V1")
                         .put("nonce", nonce)
                         .put("metric", metric)
-                        .put("capturedAt", System.currentTimeMillis())
+                        .put("capturedAt", pressedAt)
+                        .put("address", address)
+                        .put("locationAt", locationAt ?: JSONObject.NULL)
                         .put("tripKm", s.tripKm)
                         .put("realKm", s.realKm)
                         .put("emptyKm", s.emptyKm)
@@ -189,10 +203,35 @@ class MainActivity : Activity() {
                         "#gps-bridge=" + Uri.encode(reply.toString())
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
                         .addCategory(Intent.CATEGORY_BROWSABLE))
-                }.onFailure { alert("ブラウザへの受け渡しに失敗しました：" +
-                    (it.message ?: "不明なエラー")) }
+                   }.onFailure { alert("ブラウザへの受け渡しに失敗しました：" +
+                       (it.message ?: "不明なエラー")) }
+                  }
+                }.start()
             }
             .show()
+    }
+
+    private fun freshLastLocation(): Location? {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            return null
+        return runCatching {
+            val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val fixes = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+                .mapNotNull { provider -> runCatching { manager.getLastKnownLocation(provider) }.getOrNull() }
+            fixes.filter { it.time > 0L && System.currentTimeMillis() - it.time in 0L..60000L }
+                .maxByOrNull { it.time }
+        }.getOrNull()
+    }
+
+    private fun addressFromLocation(location: Location): String {
+        return runCatching {
+            if (!Geocoder.isPresent()) return@runCatching "住所未取得（端末の住所変換に非対応）"
+            @Suppress("DEPRECATION")
+            val addresses = Geocoder(this, Locale.JAPAN)
+                .getFromLocation(location.latitude, location.longitude, 1)
+            val formatted = addresses?.firstOrNull()?.getAddressLine(0)?.trim().orEmpty()
+            if (formatted.isBlank()) "住所未取得（住所変換結果なし）" else formatted.take(120)
+        }.getOrDefault("住所未取得（住所変換に失敗）")
     }
 
     override fun onNewIntent(intent: Intent) {
