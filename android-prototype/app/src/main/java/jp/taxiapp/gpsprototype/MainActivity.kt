@@ -69,9 +69,9 @@ class MainActivity : Activity() {
         button(root, "▶ GPS測定を開始") { startTracking() }
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
         button(root, "🌐 GPSテストWebを開く") {
-            startActivity(Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=035"))
-                .addCategory(Intent.CATEGORY_BROWSABLE))
+            // Opens a single in-app WebView; the Web GPS button is handled
+            // without launching Chrome or creating a browser tab.
+            startActivity(Intent(this, GpsTestWebActivity::class.java))
         }
         button(root, "✕ アプリを終了（GPSも停止）") { exitAppCompletely() }
         root.addView(text("ホームへ戻る・画面OFF・他アプリ利用中はGPS計測を継続。\n「アプリを終了」または最近使ったアプリから閉じるとGPSも停止します。", 13f))
