@@ -2048,7 +2048,17 @@ function handleAction(action,id){
   const odometer=String(document.getElementById('shiftStartOdo')?.value??'').trim(),value=number(odometer);
   if(value===null||value<0){toast('出庫時の車両トリップ（km）を入力してください',true);return;}
   const newRecord=newShift(when,model.prefs);
-  newRecord.startingOdo=odometer;newRecord.endingOdo='';newRecord.distanceMode='trip';
+  newRecord.startingOdo=odometer;newRecord.endingOdo='';newRecord.distanceMode='trip'; 
+   // Capture the actual departure GPS baseline now, before the first fare.
+   if(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
+    const departingId=newRecord.id,startedAt=newRecord.startedIso;
+    window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+     const current=getShift();
+     if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
+     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm);
+     toast('出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。');
+    }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
+   }
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
   const gpsOptIn=model.prefs.gpsTripAtStart!=='off';
   save();if(gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
