@@ -8,7 +8,7 @@ const now=1792281000000;
 for(const m of metricList){
  const req=B.createRequest(m,nonce,now);
  assert.equal(req.pending.metric,m);
- assert.match(req.uri,/^taxiappgpsv034:\/\/measure\?/);
+ assert.match(req.uri,/^taxiappgpsv035:\/\/measure\?/);
  const reply={format:B.FORMAT,nonce,metric:m,capturedAt:now+3000,
   tripKm:12.34567,realKm:4.12345,emptyKm:8.22222,lastRideKm:3.99991,
   gapCount:2,unresolvedGap:true,running:true,gpsAgeMs:5000,accuracyMeters:15,rideCount:3,mode:'REAL',address:'兵庫県伊丹市北本町',locationAt:now+2000};
@@ -47,7 +47,7 @@ assert.equal(copied.gpsAgeMs,15000);
 assert.ok(copied.warnings.some(x=>x.includes('未解決')));
 assert.throws(()=>B.parseCopiedReport('fake text','tripKm'),/コピー結果ではありません/);
 assert.throws(()=>B.parseCopiedReport(oldAppText.replace('直前の実車 2.000 km','直前の実車 未計測'),'lastRideKm'),/未測定/);
-assert.match(B.createRequest('tripKm',nonce).uri,/^taxiappgpsv034:\/\/measure\?/);
+assert.match(B.createRequest('tripKm',nonce).uri,/^taxiappgpsv035:\/\/measure\?/);
 const html=fs.readFileSync('gps-import-test.html','utf8');
 assert.match(html,/id="rows"/);
 assert.match(html,/id="pasteTarget"/);
@@ -56,6 +56,9 @@ assert.match(html,/GPS距離・住所・時間/);
 assert.match(html,/location\.href=req\.uri/);
 assert.match(html,/history\.replaceState/);
 assert.match(html,/addEventListener\('hashchange',readNativeReturn\)/);
+assert.match(html,/taxiappgpsv035:\/\/web/);
+assert.match(html,/if\(!embedded\)/);
+assert.match(html,/gps-bridge-test\.js\?v=035/);
 assert.match(html,/sessionStorage/);
 assert.match(html,/位置座標/); // no coordinates should be handled in the test UI
 assert.match(html,/HANDOFF_MS=120000/);
