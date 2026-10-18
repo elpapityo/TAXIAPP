@@ -9,6 +9,14 @@ on:
       - 'gps-trip-ui.js'
       - 'tests/gps-native-bridge.test.js'
       - '.github/workflows/gps-html-bridge-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'gps-native-bridge.js'
+      - 'gps-trip-ui.js'
+      - 'tests/gps-native-bridge.test.js'
+      - '.github/workflows/gps-html-bridge-test.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,6 +28,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check gps-native-bridge.js
+          node --check gps-trip-ui.js
       - name: Check GPS correction math and isolation
         run: node tests/gps-native-bridge.test.js
       - name: Verify source integration guards
