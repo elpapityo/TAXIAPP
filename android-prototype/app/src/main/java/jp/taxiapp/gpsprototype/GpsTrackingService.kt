@@ -39,6 +39,7 @@ class GpsTrackingService : Service() {
         private const val NOTIFICATION_ID = 201
     }
 
+    private val loopback by lazy { GpsLoopbackServer(this) }
     private lateinit var manager: LocationManager
     private lateinit var engine: TripAccumulator
     private var listening = false
@@ -208,6 +209,7 @@ class GpsTrackingService : Service() {
                         startForeground(NOTIFICATION_ID, notification())
                     }
                     startListening()
+                    loopback.start()
                 }
             }
             else -> {
@@ -301,6 +303,7 @@ class GpsTrackingService : Service() {
             engine.stop()
             GpsStore.save(this, engine.snapshot())
         }
+        loopback.stop()
         super.onDestroy()
     }
 
