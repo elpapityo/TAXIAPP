@@ -102,6 +102,7 @@ class GpsLoopbackServer(private val context: Context) {
                 append("Vary: Origin\r\n")
                 append("Access-Control-Allow-Methods: GET, OPTIONS\r\n")
                 append("Access-Control-Allow-Headers: X-GPS-Test-Key\r\n")
+                append("Access-Control-Allow-Private-Network: true\r\n")
                 append("Content-Length: ${payload.toByteArray(Charsets.UTF_8).size}\r\n")
                 append("Connection: close\r\n\r\n")
                 append(payload)
