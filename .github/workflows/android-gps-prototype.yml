@@ -45,7 +45,7 @@ jobs:
           APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.loopbackv038'"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.loopbackv039'"
           "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.9-loopback-recovery'"
           # AAPT prints localized app labels differently across runner environments.
           # Verify source label exactly and print the actual APK labels for diagnosis.
@@ -133,9 +133,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/TAXIAPP-GPS-Chrome-loopback-v0.3.9-recovery.apk"
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-Chrome-loopback-v0.3.9-installfix.apk"
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          TAG="gps-chrome-loopback-v0.3.9-recovery"
+          TAG="gps-chrome-loopback-v0.3.9-installfix"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
           else
@@ -143,6 +143,6 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
               --title "TAXIAPP GPS Chrome直接取得 試験版 v0.3.9" \
-              --notes "GPS計測専用v0.3.9独立試験APK。Chromeがローカル読み取りAPIから累計距離を取得する実験。試験キーが必要。既存v0.3.6とは別アプリ、計測値も別管理。実機未検証。" \
+              --notes "GPS計測専用v0.3.9独立試験APK。Chromeがローカル読み取りAPIから累計距離を取得する実験。試験キーが必要。v0.3.8から署名相違で更新できない問題を避けるため独立アプリID。旧GPS計測値は旧アプリ内に保管、新版ではGPS計測・Chrome接続キーの再設定が必要。実機未検証。" \
               --prerelease
           fi
