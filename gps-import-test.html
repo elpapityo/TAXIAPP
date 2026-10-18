@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAXIAPP GPS距離・住所・時刻テスト</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,"Noto Sans JP",sans-serif;background:#061522;color:#f1f8ff}
+*{box-sizing:border-box}body{margin:0;padding:10px 8px 25px}main{max-width:760px;margin:auto}
+h1{font-size:20px;margin:7px 0 9px}p{line-height:1.5}
+header,.panel{border:1px solid #537a99;border-radius:13px;background:#102b42;padding:12px;margin-bottom:10px}
+small,.hint{font-size:12px;color:#bfd6e9}
+.row{border:1px solid #4a7595;border-radius:12px;background:#17384f;padding:10px;margin:9px 0}
+.row h2{font-size:17px;margin:0 0 8px}
+.columns{display:grid;grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr);gap:7px;align-items:end}
+label{font-size:12px;font-weight:750;min-width:0}label input{margin-top:4px}
+input{border:1px solid #759db8;border-radius:9px;background:#081d2f;color:#fff;font-size:19px;min-height:48px;padding:7px;width:100%;min-width:0}
+input[readonly]{background:#213d54;color:#b8f3fc;font-weight:800}
+button{border:1px solid #9ad7ff;color:#fff;background:#157dbf;border-radius:9px;min-height:48px;font-weight:850;padding:7px 12px;font-size:15px;cursor:pointer}
+button.secondary{background:#294c64}select{font:inherit;background:#19394e;color:#fff;padding:8px;border-radius:8px;border:1px solid #7b9fb9}button:active{filter:brightness(1.3)}
+button[data-gps]{padding:5px 3px;font-size:14px}
+.infoRow{margin-top:8px;border-radius:8px;background:#0c2b41;padding:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;font-size:13px}
+.infoRow .address{overflow-wrap:anywhere}
+.infoRow .time{white-space:nowrap;color:#c0e9ff}
+.detail{margin-top:5px;color:#a6d7f5;font-size:12px}
+.error{color:#ffd891}
+.notice{margin-top:6px;background:#193b4b;border-radius:8px;padding:10px;line-height:1.5;font-size:13px}
+.notice.bad{background:#4a3331;border-left:3px solid #ffc072}
+.buttons{display:flex;flex-wrap:wrap;gap:8px}
+button.add{width:100%;background:#0a7961;min-height:55px}
+summary{cursor:pointer;padding:10px;font-size:13px}
+textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-height:120px;border-radius:8px;padding:9px;font:inherit}
+.footer{color:#adc6d8;font-size:12px}
+@media(max-width:350px){.row{padding:6px}.columns{grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:4px}input{font-size:17px;padding:5px}button[data-gps]{font-size:13px}.infoRow{grid-template-columns:1fr}}
+</style></head><body><main>
+<header><h1>🚕 GPS距離・住所・時間 テスト</h1>
+<div class="hint">スタート→1→2→3…の順にGPSを押してください。各行のGPS取得時に距離・住所・時刻をまとめて表示します。<br><strong>例：1を20kmに修正→2は20km＋1から2までのGPS増加距離</strong>で計算します。</div></header>
+<div class="panel"><div id="rows" aria-label="GPS距離テスト表"></div><button class="add" id="add" type="button">＋ 次の測定行を追加</button>
+<p class="hint">左：入力・補正距離（空欄なら自動計算）／中央：GPS取得／右：計算後の距離。GPSアプリは累計値を返します。途中の行を補正した場合、それ以降の結果も計算し直します。</p>
+<div class="buttons"><button class="secondary" type="button" id="reset">テストを初期化</button><button class="secondary" type="button" id="clipboard">コピー結果を使う</button></div></div>
+<div class="panel"><h2>取得状況</h2><div id="status" role="status" aria-live="polite" class="notice">最初にスタート行のGPSを取得してください。</div><div id="quality" aria-live="polite"></div>
+<details><summary>旧GPSアプリの「計測結果をコピー」を貼り付ける</summary>
+<p class="hint">Android GPS試験アプリの「計測結果をコピー」を押して下に貼り付けると、同じ計算を試せます。旧版では住所は取得できません。表示時刻はコピー結果を読み取った時刻です。</p>
+<label class="hint">取り込む行：<select id="pasteTarget"><option value="start">スタート</option></select></label><textarea id="pasted" placeholder="TAXIAPP GPS距離測定試験&#10;GPS累計 3.450 km..."></textarea>
+<button class="secondary" type="button" id="readPaste">コピーしたGPS累計を選択中の行へ取り込む</button>
+</details></div>
+<div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。GPS位置座標はブラウザへ渡しません。安全のため必ず停車中に操作してください。</div>
+</main><script src="gps-bridge-test.js"></script><script src="gps-test-rows.js"></script><script>
+'use strict';
+const B=window.TaxiGpsBridge, R=window.GpsTestRows;
+const $=id=>document.getElementById(id),
+ PENDING_KEY='taxiapp-gps-pending', STATE_KEY='taxiapp-gps-test-state',
+ HANDOFF_KEY='taxiapp-gps-test-handoff-only', HANDOFF_MS=120000;
+let state=R.fresh(), pasteTarget='start';
+function status(message,bad=false){$('status').textContent=message;$('status').className='notice'+(bad?' bad':'');}
+function fmt(v){return v===null||v===undefined?'—':Number(v).toFixed(3)+' km';}
+function time(at){if(!at)return '未取得';try{return new Date(at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch{return '未取得';}}
+function escaped(text){return String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function persist(){try{sessionStorage.setItem(STATE_KEY,JSON.stringify(state));}catch{}}
+function saveHandoff(pending){
+ // This is ONLY a two-minute local fallback for Android returning into a new Chrome tab.
+ // Contains test values, no RAW/daily reports or GPS coordinates. Delete immediately on receipt.
+ try{localStorage.setItem(HANDOFF_KEY,JSON.stringify({pending,state,expiresAt:Date.now()+HANDOFF_MS}));}catch{}
+}
+function readHandoff(){
+ try{const raw=localStorage.getItem(HANDOFF_KEY);if(!raw)return null;
+  const saved=JSON.parse(raw);
+  if(!saved||Date.now()>saved.expiresAt){localStorage.removeItem(HANDOFF_KEY);return null;}
+  return saved;
+ }catch{return null;}
+}
+function clearHandoff(){try{localStorage.removeItem(HANDOFF_KEY);}catch{}}
+function restore(){try{const saved=sessionStorage.getItem(STATE_KEY);if(saved)state=R.clone(JSON.parse(saved));}catch{state=R.fresh();}}
+function render(){
+ const result=R.derive(state);
+ let markup='<div class="row"><h2>スタート距離</h2><div class="columns">'+
+ '<label>入力距離（km）<input data-start type="number" min="0" step="0.001" inputmode="decimal" value="'+escaped(state.startKm)+'"></label>'+
+ '<button type="button" data-gps="start">GPS</button>'+
+ '<label>GPS累計（km）<input readonly value="'+(state.startGpsKm===null?'':state.startGpsKm.toFixed(3))+'" placeholder="未取得"></label></div>'+
+ '<div class="infoRow"><span class="address">📍 '+escaped(state.startPlace||'住所未取得')+'</span><span class="time">🕒 '+escaped(time(state.startAt))+'</span></div></div>';
+ $('pasteTarget').innerHTML='<option value="start">スタート</option>'+result.rows.map((r,i)=>'<option value="'+i+'">'+(i+1)+' 行目</option>').join('');
+ $('pasteTarget').value=pasteTarget;
+ for(let i=0;i<result.rows.length;i++){
+  const row=result.rows[i];
+  markup+='<div class="row"><h2>'+row.number+'</h2><div class="columns">'+
+  '<label>入力・補正（km）<input data-manual="'+i+'" type="number" min="0" step="0.001" inputmode="decimal" value="'+escaped(state.rows[i].manualKm)+'" placeholder="未補正"></label>'+
+  '<button type="button" data-gps="'+i+'">GPS</button>'+
+  '<label>結果（km）<input readonly value="'+(row.finalKm===null?'':row.finalKm.toFixed(3))+'" placeholder="未取得"></label></div>'+
+  '<div class="infoRow"><span class="address">📍 '+escaped(row.place||'住所未取得')+'</span><span class="time">🕒 '+escaped(time(row.at))+'</span></div>'+
+  (row.gpsKm!==null?'<div class="detail">GPS累計 '+fmt(row.gpsKm)+' ／ 今回増加 '+fmt(row.deltaKm)+'</div>':'')+
+  (row.error?'<div class="detail error">⚠ '+escaped(row.error)+'</div>':'')+'</div>';
+ }
+ $('rows').innerHTML=markup;
+}
+function applySnapshot(target,data){
+ try{
+  const details={place:data.place||'住所未取得',at:data.locationAt||data.capturedAt||Date.now()};
+  state=target==='start'
+   ?R.startGps(state,data.tripKm,false,details)
+   :R.captureRow(state,Number(target),data.tripKm,details);
+  persist();render();
+  const warning=data.warnings.length?'　⚠ '+data.warnings.join('／'):'';
+  status((target==='start'?'スタート':(Number(target)+1)+'行目')+'にGPS値・住所・時刻を取得しました。'+warning);
+  $('quality').textContent='取得元：'+(data.source==='android'?'GPSアプリ連携':'コピー')+
+   '／欠測 '+data.gapCount+'回／GPS累計 '+fmt(data.tripKm);
+ }catch(e){status(e.message,true);}
+}
+function readNativeReturn(){
+ if(!location.hash.startsWith(B.hashPrefix))return;
+ const hash=location.hash;
+ history.replaceState(null,'',location.pathname+location.search);
+ let pending;
+ try{pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||'null');}catch{}
+ sessionStorage.removeItem(PENDING_KEY);
+ const handoff=readHandoff();
+ let useFallback=false;
+ try{
+  const copied=B.decodeFragment(hash);
+  // Only use the cross-tab fallback when the nonce matches the pending request.
+  useFallback=Boolean(handoff&&copied?.nonce===handoff.pending?.nonce);
+  if(!pending&&useFallback)pending=handoff.pending;
+  if(!pending)throw Error('元の取得操作が見つかりません。GPSボタンからやり直してください');
+  const data=B.validateResponse(copied,pending);
+  if(useFallback){state=R.clone(handoff.state);persist();}
+  else restore();
+  applySnapshot(pending.target,data);
+ }catch(e){status('GPS受け取り失敗：'+e.message,true);}
+ finally{if(useFallback)clearHandoff();}
+}
+function requestNative(target){
+ if(!window.crypto?.getRandomValues){status('安全な取得番号を作成できません。コピー取得をご利用ください',true);return;}
+ const nonce=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
+ try{
+  const req=B.createRequest('tripKm',nonce);
+  const pending={...req.pending,target};
+  sessionStorage.setItem(PENDING_KEY,JSON.stringify(pending));
+  persist();saveHandoff(pending);pasteTarget=target;
+  status('GPSアプリを呼び出しています。アプリの確認画面で「距離を送る」を選んでください。');
+  location.href=req.uri;
+ }catch(e){status(e.message,true);}
+}
+function fromPaste(){pasteTarget=$('pasteTarget').value;
+ try{
+  const copied=$('pasted').value.trim();
+  if(!copied)throw Error('GPSアプリの「計測結果をコピー」をこの欄に貼り付けてください');
+  const data=B.parseCopiedReport(copied,'tripKm');
+  applySnapshot(pasteTarget,data);
+ }catch(e){status('コピー読み取りエラー：'+e.message,true);}
+}
+$('rows').addEventListener('click',event=>{
+ const button=event.target.closest('[data-gps]');if(!button)return;
+ requestNative(button.dataset.gps);
+});
+$('rows').addEventListener('change',event=>{
+ try{
+  if(event.target.matches('[data-start]'))state=R.setStartKm(state,event.target.value);
+  else if(event.target.matches('[data-manual]'))state=R.setManualKm(state,Number(event.target.dataset.manual),event.target.value);
+  else return;
+  persist();render();
+ }catch(e){status(e.message,true);render();}
+});
+$('add').addEventListener('click',()=>{try{state=R.appendRow(state);persist();render();}catch(e){status(e.message,true);}});
+$('reset').addEventListener('click',()=>{if(confirm('GPSテストの距離・住所・時刻を初期化しますか？')){state=R.fresh();pasteTarget='start';sessionStorage.removeItem(STATE_KEY);sessionStorage.removeItem(PENDING_KEY);clearHandoff();render();status('テストを初期化しました。');}});
+$('clipboard').addEventListener('click',()=>{$('pasted').focus();status('コピー結果を貼り付け、取得先の行を選択してください。');});
+$('readPaste').addEventListener('click',fromPaste);
+readHandoff();restore();render();readNativeReturn();
+</script></body></html>
