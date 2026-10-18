@@ -9,11 +9,11 @@ android {
     defaultConfig {
         // Intentionally new package identity: installs beside legacy GPS test APK.
         // Never overwrites its measurement storage or requires uninstall.
-        applicationId = "jp.taxiapp.gpsprototype.bridgev036"
+        applicationId = "jp.taxiapp.gpsprototype.loopbackv037"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.3.6-internet-fixed"
+        versionName = "0.3.7-loopback-test"
     }
 
     compileOptions {
