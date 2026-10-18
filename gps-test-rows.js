@@ -13,12 +13,17 @@
   if(!Number.isFinite(n)||n<0||n>10000)throw Error('距離は0〜10000kmの数値で入力してください');
   return Math.round(n*1000)/1000;
  }
- function fresh(){return {startKm:'0',startGpsKm:null,rows:[{gpsKm:null,manualKm:''},{gpsKm:null,manualKm:''}]};}
+ function fresh(){return {startKm:'0',startGpsKm:null,startPlace:'',startAt:null,
+  rows:[{gpsKm:null,manualKm:'',place:'',at:null},{gpsKm:null,manualKm:'',place:'',at:null}]};}
+ function place(v){return typeof v==='string'?v.slice(0,120):'';}
+ function dateTime(v){return typeof v==='number'&&Number.isFinite(v)&&v>0?v:null;}
  function clone(state){
   if(!state||!Array.isArray(state.rows)||state.rows.length<1||state.rows.length>MAX_ROWS)throw Error('テスト状態が不正です');
   const startKm=readKm(state.startKm);
   const startGpsKm=readKm(state.startGpsKm,true);
-  return {startKm:String(startKm),startGpsKm,rows:state.rows.map(r=>({gpsKm:readKm(r.gpsKm,true),manualKm:r.manualKm==null?'':r.manualKm===''?'':String(readKm(r.manualKm))}))};
+  return {startKm:String(startKm),startGpsKm,startPlace:place(state.startPlace),startAt:dateTime(state.startAt),
+   rows:state.rows.map(r=>({gpsKm:readKm(r.gpsKm,true),manualKm:r.manualKm==null?'':r.manualKm===''?'':String(readKm(r.manualKm)),
+      place:place(r.place),at:dateTime(r.at)}))};
  }
  function derive(state){
   const d=clone(state);
@@ -44,9 +49,9 @@
    }else{
     previousAvailable=false;
    }
-   return {number:i+1,gpsKm:r.gpsKm,deltaKm:delta,measuredKm:measured,manualKm:entered,finalKm,error};
+   return {number:i+1,gpsKm:r.gpsKm,deltaKm:delta,measuredKm:measured,manualKm:entered,finalKm,error,place:r.place,at:r.at};
   });
-  return {startKm:readKm(d.startKm),startGpsKm:d.startGpsKm,rows};
+  return {startKm:readKm(d.startKm),startGpsKm:d.startGpsKm,startPlace:d.startPlace,startAt:d.startAt,rows};
  }
  function setStartKm(state,km){const d=clone(state);d.startKm=String(readKm(km));return d;}
  function setManualKm(state,index,km){
@@ -54,15 +59,16 @@
   if(!Number.isInteger(index)||index<0||index>=d.rows.length)throw Error('行番号が不正です');
   d.rows[index].manualKm=km===''?'':String(readKm(km));return d;
  }
- function appendRow(state){const d=clone(state);if(d.rows.length>=MAX_ROWS)throw Error('テストは最大30行です');d.rows.push({gpsKm:null,manualKm:''});return d;}
- function startGps(state,gpsKm,reset=false){
+ function appendRow(state){const d=clone(state);if(d.rows.length>=MAX_ROWS)throw Error('テストは最大30行です');d.rows.push({gpsKm:null,manualKm:'',place:'',at:null});return d;}
+ function startGps(state,gpsKm,reset=false,details={}){
   const d=clone(state);
   if(d.rows.some(r=>r.gpsKm!==null)&&!reset)throw Error('開始地点を再取得すると途中の結果が変わります。リセットしてから開始してください');
   d.startGpsKm=readKm(gpsKm);
-  if(reset)d.rows=d.rows.map(()=>({gpsKm:null,manualKm:''}));
+  d.startPlace=place(details.place);d.startAt=dateTime(details.at);
+  if(reset)d.rows=d.rows.map(()=>({gpsKm:null,manualKm:'',place:'',at:null}));
   return d;
  }
- function captureRow(state,index,gpsKm){
+ function captureRow(state,index,gpsKm,details={}){
   const d=clone(state);
   if(!Number.isInteger(index)||index<0||index>=d.rows.length)throw Error('行番号が不正です');
   const gps=readKm(gpsKm);
@@ -74,7 +80,8 @@
   if(gps<reference)throw Error('GPS累計が前回より小さくなっています。測定のリセットを確認してください');
   if(d.rows.slice(index+1).some(r=>r.gpsKm!==null))throw Error('後の行にも計測があります。先の計測をリセットしてから取り直してください');
   d.rows[index].gpsKm=gps;
-  d.rows[index].manualKm=''; // a new explicit GPS read replaces that row's manual correction
+  d.rows[index].manualKm=''; // an explicit new GPS measurement supersedes the old manual correction
+  d.rows[index].place=place(details.place);d.rows[index].at=dateTime(details.at);
   return d;
  }
  return {fresh,clone,derive,setStartKm,setManualKm,appendRow,startGps,captureRow,readKm,MAX_ROWS};
