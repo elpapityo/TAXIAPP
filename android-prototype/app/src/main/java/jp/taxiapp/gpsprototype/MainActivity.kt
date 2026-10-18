@@ -80,7 +80,7 @@ class MainActivity : Activity() {
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
         button(root, "🌐 GPSテストWebを開く") {
             startActivity(Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://elpapityo.github.io/TAXIAPP/gps-import-test.html"))
+                Uri.parse("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=034"))
                 .addCategory(Intent.CATEGORY_BROWSABLE))
         }
         button(root, "✕ アプリを終了（GPSも停止）") { exitAppCompletely() }
@@ -190,7 +190,11 @@ class MainActivity : Activity() {
     // The bridge performs the native callback automatically, without a second tap.
     private fun offerBrowserDistance(request: Intent?) {
         val data = request?.data ?: return
-        if (data.scheme != "taxiappgpsauto" || data.host != "measure") return
+        if (data.scheme != "taxiappgpsv034" || data.host != "measure") {
+            note.text = "GPS連携エラー：ブラウザとアプリの識別名が一致しません"
+            alert("GPS連携アプリの種類が一致しません。Webの再読み込みとv0.3.4の確認をお願いします。")
+            return
+        }
         val nonce = data.getQueryParameter("nonce") ?: ""
         val metric = data.getQueryParameter("metric") ?: ""
         if (!Regex("^[a-f0-9]{32}$").matches(nonce) ||
@@ -236,7 +240,7 @@ class MainActivity : Activity() {
                     .put("mode", state.mode.name)
                 // Callback is fixed to our separate, non-business test page.
                 // Never accept a caller-supplied URL. Coordinates are not sent.
-                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html" +
+                val callback = "https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=034" +
                     "#gps-bridge=" + Uri.encode(reply.toString())
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(callback))
                     .addCategory(Intent.CATEGORY_BROWSABLE))
