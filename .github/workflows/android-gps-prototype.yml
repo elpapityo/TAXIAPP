@@ -44,12 +44,22 @@ jobs:
           APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridgeauto'"
-          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.2-one-tap-simple-test'"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridgeexit'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.3-exit-stops-gps-test'"
           # AAPT prints localized app labels differently across runner environments.
           # Verify source label exactly and print the actual APK labels for diagnosis.
-          grep -F 'android:label="TAXIAPP GPSかんたん試験"' android-prototype/app/src/main/AndroidManifest.xml
+          grep -F 'android:label="TAXIAPP GPS終了連動試験"' android-prototype/app/src/main/AndroidManifest.xml
           "$AAPT" dump badging "$APK" | grep -F 'application-label:' || true
+      - name: Check explicit exit and background separation
+        run: |
+          MAIN=android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt
+          SERVICE=android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt
+          grep -F '✕ アプリを終了（GPSも停止）' "$MAIN"
+          grep -F 'GPSテストWebを開く' "$MAIN"
+          grep -F 'private fun exitAppCompletely()' "$MAIN"
+          grep -F 'override fun onTaskRemoved(rootIntent: Intent?)' "$SERVICE"
+          grep -F 'engine.stop()' "$SERVICE"
+          grep -F 'android:scheme="taxiappgpsexit"' android-prototype/app/src/main/AndroidManifest.xml
       - name: Upload installable GPS test APK
         uses: actions/upload-artifact@v4
         with:
@@ -62,16 +72,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/TAXIAPP-GPS-simple-auto-v0.3.2.apk"
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-exit-v0.3.3.apk"
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          TAG="gps-distance-auto-v0.3.2"
+          TAG="gps-distance-exit-v0.3.3"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$APK" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "TAXIAPP GPSワンタッチ連携試験 v0.3.2" \
-              --notes "GPS開始・停止を中心に整理した試験版です。ブラウザのGPSボタンから距離・住所・時刻を確認操作なしで返します。既存GPS試験アプリを削除せず共存できますが、測定データは共有しません。実運用前に走行距離・ブラウザ復帰の実機検証が必要です。" \
+              --title "TAXIAPP GPS終了連動・ワンタッチ連携試験 v0.3.3" \
+              --notes "GPSテストWebへのリンクを追加。アプリ明示終了・戻る操作・タスク削除でGPS計測を停止。ホーム・画面OFF・アプリ切替では計測継続。旧GPS試験アプリと別パッケージで共存し測定データは独立。実機での停止とアプリ間往復は未検証です。" \
               --prerelease
           fi
