@@ -13,6 +13,13 @@ const mockFetch=(overrides={},status=200)=>async(url,opts)=>{
  return {ok:status>=200&&status<300,status,json:async()=>({...sample,...overrides})};
 };
 async function main(){
+ const day1=B.ensureStart(storage,'duty-1',112.250);
+ assert.equal(B.calculated(112.250,day1),0);
+ assert.equal(B.calculated(115.250,B.baseline(storage,'duty-1')),3);
+ const day2=B.ensureStart(storage,'duty-2',130);
+ assert.equal(B.calculated(130,day2),0);
+ assert.equal(B.calculated(132,B.baseline(storage,'duty-2')),2);
+ assert.equal(B.ensureStart(storage,'duty-1',130).gps,112.250);
  assert.equal(B.calculated(10,null),10);
  assert.equal(B.calculated(15,null),15);
  const base=B.recordManual(storage,'shift-A',40,'50');
