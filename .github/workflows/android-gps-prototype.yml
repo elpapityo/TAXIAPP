@@ -44,11 +44,11 @@ jobs:
           APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridgev034'"
-          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.4-bridge-scheme-fixed'"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridgev035'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.5-minimal-ui'"
           # AAPT prints localized app labels differently across runner environments.
           # Verify source label exactly and print the actual APK labels for diagnosis.
-          grep -F 'android:label="TAXIAPP GPS連携修正版"' android-prototype/app/src/main/AndroidManifest.xml
+          grep -F 'android:label="TAXIAPP GPS距離計"' android-prototype/app/src/main/AndroidManifest.xml
           "$AAPT" dump badging "$APK" | grep -F 'application-label:' || true
       - name: Check explicit exit and background separation
         run: |
@@ -59,7 +59,7 @@ jobs:
           grep -F 'private fun exitAppCompletely()' "$MAIN"
           grep -F 'override fun onTaskRemoved(rootIntent: Intent?)' "$SERVICE"
           grep -F 'engine.stop()' "$SERVICE"
-          grep -F 'android:scheme="taxiappgpsv034"' android-prototype/app/src/main/AndroidManifest.xml
+          grep -F 'android:scheme="taxiappgpsv035"' android-prototype/app/src/main/AndroidManifest.xml
       - name: Cross-check browser and Android bridge schemes
         run: |
           python3 - <<'PY'
@@ -70,9 +70,20 @@ jobs:
           actual = re.search(r'if \(data\.scheme != "([a-z0-9]+)"', activity)
           declared = re.search(r'android:scheme="([a-z0-9]+)"', manifest)
           assert actual and declared, "bridge scheme not found"
-          assert actual.group(1) == declared.group(1) == "taxiappgpsv034", (actual.group(1), declared.group(1))
+          assert actual.group(1) == declared.group(1) == "taxiappgpsv035", (actual.group(1), declared.group(1))
           assert "if (data.scheme != \"taxiappgpsauto\"" not in activity
           print("Android URI scheme matches manifest and handler: " + actual.group(1))
+          PY
+      - name: Verify minimal GPS UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          ui=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt").read_text()
+          for word in ["GPS測定を開始","GPS測定を停止","GPSテストWebを開く","アプリを終了","距離をゼロに戻す","offerBrowserDistance","taxiappgpsv035"]:
+              assert word in ui, word
+          for word in ["詳細・実車計測","お客様が乗車","お客様が降車","実車距離を比較","計測結果をコピー","車両の実車区間距離"]:
+              assert word not in ui, word
+          print("Minimal GPS UI verified")
           PY
       - name: Upload installable GPS test APK
         uses: actions/upload-artifact@v4
@@ -86,16 +97,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/TAXIAPP-GPS-fixed-v0.3.4.apk"
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-minimal-v0.3.5.apk"
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          TAG="gps-distance-fixed-v0.3.4"
+          TAG="gps-distance-minimal-v0.3.5"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$TAG" "$APK" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "TAXIAPP GPS ワンタッチ連携修正版 v0.3.4" \
-              --notes "GPSテストWebへのリンクを追加。アプリ明示終了・戻る操作・タスク削除でGPS計測を停止。ホーム・画面OFF・アプリ切替では計測継続。旧GPS試験アプリと別パッケージで共存し測定データは独立。実機での停止とアプリ間往復は未検証です。" \
+              --title "TAXIAPP GPSシンプル距離計 v0.3.5" \
+              --notes "GPS距離測定専用。累計・GPS受信状態・開始停止・Webリンク・終了と確認付きリセットのみ。乗車降車・比較・コピーの表示を撤去。明示終了ではGPS停止、他アプリ利用中は継続。旧試験アプリと共存、計測データは別管理。" \
               --prerelease
           fi
