@@ -55,6 +55,7 @@ assert.match(html,/data-gps/);
 assert.match(html,/GPS距離・住所・時間/);
 assert.match(html,/location\.href=req\.uri/);
 assert.match(html,/history\.replaceState/);
+assert.match(html,/addEventListener\('hashchange',readNativeReturn\)/);
 assert.match(html,/sessionStorage/);
 assert.match(html,/位置座標/); // no coordinates should be handled in the test UI
 assert.match(html,/HANDOFF_MS=120000/);
