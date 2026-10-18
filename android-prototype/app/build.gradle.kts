@@ -10,8 +10,8 @@ android {
         applicationId = "jp.taxiapp.gpsprototype"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0-distance-test"
+        versionCode = 3
+        versionName = "0.3.0-distance-bridge-test"
     }
 
     compileOptions {
