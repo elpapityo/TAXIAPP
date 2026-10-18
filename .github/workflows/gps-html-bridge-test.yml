@@ -7,6 +7,10 @@ on:
       - 'index.html'
       - 'gps-native-bridge.js'
       - 'gps-trip-ui.js'
+      - 'daily-reference.js'
+      - 'highway-report.js'
+      - 'tests/daily-reference.test.js'
+      - 'tests/highway-trip-limit.test.js'
       - 'tests/gps-native-bridge.test.js'
       - '.github/workflows/gps-html-bridge-test.yml'
   pull_request:
@@ -15,6 +19,10 @@ on:
       - 'index.html'
       - 'gps-native-bridge.js'
       - 'gps-trip-ui.js'
+      - 'daily-reference.js'
+      - 'highway-report.js'
+      - 'tests/daily-reference.test.js'
+      - 'tests/highway-trip-limit.test.js'
       - 'tests/gps-native-bridge.test.js'
       - '.github/workflows/gps-html-bridge-test.yml'
   workflow_dispatch:
@@ -32,8 +40,16 @@ jobs:
         run: |
           node --check gps-native-bridge.js
           node --check gps-trip-ui.js
-      - name: Check GPS correction math and isolation
-        run: node tests/gps-native-bridge.test.js
+          node --check daily-reference.js
+          node --check highway-report.js
+      - name: Full regression suite: fares, daily records, GPS, highway, sync
+        run: |
+          set -e
+          for f in tests/*.test.js; do
+            echo "::group::$f"
+            node "$f"
+            echo "::endgroup::"
+          done
       - name: Verify source integration guards
         run: |
           python3 - <<'PY'
