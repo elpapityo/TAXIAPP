@@ -12,8 +12,8 @@ android {
         applicationId = "jp.taxiapp.gpsprototype.loopbackv038"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.3.8-loopback-test"
+        versionCode = 3
+        versionName = "0.3.9-loopback-recovery"
     }
 
     compileOptions {
