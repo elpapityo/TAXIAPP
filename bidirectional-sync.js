@@ -207,6 +207,9 @@ function create(deps){
     const listing=await request('syncList',{});
     if(!listing.shifts?.some(x=>x.id===id&&x.revision===remote.revision))
      throw Error('バックアップ中にクラウドが更新されました。再確認してください');
+    const latest=getModel()?.shifts?.find(s=>s.id===id);
+    if(!latest||localHash(latest)!==before)
+     throw Error('クラウドの確認中にこの端末の記録が変わりました。再確認してください');
     const hash=remoteHash(remote.shift),base={revision:remote.revision,hash};
     if(!setSaved({...saved,[id]:{...base,receiving:true}}))throw Error(lastError);
     await replaceRemoteShift(id,remote.shift,true);

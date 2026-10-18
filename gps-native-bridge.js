@@ -39,9 +39,9 @@
    if(!resp.ok)throw Error('GPS通信エラー HTTP '+resp.status);
    const data=await resp.json();
    if(data.format!=='TAXIAPP_GPS_LOOPBACK_V1'||!Number.isFinite(data.tripKm)||data.tripKm<0)throw Error('GPS応答が不正です');
-   if(!data.running)throw Error('GPS計測が停止しています');
-   if(data.gpsAgeMs===null||data.gpsAgeMs>30000)throw Error('GPS受信が古いか取得できていません');
-   if(data.unresolvedGap)throw Error('GPS欠測が未解決です。車両トリップを確認してください');
+   if(data.running!==true)throw Error('GPS計測が停止しています');
+   if(!Number.isFinite(data.gpsAgeMs)||data.gpsAgeMs<0||data.gpsAgeMs>30000)throw Error('GPS受信が古いか取得できていません');
+   if(data.unresolvedGap!==false)throw Error('GPS欠測が未解決です。車両トリップを確認してください');
    return data;
   }finally{clearTimeout(timeout)}
  }

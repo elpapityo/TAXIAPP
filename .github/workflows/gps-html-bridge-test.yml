@@ -4,6 +4,9 @@ on:
     branches:
       - feat/html-native-gps-loopback-20261018
     paths:
+      - '*.js'
+      - 'tests/**'
+      - 'google-apps-script/**'
       - 'index.html'
       - 'gps-native-bridge.js'
       - 'gps-trip-ui.js'
@@ -16,6 +19,9 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - '*.js'
+      - 'tests/**'
+      - 'google-apps-script/**'
       - 'index.html'
       - 'gps-native-bridge.js'
       - 'gps-trip-ui.js'
@@ -42,7 +48,7 @@ jobs:
           node --check gps-trip-ui.js
           node --check daily-reference.js
           node --check highway-report.js
-      - name: Full regression suite: fares, daily records, GPS, highway, sync
+      - name: 'Full regression suite: fares, daily records, GPS, highway, sync'
         run: |
           set -e
           for f in tests/*.test.js; do
@@ -56,7 +62,7 @@ jobs:
           from pathlib import Path
           html=Path('index.html').read_text()
           ui=Path('gps-trip-ui.js').read_text()
-          assert '<script src="./gps-native-bridge.js?v=1"></script>' in html
+          assert '<script src="./gps-native-bridge.js?v=2"></script>' in html
           assert "if(!shift?.draft||shift.draft.editId)" in html
           assert "active.draft?.editId" in html
           assert "window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue)" in html

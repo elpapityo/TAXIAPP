@@ -418,10 +418,10 @@ html[data-ui-theme="night"] .drive-layout-choice{background:#182a3f}
 <script src="./daily-reference.js?v=0.3.27"></script>
 <script src="./gps-trip.js?v=0.3.34"></script>
 <script src="./gps-trip-ui.js?v=0.3.35"></script>
-<script src="./gps-native-bridge.js?v=1"></script>
+<script src="./gps-native-bridge.js?v=2"></script>
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-report.js?v=0.3.36"></script>
-<script src="./bidirectional-sync.js?v=20261017-10"></script>
+<script src="./bidirectional-sync.js?v=20261019-1"></script>
 <script src="./cloud-sync-ui.js?v=20261017-10"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
@@ -1894,7 +1894,7 @@ const gpsTripUI=window.TAXIAPP_GPS_UI?window.TAXIAPP_GPS_UI({
 function refreshDraftGpsFields(shiftId,recordId){
  const active=getShift(),draft=active?.draft;
  if(active?.id!==shiftId||draft?.id!==recordId||tab!=='drive')return;
- for(const key of ['AL','AM','F','L']){
+ for(const key of ['AL','AM','F','L','S','V','AB','AE']){
   const value=String(draft.raw?.[key]??'');
   appEl.querySelectorAll('[data-col="'+key+'"]').forEach(input=>{
    if(document.activeElement!==input&&String(input.value)!==value)input.value=value;
@@ -2009,7 +2009,9 @@ function handleAction(action,id){
   const btn=appEl.querySelector('[data-action="gpsTripFill"][data-id="'+id+'"]');
   if(btn)btn.disabled=true;
   bridge.read().then(data=>{
+   if(!canEditNow())return;
    const active=getShift();
+   if(active?.endedAt||active?.endedIso)return;
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const base=bridge.baseline(localStorage,shiftId);
    if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
@@ -2018,7 +2020,7 @@ function handleAction(action,id){
    active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
    active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
-   saveLater();render();toast('GPSアプリの走行距離 '+km+'km を取得しました。');
+   saveLater();refreshDraftGpsFields(shiftId,draftId);updateElapsedTimer();toast('GPSアプリの走行距離 '+km+'km を取得しました。');
   }).catch(e=>toast('外部GPS：'+e.message,true)).finally(()=>{if(btn&&btn.isConnected)btn.disabled=false;});
   return;
  }
@@ -2056,6 +2058,7 @@ function handleAction(action,id){
    if(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
     const departingId=newRecord.id,startedAt=newRecord.startedIso;
     window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+     if(!canEditNow())return;
      const current=getShift();
      if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
      const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer);
@@ -2338,7 +2341,9 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
    // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
    window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+    if(!canEditNow())return;
     const active=getShift();
+    if(active?.endedAt||active?.endedIso)return;
     if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[col])!==manualValue)return;
     window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue);
     // A driver's corrected vehicle trip must immediately update this shift's remaining distance.

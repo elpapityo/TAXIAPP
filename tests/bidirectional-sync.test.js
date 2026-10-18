@@ -111,8 +111,24 @@ function client(name,svc,model,failReceive=false){
  const E=client('e',{request:()=>Promise.reject(Error('offline'))},{shifts:[{id,records:[],settings:{},startingOdo:'8'}]});
  assert.equal(await E.app.run(),false);
  assert.equal(E.model.shifts[0].startingOdo,'8');
+ // Local edits while the final cloud revision check is in flight must survive.
+ const raceServer=server();
+ const raceModel={shifts:[{id,records:[],settings:{},startingOdo:'10'}]};
+ raceServer.cloud.set(id,{revision:1,shift:{id,records:[],settings:{},startingOdo:'20'}});
+ let editDuringList=false;
+ const race=client('resolve-race',{request:async(action,data)=>{
+  const result=await raceServer.request(action,data);
+  if(editDuringList&&action==='syncList')raceModel.shifts[0].startingOdo='30';
+  return result;
+ }},raceModel);
+ assert.equal(await race.app.run(),false);
+ editDuringList=true;
+ assert.equal(await race.app.resolve(id,false,async()=>true),false);
+ assert.equal(raceModel.shifts[0].startingOdo,'30','new input cannot be replaced by the backed-up cloud copy');
+ assert.equal(raceServer.cloud.get(id).shift.startingOdo,'20');
+ assert.equal(race.app.status().conflicts.length,1);
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
- for(const literal of ['bidirectional-sync.js?v=20261017-10','cloud-sync-ui.js?v=20261017-10',
+ for(const literal of ['bidirectional-sync.js?v=20261019-1','cloud-sync-ui.js?v=20261017-10',
   'syncUI.panel()','syncUI.run(true)','syncMode','googlePostRequest(',
   'if(sheetTargetPrefs().syncMode===\'on\'){syncUI.schedule();return;}']){
   assert.ok(html.includes(literal),'missing '+literal);

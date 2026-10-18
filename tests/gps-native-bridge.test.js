@@ -52,6 +52,12 @@ async function main(){
  for(const [name,value] of [
   ['stopped',{running:false}],
   ['stale',{gpsAgeMs:30001}],
+  ['missing age',{gpsAgeMs:undefined}],
+  ['negative age',{gpsAgeMs:-1}],
+  ['string age',{gpsAgeMs:'100'}],
+  ['NaN age',{gpsAgeMs:NaN}],
+  ['string running',{running:'false'}],
+  ['unknown gap',{unresolvedGap:undefined}],
   ['unresolved',{unresolvedGap:true}],
   ['negative',{tripKm:-2}],
   ['format',{format:'bad'}],
