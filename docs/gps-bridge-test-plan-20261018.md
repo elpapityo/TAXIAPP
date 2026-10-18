@@ -73,3 +73,11 @@ Android試験版GPSアプリに蓄積された「GPS累計距離」を、ブラ�
 - 旧HTMLやスクリプトのキャッシュを使わないようWeb呼出し先とJSの読み込みに `?v=034` を付ける。
 - GPS測定の開始前にはアプリで「GPS測定を開始」を押す。GPS未計測を偽の距離で代替しない。
 - 実際のAndroidブラウザ往復・OSによるページ選択はGalaxy Z Fold6実機確認が必要。
+
+## v0.3.5：アプリ内Web方式（Chromeのタブ増加防止）
+
+GPSアプリ内でWebViewを1画面だけ開き、WebのGPSボタンの `taxiappgpsv035://measure` をAndroid WebViewが直接受信する。GPS値・住所・時刻は同じWebViewのURL hashに反映し、ChromeへURLを送り直さない。GPSアプリの「GPSテストWebを開く」からこの画面を開ける。
+
+外部ChromeでGPSボタンを押した場合は `taxiappgpsv035://web` でアプリ内Webへ案内し、ChromeでGPS結果用の新しいタブを開かない。**ただしChrome上の試験データとアプリ内WebViewの試験データは別保存**。未移行データはChrome側に残し、同期しない。ブラウザの戻り口自動連携は外部Chromeには提供しない。
+
+通信はWebViewがGitHub PagesへアクセスするHTTPSのみ。GPS値・住所・時刻はそのWebView内で処理し、既存日報のRAWやGoogle Sheetsには保存しない。走行時の実機確認待ち。
