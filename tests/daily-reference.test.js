@@ -53,4 +53,25 @@ const freshGps=daily.calculate({...shift,gpsTrip:{enabled:true,tripKm:6.3,lastFi
  lastSeenMs:now.getTime(),status:'tracking',unresolvedGap:false}},opts);
 eq(freshGps.travelKm,6.3);
 assert.equal(freshGps.capKm,294);
+// Vehicle trip meter is not required to reset to zero between shifts.
+// The 275 km daily base always applies to distance driven AFTER departure.
+const continued={...shift,startingOdo:'260',endingOdo:'',records:[]};
+const running=daily.calculate({...continued,records:[{kind:'ride',status:'complete',raw:{P:'',L:'270'}}]},opts);
+eq(running.travelKm,10);
+eq(running.capKm,275);
+eq(running.remainingKm,265);
+const returnTrip=daily.calculate({...continued,endedAt:'20:00',endedIso:new Date('2026-10-16T20:00:00+09:00').toISOString(),endingOdo:'540'},opts);
+eq(returnTrip.travelKm,280);
+eq(returnTrip.capKm,275);
+eq(returnTrip.exceededKm,5);
+const highwayTrip=daily.calculate({...continued,endedAt:'20:00',endedIso:new Date('2026-10-16T20:00:00+09:00').toISOString(),endingOdo:'540',records:[
+ {kind:'ride',status:'complete',raw:{P:'実',Y:12.75}},
+ {kind:'empty',status:'complete',raw:{P:'空',AK:6.25}}
+]},opts);
+eq(highwayTrip.capKm,294);
+eq(highwayTrip.travelKm,280);
+eq(highwayTrip.remainingKm,14);
+const nextShift=daily.calculate({...continued,startingOdo:'540',endingOdo:'550',endedAt:'20:00',endedIso:new Date('2026-10-16T20:00:00+09:00').toISOString()},opts);
+eq(nextShift.travelKm,10);
+eq(nextShift.remainingKm,265);
 console.log('Daily reference tests passed: 13h elapsed, return freeze, 275km+highway, estimates, unknown GPS.');
