@@ -1,5 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
 const B=require('../gps-native-bridge.js');
 const values=new Map();
 const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
@@ -13,6 +14,12 @@ const mockFetch=(overrides={},status=200)=>async(url,opts)=>{
  return {ok:status>=200&&status<300,status,json:async()=>({...sample,...overrides})};
 };
 async function main(){
+ const html=fs.readFileSync('index.html','utf8');
+ assert.match(html,/newRecord\.distanceMode='trip'/);
+ assert.match(html,/出庫時の車両トリップ（km）/);
+ assert.match(html,/入庫時の車両トリップ（km）/);
+ assert.match(html,/出庫時走行距離（旧記録・km）/);
+ assert.match(html,/endingOdo\)-number\(selected\.startingOdo\)/);
  const day1=B.ensureStart(storage,'duty-1',112.250);
  assert.equal(B.calculated(112.250,day1),0);
  assert.equal(B.calculated(115.250,B.baseline(storage,'duty-1')),3);
