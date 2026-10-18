@@ -1,0 +1,34 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GPS Chrome通信試験</title><style>body{font:16px system-ui,sans-serif;max-width:650px;margin:auto;padding:18px;background:#0b2438;color:#fff}input,button{font:inherit;padding:12px;border-radius:8px;margin:5px 0}input{width:95%}button{background:#187ec1;color:#fff;border:0}section{padding:12px;border:1px solid #8ab;border-radius:12px;margin:12px 0}.ok{color:#9fdaaf}.err{color:#ffbd9a}</style></head><body><h1>GPS Chrome 直接取得テスト</h1><p>GPSアプリの計測を開始しておき、連携キーを入力してから取得します。Chromeのタブは移動せず、このページ内で表示します。まだ本番日報とは連携しません。</p><section><label>GPSアプリに表示された試験キー<input id="token" autocomplete="off" spellcheck="false" placeholder="32桁のキー"></label><button id="get">現在のGPS距離を取得</button><p id="status" role="status">待機中</p><p id="value" style="font-size:28px"></p><p id="quality"></p></section><section><p>基準距離を手動変更する場合（この試験ページのみ）</p><input id="manual" type="number" step=".001" min="0" placeholder="例: 50"><button id="correct">ここから再加算</button><p id="result"></p></section><script>
+'use strict';
+let current=null, correction=null;
+const $=id=>document.getElementById(id);
+function error(s){$('status').textContent=s;$('status').className='err'}
+function render(){
+ if(!current)return;
+ $('value').textContent='GPS累計 '+current.tripKm.toFixed(3)+' km';
+ const shown=correction?correction.value+current.tripKm-correction.gps:current.tripKm;
+ $('result').textContent='表示距離 '+Math.max(0,shown).toFixed(3)+' km';
+ $('quality').textContent='計測 '+(current.running?'継続':'停止')+' / GPS受信 '+(current.gpsAgeMs==null?'不明':Math.round(current.gpsAgeMs/1000)+'秒前')+' / 欠測 '+current.gapCount+'回';
+}
+$('get').onclick=async()=>{
+ const key=$('token').value.trim();
+ if(!/^[a-f0-9]{32}$/.test(key)){error('32桁の試験キーを入力してください');return}
+ const ctrl=new AbortController();const timeout=setTimeout(()=>ctrl.abort(),4000);
+ try{
+  $('status').textContent='GPSアプリへ直接問い合わせ中…';
+  const r=await fetch('http://127.0.0.1:18765/gps',{headers:{'X-GPS-Test-Key':key},cache:'no-store',signal:ctrl.signal});
+  if(!r.ok)throw Error('HTTP '+r.status);
+  const d=await r.json();
+  if(d.format!=='TAXIAPP_GPS_LOOPBACK_V1'||!Number.isFinite(d.tripKm)||d.tripKm<0)throw Error('GPSデータ形式が不正です');
+  if(current&&d.tripKm<current.tripKm){correction=null;error('GPS累計がリセットされています。計測基準を再設定してください');return}
+  current=d;render();$('status').textContent='取得成功（画面遷移なし）';$('status').className='ok';
+ }catch(e){error('取得できません：'+e.message+'。GPSアプリ起動・Chromeローカルネットワーク権限・試験キーを確認してください')}
+ finally{clearTimeout(timeout)}
+};
+$('correct').onclick=()=>{
+ if(!current){error('先にGPS距離を取得してください');return}
+ const x=Number($('manual').value);
+ if($('manual').value.trim()===''||!Number.isFinite(x)||x<0){error('0以上の距離を入力してください');return}
+ correction={gps:current.tripKm,value:x};render();
+};
+</script></body></html>
