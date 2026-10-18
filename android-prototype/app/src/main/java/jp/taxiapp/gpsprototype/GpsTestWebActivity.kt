@@ -16,6 +16,9 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceError
+import android.view.View
+import android.widget.TextView
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -35,19 +38,36 @@ import java.util.concurrent.atomic.AtomicBoolean
 class GpsTestWebActivity : Activity() {
     private val main = Handler(Looper.getMainLooper())
     private lateinit var web: WebView
+    private lateinit var loadError: TextView
     private var alive = true
     private val trustedHost = "elpapityo.github.io"
     private val testPath = "/TAXIAPP/gps-import-test.html"
-    private val scheme = "taxiappgpsv035"
+    private val scheme = "taxiappgpsv036"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(Button(this).apply {
-            text = "← GPS計測画面へ戻る"
+        val toolbar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        toolbar.addView(Button(this).apply {
+            text = "← GPSへ戻る"
             isAllCaps = false
             setOnClickListener { finish() }
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        toolbar.addView(Button(this).apply {
+            text = "↻ 再読み込み"
+            isAllCaps = false
+            setOnClickListener {
+                loadError.visibility = View.GONE
+                web.reload()
+            }
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        root.addView(toolbar)
+        loadError = TextView(this).apply {
+            visibility = View.GONE
+            textSize = 15f
+            setPadding(15, 12, 15, 12)
+        }
+        root.addView(loadError)
         web = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -56,6 +76,21 @@ class GpsTestWebActivity : Activity() {
             settings.javaScriptCanOpenWindowsAutomatically = false
             settings.setSupportMultipleWindows(false)
             webViewClient = object : WebViewClient() {
+                override fun onReceivedError(
+                    view: WebView, request: WebResourceRequest, error: WebResourceError
+                ) {
+                    if (!request.isForMainFrame) return
+                    loadError.text = "Webの読み込みに失敗しました（" +
+                        error.errorCode + "）。通信状態を確認し、「再読み込み」を押してください。"
+                    loadError.visibility = View.VISIBLE
+                }
+
+                override fun onPageFinished(view: WebView, url: String) {
+                    if (isTestPage(Uri.parse(url)) && view.title?.contains("TAXIAPP") == true) {
+                        loadError.visibility = View.GONE
+                    }
+                }
+
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     if (!request.isForMainFrame) return false
                     val url = request.url
@@ -76,7 +111,7 @@ class GpsTestWebActivity : Activity() {
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(root)
         if (savedInstanceState == null) {
-            web.loadUrl("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=035&embedded=1")
+            web.loadUrl("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=036&embedded=1")
         } else {
             web.restoreState(savedInstanceState)
         }
