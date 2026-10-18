@@ -2011,7 +2011,9 @@ function handleAction(action,id){
   bridge.read().then(data=>{
    const active=getShift();
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
-   const km=bridge.calculated(data.tripKm,bridge.ensureStart(localStorage,shiftId,data.tripKm)).toFixed(3);
+   const base=bridge.baseline(localStorage,shiftId);
+   if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
+   const km=bridge.calculated(data.tripKm,base).toFixed(3);
    active.draft.raw[id]=km;
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
    active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
