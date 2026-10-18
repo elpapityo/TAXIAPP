@@ -35,7 +35,7 @@
   if(!Number.isFinite(data.capturedAt)||data.capturedAt<pending.issuedAt-10000||data.capturedAt>now+10000)throw Error('結果の時刻が正しくありません');
   const x={source:'android',metric:pending.metric,
    tripKm:km(data.tripKm),realKm:km(data.realKm),emptyKm:km(data.emptyKm),lastRideKm:km(data.lastRideKm,true),
-   capturedAt:data.capturedAt, gapCount:Number.isInteger(data.gapCount)&&data.gapCount>=0?data.gapCount:0,
+   capturedAt:data.capturedAt, place:typeof data.address==='string'?data.address.slice(0,120):'住所未取得',locationAt:Number.isFinite(data.locationAt)?data.locationAt:null, gapCount:Number.isInteger(data.gapCount)&&data.gapCount>=0?data.gapCount:0,
    unresolvedGap:data.unresolvedGap===true,running:data.running===true,
    gpsAgeMs:Number.isFinite(data.gpsAgeMs)&&data.gpsAgeMs>=0?data.gpsAgeMs:null,
    accuracyMeters:Number.isFinite(data.accuracyMeters)?data.accuracyMeters:null,
@@ -59,7 +59,7 @@
   }
   const m=text.match(/GPS受信\s+(\d+)秒前/);
   const x={source:'clipboard',metric,tripKm:matchKm('GPS累計'),realKm:matchKm('実車GPS累計'),
-   emptyKm:matchKm('空車GPS累計'),lastRideKm:matchKm('直前の実車',false),capturedAt:now,
+   emptyKm:matchKm('空車GPS累計'),lastRideKm:matchKm('直前の実車',false),capturedAt:now,place:'住所は旧GPSアプリのコピーでは取得不可',locationAt:null,
    running:!/状態\s+停止中/.test(text),unresolvedGap:/未解決欠測\s+あり/.test(text),
    gapCount:Number(text.match(/GPS欠測\s+(\d+)回/)?.[1]||0),gpsAgeMs:m?Number(m[1])*1000:null,
    accuracyMeters:null,rideCount:Number(text.match(/降車完了\s+(\d+)回/)?.[1]||0),mode:'空車'};
