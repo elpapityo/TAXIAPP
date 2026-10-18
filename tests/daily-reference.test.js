@@ -71,6 +71,10 @@ const highwayTrip=daily.calculate({...continued,endedAt:'20:00',endedIso:new Dat
 eq(highwayTrip.capKm,294);
 eq(highwayTrip.travelKm,280);
 eq(highwayTrip.remainingKm,14);
+const resetTrip=daily.calculate({...continued,endedAt:'20:00',endedIso:new Date('2026-10-16T20:00:00+09:00').toISOString(),endingOdo:'17'},opts);
+assert.equal(resetTrip.travelKm,null);
+assert.equal(resetTrip.remainingKm,null);
+assert.ok(resetTrip.distanceSource.includes('途中リセット'));
 const nextShift=daily.calculate({...continued,startingOdo:'540',endingOdo:'550',endedAt:'20:00',endedIso:new Date('2026-10-16T20:00:00+09:00').toISOString()},opts);
 eq(nextShift.travelKm,10);
 eq(nextShift.remainingKm,265);
