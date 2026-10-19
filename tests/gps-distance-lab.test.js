@@ -231,7 +231,7 @@ assert.match(activity,/openVerifiedExternalBrowser/);
 assert.match(loopback,/route=="\/api\/identity"/);
 assert.match(loopback,/GPS_DISTANCE_LAB_SIMULATOR_V1_2/);
 assert.match(loopback,/put\("packageId",context.packageName\)/);
-assert.match(loopback,/put\("webVersion","1.1.0"\)/);
+assert.match(loopback,/put\("webVersion","1.2.0"\)/);
 assert.match(service,/GpsStore.setBrowserConnectionIssue/);
 assert.doesNotMatch(service,/engine.interrupted\("外部ブラウザのローカル接続ができません"\)/);
 assert.match(html,/Web v1.2/);
