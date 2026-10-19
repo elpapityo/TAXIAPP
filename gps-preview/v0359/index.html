@@ -252,6 +252,16 @@ html[data-ui-theme="night"] .wait-place-move:disabled{background:#20364e}
 .field>input[data-number-kind="distance"]+.km-step{margin-left:6px}.field>.km-step+.km-step{margin-left:4px}
 @media(max-width:370px){.km-step{flex-basis:39px;min-width:39px}}
 .discount-fold{margin:10px 0;border-color:var(--line)}.discount-fold summary{font-weight:750;min-height:44px}
+/* v0.3.59 narrow-pane distance layout: prevent 0.1km controls hiding odometer digits.
+   Container width, not device viewport: a mirrored phone/half-screen can still have a sidebar. */
+.form-grid{container-type:inline-size;container-name:distance-fields}
+@container distance-fields (max-width:650px){
+ .form-grid>.field:has(.km-step-control){grid-column:1 / -1;min-width:0}
+}
+.km-step-control{max-width:100%}
+.km-step-control .control{font-variant-numeric:tabular-nums;text-overflow:clip}
+.inline-distance-field{width:100%}
+.inline-distance-field>.km-step-control{min-width:0;width:100%}
 /* v0.3.7: compact precision keypad (one decimal only for km); close on scroll. */
 .calc-detail{background:#f6faff;border:1px solid #cbddea;border-radius:12px;padding:12px 13px;margin:15px 0 5px}
 .calc-detail-title{font-weight:850;font-size:calc(14px * var(--ui-font));margin:0 0 8px}
