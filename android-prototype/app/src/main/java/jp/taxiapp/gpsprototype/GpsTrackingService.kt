@@ -19,6 +19,7 @@ import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import java.util.concurrent.atomic.AtomicBoolean
 import jp.taxiapp.gps.Fix
 import jp.taxiapp.gps.TripAccumulator
 import jp.taxiapp.gps.TripMode
@@ -32,6 +33,7 @@ import java.util.Locale
 class GpsTrackingService : Service() {
     companion object {
         const val ACTION_START = "jp.taxiapp.gpsprototype.START"
+        const val ACTION_REFRESH = "jp.taxiapp.gpsprototype.REFRESH_FIX"
         const val ACTION_STOP = "jp.taxiapp.gpsprototype.STOP"
         const val ACTION_REAL = "jp.taxiapp.gpsprototype.REAL"
         const val ACTION_EMPTY = "jp.taxiapp.gpsprototype.EMPTY"
@@ -43,6 +45,9 @@ class GpsTrackingService : Service() {
     private lateinit var manager: LocationManager
     private lateinit var engine: TripAccumulator
     private var listening = false
+    private var refreshFixSignal: CancellationSignal? = null
+    private var refreshFixListener: LocationListener? = null
+    private var lastFreshRequestAt = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingAlight = false
     private var alightRequestedAtMs = 0L
@@ -85,6 +90,72 @@ class GpsTrackingService : Service() {
             GpsStore.save(this@GpsTrackingService, engine.snapshot())
             updateNotification()
         }
+    }
+
+    /**
+     * Chrome capture asks for a current GPS fix if continuous GPS is temporarily
+     * quiet (e.g. standing still or folded/split-screen display). Do not treat
+     * an old cached getCurrentLocation() result as a fresh measurement.
+     */
+    private fun requestFreshFix() {
+        if (!engine.snapshot().running || !hasPreciseLocation()) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastFreshRequestAt in 0L..5999L) return
+        if (refreshFixSignal != null || refreshFixListener != null) return
+        lastFreshRequestAt = now
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) return
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                val signal=CancellationSignal()
+                refreshFixSignal=signal
+                manager.getCurrentLocation(LocationManager.GPS_PROVIDER,signal,mainExecutor) { fix ->
+                    refreshFixSignal=null
+                    if (fix != null && engine.snapshot().running &&
+                        SystemClock.elapsedRealtime() - fix.elapsedRealtimeNanos / 1000000L in 0L..15000L) {
+                        acceptLocation(fix)
+                    }
+                }
+                mainHandler.postDelayed({
+                    if (refreshFixSignal === signal) {
+                        refreshFixSignal=null
+                        signal.cancel()
+                    }
+                }, 18000L)
+            } else {
+                val l=object:LocationListener {
+                    override fun onLocationChanged(fix:Location) {
+                        if (refreshFixListener!==this)return
+                        refreshFixListener=null
+                        runCatching{manager.removeUpdates(this)}
+                        if (engine.snapshot().running &&
+                            SystemClock.elapsedRealtime() - fix.elapsedRealtimeNanos / 1000000L in 0L..15000L)
+                            acceptLocation(fix)
+                    }
+                }
+                refreshFixListener=l
+                @Suppress("DEPRECATION")
+                manager.requestSingleUpdate(LocationManager.GPS_PROVIDER,l,Looper.getMainLooper())
+                mainHandler.postDelayed({
+                    if (refreshFixListener===l) {
+                        refreshFixListener=null
+                        runCatching{manager.removeUpdates(l)}
+                    }
+                },18000L)
+            }
+        }catch(_:SecurityException) {
+            refreshFixSignal=null
+            refreshFixListener=null
+        }catch(_:IllegalArgumentException) {
+            refreshFixSignal=null
+            refreshFixListener=null
+        }
+    }
+
+    private fun cancelRefreshFix() {
+        refreshFixSignal?.cancel()
+        refreshFixSignal=null
+        refreshFixListener?.let { runCatching { manager.removeUpdates(it) } }
+        refreshFixListener=null
     }
 
     private fun clearAlightRequests() {
@@ -174,12 +245,17 @@ class GpsTrackingService : Service() {
             ACTION_STOP -> {
                 clearAlightRequests()
                 stopListening()
+                cancelRefreshFix()
                 loopback?.stop()
                 loopback=null
                 engine.stop()
                 GpsStore.save(this, engine.snapshot())
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_REFRESH -> {
+                if (engine.snapshot().running) requestFreshFix()
                 return START_NOT_STICKY
             }
             ACTION_REAL, ACTION_EMPTY -> {
@@ -241,7 +317,7 @@ class GpsTrackingService : Service() {
                 engine.interrupted("端末のGPSが無効です")
             } else {
                 manager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, 2000L, 1f,
+                    LocationManager.GPS_PROVIDER, 2000L, 0f,
                     listener, Looper.getMainLooper()
                 )
                 listening = true
@@ -298,6 +374,7 @@ class GpsTrackingService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         clearAlightRequests()
         stopListening()
+        cancelRefreshFix()
         loopback?.stop()
         loopback=null
         engine.stop()
@@ -310,6 +387,7 @@ class GpsTrackingService : Service() {
     override fun onDestroy() {
         clearAlightRequests()
         stopListening()
+        cancelRefreshFix()
         loopback?.stop()
         loopback=null
         // If killed without ACTION_STOP, mark an incomplete trip for inspection.

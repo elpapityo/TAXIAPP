@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-feature android:name="android.hardware.location.gps" android:required="true"/>
     <application
-        android:label="GPS距離ラボ 計測"
+        android:label="GPS距離ラボ v0.8"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false"
         android:usesCleartextTraffic="true">
