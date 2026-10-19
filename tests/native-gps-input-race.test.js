@@ -1,14 +1,14 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const start=html.indexOf(" if(action==='gpsTripFill'&&window.TAXIAPP_EXTERNAL_GPS");
+const start=html.indexOf(" if(action==='gpsTripFill'&&nativeDiaryGpsEnabled()");
 const end=html.indexOf(" if(action==='gpsTripFill'){",start);
 assert.ok(start>0&&end>start);
 const handler=html.slice(start,end);
 async function scenario(change,enabled=true){
  let finish,editable=true,saves=0,refreshes=0;
  const shift={id:'shift-1',draft:{id:'ride-1',raw:{F:'260'},meta:{}}};
- const context={distanceEnabled:()=>enabled,action:'gpsTripFill',id:'F',shift,getShift:()=>shift,
+ const context={nativeDiaryGpsEnabled:()=>true,distanceEnabled:()=>enabled,action:'gpsTripFill',id:'F',shift,getShift:()=>shift,
   canEditNow:()=>editable,localStorage:{},Date,fetch:()=>{throw Error('fetch should be mocked by GPS bridge');},
   window:{TAXIAPP_EXTERNAL_GPS:{readKey:()=>true,read:()=>new Promise(r=>finish=r),
    baseline:()=>({gps:100,value:260}),calculated:(km,b)=>b.value+km-b.gps}},
