@@ -546,6 +546,8 @@ html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .highway-
 /* Contextual ride-only header: no daily totals or start-of-shift duration. */
 .preview-duty-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .preview-duty-stats:has(> :nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+.preview-duty-stats:has(> :nth-child(4):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){.preview-duty-stats:has(> :nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
 .preview-duty-stats:has(> :only-child){grid-template-columns:minmax(0,1fr)}
 .preview-duty-stat strong[data-duty-field="state"]{color:#7de5b7}
 .preview-duty-route{min-height:0}
@@ -1306,9 +1308,10 @@ function currentDutySummary(shift){
  const dispatch=d?.kind==='dispatch';
  const waiting=!d&&!!shift?.waiting;
  const dispatchSource=DISPATCH_TYPES.find(([code])=>code===raw.E)?.[1]||'未選択';
+ const dispatchType=raw.E?DISPATCH_TYPES.find(([code])=>code===raw.E)?.[1]||'未選択':'未選択';
  const payment=raw.N?PAYMENTS.find(([code])=>code===raw.N)?.[1]||'未選択':'未選択';
  const meter=number(raw.K)===null?'未入力':money(raw.K);
- return {state,dispatch,waiting,dispatchSource,from:routeFrom,to:routeTo,payment,meter};
+ return {state,dispatch,waiting,dispatchSource,dispatchType,from:routeFrom,to:routeTo,payment,meter};
 }
 function renderDutyStatus(shift){
  if(!shift)return '';
@@ -1318,7 +1321,7 @@ function renderDutyStatus(shift){
  if(status.dispatch)columns.push(stat('依頼元アプリ',status.dispatchSource,'dispatch'));
  else if(status.waiting)columns.push(stat('待機',status.from,'wait'));
  else if(status.state==='実車中'||status.state==='降車・精算'){
-  columns.push(stat('支払い方法',status.payment,'payment'),stat('メーター金額',status.meter,'meter'));
+  columns.push(stat('配車区分',status.dispatchType,'dispatchType'),stat('支払い方法',status.payment,'payment'),stat('メーター金額',status.meter,'meter'));
  }
  const route=status.dispatch
   ?`<div class="preview-duty-route"><div><small>お迎え場所</small><strong>${safeText(status.from)}</strong></div></div>`
