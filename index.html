@@ -441,6 +441,21 @@ html[data-ui-theme="night"] .drive-layout-choice .btn.active{background:#1680c7;
 html[data-ui-theme="night"] .hero .btn.big{border-radius:14px}
 html[data-ui-theme="night"] .card{box-shadow:0 10px 32px #020b182b}
 @media(min-width:1051px){html[data-ui-screen-mode="full"] .content-layout,html[data-ui-screen-mode="pc"] .content-layout{grid-template-columns:235px minmax(0,1fr)}}
+/* Compact UI LAB screen matches the reference's information hierarchy. */
+.preview-compact{background:#132436;border:1px solid #36516a;border-radius:18px;padding:12px;color:#f5faff}
+.preview-quick-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:11px}
+.preview-quick-inputs .field-label{color:#c3d3e4;font-size:12px;font-weight:800}
+.preview-quick-inputs .control{background:#091b2c;color:white;min-height:52px;border:1.7px solid #62809b;border-radius:12px}
+.preview-main-buttons{display:grid;grid-template-columns:1.6fr .8fr;gap:8px;margin:10px 0 8px}
+.preview-main-buttons .btn{min-height:77px;border-radius:14px;background:#0b273e;border:1px solid #55718a;color:#f5faff}
+.preview-main-buttons .btn.primary{background:#1482d5;color:#fff;font-size:clamp(19px,2.5vw,32px)}
+.preview-main-buttons .btn.teal{background:#087b5e;color:#fff;font-size:clamp(19px,2.5vw,32px)}
+.preview-sub-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.preview-sub-buttons .btn{min-height:53px;font-size:13px;border-radius:12px;background:#304a64;color:#fff}
+.preview-hidden-detail{margin-top:10px;border:1px solid #36516a;border-radius:12px;padding:10px}
+.preview-hidden-detail summary{cursor:pointer;font-weight:750;padding:7px}
+.preview-hidden-detail .hero{margin-top:12px}
+@media(max-width:650px){.preview-quick-inputs{grid-template-columns:1fr}.preview-main-buttons{grid-template-columns:1fr}.preview-sub-buttons{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1195,13 +1210,28 @@ function renderGuidedHeading(shift){
  return `<div class="preview-steps" aria-label="営業の入力手順">${['迎車','乗車','降車','登録'].map((name,i)=>`<div class="${i===index?'active':i<index?'done':''}"><small>0${i+1}</small>${name}</div>`).join('')}</div>`;
 }
 function renderDriveLayoutChooser(){const mode=displayPrefs().driveLayout;return `<div class="drive-layout-choice" role="group" aria-label="入力画面の切り替え"><strong>入力方式</strong>${[['compact','1画面'],['guided','段階入力'],['detail','詳細入力'],['legacy','従来']].map(([key,label])=>`<button class="btn ${mode===key?'active':''}" data-ui-key="driveLayout" data-ui-value="${key}" type="button" aria-pressed="${mode===key}">${label}</button>`).join('')}</div>`;}
+function renderPreviewCompact(shift){
+ const d=shift.draft,r=d?.raw||{},waiting=shift.waiting;
+ const fields=d?.kind==='ride'?'<div class="preview-quick-inputs">'+field('K',r,{label:'メーター料金（円）',required:true})+
+    '<label class="field"><span class="field-label">支払い方法</span><select class="control" data-col="N">'+
+    PAYMENTS.filter(([v])=>v!=='キ').map(([v,l])=>'<option value="'+safeText(v)+'" '+(r.N===v?'selected':'')+'>'+safeText(l)+'</option>').join('')+
+    '</select></label></div>':'';
+ const compactActions=!d?'<div class="preview-main-buttons"><button class="btn primary big" data-action="beginDispatch">🚕 迎車する</button><button class="btn" data-action="beginRide">🚕 乗車する</button></div><div class="preview-sub-buttons">'+(!waiting?'<button class="btn" data-action="beginWait">🅿 待機開始</button>':'<button class="btn" data-action="endWait">待機終了</button>')+'<button class="btn" data-tab="history">▤ 営業履歴</button></div>':
+ d.kind==='dispatch'?'<div class="preview-main-buttons"><button class="btn primary big" data-action="boardDispatch">🚕 お客様が乗車</button><button class="btn" data-action="gpsPickup">⌖ 地点記録</button></div><div class="preview-sub-buttons"><button class="btn" data-action="cancelDispatch">迎車キャンセル</button><button class="btn" data-ui-key="driveLayout" data-ui-value="detail">＋ 詳細項目</button></div>':
+ d.kind==='ride'?'<div class="preview-main-buttons"><button class="btn teal big" data-action="saveDraft">✓ 登録する</button><button class="btn" data-action="gpsDrop">⌖ 地点記録</button></div><div class="preview-sub-buttons"><button class="btn" data-ui-key="driveLayout" data-ui-value="detail">＋ 詳細項目</button><button class="btn" data-action="discardDraft">入力を取り消す</button></div>':
+ '<div class="preview-main-buttons"><button class="btn teal big" data-action="saveDraft">✓ 登録する</button><button class="btn" data-ui-key="driveLayout" data-ui-value="detail">＋ 詳細項目</button></div>';
+ // Original full form remains accessible for all mandatory fields and complex fares.
+ return '<section class="preview-compact panel" aria-label="1画面営業入力">'+fields+compactActions+
+   (d?'<details class="preview-hidden-detail"><summary>その他の入力項目（保存に必要な項目を含む）</summary>'+renderDraft(shift)+'</details>':'')+
+   '</section>';
+}
 function renderDrive(shift){const active=getShift();if(!active){return `${renderDriveLayoutChooser()}${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
 const t=totals(active.records,active.settings,active.date);
  const mode=displayPrefs().driveLayout;
  const summary=mode==='legacy'?'':renderDutyStatus(active);
  const stage=mode==='guided'?renderGuidedHeading(active):'';
  const title=mode==='legacy'?titleBlock('乗務入力','DAILY OPERATIONS',`${friendlyDate(active.date)}　出庫 ${shortTime(active.startedAt)}`):'';
- const content=active.draft?renderDraft(active):renderNewAction(active);
+ const content=mode==='compact'?renderPreviewCompact(active):active.draft?renderDraft(active):renderNewAction(active);
  const rest=mode==='compact'||mode==='guided'?'<details class="details compact-secondary"><summary>▤ 日報集計・直近の営業記録</summary><div class="inner">'+metrics(active)+renderRecent(active)+'</div></details>':metrics(active)+renderRecent(active);
  return `${renderDriveLayoutChooser()}${title}${summary}${stage}${mode==='legacy'?paymentElapsedPanel(active):''}${content}${active.draft?'':rest}`;}
 
