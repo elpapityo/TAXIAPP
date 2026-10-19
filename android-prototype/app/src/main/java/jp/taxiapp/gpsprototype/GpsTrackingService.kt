@@ -353,7 +353,7 @@ class GpsTrackingService : Service() {
                         // A port conflict is not a GPS-location gap. Preserve
                         // actual distance integrity and show a separate warning.
                         loopback=null
-                        GpsStore.setBrowserConnectionIssue(this,"模擬テスト用ポート48766が使用中です。古い模擬走行アプリを停止してください。")
+                        GpsStore.setBrowserConnectionIssue(this,"模擬テスト用ポート48767が使用中です。古い模擬走行アプリを停止してください。")
                     }
                 }
             }

@@ -73,8 +73,8 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.2.1 · ボタン操作改善版", 12f, 0xFF63EAD2.toInt()), 0)
-        add(label("GPS距離ラボ\n模擬走行テスト", 29f), 3)
+        add(label("GPS DISTANCE LAB · v1.3.0 · ボタン操作改善版", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS距離ラボ\n日報距離連携テスト", 29f), 3)
         add(label("【テスト専用】車を動かさずに模擬走行できます。実GPSと模擬走行は同時に実行しません。0km登録・区間距離・補正は外部Chromeで操作します。", 13f, 0xFFFFD68A.toInt()), 8)
         val meter = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -176,7 +176,7 @@ class MainActivity : Activity() {
                     val result=JSONObject(reply)
                     verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
                         result.optString("packageId")==applicationContext.packageName &&
-                        result.optString("webVersion")=="1.2.1"
+                        result.optString("webVersion")=="1.3.0"
                     if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
                 }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
             }catch(e:Exception){

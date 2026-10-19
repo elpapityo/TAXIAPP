@@ -614,7 +614,7 @@ html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active
 <script src="./daily-reference.js?v=0.3.27"></script>
 <script src="./gps-trip.js?v=0.3.34"></script>
 <script src="./gps-trip-ui.js?v=0.3.35"></script>
-<script src="./gps-native-bridge.js?v=5"></script>
+<script src="./gps-diary-bridge.js?v=20261019-1"></script>
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-report.js?v=0.3.36"></script>
 <script src="./bidirectional-sync.js?v=20261019-1"></script>
@@ -1464,7 +1464,7 @@ const t=totals(active.records,active.settings,active.date);
 function renderNewAction(shift){const count=shift.records.length,waiting=shift.waiting;
  const places=waitingPlaces();
  const placeSelect=`<input class="control" type="text" list="waitPlaceCandidates" data-wait-field="place" aria-label="待機場所" maxlength="60" autocomplete="off" value="${safeText(waiting?.place||'')}" placeholder="現在地で入力／名前を直接入力"><datalist id="waitPlaceCandidates">${places.map(p=>`<option value="${safeText(p)}"></option>`).join('')}</datalist>`;
- const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地</button><button class="btn primary" data-action="registerWaitPlace">＋ 登録</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
+ const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地</button>${window.TAXIAPP_EXTERNAL_GPS?'<button class="btn" data-action="gpsWaitOdo" type="button">⌖ GPS距離</button>':''}<button class="btn primary" data-action="registerWaitPlace">＋ 登録</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
  return `<section class="card hero"><div class="eyebrow">次の記録 / № ${count+1}</div><h2 class="hero-heading" data-mobility>${waiting?'現在：待機中':'現在：空車・流し'}</h2>${waitInfo}<div class="action-grid" style="margin-top:18px"><button class="btn primary big" data-action="beginRide" ${count>=MAX_RECORDS?'disabled':''}>🚕 乗車</button><button class="btn teal big" data-action="beginDispatch" ${count>=MAX_RECORDS?'disabled':''}>📲 アプリ迎車</button>${!waiting?`<button class="btn big" data-action="beginWait">🅿 待機開始</button>`:''}<button class="btn" data-tab="history">▤ 営業履歴</button></div><p class="footnote">待機中の場所・距離は入力した時点で自動保存します。待機中に乗車すると乗車情報に引き継ぎ、必要なら修正できます。流し中のボタン操作は不要です。</p>${count>=MAX_RECORDS?'<div class="warn">60件に達しました。</div>':''}</section>`;
 }
 function renderDraft(shift){const d=shift.draft,r=d.raw,editing=Boolean(d.editId);const heading=d.kind==='dispatch'?'迎車中 / お迎え先の確認':d.kind==='ride'?(d.status==='alighted'?'降車・精算入力':'実車中 / 乗車情報'):d.kind==='empty'?'空車高速の記録':'迎車キャンセルの記録';return `<section class="card hero"><div class="section-heading"><div><div class="eyebrow">${editing?'営業履歴の修正':`営業№ ${r.A}`}</div><h2 class="hero-heading">${heading}</h2></div><span class="pill ${d.kind==='empty'?'mint':d.kind==='cancel'||d.kind==='dispatch'?'amber':''}">${d.kind==='ride'?(d.status==='alighted'?'精算待ち':'実車中'):prettyTag(d)}</span></div>${d.kind==='dispatch'?renderDispatchForm(shift,d):d.kind==='ride'?renderRideForm(shift,d):d.kind==='empty'?renderEmptyForm(shift,d):renderCancelForm(shift,d)}${d.kind==='ride'?'':`<div class="actions"><button class="btn red" data-action="discardDraft">${d.kind==='dispatch'?'迎車入力を取り消す（営業記録なし）':'入力を取り消す'}</button></div>`}</section>`;}
@@ -1707,7 +1707,7 @@ function renderShiftManager(lastShift){
  <section class="card hero"><h2 class="h2">出庫・乗務開始</h2>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫日時（変更可能）</span><input id="shiftStartAt" class="control" type="datetime-local" value="${localDateTime(new Date())}"></label>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時の車両トリップ（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"></label>
- <button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
+ <p class="caption-note">出庫距離は車両トリップの実測値を入力してください。実GPS計測中なら出庫登録時にGPS累計を基準として紐づけます。</p><button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
  ${model.shifts.filter(x=>!x.endedAt&&!x.endedIso).map(x=>'<section class="card"><h2 class="h2">他端末から受信した乗務を編集</h2><p class="helper">'+safeText(x.date)+'　出庫 '+shortTime(x.startedAt)+' ／ '+x.records.length+'件。編集競合を避けるため他端末との同時入力にご注意ください。</p><button class="btn teal" data-action="resumeSyncedShift" data-id="'+safeText(x.id)+'">この端末で乗務入力を開く</button></section>').join('')}
  ${lastShift?`<section class="card"><h2 class="h2">前回の入庫記録</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(lastShift.date)}</b></div><div class="statline"><span>出庫</span><b>${shortTime(lastShift.startedAt)}</b></div><div class="statline"><span>出庫距離</span><b>${number(lastShift.startingOdo)===null?'未記録':safeText(lastShift.startingOdo)+' km'}</b></div><div class="statline"><span>入庫</span><b>${shortTime(lastShift.endedAt)}</b></div><div class="statline"><span>入庫距離</span><b>${number(lastShift.endingOdo)===null?'未記録':safeText(lastShift.endingOdo)+' km'}</b></div>${lastShift.endedAt?`<div class="actions" style="margin-top:14px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(lastShift.id)}">↶ 入庫を取り消して乗務を再開</button></div><p class="footnote">直近の乗務のみ取り消せます。営業記録は残り、入庫時刻・距離は再入力できます。</p>`:''}</section>`:''}`;
  const departure=number(active.startingOdo),arrival=number(active.endingOdo);
@@ -1716,6 +1716,7 @@ function renderShiftManager(lastShift){
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時刻（後から修正可能）</span><input class="control" data-shiftstart type="time" step="60" value="${shortTime(active.startedAt)}"></label>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'出庫時の車両トリップ（km）':'出庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="start" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.startingOdo??'')}" placeholder="車両トリップの値"></label>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'入庫時の車両トリップ（km）':'入庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="end" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.endingOdo??'')}" placeholder="車両トリップの値"></label>
+ ${window.TAXIAPP_EXTERNAL_GPS?'<div class="actions"><button class="btn" type="button" data-action="gpsShiftEndOdo">⌖ GPSで入庫距離を取得（入庫前）</button></div><div class="field"><span class="field-label">GPS基準の再設定（計測再起動後）</span><div class="inline-distance-field"><input class="control" id="gpsShiftRebaseValue" data-number-kind="distance" type="text" inputmode="decimal" placeholder="現在の車両トリップ実測値"><button class="btn" type="button" data-action="gpsShiftRebase">GPS基準を登録</button></div></div>':''}
  ${departure!==null&&arrival!==null&&arrival>=departure?`<div class="statline"><span>走行距離合計</span><b>${(arrival-departure).toLocaleString('ja-JP')} km</b></div>`:''}
  <button class="btn big red fill" type="button" data-action="endShift" ${active.draft?'disabled title="編集中の営業を保存してから入庫してください"':''}>入庫・乗務終了</button>
  ${active.draft?'<p class="caption-note">編集中の記録があるため入庫できません。営業を保存してください。</p>':''}</section>`;
@@ -2400,6 +2401,45 @@ function handleAction(action,id){
   }).finally(()=>{gpsAlightPending=false;});
   return;
  }
+ if(action==='gpsShiftRebase'&&window.TAXIAPP_EXTERNAL_GPS){
+  if(!shift||shift.endedAt||shift.endedIso)return;
+  const input=appEl.querySelector('#gpsShiftRebaseValue');
+  const value=String(input?.value??'').trim(),trip=number(value);
+  if(trip===null||trip<0){toast('現在の車両トリップ実測値を入力してください。推定値ではGPS基準を変更しません。',true);return;}
+  const shiftId=shift.id;
+  window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId,allowUnresolvedGap:true}).then(data=>{
+   if(!canEditNow())return;
+   const current=getShift();
+   if(current?.id!==shiftId||current.endedAt||String(input?.value??'').trim()!==value)return;
+   window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
+   if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+   current.externalGpsSnapshot={tripKm:trip,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
+   saveLater();toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
+  }).catch(e=>toast('GPS基準を変更できません：'+e.message,true));
+  return;
+ }
+ if((action==='gpsShiftEndOdo'||action==='gpsWaitOdo')&&window.TAXIAPP_EXTERNAL_GPS){
+  if(!shift||shift.endedAt||shift.endedIso)return;
+  const waiting=action==='gpsWaitOdo',target=waiting?'[data-wait-field="odometer"]':'[data-shift-odo="end"]';
+  if(waiting&&(!shift.waiting||shift.draft))return;
+  const input=appEl.querySelector(target),before=String(input?.value??''),shiftId=shift.id,waitId=shift.waiting?.id;
+  window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(data=>{
+   if(!canEditNow())return;
+   const current=getShift();
+   if(current?.id!==shiftId||current.endedAt||current.endedIso||
+      (waiting&&(current.draft||current.waiting?.id!==waitId)))return;
+   const activeInput=appEl.querySelector(target);
+   if(!activeInput||String(activeInput.value)!==before)return;
+   const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,shiftId);
+   const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(3);
+   if(waiting){current.waiting.odometer=value;current.waiting.gpsAutoOdometer={km:value,at:new Date().toISOString(),source:'native'};}
+   else {current.endingOdo=value;current.gpsAutoEndingOdo={km:value,at:new Date().toISOString(),source:'native'};}
+   current.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
+   activeInput.value=value;saveLater();updateElapsedTimer();
+   toast('GPS距離 '+value+'km を入力しました。車両トリップと照合してください。');
+  }).catch(e=>toast('GPS距離を取得できません：'+e.message,true));
+  return;
+ }
  if(action==='gpsTripFill'&&window.TAXIAPP_EXTERNAL_GPS){
   const bridge=window.TAXIAPP_EXTERNAL_GPS;
   if(!shift?.draft||shift.draft.editId){toast('過去の営業履歴はGPSで自動変更しません。',true);return;}
@@ -2415,11 +2455,11 @@ function handleAction(action,id){
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const base=bridge.baseline(localStorage,shiftId);
    if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
-   const km=bridge.calculated(data.tripKm,base).toFixed(3);
+   const km=bridge.calculated(data.tripKm,base,data.runId).toFixed(3);
    active.draft.raw[id]=km;
    active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
-   active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
+   active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
    saveLater();refreshDraftGpsFields(shiftId,draftId);updateElapsedTimer();toast('GPSアプリの走行距離 '+km+'km を取得しました。');
   }).catch(e=>toast('外部GPS：'+e.message,true)).finally(()=>{if(btn&&btn.isConnected)btn.disabled=false;});
   return;
@@ -2461,7 +2501,7 @@ function handleAction(action,id){
      if(!canEditNow())return;
      const current=getShift();
      if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
-     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer);
+     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
      current.externalGpsSnapshot={tripKm:b.value,rawGpsKm:data.tripKm,at:new Date().toISOString()};
      saveLater();updateElapsedTimer();
      toast('出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。');
@@ -2763,7 +2803,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     const active=getShift();
     if(active?.endedAt||active?.endedIso)return;
     if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[col])!==manualValue)return;
-    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue);
+    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue,data.runId);
     // A fresh GPS position plus vehicle-trip correction reconciles only gaps already observed.
     if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
     // A driver's corrected vehicle trip must immediately update this shift's remaining distance.
