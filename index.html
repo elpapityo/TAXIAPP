@@ -1405,7 +1405,18 @@ function currentDutySummary(shift){
  const highway=hasRealHighway(raw)&&hasEmptyHighway(raw)?'実車・空車':hasRealHighway(raw)?'実車高速':hasEmptyHighway(raw)?'空車高速':'';
  return {state,dispatch,waiting,dispatchSource,dispatchType,from:routeFrom,to:routeTo,payment,meter,highway};
 }
-const CRUISING_SUMMARY_FIELDS=[['state','現在の営業状態'],['sales','現在の売上'],['netSales','税抜売上'],['remaining','残り時間'],['distance','基準距離の残り（GPS参考）'],['route','乗車地・降車地']];
+function cruisingUnitMetrics(shift,sales,now=Date.now()){
+ const plan=driverDutyPlan(),distance=number(shift?.gpsTrip?.tripKm);
+ const startText=shift?.startedIso||(shift?.date&&shift?.startedAt?`${shift.date}T${shift.startedAt}`:'');
+ const start=Date.parse(startText||'');
+ const elapsedHours=Number.isFinite(start)?Math.max(0,(now-start)/3600000):0;
+ const rides=(shift?.records||[]).filter(r=>r.kind==='ride'&&r.status==='complete').length;
+ const kmUnit=distance!==null&&distance>0?sales/distance:null;
+ const kmRemaining=plan.distanceKm!==null&&distance!==null?Math.max(0,plan.distanceKm-distance):null;
+ return {kmUnit,rideUnit:rides>0?sales/rides:null,hourUnit:elapsedHours>0?sales/elapsedHours:null,
+  distanceProjection:kmUnit!==null&&kmRemaining!==null?Math.round(sales+kmUnit*kmRemaining):null};
+}
+const CRUISING_SUMMARY_FIELDS=[['state','現在の営業状態'],['sales','現在の売上'],['netSales','税抜売上'],['kmUnit','キロ単価'],['distanceProjection','基準距離消化時の予測売上'],['hourUnit','時間単価'],['rideUnit','本数単価'],['remaining','残り時間'],['distance','基準距離の残り（GPS参考）'],['route','乗車地・降車地']];
 function cruisingSummaryVisible(key){
  const setting=model.prefs?.cruisingSummaryFields;
  return setting&&Object.prototype.hasOwnProperty.call(setting,key)?setting[key]!==false:key!=='netSales';
@@ -1414,7 +1425,7 @@ function renderCruisingSummarySettings(){
  return `<section class="card"><h2 class="h2">空車・流し時の上部表示項目</h2>
  <p class="helper">営業入力画面の空車・流し中に表示する情報を選びます。設定は乗務員ごとに保存され、実車・迎車時の表示や精算には影響しません。</p>
  <div class="cruising-summary-settings">${CRUISING_SUMMARY_FIELDS.map(([key,label])=>`<label class="field cruising-summary-setting"><input type="checkbox" data-cruising-summary-field="${key}" ${cruisingSummaryVisible(key)?'checked':''}><span>${label}</span></label>`).join('')}</div>
- <p class="caption-note">税抜売上は現在のメーター売上を消費税10%で割り戻した参考表示（1円未満切り捨て）です。残り時間は個別設定した1乗務の予定時間、距離の残りは基準距離とGPS計測に基づきます。未設定や計測待ちの場合はその旨を表示します。</p></section>`;
+ <p class="caption-note">税抜売上は現在のメーター売上を消費税10%で割り戻した参考表示（1円未満切り捨て）です。キロ単価は売上÷GPS走行距離、時間単価は売上÷出庫からの経過時間、本数単価は売上÷完了した実車件数です。距離消化時の売上は現在のキロ単価が続くと仮定した予測で、GPS欠測時は計算待ちとなります。残り時間は個別設定した1乗務の予定時間、距離の残りは基準距離とGPS計測に基づきます。未設定や計測待ちの場合はその旨を表示します。</p></section>`;
 }
 function renderDutyStatus(shift){
  if(!shift)return '';
@@ -1429,6 +1440,11 @@ function renderDutyStatus(shift){
   // Display-only estimate: standard domestic taxi fare consumption tax (10%).
   // Keep existing meter totals, reporting, fare and remittance calculations untouched.
   if(cruisingSummaryVisible('netSales'))columns.push(stat('税抜売上（10%換算）',money(Math.floor(sold/1.1)),'netSales'));
+  const metrics=cruisingUnitMetrics(shift,sold);
+  if(cruisingSummaryVisible('kmUnit'))columns.push(stat('キロ単価（円/km）',metrics.kmUnit===null?'計算待ち':money(metrics.kmUnit),'kmUnit'));
+  if(cruisingSummaryVisible('distanceProjection'))columns.push(stat('基準距離消化時の予測売上',metrics.distanceProjection===null?'計算待ち':money(metrics.distanceProjection),'distanceProjection'));
+  if(cruisingSummaryVisible('hourUnit'))columns.push(stat('時間単価（円/時）',metrics.hourUnit===null?'計算待ち':money(metrics.hourUnit),'hourUnit'));
+  if(cruisingSummaryVisible('rideUnit'))columns.push(stat('本数単価（円/件）',metrics.rideUnit===null?'計算待ち':money(metrics.rideUnit),'rideUnit'));
   const remaining=left.minutes===null?'未設定':(left.minutes<=0?'予定時間超過':Math.floor(left.minutes/60)+'時間'+String(left.minutes%60).padStart(2,'0')+'分');
   if(cruisingSummaryVisible('remaining'))columns.push(stat('残り時間',remaining,'remaining'));
   if(cruisingSummaryVisible('distance')&&driverDutyPlan().distanceKm!==null){
