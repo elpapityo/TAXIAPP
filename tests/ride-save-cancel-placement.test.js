@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const src=fs.readFileSync('index.html','utf8');
+const ride=src.slice(src.indexOf('function renderRideForm('),src.indexOf('function renderEmptyForm('));
+const wrapper=src.slice(src.indexOf('function renderDraft(shift){'),src.indexOf('function renderDispatchForm('));
+const save=ride.indexOf('data-action="saveDraft"');
+const cancel=ride.indexOf('data-action="discardDraft"');
+const details=ride.indexOf('${renderPaymentSplit(shift,d)}');
+assert.ok(save>=0&&cancel>save&&details>cancel,'save and cancel buttons must precede payment details');
+assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,1);
+assert.equal((ride.match(/data-action="discardDraft"/g)||[]).length,1);
+assert.match(wrapper,/d.kind==='ride'\?'':/,'ride cancel must not be duplicated below form');
+assert.match(wrapper,/d.kind==='dispatch'\?'迎車入力を取り消す（営業記録なし）'/,'dispatch cancel is retained');
+console.log('Ride save and cancel button placement passed.');
