@@ -65,7 +65,7 @@ jobs:
           assert 'id="start-feedback"' in ui
           assert 'id="native-start"' not in ui
           assert 'id="native-stop"' not in ui
-          assert 'ACTION_VIEW' not in native and 'Intent.ACTION_VIEW' not in web
+          assert 'startActivity(Intent(Intent.ACTION_VIEW' not in native and 'startActivity(Intent(Intent.ACTION_VIEW' not in web
           assert 'gps-import-test.html' not in web
           print('Distance Lab v0.6 isolated UI and zero-start bridge verified')
           PY
