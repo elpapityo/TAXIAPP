@@ -19,7 +19,7 @@ const checks=[
  ['pickup location', /locationField\('AL',r,'乗車地・住所','gpsPickup'\)/],
  ['drop location', /locationField\('AM',r,'降車地・住所','gpsDrop'\)/],
  ['inline clock', /class="inline-time-field"/],
- ['manual protection', /String\(waiting\?record.odometer\?\?'':record.raw\?\.\[col\]\?\?'\)\.trim\(\)!=='/],
+ ['manual protection', /String\(waiting\?record\.odometer\?\?'':record\.raw\?\.\[col\]\?\?''\)\.trim\(\)!==''/],
  ['auto disabled until source explicit', /NATIVE_AUTO_DISTANCE_PREF='taxiapp-production-auto-distance-v140'/]
 ];
 for(const [name,pattern] of checks)assert.match(html,pattern,'Missing '+name);
