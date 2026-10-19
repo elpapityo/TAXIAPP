@@ -755,6 +755,21 @@ function uberHasInCabPayment(row){
    Example B: meter 2000 -> displayed 2100: in-cab pays 2100,
               extra 100 is a dispatch charge, NOT meter sales and NOT remitted.
    Do not infer a discount from either case. Never double-count the 100 fee. */
+// Fill the initial Uber displayed amount only while the driver has not overridden it.
+// The actual Uber amount always remains editable, including an intentionally blank value.
+function applyUberDisplayedDefault(d){
+ if(d?.kind!=='ride'||d.raw?.E!=='U'||!d.meta)return false;
+ if(d.meta.uberAppDisplayedManual===true)return false;
+ const meter=number(d.raw.K);
+ if(meter===null)return false;
+ // Historic entries with an actual recorded value are never replaced.
+ if(d.meta.uberAppDisplayedDefaulted!==true&&String(d.meta.uberAppDisplayed??'').trim()!=='')return false;
+ const proposed=d.raw.N==='U'?'0':String(Math.round(meter));
+ if(d.meta.uberAppDisplayed===proposed)return false;
+ d.meta.uberAppDisplayed=proposed;
+ d.meta.uberAppDisplayedDefaulted=true;
+ return true;
+}
 function uberAppAmounts(row,settings={}){
  if(row?.kind!=='ride'||row?.raw?.E!=='U')return null;
  const displayed=number(row?.meta?.uberAppDisplayed),meter=number(row?.raw?.K);
@@ -1423,6 +1438,7 @@ function renderPaymentSplit(shift,d){
 
 function renderRideForm(shift,d){
  const r=d.raw,rideUber=r.E==='U',rate=feeSettings(shift.settings);updateDiscountForDraft(d);
+ if(applyUberDisplayedDefault(d))saveLater();
  const pickupFields=`<div class="pickup-received-time">${field('C',r,{label:'データ受信・待機開始時刻'})}</div><div class="field-label" style="margin:14px 0 8px">配車区分</div>${selector('E',TYPES,r.E)}<div class="form-grid pickup-main-fields" style="margin-top:15px">${field('G',r,{label:'乗車時刻'})}${field('F',r,{label:'乗車時の走行距離（km）',required:true})}</div><div class="pickup-address-line">${locationField('AL',r,'乗車地・住所','gpsPickup')}</div>`;
  const passengers=`<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div>`;
  const payment=`<div class="field-label" style="font-weight:800;margin:13px 0 8px">支払方法</div>${selector('N',PAYMENTS,r.N,true)}`;
@@ -2539,12 +2555,12 @@ function toggleRideHighway(mode){
  d.raw.P=real&&empty?'実空':real?'実':empty?'空':'';
  syncCashChange(d,shift.settings,shift.date);saveLater();render();
 }
-function handleSetCol(col,value){let s=getShift();if(!s?.draft)return; if(col==='N'&&s.draft.kind==='cancel'&&value!=='キ'){toast('キャンセルの金種は「キ」です。',true);return;}s.draft.raw[col]=value; if(col==='O')updateDiscountForDraft(s.draft,'O');
+function handleSetCol(col,value){let s=getShift();if(!s?.draft)return; if(col==='N'&&s.draft.kind==='cancel'&&value!=='キ'){toast('キャンセルの金種は「キ」です。',true);return;}s.draft.raw[col]=value; if(['E','N'].includes(col))applyUberDisplayedDefault(s.draft); if(col==='O')updateDiscountForDraft(s.draft,'O');
  if(col==='N'&&s.draft.meta?.splitPayment?.second===value){s.draft.meta.splitPayment={second:'',manualSlot:null,manualAmount:''};}
  syncCashChange(s.draft,s.settings,s.date);saveLater();render();}
 function choosePaymentType(slot,type){const s=getShift();if(!s?.draft||s.draft.kind!=='ride')return;const d=s.draft;d.meta??={};
  const cfg=d.meta.splitPayment??{second:'',manualSlot:null,manualAmount:''};
- if(slot===0){if(type===cfg.second&&type){cfg.second='';cfg.manualSlot=null;cfg.manualAmount='';}d.raw.N=type;}
+ if(slot===0){if(type===cfg.second&&type){cfg.second='';cfg.manualSlot=null;cfg.manualAmount='';}d.raw.N=type;applyUberDisplayedDefault(d);}
  if(slot===1){if(type===d.raw.N&&type)type='';cfg.second=type;if(!type){cfg.manualSlot=null;cfg.manualAmount='';}}
  d.meta.splitPayment=cfg;syncCashChange(d,s.settings,s.date);saveLater();render();
 }
@@ -2660,7 +2676,10 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}
   saveLater();return;
  }
- if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
+ if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(['K','E','N'].includes(col)&&applyUberDisplayedDefault(s.draft)){
+  const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
+  if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
+ }if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
   if(window.TAXIAPP_EXTERNAL_GPS){
    // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
@@ -2694,7 +2713,9 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';if(e.type==='change'){gpsTripUI?.alight(s,s.draft);requestDropLocation(s,s.draft);}}
   const badge=appEl.querySelector('[data-alight-indicator]');if(badge)badge.textContent=target.value?shortTime(target.value)+' 降車':'メーター入力で時刻記録';
  }if(['AF','AG','AH'].includes(col))refreshEmptyHighwayAmounts(s.draft,col);if(col==='N'&&s.draft.meta?.splitPayment?.second===target.value)s.draft.meta.splitPayment={second:'',manualSlot:null,manualAmount:''};updateEstimate();saveLater();if(col==='K'&&e.type==='change'&&s.draft.kind==='ride'&&s.draft.raw.M)requestDropLocation(s,s.draft);if(col==='P'&&e.type==='change')render();return;}
- if(target.dataset.meta&&s?.draft){s.draft.meta[target.dataset.meta]=target.value;updateEstimate();saveLater();if(target.dataset.meta==='uberAppDisplayed'&&e.type==='change')render();return;}
+ if(target.dataset.meta&&s?.draft){s.draft.meta[target.dataset.meta]=target.value;
+ if(target.dataset.meta==='uberAppDisplayed')s.draft.meta.uberAppDisplayedManual=true;
+ updateEstimate();saveLater();if(target.dataset.meta==='uberAppDisplayed'&&e.type==='change')render();return;}
  if(target.dataset.pref){model.prefs[target.dataset.pref]=target.value;saveLater();return;}
  if(target.dataset.setting&&s){const num=number(target.value);if(num!==null&&num>=0&&num<=100000){s.settings[target.dataset.setting]=num;saveLater();}return;}
 }
