@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const preview=fs.readFileSync('gps-preview/v0358/index.html','utf8');
 const bridge=fs.readFileSync('gps-preview/v0358/gps-diary-bridge.js','utf8');
 const root=fs.readFileSync('index.html','utf8');
-assert.match(root,/<title>TAXIAPP v0\.3\.57 — 乗務日報<\/title>/,'production must keep its published v0.3.57 version');
+assert.match(root,/<title>TAXIAPP /);assert.doesNotMatch(root,/GPS統合試験専用/,'original index must not become the preview');
 assert.match(preview,/<title>TAXIAPP v0\.3\.58 — GPS統合試験専用<\/title>/);
 assert.match(preview,/gps-preview-ribbon/);
 assert.match(preview,/本番の日報データは読み書きしません/);
