@@ -89,9 +89,14 @@ def wait_http(path, condition, timeout=50):
         time.sleep(1)
     raise AssertionError(f"timed out waiting {path}, last={latest}")
 
-def inject_gps(lat="34.700000", lon="135.200000"):
-    result = adb("emu", "geo", "fix", str(lon), str(lat), timeout=15)
-    note("Emulator GPS location injected", lat=lat, lon=lon, emulator=result)
+def inject_gps(lat="34.700000", lon="135.200000", speed_knots=0):
+    # Emulator console supports velocity in KNOTS as 5th optional argument.
+    # Unlike bare "geo fix", this makes Android Location.hasSpeed/getSpeed
+    # represent actual driving (>5 km/h) so TripAccumulator can add distance.
+    result = adb("emu", "geo", "fix", str(lon), str(lat), "0", "8",
+                 str(speed_knots), timeout=15)
+    note("Emulator GPS location and speed injected", lat=lat, lon=lon,
+         speed_knots=speed_knots, emulator=result)
 
 def web_json(key):
     return driver.execute_script("return JSON.parse(localStorage.getItem(arguments[0]) || 'null')", key)
@@ -178,10 +183,14 @@ try:
 
     # Inject a sequence of GPS points while leaving a real browser tab open.
     for i in range(1, 9):
-        inject_gps(lat=f"{34.700000 + i * 0.00006:.6f}")
+        inject_gps(lat=f"{34.700000 + i * 0.00020:.6f}", speed_knots=18)
         time.sleep(2.5)
     before = http("api/status")
     note("Android native GPS cumulative after simulated travel", status=before)
+    assert before["tripKm"] >= 0.10, (
+        "18-knot simulated driving advanced latitude ~178m but native "
+        f"GPS accumulated only {before['tripKm']}km; the driving measurement "
+        "or GPS emulator feed is not validated")
 
     browser_row_button = driver.find_element(By.CSS_SELECTOR, "[data-capture='0']")
     assert browser_row_button.is_enabled()
@@ -204,7 +213,7 @@ try:
     wait_until(lambda: (web_json(STATE_KEY) or {}).get("rows", [{}])[0].get("manual") == "0.5",
                "manual car-odometer correction")
     driver.find_element(By.ID, "add-btn").click()
-    inject_gps(lat="34.700600")
+    inject_gps(lat="34.701800", speed_knots=18)
     time.sleep(4)
     driver.find_element(By.CSS_SELECTOR, "[data-capture='1']").click()
     wait_until(lambda: (web_json(STATE_KEY) or {}).get("rows", [{}, {}])[1].get("gps") is not None,
@@ -212,6 +221,8 @@ try:
     after = web_json(STATE_KEY)
     first_gps = after["rows"][0]["gps"]
     second_gps = after["rows"][1]["gps"]
+    assert first_gps >= 0.10 and second_gps > first_gps, (
+        f"Web failed to capture growing native odometer: {first_gps} -> {second_gps}")
     # All values in km; interval is the diff between two native app readings.
     expected = round(0.5 + second_gps - first_gps, 3)
     ui = driver.find_element(By.ID, "rows").text
@@ -233,8 +244,9 @@ try:
     wait_until(lambda: not driver.find_element(By.ID, "session-warning").get_attribute("hidden"),
                "Browser did not reject previous Android runId", timeout=10)
     assert len(driver.window_handles) == 1
-    note("PASS complete: shipped APK -> real Android location -> Android local HTTP -> external Chrome -> 0km, two captures, correction, restart warning, 1 tab",
-         native_distance_km=before["tripKm"])
+    note("PASS complete: shipped APK -> live driving GPS (>0km) -> Android local HTTP -> Chrome nonzero distance -> manual correction -> second growing distance -> restart warning, 1 tab",
+         native_distance_km=before["tripKm"], browser_first_km=first_gps,
+         browser_second_km=second_gps, corrected_second_km=expected)
 except Exception as exc:
     note("FAIL", error=str(exc), traceback=traceback.format_exc())
     if driver:
