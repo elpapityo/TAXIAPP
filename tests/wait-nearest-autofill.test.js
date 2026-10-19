@@ -10,7 +10,7 @@ function chunk(start,end){
 }
 const funcs=chunk('function waitingPlaces(){','function registerWaitName(')
  +chunk('function waitNameGeo(name){','function nearestWaitName(')
- +chunk('function refreshWaitView(waitId){','// Coordinate registration is an explicit action.');
+ +chunk('function refreshWaitView(waitId){','// Coordinate registration is an explicit action,');
 const core=funcs.slice(0,funcs.indexOf('async function getWaitGps('));
 const getWaitGps=funcs.slice(funcs.indexOf('async function getWaitGps('));
 assert.match(getWaitGps,/const nearby=waitCandidates\(geo\)/);
