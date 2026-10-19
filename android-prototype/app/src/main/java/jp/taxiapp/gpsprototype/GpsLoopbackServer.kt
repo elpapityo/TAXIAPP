@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
-        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_SIMULATOR_V1_2_1"
-        const val PORT = 48766
-        const val URL = "http://127.0.0.1:48766/"
+        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_DIARY_V1_4_0_100"
+        const val PORT = 48769
+        const val URL = "http://127.0.0.1:48769/"
     }
     private val active=AtomicBoolean(false)
     private var listeningSocket: ServerSocket?=null
@@ -59,46 +59,67 @@ class GpsLoopbackServer(private val context: Context) {
                 s.soTimeout=5000
                 val reader=BufferedReader(InputStreamReader(s.getInputStream(),StandardCharsets.ISO_8859_1))
                 val request=reader.readLine()?:return
-                if(request.length>4096||!request.startsWith("GET ")){
+                if(request.length>4096||!(request.startsWith("GET ")||request.startsWith("OPTIONS "))){
                     reply(s,405,"text/plain; charset=utf-8","GET only");return
                 }
                 val route=request.split(" ").getOrNull(1)?:return
+                val method=request.substringBefore(" ")
                 var host=""
+                var origin:String?=null
+                var privateNetwork=false
                 var lines=0
                 while(true) {
                     val line=reader.readLine()?:return
                     if(line.isEmpty())break
                     if(line.length>4096||++lines>50)return
                     if(line.startsWith("Host:",true))host=line.substringAfter(":").trim()
+                    if(line.startsWith("Origin:",true))origin=line.substringAfter(":").trim()
+                    if(line.startsWith("Access-Control-Request-Private-Network:",true))privateNetwork=line.substringAfter(":").trim().equals("true",true)
                 }
-                if(host!="127.0.0.1:48766"){
+                if(host!="127.0.0.1:48769"){
                     reply(s,403,"text/plain; charset=utf-8","Invalid Host");return
+                }
+                // Only the user's deployed diary site can read native GPS from
+                // its different HTTPS origin. The local lab remains same-origin.
+                if(origin!=null && origin!="https://elpapityo.github.io"){
+                    reply(s,403,"text/plain; charset=utf-8","Untrusted Origin");return
+                }
+                fun respond(status:Int,type:String,body:String){
+                    reply(s,status,type,body,origin,privateNetwork)
+                }
+                if(method=="OPTIONS"){
+                    // Chrome Private Network / Local Network Access preflight.
+                    if(origin=="https://elpapityo.github.io" &&
+                       route.startsWith("/api/")){
+                        respond(204,"text/plain; charset=utf-8","")
+                    }else respond(403,"text/plain; charset=utf-8","Origin is not authorized")
+                    return
                 }
                 when {
                     route=="/"||route=="/index.html"->{
                         val ui=context.assets.open("distance-console.html").bufferedReader(Charsets.UTF_8).use{it.readText()}
                         val bridge=context.assets.open("gps-external-bridge.js").bufferedReader(Charsets.UTF_8).use{it.readText()}
-                        reply(s,200,"text/html; charset=utf-8",
+                        respond(200,"text/html; charset=utf-8",
                             ui.replace("<script>","<script>"+bridge+"</script>\n<script>"))
                     }
-                    route=="/api/identity"->reply(s,200,"application/json; charset=utf-8",
+                    route=="/api/identity"->respond(200,"application/json; charset=utf-8",
                         JSONObject().put("marker",IDENTITY_MARKER)
                             .put("packageId",context.packageName)
-                            .put("webVersion","1.2.1")
+                            .put("webVersion","1.4.0")
                             .toString())
-                    route=="/api/status"->reply(s,200,"application/json; charset=utf-8",status())
+                    route=="/api/status"->respond(200,"application/json; charset=utf-8",status())
                     route.startsWith("/api/capture?")->{
                         val params=params(route.substringAfter("?"))
                         val nonce=params["nonce"].orEmpty()
                         val target=params["target"].orEmpty()
                         if(!Regex("^[0-9a-f]{32}$").matches(nonce)||
                            !(target=="start"||(Regex("^(0|[1-9][0-9]?)$").matches(target)&&target.toInt()<60))){
-                            reply(s,400,"application/json; charset=utf-8",
+                            respond(400,"application/json; charset=utf-8",
                                 JSONObject().put("ready",false).put("message","取得番号が不正です").toString())
-                        }else reply(s,200,"application/json; charset=utf-8",capture(nonce,target))
+                        }else respond(200,"application/json; charset=utf-8",capture(nonce,target))
                     }
-                    route=="/favicon.ico"->reply(s,204,"text/plain","")
-                    else->reply(s,404,"text/plain","Not Found")
+                    route=="/favicon.ico"->respond(204,"text/plain","")
+                    else->respond(404,"text/plain","Not Found")
                 }
             }catch(_:Exception){/* Chrome disconnected; keep GPS service running. */}
         }
@@ -117,6 +138,9 @@ class GpsLoopbackServer(private val context: Context) {
         val last=GpsStore.lastValidGpsFixAt(context)
         val age=if(last<=0L)null else(System.currentTimeMillis()-last).coerceAtLeast(0L)
         return JSONObject()
+            .put("marker",IDENTITY_MARKER)
+            .put("packageId",context.packageName)
+            .put("webVersion","1.4.0")
             .put("running",s.running)
             .put("runId",GpsStore.currentRunId(context))
             .put("tripKm",s.tripKm)
@@ -153,6 +177,9 @@ class GpsLoopbackServer(private val context: Context) {
                 .toString()
         }
         return res.put("snapshot",JSONObject()
+            .put("marker",IDENTITY_MARKER)
+            .put("packageId",context.packageName)
+            .put("webVersion","1.4.0")
             .put("format","GPS_DISTANCE_LAB_V1")
             .put("nonce",nonce)
             .put("target",target)
@@ -165,13 +192,21 @@ class GpsLoopbackServer(private val context: Context) {
             .put("running",true)
             .put("unresolvedGap",s.unresolvedGap)).toString()
     }
-    private fun reply(s:Socket,code:Int,type:String,body:String){
+    private fun reply(s:Socket,code:Int,type:String,body:String,
+                      authorizedOrigin:String?=null,allowPrivateNetwork:Boolean=false){
         val data=body.toByteArray(StandardCharsets.UTF_8)
-        val title=when(code){200->"OK";204->"No Content";400->"Bad Request";403->"Forbidden";404->"Not Found";else->"Method Not Allowed"}
+        val title=when(code){200->"OK";204->"No Content";400->"Bad Request";403->"Forbidden";404->"Not Found";405->"Method Not Allowed";else->"Not Found"}
         val headers="HTTP/1.1 $code $title\r\n"+
             "Content-Type: $type\r\n"+
             "Content-Length: "+data.size+"\r\n"+
             "Cache-Control: no-store\r\n"+
+            (if(authorizedOrigin=="https://elpapityo.github.io")
+                "Access-Control-Allow-Origin: https://elpapityo.github.io\r\n"+
+                "Access-Control-Allow-Methods: GET, OPTIONS\r\n"+
+                "Access-Control-Allow-Headers: Content-Type\r\n"+
+                "Vary: Origin\r\n"+
+                (if(allowPrivateNetwork)"Access-Control-Allow-Private-Network: true\r\n" else "")
+             else "")+
             "X-Content-Type-Options: nosniff\r\n"+
             "Referrer-Policy: no-referrer\r\n"+
             "X-Frame-Options: DENY\r\n"+
