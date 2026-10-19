@@ -1361,8 +1361,9 @@ function field(key,raw,opts={}){
  return `<div class="field time-field"><div class="time-field-header"><span class="field-label">${safeText(label)}${required}</span></div><div class="inline-time-field"><input class="control time-input" data-col="${key}" type="time" step="60" value="${value?safeText(shortTime(value)): ''}" aria-label="${safeText(label)}（手動修正可）"><button class="btn time-now inline-field-icon" data-time-now="${key}" type="button" aria-label="${safeText(label)}に現在時刻を入力" title="${safeText(label)}に現在時刻を入力">◷</button></div></div>`;
  }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${['F','L','S','V','AB','AE','X','Y','AJ','AK'].includes(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
+ const gpsSourceName=nativeDiaryGpsEnabled()?'Android GPS距離ラボ v1.3.1':'従来のブラウザGPS';
  const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&(gpsTripUI?.active(getShift())||nativeDiaryGpsEnabled())
-  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}にGPS距離を入力" title="GPS距離を入力">⌖</button>`:'';
+  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}に${gpsSourceName}の距離を入力" title="${gpsSourceName}からGPS距離を入力">⌖</button>`:'';
  const labelText=`<span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>`;
  if(gpsButton)return `<div class="field">${labelText}<div class="inline-distance-field">${control}${gpsButton}</div></div>`;
  return `<label class="field">${labelText}${control}</label>`;}
@@ -2520,7 +2521,7 @@ function handleAction(action,id){
    if(active?.endedAt||active?.endedIso)return;
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const base=bridge.baseline(localStorage,shiftId);
-   if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
+   if(!base)throw Error('出庫時のAndroid GPS基準が未登録です。「出庫・入庫」→「GPS基準の再設定」から現在の車両トリップ実測値を登録してください。途中の距離を0kmとみなして入力しません');
    const km=bridge.calculated(data.tripKm,base,data.runId).toFixed(3);
    active.draft.raw[id]=km;
    active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
@@ -2532,7 +2533,7 @@ function handleAction(action,id){
  }
  if(action==='gpsTripFill'){
   if(!shift?.draft||!gpsTripUI?.active(shift)||!['F','L','S','V','AB','AE'].includes(id)||!distanceEnabled(id))return;
-  if(!gpsTripUI.trusted(shift)){toast('未測位・欠測あり：車両トリップを確認・補正してからGPS距離を入力してください。',true);return;}
+  if(!gpsTripUI.trusted(shift)){toast('現在は従来のブラウザGPS方式です。未測位・欠測のため入力できません。v1.3.1を使う場合は「設定 → GPS距離テスト → GPS距離の取得元」でAndroid GPSを選択してください。',true);return;}
   const km=gpsTripUI.fmt(shift.gpsTrip.tripKm);
   shift.draft.raw[id]=km;
   shift.draft.meta??={};shift.draft.meta.gpsFilledFields??={};
@@ -2837,7 +2838,7 @@ function handleInput(e){const target=e.target;const s=getShift();
   const choice=target.value;
   if(choice!=='on'&&choice!=='off')return;
   try{localStorage.setItem(NATIVE_DIARY_GPS_PREF,choice);}catch{toast('この端末のGPS連携設定を保存できません',true);return;}
-  render();toast(choice==='on'?'Android GPS距離の取得を有効にしました。車両トリップの基準を確認してください。':'従来のブラウザGPS方式に戻しました。');return;
+  render();toast(choice==='on'?(s?'Android GPSに変更しました。出庫中のため「出庫・入庫」→「GPS基準の再設定」で車両トリップ実測値を登録してください。':'Android GPS距離の取得を有効にしました。出庫時のGPS基準を確認してください。'):'従来のブラウザGPS方式に戻しました。');return;
  }
  if(target.dataset.cruisingSummaryField){
   const key=target.dataset.cruisingSummaryField;
