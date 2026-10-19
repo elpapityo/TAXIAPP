@@ -30,6 +30,7 @@
   let base=readKm(d.startKm),previousGps=d.startGpsKm,previousAvailable=previousGps!==null;
   const rows=d.rows.map((r,i)=>{
    let delta=null,measured=null,error='';
+   const baseBefore=base;
    if(r.gpsKm!==null){
     if(!previousAvailable){error='前の行でGPSを取得してください';}
     else if(r.gpsKm+0.0000001<previousGps){error='GPS累計が減っています。GPSアプリ側で距離がリセットされた可能性があります';}
@@ -49,7 +50,10 @@
    }else{
     previousAvailable=false;
    }
-   return {number:i+1,gpsKm:r.gpsKm,deltaKm:delta,measuredKm:measured,manualKm:entered,finalKm,error,place:r.place,at:r.at};
+   return {number:i+1,gpsKm:r.gpsKm,
+    gpsFromStartKm: r.gpsKm===null||d.startGpsKm===null||r.gpsKm<d.startGpsKm?null:readKm(r.gpsKm-d.startGpsKm),
+    deltaKm:delta,measuredKm:measured,baseBeforeKm:previousAvailable||delta!==null?baseBefore:null,
+    manualKm:entered,finalKm,error,place:r.place,at:r.at};
   });
   return {startKm:readKm(d.startKm),startGpsKm:d.startGpsKm,startPlace:d.startPlace,startAt:d.startAt,rows};
  }
@@ -80,7 +84,8 @@
   if(gps<reference)throw Error('GPS累計が前回より小さくなっています。測定のリセットを確認してください');
   if(d.rows.slice(index+1).some(r=>r.gpsKm!==null))throw Error('後の行にも計測があります。先の計測をリセットしてから取り直してください');
   d.rows[index].gpsKm=gps;
-  d.rows[index].manualKm=''; // an explicit new GPS measurement supersedes the old manual correction
+  // Keep any already-entered vehicle-trip correction when GPS is captured.
+  // The operator may type the correction before tapping the GPS button.
   d.rows[index].place=place(details.place);d.rows[index].at=dateTime(details.at);
   return d;
  }
