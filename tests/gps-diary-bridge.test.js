@@ -64,7 +64,7 @@ async function check(){
  assert.match(server,/Access-Control-Allow-Origin: https:\/\/elpapityo\.github\.io/);
  assert.match(server,/if\(method=="OPTIONS"\)/);
  assert.doesNotMatch(server,/Access-Control-Allow-Origin: \*/);
- assert.match(server,/127\.0\.0\.1:48767/);
+ assert.match(server,/127\.0\.0\.1:48768/);
  console.log('PASS diary: native GPS capture, shift-specific baseline, manual correction, subsequent accumulation, runId reset refusal, simulation rejection, gap acknowledgment, HTTPS origin CORS and 9 distance input groups');
 }
 check().catch(e=>{console.error(e);process.exitCode=1;});
