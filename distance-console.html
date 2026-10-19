@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
-<title>GPS距離ラボ | 距離計測専用</title>
+<title>GPS距離ラボ | 距離確認Web画面</title>
 <style>
 :root{color-scheme:dark;--bg:#090f1b;--layer:#111d2e;--soft:#17273a;--border:#334b63;--text:#eaf5ff;--muted:#a7baca;--mint:#63ead2;--blue:#88c6ff;--amber:#ffd68a;font:15px/1.5 system-ui,"Noto Sans JP",sans-serif}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}body{padding:18px 14px 60px}button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}
@@ -22,6 +22,7 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
 .notice{margin:12px 0;padding:13px 14px;border:1px solid #426074;background:#112438;border-radius:12px;font-size:13px;color:#c9dfed;line-height:1.6}.notice.error{border-color:#947653;color:#ffe0a3;background:#3b2c23}.footer{font-size:11px;color:#8aa2b5;margin:19px 4px;line-height:1.7}.launch{background:var(--blue);color:#091a2b;padding:10px 15px;border-radius:9px;display:inline-block;font-weight:850;text-decoration:none;margin-top:8px}
 @media(max-width:380px){body{padding:12px 9px 40px}.hero{padding:18px 14px}.panel,.record{padding:13px 11px}.kpi{padding:9px}.metric{padding:7px 5px}.metric strong{font-size:14px}}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}.startNative{border:0;background:#61e6c6;color:#051e2c}.stopNative{border:1px solid #5d7990;background:#16283a;color:#d7e8f4}.controls button{font-weight:850;min-height:51px;border-radius:12px;padding:10px 6px}.gpsStatus{font-size:12px;color:#b5d9e8;margin:-3px 3px 16px}.gpsStatus.warn{color:#ffd997}
+.start-feedback{color:#bdd4df;border:1px solid #284d62;border-radius:9px;font-size:12px;padding:10px 12px;margin-top:10px;line-height:1.6;background:#102536}.start-feedback.warn{color:#ffe0a3;border-color:#756444;background:#36291d}.start-feedback.ok{color:#71ebd1;border-color:#357c66}.gpsStatus{margin:4px 2px 15px;padding:9px 12px;background:#0d2030;border:1px solid #34516a;border-radius:10px}
 </style>
 </head>
 <body>
@@ -32,8 +33,8 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
 <p>GPS距離はそのまま記録。車両トリップを入力した地点から、次の区間だけを加算します。</p>
 </header>
 <div class="state-line"><strong>距離計測テスト</strong><span class="pill" id="connection">接続を確認中</span></div>
-<div class="notice" id="browser-only" hidden>このページはアプリ内でGPSを取得します。Chromeで開いた場合は下のボタンから専用アプリへ切り替えてください。以降、GPS取得ごとにChromeの新しいタブは開きません。<div><a class="launch" href="taxiappgpslab://open">GPS距離ラボ アプリを開く ↗</a></div></div>
-<div class="controls"><button id="native-start" class="startNative" type="button">▶ GPS測定を開始</button><button id="native-stop" class="stopNative" type="button">■ GPS測定を停止</button></div><div id="native-status" class="gpsStatus">GPS状態を確認中です</div>
+<div class="notice" id="browser-only" hidden>このページはアプリ内でGPSを取得します。Chromeで開いた場合は下のボタンから専用アプリへ切り替えてください。以降、GPS取得ごとにChromeの新しいタブは開きません。<div><a class="launch" href="taxiappgpslabv060://open">GPS計測アプリを開く ↗</a></div></div>
+<div id="native-status" class="gpsStatus">GPS受信状態を確認中です</div>
 <section class="hero">
  <div class="hero-top"><span>補正後の走行累計</span><span id="hero-mark">START READY</span></div>
  <div class="total"><strong id="total">0.000</strong><small>km</small></div>
@@ -47,6 +48,7 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
  <p>GPS測定開始後、停車中にこのボタンを押してください。アプリ内部のGPS累計に関係なく、この場所を<strong>0.000 km</strong>として記録します。</p>
  <button class="measure-btn" id="start-btn" type="button">ここを 0 km として記録</button>
  <div class="captured" id="start-detail">基準点未記録</div>
+ <div id="start-feedback" class="start-feedback" role="status" aria-live="polite">GPS受信を確認後、基準点を記録してください。</div>
 </section>
 <section class="panel">
  <div class="section-hd"><div><div class="number">GPS CHECKPOINTS</div><h2>区間計測と距離補正</h2></div><span class="pill" id="row-count">0区間</span></div>
@@ -55,7 +57,7 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
  <button class="secondary add" type="button" id="add-btn">＋ 次の計測地点を追加</button>
  <div class="toolbar"><button class="secondary" type="button" id="reset-btn">このテスト記録を初期化</button></div>
 </section>
-<div class="notice" role="status" aria-live="polite" id="message">Androidアプリ側でGPS測定を開始し、基準地点を記録してください。</div>
+<div class="notice" role="status" aria-live="polite" id="message">アプリのGPS計測画面で「GPS測定を開始」し、基準地点を記録してください。</div>
 <div class="footer">距離はGPS測位点間から計算した推定値です。欠測・古い測位・停止中は取り込みません。営業日報・売上・Google同期とは独立しています。操作は停車中だけにしてください。</div>
 </main>
 <script>
@@ -88,11 +90,16 @@ function updateNativeStatus(){
  try{
   var x=JSON.parse(window.DistanceNative.getStatus());
   var age=typeof x.ageMs==='number'&&x.ageMs>=0?Math.floor(x.ageMs/1000)+'秒前':'未受信';
-  $('native-status').textContent=(x.running?'● GPS計測中':'■ GPS停止中')+' ／ 最終受信：'+age+
-    ' ／ 欠測 '+x.gaps+'回'+(x.unresolvedGap?' ／ ⚠ 未解決のGPS欠測あり':'');
+  $('native-status').textContent=(x.running?'● GPS計測中':'■ GPS停止中')+' ／ 有効GPS：'+age+
+    (x.accuracyMeters!==null?' ／ 精度 ±'+Math.round(x.accuracyMeters)+'m':'')+
+    ' ／ 欠測 '+x.gaps+'回'+(x.unresolvedGap?' ／ ⚠ GPS欠測あり（補正推奨）':'');
   $('native-status').className='gpsStatus'+(x.unresolvedGap||x.running&&x.ageMs>30000?' warn':'');
-  $('native-start').disabled=!!x.running;
-  $('native-stop').disabled=!x.running;
+  if(state.startNative===null&&!pending){
+   $('start-feedback').textContent=!x.running?'GPS計測が停止しています。計測画面に戻って「GPS測定を開始」してください。':
+     x.ageMs===null||x.ageMs>15000?'GPSの測位を待っています。屋外で受信してから0kmを記録してください。':
+     'GPS受信を確認しました。停車中に0kmの基準点を記録できます。';
+   $('start-feedback').className='start-feedback'+(!x.running||x.ageMs===null||x.ageMs>15000?' warn':'');
+  }
  }catch(e){$('native-status').textContent='GPS状態の読み取りに失敗しました';}
 }
 
@@ -118,12 +125,14 @@ function derive(s){
  });
 }
 function show(message,error){$('message').textContent=message;$('message').className='notice'+(error?' error':'');}
+function startFeedback(message,variant){$('start-feedback').textContent=message;$('start-feedback').className='start-feedback'+(variant?' '+variant:'');}
 function safe(s){return String(s).replace(/[&<>"']/g,function(v){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[v];});}
 function render(){
  var view=derive(state),last=view.filter(function(x){return x.finalKm!==null;}).slice(-1)[0];
  $('connection').textContent=nativeReady?'アプリ内GPS連携':'ブラウザ表示のみ';
  $('browser-only').hidden=nativeReady;
  $('start-detail').textContent=state.startNative===null?'基準点未記録':'基準点を 0.000 km に設定済み · '+when(state.startAt);
+ if(state.startNative!==null)startFeedback('0km基準点は記録済みです。次の計測地点からGPSを取得してください。','ok');
  $('start-btn').disabled=!nativeReady||state.startNative!==null||!!pending;
  $('row-count').textContent=view.length+' 区間';
  $('total').textContent=last?fmt(last.finalKm):'0.000';
@@ -161,7 +170,8 @@ function request(target){
  var bytes=crypto.getRandomValues(new Uint8Array(16));
  var nonce=Array.from(bytes,function(b){return b.toString(16).padStart(2,'0');}).join('');
  pending={nonce:nonce,target:String(target),issuedAt:Date.now()};
- render();show('端末のGPS測定値を取得しています…');
+ render();show('GPS値を取得しています…');
+ if(target==='start')startFeedback('GPS基準点を確認しています。受信できたら自動で記録します。走り出さずにお待ちください。','warn');
  try{window.DistanceNative.requestCapture(nonce,String(target));}
  catch(e){pending=null;render();show('GPS接続に失敗しました。',true);}
 }
@@ -170,7 +180,7 @@ function onNativeSnapshot(payload){
   var d=typeof payload==='string'?JSON.parse(payload):payload;
   if(!pending||d.nonce!==pending.nonce||d.target!==pending.target||d.format!=='GPS_DISTANCE_LAB_V1')throw Error('別の取得結果を受信したため破棄しました');
   if(Date.now()-pending.issuedAt>120000||d.capturedAt<pending.issuedAt-10000||d.capturedAt>Date.now()+10000)throw Error('取得時刻が不正です');
-  if(d.running!==true||d.unresolvedGap===true||!Number.isFinite(d.gpsAgeMs)||d.gpsAgeMs>30000)throw Error('GPS停止・欠測・古いGPS値は記録できません');
+  if(d.running!==true||!Number.isFinite(d.gpsAgeMs)||d.gpsAgeMs>15000)throw Error('GPS停止または古いGPS値は記録できません');
   var n=goodKm(d.tripKm),target=pending.target;
   if(n===null)throw Error('距離データがありません');
   if(target==='start'){
@@ -181,12 +191,14 @@ function onNativeSnapshot(payload){
    if(!Number.isInteger(i)||i<0||i>=state.rows.length||prev===null||n<prev)throw Error('GPS累計が前回より小さいため記録できません');
    state.rows[i].gps=n;state.rows[i].at=d.capturedAt;
   }
-  pending=null;save();render();show((target==='start'?'基準地点':'地点 '+(Number(target)+1))+' のGPS取得が完了しました。');
- }catch(e){pending=null;render();show(e.message||'GPS応答を取り込めません',true);}
+  pending=null;save();render();show((target==='start'?'基準地点':'地点 '+(Number(target)+1))+' のGPS取得が完了しました。'+(d.unresolvedGap?' ⚠ 過去のGPS欠測があります。必要に応じて車両トリップで補正してください。':''),d.unresolvedGap);
+  if(target==='start')startFeedback('基準点の記録が完了しました。ここを 0.000 km として計測します。','ok');
+ }catch(e){pending=null;render();show(e.message||'GPS応答を取り込めません',true);if(state.startNative===null)startFeedback('基準点は未記録です：'+(e.message||'GPS受信エラー'),'warn');}
 }
 function onNativeError(nonce,msg){
  if(!pending||nonce!==pending.nonce)return;
- pending=null;render();show(String(msg||'GPS取得に失敗しました').slice(0,160),true);
+ var target=pending.target;pending=null;render();show(String(msg||'GPS取得に失敗しました').slice(0,160),true);
+ if(target==='start')startFeedback('基準点は未記録です：'+String(msg||'GPS取得に失敗しました').slice(0,160),'warn');
 }
 $('start-btn').addEventListener('click',function(){request('start');});
 $('rows').addEventListener('click',function(e){
@@ -211,14 +223,6 @@ $('reset-btn').addEventListener('click',function(){
 });
 window.DistanceLab={onNativeSnapshot:onNativeSnapshot,onNativeError:onNativeError};
 window.DistanceLabTest={derive:derive,goodKm:goodKm,fresh:fresh};
-$('native-start').addEventListener('click',function(){
- if(!nativeReady)return;
- window.DistanceNative.startTracking();show('位置情報の許可を確認し、GPS測定を開始します。');
-});
-$('native-stop').addEventListener('click',function(){
- if(!nativeReady)return;
- window.DistanceNative.stopTracking();show('GPS測定の停止を指示しました。');
-});
 updateNativeStatus();
 setInterval(updateNativeStatus,2500);
 render();
