@@ -9,7 +9,9 @@ async function scenario(change,enabled=true){
  let finish,editable=true,saves=0,refreshes=0;
  const shift={id:'shift-1',draft:{id:'ride-1',raw:{F:'260'},meta:{}}};
  const context={distanceEnabled:()=>enabled,action:'gpsTripFill',id:'F',shift,getShift:()=>shift,
-  canEditNow:()=>editable,nativeDiaryGpsEnabled:()=>true,localStorage:{},Date,fetch:()=>{throw Error('fetch should be mocked by GPS bridge');},
+  canEditNow:()=>editable,nativeDiaryGpsEnabled:()=>true,
+  nativeDistanceBase:()=>({gps:100,value:260,runId:'run-a'}),
+  localStorage:{},Date,fetch:()=>{throw Error('fetch should be mocked by GPS bridge');},
   window:{TAXIAPP_EXTERNAL_GPS:{readKey:()=>true,read:()=>new Promise(r=>finish=r),
    baseline:()=>({gps:100,value:260,runId:'run-a'}),calculated:(km,b,id)=>{if(id!==b.runId)throw Error('unexpected GPS run');return b.value+km-b.gps}}},
   appEl:{querySelector:()=>null},saveLater:()=>saves++,toast:()=>{},
