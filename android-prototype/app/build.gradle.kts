@@ -9,7 +9,7 @@ android {
     defaultConfig {
         // New package identity for v0.3.9: CI debug APK signing keys differ between runners.
         // Never overwrites its measurement storage or requires uninstall.
-        applicationId = "jp.taxiapp.gpsprototype.loopbackv039"
+        applicationId = "jp.taxiapp.gpsprototype.loopbackv0310"
         minSdk = 26
         targetSdk = 35
         versionCode = 4
