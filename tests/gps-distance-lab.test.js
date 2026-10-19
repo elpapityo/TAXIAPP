@@ -158,6 +158,19 @@ assert.match(bridge,/location\.hostname!=='127\.0\.0\.1'/);
 assert.match(bridge,/location\.port!=='48764'/);
 assert.match(loopback,/GpsTrackingService.ACTION_REFRESH/);
 assert.match(service,/ACTION_REFRESH/);
+assert.match(activity,/api\/identity/,'launch must verify local server owner');
+assert.match(activity,/IDENTITY_MARKER/);
+assert.match(activity,/openVerifiedExternalBrowser/);
+assert.match(loopback,/route=="\/api\/identity"/);
+assert.match(loopback,/GPS_DISTANCE_LAB_EXTERNAL_V1_0/);
+assert.match(loopback,/put\("packageId",context.packageName\)/);
+assert.match(loopback,/put\("webVersion","1.0.0"\)/);
+assert.match(service,/GpsStore.setBrowserConnectionIssue/);
+assert.doesNotMatch(service,/engine.interrupted\("外部ブラウザのローカル接続ができません"\)/);
+assert.match(html,/Web v1.0/);
+assert.match(html,/gps-distance-lab-browser-v080/,'keep old Chrome data');
+assert.match(activity,/旧バージョンのアプリが接続先を使用/);
+
 assert.match(service,/requestFreshFix\(\)/);
 assert.match(service,/manager.getCurrentLocation\(LocationManager.GPS_PROVIDER/);
 assert.match(service,/LocationManager.GPS_PROVIDER, 2000L, 0f/);
@@ -169,7 +182,7 @@ assert.doesNotMatch(bridge,/location\.href\s*=|window\.open\s*\(|taxiappgpslab/)
 assert.match(manifest,/android\.permission\.INTERNET/);
 assert.match(manifest,/android:usesCleartextTraffic="true"/);
 assert.doesNotMatch(manifest,/GpsTestWebActivity/);
-assert.match(manifest,/android:label="GPS距離ラボ v0.9"/);
+assert.match(manifest,/android:label="GPS距離ラボ v1.0"/);
 assert.match(manifest,/android:scheme="taxiappgpslabv060"/);
 console.log('PASS: external browser loopback 127.0.0.1:48764, on-demand GPS refresh, same-tab capture, zero basis, no embedded WebView');
 

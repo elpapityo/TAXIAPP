@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
+        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_EXTERNAL_V1_0"
         const val PORT = 48764
         const val URL = "http://127.0.0.1:48764/"
     }
@@ -80,6 +81,11 @@ class GpsLoopbackServer(private val context: Context) {
                         reply(s,200,"text/html; charset=utf-8",
                             ui.replace("<script>","<script>"+bridge+"</script>\n<script>"))
                     }
+                    route=="/api/identity"->reply(s,200,"application/json; charset=utf-8",
+                        JSONObject().put("marker",IDENTITY_MARKER)
+                            .put("packageId",context.packageName)
+                            .put("webVersion","1.0.0")
+                            .toString())
                     route=="/api/status"->reply(s,200,"application/json; charset=utf-8",status())
                     route.startsWith("/api/capture?")->{
                         val params=params(route.substringAfter("?"))

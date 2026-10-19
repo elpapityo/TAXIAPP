@@ -2,6 +2,10 @@ package jp.taxiapp.gpsprototype
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
+import java.net.URL
+import java.net.HttpURLConnection
+import org.json.JSONObject
 import android.content.Intent
 import android.net.Uri
 import android.content.pm.PackageManager
@@ -66,7 +70,7 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · NATIVE SENSOR", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS DISTANCE LAB · v1.0 · 外部ブラウザ", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n計測専用", 29f), 3)
         add(label("この画面はGPS計測と受信状態の確認だけです。0kmの記録・区間距離・手入力補正は外部ブラウザで操作します。", 13f, 0xFFAFC6D3.toInt()), 8)
         val meter = LinearLayout(this).apply {
@@ -92,11 +96,10 @@ class MainActivity : Activity() {
         add(stopButton, 10)
         val openWeb = button("↗ 外部ブラウザで距離テストを開く", 0xFF88C6FF.toInt(), 0xFF0A1D2D.toInt())
         openWeb.setOnClickListener {
-            if(!GpsStore.load(this).running){
+            if(!GpsStore.load(this).running) {
                 Toast.makeText(this,"先にGPS測定を開始してください",Toast.LENGTH_LONG).show()
-            }else{
-                startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(GpsLoopbackServer.URL))
-                    .addCategory(Intent.CATEGORY_BROWSABLE))
+            } else {
+                openVerifiedExternalBrowser()
             }
         }
         add(openWeb, 23)
@@ -105,6 +108,48 @@ class MainActivity : Activity() {
         scroll.addView(root)
         setContentView(scroll)
         updateStatus()
+    }
+
+    /**
+     * Never silently navigate into the previous version's browser on
+     * 127.0.0.1:48764. The new server must prove its owning package ID and
+     * UI version; old v0.8 has no /api/identity and is rejected.
+     */
+    private fun openVerifiedExternalBrowser() {
+        Thread({
+            var verified=false
+            var detail=""
+            var connection: HttpURLConnection?=null
+            try {
+                connection=(URL(GpsLoopbackServer.URL+"api/identity").openConnection() as HttpURLConnection)
+                connection.connectTimeout=1800
+                connection.readTimeout=1800
+                connection.instanceFollowRedirects=false
+                connection.setRequestProperty("Cache-Control","no-cache")
+                if(connection.responseCode==200) {
+                    val reply=connection.inputStream.bufferedReader().use{it.readText()}
+                    val result=JSONObject(reply)
+                    verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
+                        result.optString("packageId")==applicationContext.packageName &&
+                        result.optString("webVersion")=="1.0.0"
+                    if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
+                }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
+            }catch(e:Exception){
+                detail="GPSアプリのWeb接続先に到達できません。"
+            }finally{connection?.disconnect()}
+            runOnUiThread{
+                if(isFinishing || isDestroyed)return@runOnUiThread
+                if(verified) {
+                    startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(GpsLoopbackServer.URL))
+                        .addCategory(Intent.CATEGORY_BROWSABLE))
+                } else {
+                    AlertDialog.Builder(this)
+                        .setTitle("外部ブラウザ接続を確認できません")
+                        .setMessage(detail+"\n\n以前の「GPS距離ラボ v0.8」「v0.9」のGPS測定を停止してください。v1.0でGPS測定を開始し直してから、このボタンを押してください。\n\nChromeの履歴・保存データは消さないでください。")
+                        .setPositiveButton("確認",null).show()
+                }
+            }
+        },"gps-external-browser-owner-check").start()
     }
 
     private fun startGps() {
@@ -145,6 +190,9 @@ class MainActivity : Activity() {
         } + "\n欠測 " + s.gapCount + " 回" +
             (if(s.unresolvedGap) " ／ ⚠ 車両トリップとの補正推奨" else "")
         startButton.text = if(s.running) "↻ GPS測定を確認・再開" else "▶ GPS測定を開始"
+        val webIssue = GpsStore.browserConnectionIssue(this)
+        if(s.running && webIssue.isNotEmpty()) status.text = status.text.toString() +
+            "\n⚠ 外部ブラウザ接続："+webIssue
         stopButton.isEnabled = s.running
     }
 

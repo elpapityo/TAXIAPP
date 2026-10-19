@@ -52,6 +52,16 @@ object GpsStore {
             .apply()
     }
 
+    /**
+     * Browser port conflicts are not GPS gaps. Keep the error separate from
+     * the raw distance and make it observable on the native monitor.
+     */
+    fun setBrowserConnectionIssue(context: Context, detail: String) {
+        prefs(context).edit().putString("browserIssue",detail).apply()
+    }
+    fun browserConnectionIssue(context: Context): String =
+        prefs(context).getString("browserIssue","") ?: ""
+
     fun clear(context: Context) { prefs(context).edit().clear().apply() }
     fun noteGpsCallback(context: Context) {
         prefs(context).edit().putLong("lastGpsCallbackAt", System.currentTimeMillis()).apply()
