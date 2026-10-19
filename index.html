@@ -529,6 +529,19 @@ html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .highway-
 @media print{
  .preview-duty-summary{position:static!important;box-shadow:none!important}
 }
+
+/* Reliable pinned duty summary in legacy and the other three input modes.
+   It mirrors only when the original summary has left the visible viewport. */
+#floating-duty-summary{position:fixed!important;top:0!important;z-index:75!important;
+ margin:0!important;box-shadow:0 12px 30px #020b1899!important;max-height:42vh;overflow:hidden;
+ pointer-events:none;box-sizing:border-box}
+#floating-duty-summary[hidden]{display:none!important}
+@media(max-width:700px){#floating-duty-summary{padding:7px!important;border-radius:0 0 12px 12px!important}
+ #floating-duty-summary .preview-duty-stats{margin-bottom:5px}
+ #floating-duty-summary .preview-duty-stat{padding:5px 7px}
+ #floating-duty-summary .preview-duty-stat strong{font-size:clamp(15px,4vw,21px)}
+ #floating-duty-summary .preview-duty-route{padding:6px 8px}}
+@media print{#floating-duty-summary{display:none!important}}
 </style>
 </head>
 <body>
@@ -1221,6 +1234,19 @@ function renderNow(){
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
  appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
+ // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
+ // and mobile keyboard containers cannot clip its sticky positioning.
+ if(tab==='drive'&&getShift()&&displayPrefs().stickyDutySummary==='on'){
+  const original=appEl.querySelector('#main-content .preview-duty-summary');
+  if(original){
+   const mirror=original.cloneNode(true);
+   mirror.id='floating-duty-summary';
+   mirror.setAttribute('aria-label','画面上部に固定した現在の営業情報');
+   mirror.setAttribute('hidden','');
+   appEl.appendChild(mirror);
+  }
+ }
+ syncFloatingDutySummary();
  lastRenderedTab=tab;
  if(highwayWasOpen){
   const highway=appEl.querySelector('[data-highway-fold]');
@@ -2033,12 +2059,37 @@ function registerCurrentWaitingPlace(shift,waiting){
   finish();
  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
+function syncFloatingDutySummary(){
+ const mirror=appEl.querySelector('#floating-duty-summary');
+ if(!mirror)return;
+ const original=appEl.querySelector('#main-content .preview-duty-summary');
+ const main=appEl.querySelector('#main-content');
+ const enabled=tab==='drive'&&displayPrefs().stickyDutySummary==='on';
+ if(!original||!main||!enabled){mirror.hidden=true;return;}
+ const source=original.getBoundingClientRect();
+ const bounds=main.getBoundingClientRect();
+ // Only show the mirror once the source has scrolled completely out of view.
+ const visible=source.bottom<0&&bounds.bottom>0;
+ mirror.hidden=!visible;
+ if(!visible)return;
+ const left=Math.max(0,bounds.left),right=Math.min(window.innerWidth,bounds.right);
+ mirror.style.left=left+'px';
+ mirror.style.width=Math.max(0,right-left)+'px';
+ // Copy presentation only. The source remains the sole live data view.
+ for(const field of ['.preview-duty-state','[data-preview-duty-elapsed]',
+  '[data-preview-duty-revenue]','[data-preview-duty-from]','[data-preview-duty-to]']){
+  const src=original.querySelector(field),dest=mirror.querySelector(field);
+  if(src&&dest&&src.textContent!==dest.textContent)dest.textContent=src.textContent;
+ }
+}
+window.addEventListener('scroll',syncFloatingDutySummary,{passive:true});
+window.addEventListener('resize',syncFloatingDutySummary,{passive:true});
 function updateElapsedTimer(){
  const active=getShift(), now=new Date(), w=active?.waiting;
  const display=appEl.querySelector('[data-wait-elapsed]');
  if(display&&w&&!active?.draft)display.textContent=elapsedWaitingText(w);
  // Refresh the pinned summary without redrawing a partially edited fare form.
- if(active&&tab==='drive'&&appEl.querySelector('.preview-duty-summary')){
+ if(active&&tab==='drive'&&appEl.querySelector('#main-content .preview-duty-summary')){
   const summary=appEl.querySelector('.preview-duty-summary'),draft=active.draft,raw=draft?.raw||{};
   const mins=Math.max(0,Math.floor((now.getTime()-Date.parse(active.startedIso||''))/60000));
   const elapsed=Number.isFinite(mins)?String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'):'--:--';
@@ -2055,6 +2106,7 @@ function updateElapsedTimer(){
    if(el.textContent!==text)el.textContent=text;
   }
  }
+ syncFloatingDutySummary();
  const pay=appEl.querySelector('[data-last-payment-elapsed]');
  if(pay&&active){
   const current=window.TAXIAPP_ALIGHT_CLOCK.reference(active,now);
