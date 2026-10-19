@@ -1,6 +1,7 @@
 package jp.taxiapp.gpsprototype
 
 import android.content.Context
+import android.content.Intent
 import jp.taxiapp.gps.Snapshot
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -20,8 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
-        const val PORT = 48763
-        const val URL = "http://127.0.0.1:48763/"
+        const val PORT = 48764
+        const val URL = "http://127.0.0.1:48764/"
     }
     private val active=AtomicBoolean(false)
     private var listeningSocket: ServerSocket?=null
@@ -69,7 +70,7 @@ class GpsLoopbackServer(private val context: Context) {
                     if(line.length>4096||++lines>50)return
                     if(line.startsWith("Host:",true))host=line.substringAfter(":").trim()
                 }
-                if(host!="127.0.0.1:48763"){
+                if(host!="127.0.0.1:48764"){
                     reply(s,403,"text/plain; charset=utf-8","Invalid Host");return
                 }
                 when {
@@ -125,9 +126,22 @@ class GpsLoopbackServer(private val context: Context) {
         val ready=s.running&&last>0L&&age<=15000L&&
             accuracy!=null&&accuracy.isFinite()&&accuracy in 0.01..45.0
         val res=JSONObject().put("ready",ready)
-        if(!ready)return res.put("message",if(!s.running)
-            "GPS計測が停止しています。GPS計測アプリで開始してください。"
-          else "有効なGPSを待っています。屋外で位置情報の受信を確認してください。").toString()
+        if(!ready) {
+            if (s.running) {
+                // GET from Chrome never navigates. It asks the existing foreground
+                // service for a GPS_PROVIDER one-shot fix, rate-limited by service.
+                runCatching {
+                    context.startService(Intent(context,GpsTrackingService::class.java)
+                        .setAction(GpsTrackingService.ACTION_REFRESH))
+                }
+            }
+            val seconds=if(last<=0L) "未受信" else ((age/1000L).toString()+"秒前")
+            return res.put("gpsAgeMs",if(last<=0L)JSONObject.NULL else age)
+                .put("message",if(!s.running)
+                    "GPS測定が停止しています。GPS計測アプリで開始してください。"
+                else "GPS再測位中（有効GPS "+seconds+"）。位置情報を待っています。")
+                .toString()
+        }
         return res.put("snapshot",JSONObject()
             .put("format","GPS_DISTANCE_LAB_V1")
             .put("nonce",nonce)

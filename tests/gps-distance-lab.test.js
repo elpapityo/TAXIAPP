@@ -56,7 +56,7 @@ window.DistanceLab.onNativeSnapshot(JSON.stringify({
 }));
 assert.match(node('start-detail').textContent,/基準点を 0.000 km に設定済み/);
 assert.match(node('start-feedback').textContent,/記録が完了/);
-assert.equal(JSON.parse(local.get('gps-distance-lab-browser-v070')).startNative,88.25);
+assert.equal(JSON.parse(local.get('gps-distance-lab-browser-v080')).startNative,88.25);
 // Captures remain on one screen; with prior missing GPS allowed after retry.
 
 const {fresh,derive,goodKm}=window.DistanceLabTest;
@@ -95,36 +95,46 @@ assert.match(service,/loopback\?\.stop/);
 assert.match(service,/GpsStore.noteValidFix/);
 assert.match(gpsStore,/fun lastValidGpsFixAt/);
 assert.match(loopback,/ServerSocket\(PORT,8,InetAddress\.getByName\("127\.0\.0\.1"\)\)/);
-assert.match(loopback,/host!="127\.0\.0\.1:48763"/);
+assert.match(loopback,/host!="127\.0\.0\.1:48764"/);
 assert.match(loopback,/route=="\/api\/status"/);
 assert.match(loopback,/route\.startsWith\("\/api\/capture\?"\)/);
 assert.match(loopback,/GpsStore\.lastValidGpsFixAt/);
 assert.doesNotMatch(loopback,/Access-Control-Allow-Origin:\s*\*/);
 assert.match(bridge,/location\.hostname!=='127\.0\.0\.1'/);
+assert.match(bridge,/location\.port!=='48764'/);
+assert.match(loopback,/GpsTrackingService.ACTION_REFRESH/);
+assert.match(service,/ACTION_REFRESH/);
+assert.match(service,/requestFreshFix\(\)/);
+assert.match(service,/manager.getCurrentLocation\(LocationManager.GPS_PROVIDER/);
+assert.match(service,/LocationManager.GPS_PROVIDER, 2000L, 0f/);
+assert.match(bridge,/window.DistanceLab.onNativePending/);
+assert.match(html,/class="capture-feedback"/);
 assert.match(bridge,/fetch\('\/api\/status'/);
 assert.match(bridge,/fetch\(uri/);
 assert.doesNotMatch(bridge,/location\.href\s*=|window\.open\s*\(|taxiappgpslab/);
 assert.match(manifest,/android\.permission\.INTERNET/);
 assert.match(manifest,/android:usesCleartextTraffic="true"/);
 assert.doesNotMatch(manifest,/GpsTestWebActivity/);
-assert.match(manifest,/android:label="GPS距離ラボ 計測"/);
+assert.match(manifest,/android:label="GPS距離ラボ v0.8"/);
 assert.match(manifest,/android:scheme="taxiappgpslabv060"/);
-console.log('PASS: external browser loopback 127.0.0.1, native GPS foreground service, same-tab capture, 0km and corrections, no embedded WebView');
+console.log('PASS: external browser loopback 127.0.0.1:48764, on-demand GPS refresh, same-tab capture, zero basis, no embedded WebView');
 
 (async function(){
  const response=[];
- let count=0;
+ let pendingCount=0, count=0;
  const w={DistanceLab:{
   onNativeSnapshot(json){response.push({type:'ok',payload:JSON.parse(json)});},
+  onNativePending(nonce,message){pendingCount++;},
   onNativeError(nonce,message){response.push({type:'error',nonce,message});}
  }};
  const ctx={
-  window:w,location:{hostname:'127.0.0.1',port:'48763'},
-  setInterval(){},setTimeout(){throw Error('no retry expected for ready GPS');},
+  window:w,location:{hostname:'127.0.0.1',port:'48764'},
+  setInterval(){},setTimeout(f){setImmediate(f);},
   fetch(path){
    count++;
    if(path==='/api/status')return Promise.resolve({ok:true,json:()=>Promise.resolve({running:true,ageMs:200,gaps:0})});
-   if(path.startsWith('/api/capture?'))return Promise.resolve({ok:true,json:()=>Promise.resolve({
+   if(path.startsWith('/api/capture?'))return Promise.resolve({ok:true,json:()=>Promise.resolve(
+    count<3?{ready:false,message:'GPS再測位中（有効GPS 26秒前）'}:{
     ready:true,snapshot:{format:'GPS_DISTANCE_LAB_V1',nonce:'a'.repeat(32),target:'start',tripKm:19.5,
      capturedAt:Date.now(),gpsAgeMs:200,running:true,unresolvedGap:false}
    })});
@@ -135,8 +145,9 @@ console.log('PASS: external browser loopback 127.0.0.1, native GPS foreground se
  vm.runInNewContext(bridge,ctx);
  assert.equal(typeof w.DistanceNative.requestCapture,'function');
  w.DistanceNative.requestCapture('a'.repeat(32),'start');
- await new Promise(resolve=>setImmediate(resolve));
+ for(let i=0;i<30&&response.length===0;i++)await new Promise(resolve=>setImmediate(resolve));
  assert.equal(response.length,1);
+ assert.equal(pendingCount,1);
  assert.equal(response[0].type,'ok');
  assert.equal(response[0].payload.tripKm,19.5);
  assert.ok(count>=2,'status and capture both queried same-origin');
