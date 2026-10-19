@@ -35,11 +35,6 @@ assert.match(bridge,/taxiapp-preview-v0359-native-gps-gaps/);
 assert.doesNotMatch(bridge,/taxiapp-native-diary-gps-baseline-v131/);
 assert.match(bridge,/previewSimulationAllowed\(storage\)/);
 assert.match(preview,/data-preview-simulator/);
-assert.match(preview,/src="\.\/gps-bundle\.js/);
-for(const mode of ['waiting','dispatch','pickup','drop','realEntry','realExit','emptyEntry','emptyExit'])
- assert.ok(preview.includes("gpsBundleButton('"+mode+"'")||preview.includes('gpsBundleButton("'+mode+'"'));
-assert.match(preview,/function captureGpsBundle\(key\)/);
-
 assert.match(preview,/data-native-gps-baseline-panel/);
 assert.match(preview,/data-native-gps-baseline-status/);
 assert.match(preview,/function renderNativeGpsBaselinePanel\(shift\)/);

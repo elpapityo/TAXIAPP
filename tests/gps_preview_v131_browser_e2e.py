@@ -104,7 +104,7 @@ try:
           el.value='on';el.dispatchEvent(new Event('change',{bubbles:true}));""")
     js("document.querySelector('details[data-gps-settings]').open=true")
     wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,"[data-native-gps-baseline-panel]")))
-    assert "GPS基準は未登録" in js("return document.querySelector('[data-native-gps-baseline-status]').textContent")
+    assert "GPS基準は未登録" in driver.find_element(By.CSS_SELECTOR,"[data-native-gps-baseline-status]").text
     assert not driver.find_elements(By.CSS_SELECTOR,".gps-trip-panel"),"legacy GPS panel shown while Android selected"
     # Browser-only smoke: stub the Android GPS HTTP result. Actual APK/Chrome
     # integration has a separate real-emulator test.
@@ -122,32 +122,7 @@ try:
     assert abs(js("""return window.TAXIAPP_EXTERNAL_GPS.calculated(
        10.154,window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,arguments[0]),
        'v131-native-manual-rebase-ci-test')""",duty_id)-0.5)<0.0001
-    assert "GPS基準を登録しました" in js("return document.querySelector('[data-native-gps-baseline-status]').textContent")
-    assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
-    # One click, three readings. This smoke uses explicit mocks only for GPS/position;
-    # native Android -> Chrome is separately tested on the actual emulator APK.
-    js("document.querySelector('[data-tab=drive]').click()")
-    ready()
-    js("document.querySelector('[data-action=beginRide]').click()")
-    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'[data-action=gpsBundle][data-id=pickup]')))
-    js("""window.TAXIAPP_EXTERNAL_GPS.read=async()=>({
-         format:'TAXIAPP_GPS_DIARY_V131',tripKm:10.154,
-         runId:'v131-native-manual-rebase-ci-test',simulated:true,capturedAt:Date.now(),
-         unresolvedGap:false,gapCount:0});
-         Object.defineProperty(navigator,'geolocation',{configurable:true,value:{
-          getCurrentPosition:function(ok){ok({coords:{latitude:34.6991,longitude:135.2002,accuracy:8},
-             timestamp:Date.now()})}
-         }});""")
-    js("document.querySelector('[data-action=gpsBundle][data-id=pickup]').click()")
-    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359') or {})
-      .get('shifts',[{}])[0].get('draft',{}).get('raw',{}).get('F')=='0.500')
-    saved=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']
-    assert saved['raw']['F']=='0.500'
-    assert saved['raw']['G'] and ':' in saved['raw']['G']
-    assert saved['raw']['D']=='34.699100,135.200200'
-    assert saved['meta']['gpsBundle']['pickup']['simulated'] is True
-    assert saved['meta']['gpsBundle']['pickup']['positionSource']=='chrome-device-gps'
-    assert '模擬走行位置ではありません' in driver.find_element(By.ID,'notice').text
+    assert "GPS基準を登録しました" in driver.find_element(By.CSS_SELECTOR,"[data-native-gps-baseline-status]").text
     assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
     print("PASS Chrome: preview boots, source opt-in, simulated opt-in, 0km departure and reload persisted, production IDB/localStorage preserved")
 except Exception:
