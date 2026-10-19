@@ -27,6 +27,27 @@ jobs:
             node "$file"
             echo "::endgroup::"
           done
+      - name: Require version bump when the main app changes
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          node - <<'NODE'
+          const fs=require('fs'),cp=require('child_process');
+          const main=fs.readFileSync('index.html','utf8');
+          const before=cp.execFileSync('git',['show','FETCH_HEAD:index.html'],{encoding:'utf8'});
+          if(main===before){console.log('App HTML unchanged');process.exit(0);}
+          const version=text=>{
+            const match=text.match(/<title>TAXIAPP v(\\d+)\\.(\\d+)\\.(\\d+) — 乗務日報<\\/title>/);
+            if(!match)throw new Error('TAXIAPP app version is missing');
+            return match.slice(1).map(Number);
+          };
+          const old=version(before),next=version(main);
+          const compare=(a,b)=>a[0]!==b[0]?a[0]-b[0]:a[1]!==b[1]?a[1]-b[1]:a[2]-b[2];
+          if(compare(next,old)<=0){
+            throw Error('Changing index.html requires an increased app version: '+old.join('.')+' -> '+next.join('.'));
+          }
+          console.log('App version increased:',old.join('.'),'->',next.join('.'));
+          NODE
       - name: Validate HTML scripts
         run: |
           node - <<'NODE'
