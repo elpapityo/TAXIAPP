@@ -70,7 +70,7 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.0 · 外部ブラウザ", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS DISTANCE LAB · v1.1 · 外部ブラウザ", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n計測専用", 29f), 3)
         add(label("この画面はGPS計測と受信状態の確認だけです。0kmの記録・区間距離・手入力補正は外部ブラウザで操作します。", 13f, 0xFFAFC6D3.toInt()), 8)
         val meter = LinearLayout(this).apply {
@@ -131,7 +131,7 @@ class MainActivity : Activity() {
                     val result=JSONObject(reply)
                     verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
                         result.optString("packageId")==applicationContext.packageName &&
-                        result.optString("webVersion")=="1.0.0"
+                        result.optString("webVersion")=="1.1.0"
                     if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
                 }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
             }catch(e:Exception){
@@ -145,7 +145,7 @@ class MainActivity : Activity() {
                 } else {
                     AlertDialog.Builder(this)
                         .setTitle("外部ブラウザ接続を確認できません")
-                        .setMessage(detail+"\n\n以前の「GPS距離ラボ v0.8」「v0.9」のGPS測定を停止してください。v1.0でGPS測定を開始し直してから、このボタンを押してください。\n\nChromeの履歴・保存データは消さないでください。")
+                        .setMessage(detail+"\n\n以前の「GPS距離ラボ v0.8」「v0.9」のGPS測定を停止してください。v1.1でGPS測定を開始し直してから、このボタンを押してください。\n\nChromeの履歴・保存データは消さないでください。")
                         .setPositiveButton("確認",null).show()
                 }
             }

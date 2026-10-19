@@ -6,11 +6,11 @@ android {
     namespace = "jp.taxiapp.gpsprototype"
     compileSdk = 35
     defaultConfig {
-        applicationId = "jp.taxiapp.gpsprototype.distancelabv100"
+        applicationId = "jp.taxiapp.gpsprototype.distancelabv110"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0.0-browser-owner-check"
+        versionName = "1.1.0-session-archive"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
