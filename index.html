@@ -2341,7 +2341,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}
   saveLater();return;
  }
- if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&!s.draft.editId){
+ if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
   if(window.TAXIAPP_EXTERNAL_GPS){
    // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
