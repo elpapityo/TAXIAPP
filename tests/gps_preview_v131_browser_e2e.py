@@ -169,6 +169,27 @@ try:
     assert draft['raw']['F']=='4.2', 'manual F must stay intact'
     assert draft['raw']['L']=='4.700', 'native GPS +0.5 km after manual baseline'
     assert draft['raw']['M'], 'time is still recorded'
+    # ON + manual: a driver-corrected value must silently become the next GPS baseline.
+    js("""const el=document.querySelector('[data-col=L]');
+       el.value='6.0';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    wait.until(lambda d: abs(json.loads(js("return localStorage.getItem('taxiapp-preview-v0359-native-gps-baseline:'+arguments[0])",duty_id))['value']-6.0)<0.001)
+    assert "GPS受信の復帰後" not in driver.find_element(By.ID,'notice').text
+    js("document.querySelector('[data-time-now=M]').click()")
+    wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['L']=='6.0')
+    # OFF again: manual changes must never call Android GPS.
+    js("document.querySelector('[data-tab=settings]').click()")
+    js("document.querySelector('details[data-gps-settings]').open=true")
+    js("""const el=document.querySelector('[data-native-auto-distance]');
+       el.value='off';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    assert js("return localStorage.getItem('taxiapp-preview-v0359-auto-distance-v131')")=='off'
+    js("document.querySelector('[data-tab=drive]').click()")
+    js("""window.__distanceCalls=0;
+       window.TAXIAPP_EXTERNAL_GPS.read=async()=>{window.__distanceCalls++;throw Error('MUST_NOT_BE_CALLED')};""")
+    js("""const el=document.querySelector('[data-col=L]');
+       el.value='6.3';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    assert js("return window.__distanceCalls")==0
+    wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['L']=='6.3')
+    assert 'MUST_NOT_BE_CALLED' not in driver.find_element(By.ID,'notice').text
     assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
     print("PASS Chrome: preview boots, source opt-in, simulated opt-in, 0km departure and reload persisted, production IDB/localStorage preserved")
 except Exception:
