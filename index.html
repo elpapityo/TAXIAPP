@@ -2796,6 +2796,21 @@ function fillCurrentTime(col){
  }
  saveLater();render();toast((RAW_COLUMNS.find(x=>x[0]===col)?.[1]||'時刻')+'に現在時刻を入力しました');
 }
+// Preserve the actual driver-entered vehicle-trip checkpoint, then rebase native
+// GPS for following segments without ever changing the manually entered field.
+function rebaseNativeTripAfterManual(shift,value,stillCurrent){
+ if(!nativeDiaryGpsEnabled()||number(value)===null||number(value)<0)return;
+ const shiftId=shift.id;
+ window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
+  const active=getShift();
+  if(!canEditNow()||!nativeDiaryGpsEnabled()||!active||active.id!==shiftId||
+     active.endedAt||active.endedIso||!stillCurrent(active))return;
+  window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
+  if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+  active.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
+  saveLater();toast('手入力の車両トリップ '+value+'km をGPS基準に反映しました。');
+ }).catch(err=>toast('手入力距離は保存しましたが、GPS基準の補正はできません：'+err.message,true));
+}
 function handleInput(e){const target=e.target;const s=getShift();
  if(target.matches?.('[data-native-diary-gps]')){
   if(e.type!=='change')return;
@@ -2842,7 +2857,12 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   const n=number(target.value);
   if(target.value.trim()!==''&&(n===null||n<0)){if(e.type==='change')toast('走行距離は0以上で入力してください',true);return;}
   const key=target.dataset.shiftOdo==='start'?'startingOdo':target.dataset.shiftOdo==='end'?'endingOdo':null;
-  if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');saveLater();}return;
+  if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim()){
+   if(nativeDiaryGpsEnabled()){
+    const edited=target.value.trim();
+    rebaseNativeTripAfterManual(s,edited,a=>String(a.endingOdo).trim()===edited);
+   }else gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');
+  }saveLater();}return;
  }
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
   const key=target.dataset.waitField;if(!['place','odometer'].includes(key))return;
@@ -2855,7 +2875,12 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     if(!registerWaitName(name,s.waiting.geo))toast('登録候補は30件までです（待機履歴には保存されます）',true);
     else {target.value=name;refreshWaitView(s.waiting.id);}
    }
-  }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}
+  }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim()){
+   if(nativeDiaryGpsEnabled()){
+    const edited=target.value.trim(),waitId=s.waiting.id;
+    rebaseNativeTripAfterManual(s,edited,a=>a.waiting?.id===waitId&&String(a.waiting.odometer).trim()===edited&&!a.draft);
+   }else gpsTripUI?.correct(s,target.value,'待機距離の手動修正');
+  }}
   saveLater();return;
  }
  if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(['K','E','N'].includes(col)&&applyUberDisplayedDefault(s.draft,s.settings)){
