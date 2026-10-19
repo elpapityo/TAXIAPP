@@ -35,6 +35,33 @@ assert.match(bridge,/taxiapp-preview-v0359-native-gps-gaps/);
 assert.doesNotMatch(bridge,/taxiapp-native-diary-gps-baseline-v131/);
 assert.match(bridge,/previewSimulationAllowed\(storage\)/);
 assert.match(preview,/data-preview-simulator/);
+assert.match(preview,/data-native-auto-distance/);
+assert.match(preview,/const gpsButton=\['F','L','S','V','AB','AE'\]\.includes\(key\)&&nativeAutoDistanceEnabled\(\)/);
+assert.match(preview,/if\(gpsDistanceField&&nativeAutoDistanceEnabled\(\)\)/);
+assert.match(preview,/if\(currentDuty\?\.draft\?\.id===target\.id&&!nativeDiaryGpsEnabled\(\)&&nativeAutoDistanceEnabled\(\)\)/);
+assert.match(preview,/if\(duty\?\.waiting\?\.id===waitId&&nativeAutoDistanceEnabled\(\)\)/);
+assert.match(preview,/if\(e\.type==='change'&&target\.value&&nativeAutoDistanceEnabled\(\)&&!nativeDiaryGpsEnabled\(\)/);
+
+assert.match(preview,/距離の自動取得（Android GPS）/);
+assert.match(preview,/const NATIVE_AUTO_DISTANCE_PREF='taxiapp-preview-v0359-auto-distance-v131'/);
+assert.match(preview,/function nativeAutoDistanceEnabled\(\)/);
+assert.match(preview,/function fillNativeDistanceSilently\(shift,record,col,waiting=false\)/);
+assert.match(preview,/if\(!nativeDiaryGpsEnabled\(\)\|\|!nativeAutoDistanceEnabled\(\)\|\|!canEditNow\(\)/);
+assert.match(preview,/String\(waiting\?target.odometer/);
+assert.match(preview,/\)\.catch\(\(\)=>false\)\.finally\(/);
+assert.doesNotMatch(preview,/gpsBundleButton|captureGpsBundle|src="\.\/gps-bundle\.js/);
+assert.match(preview,/外部GPS：/); // explicit GPS requests still report errors if clicked by user
+
+assert.match(preview,/data-native-gps-baseline-panel/);
+assert.match(preview,/data-native-gps-baseline-status/);
+assert.match(preview,/function renderNativeGpsBaselinePanel\(shift\)/);
+assert.match(preview,/if\(choice==='on'&&s\?\.gpsTrip\?\.enabled\)gpsTripUI\?\.stop\(s,true\)/);
+assert.equal((preview.match(/if\(!nativeDiaryGpsEnabled\(\)&&getShift\(\)\?\.gpsTrip\?\.enabled\)gpsTripUI\?\.start\(getShift\(\),true\)/g)||[]).length,2);
+assert.match(preview,/if\(!nativeDiaryGpsEnabled\(\)\)gpsTripUI\?\.tick\(\)/);
+assert.match(preview,/現在は従来のブラウザGPS方式です。未測位・欠測/);
+assert.match(preview,/出庫時のAndroid GPS基準が未登録です/);
+assert.match(preview,/現在の車両トリップ実測値（km）/);
+
 assert.ok(bridge.includes('http://127.0.0.1:48768/'));
 assert.match(bridge,/EXPECTED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100'/);
 assert.ok(bridge.includes("EXPECTED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv131'"));

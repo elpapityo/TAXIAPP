@@ -1033,7 +1033,7 @@ function setDeviceMode(next,previous='',detail=''){
  if(next!=='writer'){
   try{gpsTripUI?.clearWatch();}catch(e){console.warn('gps-watch-cleanup',e);}
  }else if(prior==='viewer'||prior==='pending'){
-  if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+  if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
   scheduleGoogleSync();
  }
 }
@@ -1345,10 +1345,27 @@ function metrics(shift){const t=totals(shift.records,shift.settings,shift.date),
 function selector(col,values,current,descriptions=false){return `<div class="selector" role="group" aria-label="${safeText(col==='N'?'支払方法':col==='I'?'男性人数':col==='J'?'女性人数':col)}">${values.map(v=>{let key=Array.isArray(v)?v[0]:v,label=Array.isArray(v)?v[1]:v;const visible=(col==='N'||col==='I'||col==='J')?key:(descriptions?`${key} · ${label}`:label);return `<button type="button" data-setcol="${safeText(col)}" data-value="${safeText(key)}" class="chip label-chip ${String(current)===String(key)?'active':''}" aria-label="${safeText(label)}" title="${safeText(label)}" aria-pressed="${String(current)===String(key)}">${safeText(visible)}</button>`}).join('')}</div>`;}
 const NATIVE_DIARY_GPS_PREF='taxiapp-preview-v0359-native-gps-v131';
 const PREVIEW_SIMULATED_GPS_PREF='taxiapp-preview-v0359-simulator-optin';
+const NATIVE_AUTO_DISTANCE_PREF='taxiapp-preview-v0359-auto-distance-v131';
+function nativeAutoDistanceEnabled(){
+ try{return localStorage.getItem(NATIVE_AUTO_DISTANCE_PREF)==='on';}catch{return false;}
+}
 function previewSimulatedGpsEnabled(){try{return localStorage.getItem(PREVIEW_SIMULATED_GPS_PREF)==='on';}catch{return false;}}
 function nativeDiaryGpsEnabled(){
  try{return Boolean(window.TAXIAPP_EXTERNAL_GPS)&&localStorage.getItem(NATIVE_DIARY_GPS_PREF)==='on';}
  catch{return false;}
+}
+function renderNativeGpsBaselinePanel(shift){
+ if(!shift||shift.endedAt||shift.endedIso)return '';
+ const base=window.TAXIAPP_EXTERNAL_GPS?.baseline(localStorage,shift.id);
+ const status=base?'GPS基準は登録済みです。GPS計測を再起動した場合や車両トリップの値が違う場合だけ、現在の実測値で再設定してください。':'GPS基準は未登録です。途中からAndroid GPSを選択した場合、最初の距離を推定せず現在の車両トリップ実測値から計測を開始します。';
+ return `<section class="card" data-native-gps-baseline-panel>
+  <h2 class="h2">Android GPS距離の基準登録</h2>
+  <p class="helper" data-native-gps-baseline-status>${safeText(status)}</p>
+  <label class="field"><span class="field-label">現在の車両トリップ実測値（km）</span>
+  <input class="control" id="gpsShiftRebaseValue" data-number-kind="distance" type="text" inputmode="decimal" placeholder="例：0"></label>
+  <div class="actions"><button class="btn primary" type="button" data-action="gpsShiftRebase">⌖ 現在の値でGPS基準を登録・補正</button></div>
+  <p class="footnote">100km/h模擬走行中は速度を0km/hにしてから登録してください。以前の未計測距離は自動補完しません。実車の場合は必ず車両トリップの現在値を入力してください。</p>
+ </section>`;
 }
 function field(key,raw,opts={}){
  // OFF means do not manage this distance: hide the entire input and GPS button.
@@ -1361,8 +1378,9 @@ function field(key,raw,opts={}){
  return `<div class="field time-field"><div class="time-field-header"><span class="field-label">${safeText(label)}${required}</span></div><div class="inline-time-field"><input class="control time-input" data-col="${key}" type="time" step="60" value="${value?safeText(shortTime(value)): ''}" aria-label="${safeText(label)}（手動修正可）"><button class="btn time-now inline-field-icon" data-time-now="${key}" type="button" aria-label="${safeText(label)}に現在時刻を入力" title="${safeText(label)}に現在時刻を入力">◷</button></div></div>`;
  }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${['F','L','S','V','AB','AE','X','Y','AJ','AK'].includes(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
- const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&(gpsTripUI?.active(getShift())||nativeDiaryGpsEnabled())
-  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}にGPS距離を入力" title="GPS距離を入力">⌖</button>`:'';
+ const gpsSourceName=nativeDiaryGpsEnabled()?'Android GPS距離ラボ v1.3.1':'従来のブラウザGPS';
+ const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&nativeAutoDistanceEnabled()&&(gpsTripUI?.active(getShift())||nativeDiaryGpsEnabled())
+  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}に${gpsSourceName}の距離を入力" title="${gpsSourceName}からGPS距離を入力">⌖</button>`:'';
  const labelText=`<span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>`;
  if(gpsButton)return `<div class="field">${labelText}<div class="inline-distance-field">${control}${gpsButton}</div></div>`;
  return `<label class="field">${labelText}${control}</label>`;}
@@ -2097,9 +2115,14 @@ function renderSettings(shift){const active=getShift();return `${titleBlock('設
  <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>従来のブラウザGPS（初期設定）</option>
  <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>Android GPS距離ラボ v1.3.1（127.0.0.1:48768）</option>
  </select></label>
- <label class="field"><input type="checkbox" data-preview-simulator ${previewSimulatedGpsEnabled()?'checked':''}> 模擬GPSの距離入力を許可する（この試験版の中だけ）</label>
+ <label class="field"><span class="field-label">距離の自動取得（Android GPS）</span><select class="control" data-native-auto-distance>
+<option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：距離は手入力（初期設定）</option>
+<option value="on" ${nativeAutoDistanceEnabled()?'selected':''}>ON：現在時刻・現在地の取得に距離を連動</option></select></label>
+<p class="caption-note">【ON】現在時刻・現在地の取得時に、対応する距離欄が空欄ならGPS距離を自動入力します。Android方式では、v1.3.1の測定中・基準登録済み・欠測なし・同じ乗務中・有効な新しい測位が条件です。ブラウザ方式では有効なGPS計測が必要です。手入力済みの距離は上書きしません。</p>
+<p class="caption-note">【OFF】距離は手入力のみ。時刻・現在地は従来どおり取得します。距離の自動取得と関連メッセージは出しません。ONでもGPSが不確かな場合は空欄のままです。OFFで手入力した後Androidの自動取得を再開する場合は、現在の車両トリップ値でGPS基準を合わせてください。</p>
+<label class="field"><input type="checkbox" data-preview-simulator ${previewSimulatedGpsEnabled()?'checked':''}> 模擬GPSの距離入力を許可する（この試験版の中だけ）</label>
  <p class="caption-note">模擬GPSが有効でも本番の記録やクラウドには送信しません。実GPS精度の確認は別に必要です。</p>
- <p class="caption-note">試験版のAndroidアプリを起動して、Chromeのローカルネットワーク接続を許可した場合のみ使用してください。この端末だけの設定です。PC等には同期しません。切替前の手入力・車両トリップやGoogle保存データは変更しません。出庫中に切り替えた場合は車両トリップ実測値からGPS基準を再登録してください。</p></section><section class="card"><h2 class="h2">出庫時GPS試験計測</h2><label class="field"><span class="field-label">出庫時のGPS自動開始</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>'}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="footnote">IndexedDB: taxiapp-gps-preview-v0359-store / state / taxiapp-gps-preview-v0359、代替: localStorage の taxiapp-gps-preview-v0359-local-v1。保存先はURLとブラウザ環境に依存します。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
+ <p class="caption-note">試験版のAndroidアプリを起動して、Chromeのローカルネットワーク接続を許可した場合のみ使用してください。この端末だけの設定です。PC等には同期しません。切替前の手入力・車両トリップやGoogle保存データは変更しません。出庫中に切り替えた場合は車両トリップ実測値からGPS基準を再登録してください。</p></section>${active&&nativeDiaryGpsEnabled()?renderNativeGpsBaselinePanel(active):''}<section class="card"><h2 class="h2">出庫時GPS試験計測</h2><label class="field"><span class="field-label">出庫時のブラウザGPS自動開始（Android GPS選択時は無効）</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="footnote">IndexedDB: taxiapp-gps-preview-v0359-store / state / taxiapp-gps-preview-v0359、代替: localStorage の taxiapp-gps-preview-v0359-local-v1。保存先はURLとブラウザ環境に依存します。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
 function download(textData,file,type){const blob=new Blob([textData],{type}),link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download=file;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 let gpsPermissionText='';
 function setGpsPermissionStatus(message){gpsPermissionText=String(message);const el=appEl.querySelector('[data-gps-permission-status]');if(el)el.textContent=gpsPermissionText;}
@@ -2180,7 +2203,10 @@ async function getWaitGps(shift,waiting){
   const geo={lat:position.coords.latitude,lng:position.coords.longitude,accuracy:position.coords.accuracy,recordedAt:new Date().toISOString()};
   target.geo=geo;
   const duty=model.shifts.find(s=>s.id===shiftId);
-  if(duty?.waiting?.id===waitId)gpsTripUI?.fillWaitDistance(duty,target,'waitLocation');
+  if(duty?.waiting?.id===waitId&&nativeAutoDistanceEnabled()){
+    if(nativeDiaryGpsEnabled())fillNativeDistanceSilently(duty,target,'odometer',true);
+    else gpsTripUI?.fillWaitDistance(duty,target,'waitLocation');
+   }
   if(target.place&&target.placeSource!=='gps'){
    // Only the explicit registration button can change the registered coordinate.
    target.gpsStatus='位置取得済み';
@@ -2323,7 +2349,7 @@ function updateElapsedTimer(){
   if(heading&&heading.textContent!==label)heading.textContent=label;
   if(card)card.setAttribute('aria-label',label+'の経過時間');
  }
- gpsTripUI?.tick();
+ if(!nativeDiaryGpsEnabled())gpsTripUI?.tick();
  const nowEl=appEl.querySelector('[data-live-now]');if(nowEl)nowEl.textContent=shortTime(stamp(now));
  if(active&&appEl.querySelector('[data-live-elapsed]')){
   const v=liveBusinessNumbers(active,now);
@@ -2348,9 +2374,10 @@ function updateElapsedTimer(){
  }
 }
 setInterval(updateElapsedTimer,1000);
+let suppressManualGpsToast=false;
 const gpsTripUI=window.TAXIAPP_GPS_UI?window.TAXIAPP_GPS_UI({
  getShift:()=>getShift(),persist:(cloud)=>save(cloud===false),render:()=>render(),
- toast:(message,error)=>toast(message,error),gpsMessage:(error)=>gpsMessage(error),
+ toast:(message,error)=>{if(!suppressManualGpsToast)toast(message,error);},gpsMessage:(error)=>gpsMessage(error),
  number:(value)=>number(value),safeText:(value)=>safeText(value)
 }):null;
 // GPS/address callbacks must not rebuild the active fare entry form.
@@ -2364,6 +2391,41 @@ function refreshDraftGpsFields(shiftId,recordId){
   });
  }
 }
+
+const nativeDistancePending=new Set();
+function fillNativeDistanceSilently(shift,record,col,waiting=false){
+ if(!nativeDiaryGpsEnabled()||!nativeAutoDistanceEnabled()||!canEditNow()||!shift||shift.endedAt||shift.endedIso||
+   shift.externalGpsManualPending||!distanceEnabled(col))return Promise.resolve(false);
+ const id=shift.id,recordId=record?.id,field=waiting?'odometer':col;
+ if(!recordId||(!waiting&&(record?.editId||!['F','L','S','V','AB','AE'].includes(col))))return Promise.resolve(false);
+ if(String(waiting?record.odometer??'':record.raw?.[col]??'').trim()!=='')return Promise.resolve(false);
+ const token=id+'/'+recordId+'/'+field;
+ if(nativeDistancePending.has(token))return Promise.resolve(false);
+ nativeDistancePending.add(token);
+ return window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId:id}).then(data=>{
+  if(!canEditNow()||!nativeDiaryGpsEnabled()||!nativeAutoDistanceEnabled())return false;
+  const live=getShift(),target=waiting?live?.waiting:live?.draft;
+  if(!live||live.id!==id||live.endedAt||live.endedIso||
+    live.externalGpsManualPending||target?.id!==recordId||(!waiting&&target.editId)||
+    String(waiting?target.odometer??'':target.raw?.[col]??'').trim()!=='')return false;
+  const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,id);
+  if(!base)return false;
+  const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(3);
+  const timestamp=new Date(data.capturedAt).toISOString();
+  if(waiting){
+   target.odometer=value;target.gpsAutoOdometer={km:value,at:timestamp,source:'native-auto'};
+   const input=appEl.querySelector('[data-wait-field="odometer"]');
+   if(input&&document.activeElement!==input)input.value=value;
+  }else{
+   target.raw[col]=value;target.meta??={};target.meta.externalGpsFilledFields??={};
+   target.meta.externalGpsFilledFields[col]={km:value,rawGpsKm:data.tripKm,runId:data.runId,at:timestamp};
+   refreshDraftGpsFields(id,recordId);
+  }
+  live.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:timestamp};
+  saveLater();return true;
+ }).catch(()=>false).finally(()=>nativeDistancePending.delete(token));
+}
+
 function gpsTarget(shift,id){const stable=model.shifts.find(x=>x.id===shift.id);return stable?.draft?.id===id?stable.draft:stable?.records?.find(x=>x.id===id); }
 async function getGps(shift,d,when){const key=when==='pickup'?'pickup':'drop';const active=gpsTarget(shift,d.id);if(!active)return;
  if(!navigator.geolocation||!window.isSecureContext){const message='この開き方ではGPSが使えません。HTTPSのURLをChromeで開く必要があります。';active.meta[key+'GpsStatus']=message;saveLater();refreshDraftGpsFields(shift.id,d.id);toast(message,true);return;}
@@ -2372,11 +2434,13 @@ async function getGps(shift,d,when){const key=when==='pickup'?'pickup':'drop';co
   // The same 'current location' action copies a *trusted* GPS trip reading.
   // A manually entered or corrected vehicle-trip value must never be overwritten.
   const currentDuty=model.shifts.find(s=>s.id===shift.id);
-  if(currentDuty?.draft?.id===target.id&&!nativeDiaryGpsEnabled())gpsTripUI?.fillLocationDistance(currentDuty,target,when);
+  if(currentDuty?.draft?.id===target.id&&!nativeDiaryGpsEnabled()&&nativeAutoDistanceEnabled())gpsTripUI?.fillLocationDistance(currentDuty,target,when);
   target.meta[key+'Geo']=gps;target.raw[locationKey]=`${gps.lat.toFixed(6)},${gps.lng.toFixed(6)}`;
   // Coordinates belong in the dedicated location column and metadata, not the human-readable address.
   if(when==='pickup'&&target.meta.pickupWaitProvisional&&target.raw.AL===target.meta.waitPlace){target.raw.AL='';target.meta.pickupWaitProvisional=false;}
-  target.meta[key+'GpsStatus']='GPS座標を保存しました。丁目までの推定住所を取得中…';await save();refreshDraftGpsFields(shift.id,d.id);toast('GPS座標を記録しました。');
+  target.meta[key+'GpsStatus']='GPS座標を保存しました。丁目までの推定住所を取得中…';await save();refreshDraftGpsFields(shift.id,d.id);
+  if(currentDuty?.draft?.id===target.id&&nativeDiaryGpsEnabled())fillNativeDistanceSilently(currentDuty,target,when==='pickup'?'F':'L');
+  toast('GPS座標を記録しました。');
  if(model.prefs.reverseAddress==='off'){const latest=gpsTarget(shift,d.id);if(latest){latest.meta[key+'GpsStatus']='GPS座標は内部保存しました（住所変換OFF）。住所欄は手入力してください。';saveLater();refreshDraftGpsFields(shift.id,d.id);}return;}
  try{const address=await reverseAddress(gps),latest=gpsTarget(shift,d.id);if(!latest)return;if(address){const old=latest.raw[addressKey];if(!old||/^\s*-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?\s*$/.test(String(old))){latest.raw[addressKey]=address;latest.meta[key+'AddressProvider']='国土地理院';latest.meta[key+'GpsStatus']='GPS座標保存済み。国土地理院の町名・丁目（推定）です。';await save();refreshDraftGpsFields(shift.id,d.id);toast('推定住所を入力しました。住所を確認してください。');}else{latest.meta[key+'GpsStatus']='GPS座標保存済み。手入力した住所は維持しました。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}}catch(e){const last=gpsTarget(shift,d.id);if(last){last.meta[key+'GpsStatus']='GPS座標は保存済み。町名・丁目を取得できませんでした。住所は手入力できます。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}},err=>{const live=gpsTarget(shift,d.id);if(live){live.meta[key+'GpsStatus']=gpsMessage(err);saveLater();refreshDraftGpsFields(shift.id,d.id);}toast(gpsMessage(err),true);},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
@@ -2441,7 +2505,7 @@ function handleAction(action,id){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();
- if(action==='gpsTripStart'){if(shift)gpsTripUI?.start(shift);return;}
+ if(action==='gpsTripStart'){if(nativeDiaryGpsEnabled()){toast('Android GPSを使用中です。GPS距離ラボから測定してください。');return;}if(shift)gpsTripUI?.start(shift);return;}
  if(action==='gpsTripStop'){if(shift)gpsTripUI?.stop(shift);return;}
  if(action==='gpsTripCorrect'){
   if(!shift||!gpsTripUI?.active(shift))return;
@@ -2479,8 +2543,9 @@ function handleAction(action,id){
    if(current?.id!==shiftId||current.endedAt||String(input?.value??'').trim()!==value)return;
    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
    if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+   current.externalGpsManualPending=false;
    current.externalGpsSnapshot={tripKm:trip,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
-   saveLater();toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
+   saveLater();const baselineStatus=appEl.querySelector('[data-native-gps-baseline-status]');if(baselineStatus)baselineStatus.textContent='GPS基準を登録しました。新しいGPS増分を車両トリップ '+value+'km から加算します。';toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
   }).catch(e=>toast('GPS基準を変更できません：'+e.message,true));
   return;
  }
@@ -2520,7 +2585,7 @@ function handleAction(action,id){
    if(active?.endedAt||active?.endedIso)return;
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const base=bridge.baseline(localStorage,shiftId);
-   if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
+   if(!base)throw Error('出庫時のAndroid GPS基準が未登録です。「出庫・入庫」→「GPS基準の再設定」から現在の車両トリップ実測値を登録してください。途中の距離を0kmとみなして入力しません');
    const km=bridge.calculated(data.tripKm,base,data.runId).toFixed(3);
    active.draft.raw[id]=km;
    active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
@@ -2532,7 +2597,7 @@ function handleAction(action,id){
  }
  if(action==='gpsTripFill'){
   if(!shift?.draft||!gpsTripUI?.active(shift)||!['F','L','S','V','AB','AE'].includes(id)||!distanceEnabled(id))return;
-  if(!gpsTripUI.trusted(shift)){toast('未測位・欠測あり：車両トリップを確認・補正してからGPS距離を入力してください。',true);return;}
+  if(!gpsTripUI.trusted(shift)){toast('現在は従来のブラウザGPS方式です。未測位・欠測のため入力できません。v1.3.1を使う場合は「設定 → GPS距離テスト → GPS距離の取得元」でAndroid GPSを選択してください。',true);return;}
   const km=gpsTripUI.fmt(shift.gpsTrip.tripKm);
   shift.draft.raw[id]=km;
   shift.draft.meta??={};shift.draft.meta.gpsFilledFields??={};
@@ -2804,7 +2869,10 @@ function fillCurrentTime(col){
  if(!d||!timeFields.has(col))return;
  const now=new Date();d.raw[col]=stamp(now);
  const gpsDistanceField={G:'F',M:'L',R:'S',U:'V',AA:'AB',AD:'AE'}[col];
- if(gpsDistanceField&&d.kind==='ride')gpsTripUI?.fillDistance(s,d,gpsDistanceField,'time:'+col);
+ if(gpsDistanceField&&nativeAutoDistanceEnabled()){
+  if(nativeDiaryGpsEnabled())fillNativeDistanceSilently(s,d,gpsDistanceField);
+  else if(d.kind==='ride')gpsTripUI?.fillDistance(s,d,gpsDistanceField,'time:'+col);
+ }
  if(col==='M'&&d.kind==='ride'){
   d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();gpsTripUI?.alight(s,d);requestDropLocation(s,d);
  }
@@ -2813,19 +2881,26 @@ function fillCurrentTime(col){
 // Preserve the actual driver-entered vehicle-trip checkpoint, then rebase native
 // GPS for following segments without ever changing the manually entered field.
 function rebaseNativeTripAfterManual(shift,value,stillCurrent){
- if(!nativeDiaryGpsEnabled()||number(value)===null||number(value)<0)return;
+ if(!nativeAutoDistanceEnabled()||number(value)===null||number(value)<0)return;
  const shiftId=shift.id;
+ shift.externalGpsManualPending=true;saveLater();
  window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
   const active=getShift();
   if(!canEditNow()||!nativeDiaryGpsEnabled()||!active||active.id!==shiftId||
      active.endedAt||active.endedIso||!stillCurrent(active))return;
   window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
   if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+  active.externalGpsManualPending=false;
   active.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
-  saveLater();toast('手入力の車両トリップ '+value+'km をGPS基準に反映しました。');
- }).catch(err=>toast('手入力距離は保存しましたが、GPS基準の補正はできません：'+err.message,true));
+  saveLater();
+ }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
+ if(target.matches?.('[data-native-auto-distance]')){
+  if(e.type!=='change')return;
+  try{localStorage.setItem(NATIVE_AUTO_DISTANCE_PREF,target.value==='on'?'on':'off');}catch{return;}
+  render();return;
+ }
  if(target.matches?.('[data-preview-simulator]')){
   if(e.type!=='change')return;
   try{localStorage.setItem(PREVIEW_SIMULATED_GPS_PREF,target.checked?'on':'off');}
@@ -2837,7 +2912,9 @@ function handleInput(e){const target=e.target;const s=getShift();
   const choice=target.value;
   if(choice!=='on'&&choice!=='off')return;
   try{localStorage.setItem(NATIVE_DIARY_GPS_PREF,choice);}catch{toast('この端末のGPS連携設定を保存できません',true);return;}
-  render();toast(choice==='on'?'Android GPS距離の取得を有効にしました。車両トリップの基準を確認してください。':'従来のブラウザGPS方式に戻しました。');return;
+  if(choice==='on'&&s?.gpsTrip?.enabled)gpsTripUI?.stop(s,true);
+  else if(choice==='on')gpsTripUI?.clearWatch();
+  render();toast(choice==='on'?(s?'Android GPSに変更しました。出庫中のため「出庫・入庫」→「GPS基準の再設定」で車両トリップ実測値を登録してください。':'Android GPS距離の取得を有効にしました。出庫時のGPS基準を確認してください。'):'従来のブラウザGPS方式に戻しました。');return;
  }
  if(target.dataset.cruisingSummaryField){
   const key=target.dataset.cruisingSummaryField;
@@ -2878,10 +2955,10 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   if(target.value.trim()!==''&&(n===null||n<0)){if(e.type==='change')toast('走行距離は0以上で入力してください',true);return;}
   const key=target.dataset.shiftOdo==='start'?'startingOdo':target.dataset.shiftOdo==='end'?'endingOdo':null;
   if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim()){
-   if(nativeDiaryGpsEnabled()){
+   if(nativeAutoDistanceEnabled()){
     const edited=target.value.trim();
     rebaseNativeTripAfterManual(s,edited,a=>String(a.endingOdo).trim()===edited);
-   }else gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');
+   }else{ suppressManualGpsToast=true;try{gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');}finally{suppressManualGpsToast=false;} }
   }saveLater();}return;
  }
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
@@ -2896,10 +2973,10 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     else {target.value=name;refreshWaitView(s.waiting.id);}
    }
   }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim()){
-   if(nativeDiaryGpsEnabled()){
+   if(nativeAutoDistanceEnabled()){
     const edited=target.value.trim(),waitId=s.waiting.id;
     rebaseNativeTripAfterManual(s,edited,a=>a.waiting?.id===waitId&&String(a.waiting.odometer).trim()===edited&&!a.draft);
-   }else gpsTripUI?.correct(s,target.value,'待機距離の手動修正');
+   }else{ suppressManualGpsToast=true;try{gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}finally{suppressManualGpsToast=false;} }
   }}
   saveLater();return;
  }
@@ -2907,9 +2984,10 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
   if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
  }if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
-  if(nativeDiaryGpsEnabled()){
-   // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
+  if(nativeAutoDistanceEnabled()){
+   // Manual trip remains authoritative; rebase future GPS increments silently.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
+   s.externalGpsManualPending=true;
    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
     if(!canEditNow())return;
     const active=getShift();
@@ -2918,23 +2996,24 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue,data.runId);
     // A fresh GPS position plus vehicle-trip correction reconciles only gaps already observed.
     if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+    active.externalGpsManualPending=false;
     // A driver's corrected vehicle trip must immediately update this shift's remaining distance.
     active.externalGpsSnapshot={tripKm:Number(manualValue),rawGpsKm:data.tripKm,at:new Date().toISOString()};
     saveLater();
-    toast('GPS新基準を設定しました。以降は増加分を加算します。');
    }).catch(err=>{
     // Never overwrite a manually entered vehicle trip or pretend a GPS gap was measured.
     const active=getShift();
     if(active?.id===shiftId){active.externalGpsSnapshot=null;saveLater();updateElapsedTimer();}
-    toast('車両トリップの手入力は保存しました。GPS受信の復帰後、現在の車両トリップ値をもう一度入力して計測基準を合わせてください：'+err.message,true);
+    // Silent for manually entered values; keep auto-distance blocked if rebase fails.
    });
-  }else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
+  }else if(nativeDiaryGpsEnabled()){s.externalGpsManualPending=true;}
+   else{ suppressManualGpsToast=true;try{gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');}finally{suppressManualGpsToast=false;} }
  }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';
   if(applyUberDisplayedDefault(s.draft,s.settings)){
    const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
    if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
   }
- }if(e.type==='change'&&target.value&&gpsTripUI?.trusted(s)&&!s.draft.editId){
+ }if(e.type==='change'&&target.value&&nativeAutoDistanceEnabled()&&!nativeDiaryGpsEnabled()&&gpsTripUI?.trusted(s)&&!s.draft.editId){
   const paired={R:'S',U:'V',AA:'AB',AD:'AE'}[col];
   if(paired&&gpsTripUI?.fillDistance(s,s.draft,paired,'timeChange:'+col)){
    const distanceInput=appEl.querySelector('[data-col="'+paired+'"]');
@@ -2942,7 +3021,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }
  }
  if(col==='M'&&s.draft.kind==='ride'){
-  if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';if(e.type==='change'){gpsTripUI?.alight(s,s.draft);requestDropLocation(s,s.draft);}}
+  if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';if(e.type==='change'){if(nativeAutoDistanceEnabled())gpsTripUI?.alight(s,s.draft);requestDropLocation(s,s.draft);}}
   const badge=appEl.querySelector('[data-alight-indicator]');if(badge)badge.textContent=target.value?shortTime(target.value)+' 降車':'メーター入力で時刻記録';
  }if(['AF','AG','AH'].includes(col))refreshEmptyHighwayAmounts(s.draft,col);if(col==='N'&&s.draft.meta?.splitPayment?.second===target.value)s.draft.meta.splitPayment={second:'',manualSlot:null,manualAmount:''};updateEstimate();saveLater();if(col==='K'&&e.type==='change'&&s.draft.kind==='ride'&&s.draft.raw.M)requestDropLocation(s,s.draft);if(col==='P'&&e.type==='change')render();return;}
  if(target.dataset.meta&&s?.draft){s.draft.meta[target.dataset.meta]=target.value;
@@ -3195,7 +3274,7 @@ async function deleteWholeShift(shiftId){
   model=previous;
   try{
    await save(true);
-   if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+   if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
   }catch(restoreError){
    toast('削除・復元とも失敗しました。事前のJSONバックアップを確認してください：'+String(restoreError.message||restoreError),true);
    return;
@@ -3225,7 +3304,7 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.matches('[data-plan-end]')){const active=getShift();if(active){active.plannedEndAt=event.target.value;saveLater();render();}return;}
 if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target.value)){setGoogleStatus('接続キーを保存しました。送信テストを行ってください');saveLater();}return;}
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
-if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-preview-simulator] ,[data-native-diary-gps],[data-cruising-summary-field],[data-duty-plan]')){handleInput(event);}});
+if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-preview-simulator] ,[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-duty-plan]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
 await load();if(upgradeWaitingHistory())await save();render();
  // No GPS watch or duty mutation until Firebase confirms the editing session.
@@ -3244,7 +3323,7 @@ window.addEventListener('online',()=>{
   if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();
   else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
  });
-document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();});
+document.addEventListener('visibilitychange',()=>{if(!nativeDiaryGpsEnabled())gpsTripUI?.hidden();});
 // No periodic duty polling. Writer sends when changed; viewer pulls on login or button.
 
 })().catch(function (err) {
