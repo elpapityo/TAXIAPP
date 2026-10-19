@@ -21,7 +21,8 @@ async function main(){
  assert.match(html,/current\.externalGpsSnapshot=\{tripKm:b\.value,rawGpsKm:data\.tripKm/);
  assert.match(html,/active\.externalGpsSnapshot=\{tripKm:Number\(manualValue\),rawGpsKm:data\.tripKm/);
  assert.match(html,/active\.externalGpsSnapshot=\{tripKm:Number\(km\),rawGpsKm:data\.tripKm/);
- assert.match(html,/if\(!base\)throw Error\('出庫時のAndroid GPS基準が未登録です/);
+ assert.match(html,/if\(anchor===null\|\|!Number\.isFinite\(anchor\)\|\|anchor<0\)throw Error\('現在の車両トリップを距離欄へ入力してください/);
+ assert.match(html,/shift\.externalGpsResumeNeedsReview=true;/);
  assert.match(html,/出庫時の車両トリップ（km）/);
  assert.match(html,/入庫時の車両トリップ（km）/);
  assert.match(html,/出庫時走行距離（旧記録・km）/);

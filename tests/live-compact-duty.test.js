@@ -3,25 +3,19 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('index.html','utf8');
-const script=[...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(v=>v.includes('function renderDrive(shift)'));
+const script=[...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+ .map(m=>m[1]).find(v=>v.includes('function renderDrive(shift)'));
 assert.ok(script,'main drive logic found');
 new Function(script);
-assert.match(script,/driveLayout:'legacy'/,'preserve legacy as the default');
-assert.match(script,/driveLayout:\['legacy','compact','guided','detail'\]/);
-assert.match(script,/if\(ui\.dataset\.uiKey==='driveLayout'&&tab==='drive'\)render\(\)/);
-assert.match(script,/appEl\.classList\?\.toggle\('drive-compact'/);
-assert.match(source,/\.drive-compact \.hero \.action-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
-assert.match(source,/\.drive-compact \.wait-inputs/);
-assert.match(script,/renderDriveLayoutChooser\(\)/);
-assert.match(script,/function renderDutyStatus\(shift\)/);
-assert.match(script,/renderDutyStatus\(active\)/);
-assert.match(script,/function renderGuidedHeading\(shift\)/);
-assert.match(script,/renderUiChoice\('screenMode'/);
-assert.match(script,/renderUiChoice\('driveLayout'/);
-assert.match(script,/data-action="gpsWait"/);
+assert.match(script,/driveLayout:'legacy'/,'retain legacy preference for old records');
+assert.match(script,/const mode='legacy'/,'unified sales view should not unexpectedly switch business flows');
+assert.match(script,/function renderNewAction\(shift\)/);
+assert.match(script,/class="action-grid cruising-action-grid cruising-action-compact"/,
+ 'fixed two-column work actions must be available');
 assert.match(script,/data-action="beginDispatch"/);
 assert.match(script,/data-action="beginRide"/);
 assert.match(script,/data-action="beginWait"/);
+assert.match(script,/data-action="openBreakPage"/);
 assert.match(script,/data-action="saveDraft"/);
 assert.match(script,/data-action="gpsTripAlight"/);
 assert.match(script,/locationField\('AL',r,'乗車地・住所','gpsPickup'\)/);
@@ -29,62 +23,45 @@ assert.match(script,/locationField\('AM',r,'降車地・住所','gpsDrop'\)/);
 assert.match(script,/renderPaymentSplit\(shift,d\)/);
 assert.match(script,/renderAllFields\(d\)/);
 assert.match(script,/await load\(\)/);
-const begin=script.indexOf('function renderDriveLayoutChooser()');
-const end=script.indexOf('function renderDispatchForm',begin);
+assert.match(script,/function renderDutyStatus\(shift\)/);
+assert.match(script,/renderDutyStatus\(active\)/);
+const begin=script.indexOf('function renderDrive(shift)');
+const end=script.indexOf('let breakPageOpen=false;',begin);
 assert.ok(end>begin);
-let current=null,mode='legacy';
-const ctx={
- displayPrefs:()=>({driveLayout:mode}),
+let current=null;
+const context={
  getShift:()=>current,
- titleBlock:()=>'<h1>従来ヘッダー</h1>',
+ titleBlock:()=>'<h1>乗務入力のヘッダー</h1>',
+ renderDriveLayoutChooser:()=>'<div>営業入力</div>',
  paymentElapsedPanel:()=>'<div>経過時間</div>',
- totals:()=>({}),
- metrics:()=>'<section class="metrics">集計</section>',
+ totals:()=>({meter:0}),metrics:()=>'<section class="metrics">集計</section>',
  renderDutyStatus:()=>'<section class="preview-duty-summary">現在：空車</section>',
- renderRecent:()=>'<section>直近</section>',
- friendlyDate:()=> '2026-10-18',
- shortTime:()=> '09:00',
- safeText:String,
- waitingPlaces:()=>[],
- elapsedWaitingText:()=> '00:15',
- MAX_RECORDS:60
+ renderRecent:()=>'<section>直近の営業記録</section>',
+ renderNewAction:()=>'<button data-action=beginWait>待機</button><button data-action=beginRide>乗車</button><button data-action=beginDispatch>迎車</button>',
+ renderDraft:()=>'<button data-action=saveDraft>登録</button>',
+ friendlyDate:()=> '2026-10-18',shortTime:()=> '09:00',safeText:String
 };
-vm.createContext(ctx);
-vm.runInContext(script.slice(begin,end),ctx);
-// Mock the existing real action area and draft renderer, verifying only the view switches.
-vm.runInContext("renderNewAction=()=>'<button data-action=beginWait>待機</button><button data-action=beginRide>乗車</button><button data-action=beginDispatch>迎車</button>';renderDraft=()=>'<button data-action=saveDraft>精算</button>';renderPreviewCompact=()=>'<button data-action=beginRide>乗車</button><button data-action=saveDraft>精算</button>';",ctx);
-let markup=vm.runInContext('renderDrive(null)',ctx);
+vm.createContext(context);
+vm.runInContext('let breakPageOpen=false;\n'+script.slice(begin,end),context);
+const render=()=>vm.runInContext('renderDrive(null)',context);
+let markup=render();
 assert.match(markup,/出庫・入庫メニューへ/);
-assert.match(markup,/data-ui-value="legacy" type="button" aria-pressed="true"/);
 current={records:[],settings:{},date:'2026-10-18',startedAt:'09:00',vehicle:'車123',draft:null};
-markup=vm.runInContext('renderDrive(null)',ctx);
-assert.match(markup,/従来ヘッダー/);
-assert.match(markup,/preview-duty-summary/,'legacy includes the common live status panel');
-assert.equal((markup.match(/preview-duty-summary/g)||[]).length,1,'legacy panel must not be duplicated');
-assert.ok(markup.indexOf('preview-duty-summary')<markup.indexOf('従来ヘッダー'),'pinned legacy overview should be at top of the ride view');
-assert.match(markup,/経過時間/,'legacy-specific elapsed clock must stay intact');
+markup=render();
+assert.match(markup,/乗務入力のヘッダー/);
+assert.match(markup,/preview-duty-summary/);
+assert.equal((markup.match(/preview-duty-summary/g)||[]).length,1,'live duty overview must not duplicate');
+assert.ok(markup.indexOf('preview-duty-summary')<markup.indexOf('乗務入力のヘッダー'));
+assert.match(markup,/経過時間/);
 assert.match(markup,/集計/);
 assert.match(markup,/data-action=beginRide/);
-mode='compact';
-markup=vm.runInContext('renderDrive(null)',ctx);
-assert.doesNotMatch(markup,/従来ヘッダー/);
-assert.match(markup,/preview-duty-summary/,'new input modes retain the common overview');
-assert.match(markup,/data-action=beginRide/);
-assert.match(markup,/compact-secondary/);
-assert.match(markup,/日報集計・直近の営業記録/);
-assert.match(markup,/data-ui-value="compact" type="button" aria-pressed="true"/);
-current.draft={kind:'ride'};
-markup=vm.runInContext('renderDrive(null)',ctx);
+assert.match(markup,/data-action=beginWait/);
+assert.match(markup,/data-action=beginDispatch/);
+current.draft={kind:'ride',raw:{}};
+markup=render();
+assert.match(markup,/preview-duty-summary/);
 assert.match(markup,/data-action=saveDraft/);
-assert.doesNotMatch(markup,/compact-secondary/);
-mode='legacy';
-markup=vm.runInContext('renderDrive(null)',ctx);
-assert.match(markup,/preview-duty-summary/,'legacy ongoing rides also display the overview');
-assert.match(markup,/data-action=saveDraft/);
-assert.match(source,/html:not\(\[data-ui-drive-layout="legacy"\]\) #app:has\(\.preview-duty-summary\) \.content-layout\{display:block\}/,
- 'UI LAB full-width desktop override must not affect the legacy layout');
-assert.match(source,/html\[data-ui-sticky-duty-summary="on"\] \.preview-duty-summary\{\s*position:sticky;top:0/,
- 'shared sticky ON setting must apply to the legacy panel too');
-assert.match(source,/html\[data-ui-sticky-duty-summary="off"\] \.preview-duty-summary\{position:static\}/,
- 'shared sticky OFF setting must apply to the legacy panel too');
-console.log('Connected duty layout smoke tests passed: default legacy, compact opt-in, standby/ride/dispatch and draft UI use original actions.');
+assert.doesNotMatch(markup,/直近の営業記録/,'active fare should not embed unrelated recent entries');
+assert.match(source,/html\[data-ui-sticky-duty-summary="on"\] \.preview-duty-summary\{\s*position:sticky;top:0/);
+assert.match(source,/html\[data-ui-sticky-duty-summary="off"\] \.preview-duty-summary\{position:static\}/);
+console.log('Current unified duty view smoke tests passed: no duplicate status, ride/dispatch/wait and original draft save actions');

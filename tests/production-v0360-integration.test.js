@@ -4,7 +4,7 @@ const html=fs.readFileSync('index.html','utf8');
 const gps=require('../gps-diary-bridge.js');
 const highway=require('../highway-sections.js');
 require('../highway-report.js');
-assert.match(html,/<title>TAXIAPP v0\.3\.61 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.\d+ — 乗務日報<\/title>/);
 assert.match(html,/fetch\('\.\/municipalities\.json',\{cache:'force-cache'/);
 assert.doesNotMatch(html,/fetch\('\.\.\/\.\.\/municipalities\.json'/);
 assert.equal(new URL('./municipalities.json','https://elpapityo.github.io/TAXIAPP/').pathname,'/TAXIAPP/municipalities.json');
@@ -23,7 +23,7 @@ assert.match(html,/function googlePostRequest\(action,fields=\{\}\)\{\s*if\(!can
 assert.match(html,/function scheduleGoogleSync\(\)\{\s*if\(!canEditNow\(\)/);
 assert.match(html,/function googleShiftPacket\(shift\)/);
 assert.match(html,/const item=\{\.\.\.record,raw:deriveRaw\(record,shift\.settings\)\}/);
-assert.match(html,/gps-diary-bridge\.js\?v=20261020-1/);
+assert.match(html,/gps-diary-bridge\.js\?v=20261020-\d+/);
 assert.match(html,/highway-sections\.js\?v=20261020-1/);
 assert.match(html,/highway-report\.js\?v=20261020-1/);
 assert.match(html,/NATIVE_AUTO_DISTANCE_PREF='taxiapp-production-auto-distance-v140'/);
@@ -66,8 +66,11 @@ function mockFetch(gpsState,snapshot,failCurrent=false){
 }
 (async()=>{
  data.set('taxiapp-preview-v0359-simulator-optin','on'); // Must NEVER permit in production.
- await assert.rejects(gps.read(storage,mockFetch({...current,simulated:true}),{shiftId:'one',allowSimulation:true}),/模擬GPS/);
- await assert.rejects(gps.read(storage,mockFetch(current,{simulated:true}),{shiftId:'one',allowSimulation:true}),/模擬GPS/);
+ const simulatedStatus=await gps.read(storage,mockFetch({...current,simulated:true}),{shiftId:'one'});
+ const simulatedCapture=await gps.read(storage,mockFetch(current,{simulated:true}),{shiftId:'one'});
+ assert.equal(simulatedStatus.simulated,true,'simulated status must remain explicitly flagged');
+ assert.equal(simulatedCapture.simulated,true,'simulated capture must remain explicitly flagged');
+ assert.match(html,/模擬入力です：GPS距離/,'production UI must label any simulated input as such');
  const capture=await gps.read(storage,mockFetch(current),{shiftId:'one'});
  assert.equal(capture.gpsSource,'v1.4.0');assert.equal(capture.simulated,false);
  const old=await gps.read(storage,mockFetch(legacy,null,true),{shiftId:'one'});

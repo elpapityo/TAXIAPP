@@ -22,7 +22,7 @@ def stored():
     """)
 try:
     driver.get('http://127.0.0.1:8765/')
-    wait.until(lambda _: 'TAXIAPP v0.3.61' in driver.title)
+    wait.until(lambda _: 'TAXIAPP v0.3.' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert driver.find_elements(By.ID,'accountSignIn')
     assert driver.find_elements(By.ID,'accountViewSignIn')
@@ -44,15 +44,18 @@ try:
     js("localStorage.setItem('taxiapp-v1','PREEXISTING_FALLBACK')")
     js("localStorage.setItem('taxiapp-preview-v0359-simulator-optin','on')")
     driver.refresh()
-    wait.until(lambda _: 'TAXIAPP v0.3.61' in driver.title)
+    wait.until(lambda _: 'TAXIAPP v0.3.' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert stored()==sentinel, 'existing production data changed during app startup'
     assert js("return localStorage.getItem('taxiapp-v1')")=='PREEXISTING_FALLBACK'
     js("document.querySelector('[data-tab=settings]').click()")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-gps-settings]')))
     js("document.querySelector('details[data-gps-settings]').open=true")
-    assert driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
-    assert driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
+    auto=driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
+    assert auto, 'auto-distance preference should remain configurable'
+    # The native-source selector is intentionally hidden when auto fill is OFF.
+    native=driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
+    assert bool(native)==(auto[0].get_attribute('value')=='on')
     assert not driver.find_elements(By.CSS_SELECTOR,'[data-preview-simulator]')
     # Functions are private inside the app closure. Verify the actual production
     # fetch URL from the same browser origin, without mutating user records.

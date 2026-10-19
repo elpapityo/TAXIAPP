@@ -50,3 +50,5 @@ jobs:
           PY
       - name: Verify previous user shifts survive production reload
         run: python3 tests/production_v0360_browser_e2e.py
+      - name: Verify break layout and clock colors for day/night and device modes
+        run: python3 tests/break_layout_browser_e2e.py

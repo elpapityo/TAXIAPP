@@ -21,5 +21,5 @@ shift.records=[];assert.equal(vm.runInContext('cruisingUnitMetrics(shift,sold,no
 assert.match(s,/\['kmUnit','キロ単価'\]/);
 assert.match(s,/\['hourUnit','時間単価'\]/);
 assert.match(s,/\['rideUnit','本数単価'\]/);
-assert.match(s,/\['distanceProjection','基準距離消化時の予測売上'\]/);
+assert.match(s,/\['distanceProjection','売上予想（距離）'\]/);
 console.log('Productivity metrics and projection tests passed');
