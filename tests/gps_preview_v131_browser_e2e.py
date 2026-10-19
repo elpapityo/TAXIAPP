@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Real Chrome test for isolated GPS preview: no writes to production-origin local data."""
+import json, os, tempfile, time, traceback
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+
+SITE=os.environ.get("PREVIEW_E2E_SITE","http://127.0.0.1:8765")
+options=Options()
+for opt in ["--headless=new","--no-sandbox","--disable-dev-shm-usage","--window-size=1200,1600","--no-first-run"]:
+    options.add_argument(opt)
+options.add_argument("--user-data-dir="+tempfile.mkdtemp(prefix="taxi-preview-browser-"))
+driver=webdriver.Chrome(options=options)
+wait=WebDriverWait(driver,35,poll_frequency=0.3)
+def js(script,*args):return driver.execute_script(script,*args)
+def ready():
+    wait.until(lambda d: "GPS統合試験専用" in d.title)
+    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,"#app [data-tab='shift']")))
+    assert len(driver.find_elements(By.CSS_SELECTOR,"#accountSignIn"))==0
+
+def db(dbname,key):
+    return driver.execute_async_script("""
+      const dbname=arguments[0],key=arguments[1],done=arguments[arguments.length-1];
+      const open=indexedDB.open(dbname,1);
+      open.onerror=()=>done({error:'open'});
+      open.onupgradeneeded=()=>{if(!open.result.objectStoreNames.contains('state'))open.result.createObjectStore('state')};
+      open.onsuccess=()=>{
+        const conn=open.result,tx=conn.transaction('state','readonly'),get=tx.objectStore('state').get(key);
+        get.onsuccess=()=>{done(get.result===undefined?null:get.result);conn.close()};
+        get.onerror=()=>done({error:'read'});
+      };
+    """,dbname,key)
+try:
+    driver.get(SITE+"/")
+    # Create a production-style sentinel *on the same origin* before visiting the preview.
+    js("localStorage.setItem('taxiapp-v1','DO_NOT_MODIFY_PRODUCTION_LOCAL')")
+    js("localStorage.setItem('taxiapp-device-native-gps-v130','off')")
+    js("localStorage.setItem('taxiapp-preview-v0358-simulator-optin','OLD_PREVIEW_SENTINEL')")
+    driver.execute_async_script("""
+      const done=arguments[arguments.length-1],o=indexedDB.open('taxiapp-store-v1',1);
+      o.onupgradeneeded=()=>o.result.createObjectStore('state');
+      o.onerror=()=>done('error');
+      o.onsuccess=()=>{
+        const db=o.result,tx=db.transaction('state','readwrite');
+        tx.objectStore('state').put({version:1,activeId:'PRODUCTION_SENTINEL',
+          shifts:[{id:'PRODUCTION_SENTINEL'}],prefs:{}},'taxiapp');
+        tx.oncomplete=()=>{db.close();done('ok')};
+        tx.onerror=()=>done('error');
+      };
+    """)
+    assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
+    driver.get(SITE+"/gps-preview/v0359/")
+    ready()
+    assert "試験専用ページ" in driver.find_element(By.CSS_SELECTOR,".gps-preview-ribbon").text
+    assert "現在、乗務中ではありません" in driver.find_element(By.ID,"app").text
+    assert js("return localStorage.getItem('taxiapp-v1')")=="DO_NOT_MODIFY_PRODUCTION_LOCAL"
+    assert js("return localStorage.getItem('taxiapp-preview-v0358-simulator-optin')")=="OLD_PREVIEW_SENTINEL"
+    assert db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359') is None
+    assert not js("return localStorage.getItem('taxiapp-preview-v0359-native-gps-v131')")
+
+    js("document.querySelector('[data-tab=settings]').click()")
+    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,"details[data-gps-settings]")))
+    # The native GPS source and simulator permission are device-only preferences.
+    js("document.querySelector('details[data-gps-settings]').open=true")
+    js("""const el=document.querySelector('[data-native-diary-gps]');
+        el.value='on';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    wait.until(lambda d: js("return localStorage.getItem('taxiapp-preview-v0359-native-gps-v131')")=="on")
+    js("document.querySelector('details[data-gps-settings]').open=true")
+    js("""const el=document.querySelector('[data-preview-simulator]');
+        el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    assert js("return localStorage.getItem('taxiapp-preview-v0359-simulator-optin')")=="on"
+    assert js("return localStorage.getItem('taxiapp-device-native-gps-v131')")=="off"
+    # Switch native GPS back OFF for this browser-only persistence test.
+    js("""const el=document.querySelector('[data-native-diary-gps]');
+        el.value='off';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    js("document.querySelector('details[data-gps-settings]').open=true")
+    js("""const el=document.querySelector('[data-pref-gps-start]');
+        el.value='off';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    js("document.querySelector('[data-tab=shift]').click()")
+    wait.until(lambda d: bool(d.find_elements(By.ID,"shiftStartOdo")))
+    js("""document.getElementById('shiftStartOdo').value='0';
+         document.querySelector('[data-action=startShift]').click();""")
+    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,".preview-duty-summary")))
+    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359') or {}).get('shifts',[])!=[])
+    preview=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')
+    assert len(preview['shifts'])==1
+    assert str(preview['shifts'][0]['startingOdo'])=='0'
+    assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
+
+    driver.refresh()
+    ready()
+    assert "空車・流し" in driver.find_element(By.ID,"app").text
+    assert len(db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'])==1
+    assert js("return localStorage.getItem('taxiapp-v1')")=="DO_NOT_MODIFY_PRODUCTION_LOCAL"
+    assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
+    assert js("return localStorage.getItem('taxiapp-preview-v0359-simulator-optin')")=="on"
+    print("PASS Chrome: preview boots, source opt-in, simulated opt-in, 0km departure and reload persisted, production IDB/localStorage preserved")
+except Exception:
+    print("Browser URL:",driver.current_url)
+    print("App text:",(driver.find_element(By.TAG_NAME,"body").text or "")[:2400])
+    traceback.print_exc()
+    raise
+finally:
+    driver.quit()
