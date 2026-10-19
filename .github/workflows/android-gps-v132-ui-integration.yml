@@ -178,7 +178,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="gps-diary-v1.3.2-ui-test-20261019"
+          TAG="gps-diary-v1.3.2-ui-test-r2-20261019"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error::Verification prerelease already exists. Refusing to overwrite or clobber."
             exit 1
@@ -194,5 +194,5 @@ jobs:
           cat "$RUNNER_TEMP/upgrade-compatibility.txt" >> "$RUNNER_TEMP/notes.txt"
           gh release create "$TAG" "$APK" \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "GPS距離ラボ v1.3.2 — PR77画面・アイコン統合検証版" \
+            --title "GPS距離ラボ v1.3.2 R2 — PR77画面・アイコン統合検証版" \
             --notes-file "$RUNNER_TEMP/notes.txt" --prerelease
