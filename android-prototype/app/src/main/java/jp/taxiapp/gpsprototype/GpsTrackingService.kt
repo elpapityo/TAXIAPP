@@ -248,6 +248,7 @@ class GpsTrackingService : Service() {
                 cancelRefreshFix()
                 loopback?.stop()
                 loopback=null
+                GpsStore.setBrowserConnectionIssue(this, "GPS停止中")
                 engine.stop()
                 GpsStore.save(this, engine.snapshot())
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -279,6 +280,7 @@ class GpsTrackingService : Service() {
                     return START_NOT_STICKY
                 }
                 if (!listening) {
+                    GpsStore.setBrowserConnectionIssue(this,"準備中")
                     GpsStore.clearValidFix(this)
                     engine.start()
                     // Must start while activity is visible and permissions already granted.
@@ -293,9 +295,12 @@ class GpsTrackingService : Service() {
                     startListening()
                     try {
                         if(loopback==null)loopback=GpsLoopbackServer(applicationContext).also{it.start()}
-                    }catch(_:Exception){
-                        engine.interrupted("外部ブラウザのローカル接続ができません")
-                        GpsStore.save(this,engine.snapshot())
+                        GpsStore.setBrowserConnectionIssue(this,"")
+                    }catch(_:Exception) {
+                        // A port conflict is not a GPS-location gap. Preserve
+                        // actual distance integrity and show a separate warning.
+                        loopback=null
+                        GpsStore.setBrowserConnectionIssue(this,"旧アプリがポート48764を使用中の可能性があります。旧版のGPS測定を停止してください。")
                     }
                 }
             }
@@ -377,6 +382,7 @@ class GpsTrackingService : Service() {
         cancelRefreshFix()
         loopback?.stop()
         loopback=null
+        GpsStore.setBrowserConnectionIssue(this,"GPS停止中")
         engine.stop()
         GpsStore.save(this, engine.snapshot())
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -390,6 +396,7 @@ class GpsTrackingService : Service() {
         cancelRefreshFix()
         loopback?.stop()
         loopback=null
+        GpsStore.setBrowserConnectionIssue(this,"GPS停止中")
         // If killed without ACTION_STOP, mark an incomplete trip for inspection.
         if (engine.snapshot().running) {
             engine.interrupted("計測サービスが終了しました")

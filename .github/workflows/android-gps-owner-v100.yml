@@ -1,0 +1,102 @@
+name: GPS Distance Lab v1.0 Browser Owner Verification APK
+on:
+  push:
+    branches:
+      - fix/gps-port-owner-detection-v100-20261019
+    paths:
+      - 'android-prototype/**'
+      - 'distance-console.html'
+      - 'tests/gps-distance-lab.test.js'
+      - '.github/workflows/android-gps-owner-v100.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test native GPS to external browser integration
+        run: node tests/gps-distance-lab.test.js
+      - name: Prepare Android SDK 35
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compile Android and run GPS measurement tests
+        run: |
+          cd android-prototype
+          gradle --no-daemon :core:test :app:assembleDebug
+      - name: Verify external browser and loopback-only GPS
+        run: |
+          APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -s "$APK"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.distancelabv100'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='1.0.0-browser-owner-check'"
+          grep -F 'android:label="GPS距離ラボ v1.0"' android-prototype/app/src/main/AndroidManifest.xml
+          "$AAPT" dump permissions "$APK" | grep -F "android.permission.INTERNET"
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path('android-prototype/app/src/main/java/jp/taxiapp/gpsprototype')
+          native=(base/'MainActivity.kt').read_text()
+          web=(base/'GpsLoopbackServer.kt').read_text()
+          ui=Path('android-prototype/app/src/main/assets/distance-console.html').read_text()
+          assert 'Intent(Intent.ACTION_VIEW' in native
+          assert 'class GpsLoopbackServer' in web
+          assert 'route.startsWith("/api/capture?")' in web
+          assert 'ServerSocket(PORT,8,InetAddress.getByName("127.0.0.1"))' in web
+          assert 'GpsTrackingService.ACTION_REFRESH' in web
+          assert '48764' in web
+          assert 'route=="/api/identity"' in web
+          assert 'GPS_DISTANCE_LAB_EXTERNAL_V1_0' in web
+          assert 'openVerifiedExternalBrowser()' in native
+          assert 'Web v1.0' in ui
+          assert 'gps-distance-lab-browser-v080' in ui
+          assert 'id="start-feedback"' in ui
+          assert 'id="native-start"' not in ui
+          assert 'id="native-stop"' not in ui
+          assert 'addJavascriptInterface' not in native and 'WebView' not in native
+          assert 'gps-import-test.html' not in web
+          print('Distance Lab v1.0 verified browser owner, preserve Chrome storage')
+          PY
+      - name: Upload installable test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GPS-Distance-Lab-v1.0.0-APK
+          path: android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish directly installable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK="$RUNNER_TEMP/GPS-Distance-Lab-v1.0.0.apk"
+          cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
+          TAG="gps-distance-lab-v1.0.0"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "GPS距離ラボ v1.0.0 — GPS再取得修正版" \
+              --notes "v0.8/v0.9が同じ127.0.0.1:48764を占有すると旧画面が表示され続ける問題を修正。起動時にアプリIDとWeb v1.0の所有確認を行い、一致しない場合は旧アプリの停止方法を表示。GPS欠測と通信ポート競合を分離し、Chromeの既存保存データと同じ接続先を維持。実走は未検証。" \
+              --prerelease
+          fi
