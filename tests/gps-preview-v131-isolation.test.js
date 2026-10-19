@@ -40,7 +40,7 @@ assert.match(preview,/距離の自動取得（Android GPS）/);
 assert.match(preview,/const NATIVE_AUTO_DISTANCE_PREF='taxiapp-preview-v0359-auto-distance-v131'/);
 assert.match(preview,/function nativeAutoDistanceEnabled\(\)/);
 assert.match(preview,/function fillNativeDistanceSilently\(shift,record,col,waiting=false\)/);
-assert.match(preview,/if\(!nativeAutoDistanceEnabled\(\)\|\|!canEditNow\(\)/);
+assert.match(preview,/if\(!nativeDiaryGpsEnabled\(\)\|\|!nativeAutoDistanceEnabled\(\)\|\|!canEditNow\(\)/);
 assert.match(preview,/String\(waiting\?target.odometer/);
 assert.match(preview,/\)\.catch\(\(\)=>false\)\.finally\(/);
 assert.doesNotMatch(preview,/gpsBundleButton|captureGpsBundle|src="\.\/gps-bundle\.js/);
