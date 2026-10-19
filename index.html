@@ -1213,10 +1213,10 @@ function renderDriveLayoutChooser(){const mode=displayPrefs().driveLayout;return
 function renderPreviewCompact(shift){
  const d=shift.draft,r=d?.raw||{},waiting=shift.waiting;
  const fields=d?.kind==='ride'?'<div class="preview-quick-inputs">'+field('K',r,{label:'メーター料金（円）',required:true})+
-    '<label class="field"><span class="field-label">支払い方法</span><select class="control" data-col="N">'+
+    '<label class="field"><span class="field-label">支払い方法</span><select class="control" data-col="N"><option value="">選択してください</option>'+
     PAYMENTS.filter(([v])=>v!=='キ').map(([v,l])=>'<option value="'+safeText(v)+'" '+(r.N===v?'selected':'')+'>'+safeText(l)+'</option>').join('')+
     '</select></label></div>':'';
- const compactActions=!d?'<div class="preview-main-buttons"><button class="btn primary big" data-action="beginDispatch">🚕 迎車する</button><button class="btn" data-action="beginRide">🚕 乗車する</button></div><div class="preview-sub-buttons">'+(!waiting?'<button class="btn" data-action="beginWait">🅿 待機開始</button>':'<button class="btn" data-action="endWait">待機終了</button>')+'<button class="btn" data-tab="history">▤ 営業履歴</button></div>':
+ const compactActions=!d?'<div class="preview-main-buttons"><button class="btn primary big" data-action="beginDispatch">🚕 迎車する</button><button class="btn" data-action="beginRide">🚕 乗車する</button></div><div class="preview-sub-buttons">'+(!waiting?'<button class="btn" data-action="beginWait">🅿 待機開始</button>':'<button class="btn" data-action="beginRide">🚕 乗車する</button>')+'<button class="btn" data-tab="history">▤ 営業履歴</button></div>':
  d.kind==='dispatch'?'<div class="preview-main-buttons"><button class="btn primary big" data-action="boardDispatch">🚕 お客様が乗車</button><button class="btn" data-action="gpsPickup">⌖ 地点記録</button></div><div class="preview-sub-buttons"><button class="btn" data-action="cancelDispatch">迎車キャンセル</button><button class="btn" data-ui-key="driveLayout" data-ui-value="detail">＋ 詳細項目</button></div>':
  d.kind==='ride'?'<div class="preview-main-buttons"><button class="btn teal big" data-action="saveDraft">✓ 登録する</button><button class="btn" data-action="gpsDrop">⌖ 地点記録</button></div><div class="preview-sub-buttons"><button class="btn" data-ui-key="driveLayout" data-ui-value="detail">＋ 詳細項目</button><button class="btn" data-action="discardDraft">入力を取り消す</button></div>':
  '<div class="preview-main-buttons"><button class="btn teal big" data-action="saveDraft">✓ 登録する</button><button class="btn" data-ui-key="driveLayout" data-ui-value="detail">＋ 詳細項目</button></div>';
