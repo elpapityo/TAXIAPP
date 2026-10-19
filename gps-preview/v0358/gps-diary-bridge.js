@@ -12,6 +12,10 @@
  const PREFIX='taxiapp-preview-v0358-native-gps-baseline:';
  const GAP='taxiapp-preview-v0358-native-gps-gaps:';
  const FORMAT='GPS_DISTANCE_LAB_V1';
+ // Only this isolated preview may optionally accept simulated checkpoints.
+ function previewSimulationAllowed(storage){
+  try{return getStorage(storage)?.getItem('taxiapp-preview-v0358-simulator-optin')==='on';}catch{return false;}
+ }
  function key(id){return PREFIX+String(id);}
  function finiteKm(x){return typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<100000;}
  function getStorage(storage){return storage||(typeof localStorage==='undefined'?null:localStorage);}
@@ -73,7 +77,7 @@
    if(!call)throw Error('GPS通信を使用できません');
    const state=await getJson('api/status',call);
    if(state.running!==true)throw Error('GPSアプリの計測が停止しています');
-   if(state.simulated===true&&!options.allowSimulation)
+   if(state.simulated===true&&!options.allowSimulation&&!previewSimulationAllowed(storage))
       throw Error('模擬GPSは営業日報に入力できません。アプリで実GPS測定を開始してください');
    if(typeof state.runId!=='string'||!state.runId)
       throw Error('GPS計測の識別番号がありません');
@@ -88,7 +92,7 @@
           !Number.isFinite(x.capturedAt)||
           !Number.isFinite(x.gpsAgeMs)||x.gpsAgeMs<0||x.gpsAgeMs>15000)
          throw Error('GPS応答の内容が不正または古いです');
-       if(x.simulated===true&&!options.allowSimulation)
+       if(x.simulated===true&&!options.allowSimulation&&!previewSimulationAllowed(storage))
          throw Error('模擬GPSの距離を日報へ転記できません');
        const gaps=Number.isInteger(state.gaps)?state.gaps:0;
        if(x.unresolvedGap===true&&!options.allowUnresolvedGap&&
