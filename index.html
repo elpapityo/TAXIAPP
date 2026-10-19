@@ -468,6 +468,13 @@ html[data-ui-theme="night"] .card{box-shadow:0 10px 32px #020b182b}
 .preview-hidden-detail summary{cursor:pointer;font-weight:750;padding:7px}
 .preview-hidden-detail .hero{margin-top:12px}
 @media(max-width:650px){.preview-quick-inputs{grid-template-columns:1fr}.preview-main-buttons{grid-template-columns:1fr}.preview-sub-buttons{grid-template-columns:1fr}}
+.preview-screen-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 8px}
+.preview-screen-head h1{font-size:clamp(21px,2.2vw,30px);line-height:1.15;margin:0;color:#f5faff}
+.preview-screen-head small{display:block;font-size:12px;color:#b6c7d8;margin-top:4px}
+.preview-screen-head .drive-layout-choice{margin:0;padding:5px;border:1px solid #36516a;border-radius:14px;background:#13263a;flex-wrap:wrap}
+.preview-screen-head .drive-layout-choice .btn{font-size:13px;min-height:42px;padding:7px 11px;border-radius:9px;background:transparent;color:#f5faff;border:0}
+.preview-screen-head .drive-layout-choice .btn.active{background:#1680c7;color:#fff}
+@media(max-width:650px){.preview-screen-head{flex-direction:column;align-items:stretch}.preview-screen-head .drive-layout-choice{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.preview-screen-head .drive-layout-choice .btn{padding:5px 2px;font-size:11px}}
 </style>
 </head>
 <body>
@@ -1221,7 +1228,7 @@ function renderGuidedHeading(shift){
  const index=!d?0:d.kind==='dispatch'?0:d.kind==='ride'?(d.raw.M?3:1):d.kind==='empty'?2:3;
  return `<div class="preview-steps" aria-label="営業の入力手順">${['迎車','乗車','降車','登録'].map((name,i)=>`<div class="${i===index?'active':i<index?'done':''}"><small>0${i+1}</small>${name}</div>`).join('')}</div>`;
 }
-function renderDriveLayoutChooser(){const mode=displayPrefs().driveLayout;return `<div class="drive-layout-choice" role="group" aria-label="入力画面の切り替え"><strong>入力方式</strong>${[['compact','1画面'],['guided','段階入力'],['detail','詳細入力'],['legacy','従来']].map(([key,label])=>`<button class="btn ${mode===key?'active':''}" data-ui-key="driveLayout" data-ui-value="${key}" type="button" aria-pressed="${mode===key}">${label}</button>`).join('')}</div>`;}
+function renderDriveLayoutChooser(){const mode=displayPrefs().driveLayout;return `<div class="preview-screen-head"><div class="preview-screen-title"><h1>営業入力</h1><small>車載スタンドからの操作を想定 · 入力方式はいつでも変更可能</small></div><div class="drive-layout-choice" role="group" aria-label="入力画面の切り替え">${[['compact','1画面'],['guided','段階入力'],['detail','詳細入力'],['legacy','従来']].map(([key,label])=>`<button class="btn ${mode===key?'active':''}" data-ui-key="driveLayout" data-ui-value="${key}" type="button" aria-pressed="${mode===key}">${label}</button>`).join('')}</div></div>`;}
 function renderPreviewCompact(shift){
  const d=shift.draft,r=d?.raw||{},waiting=shift.waiting;
  const fields=d?.kind==='ride'?'<div class="preview-quick-inputs">'+field('K',r,{label:'メーター料金（円）',required:true})+
