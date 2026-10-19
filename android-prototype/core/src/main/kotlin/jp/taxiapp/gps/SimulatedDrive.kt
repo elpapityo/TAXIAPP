@@ -14,7 +14,7 @@ class SimulatedDrive {
         private set
 
     fun setSpeed(kmh: Int) {
-        require(kmh in setOf(0, 20, 40, 60)) { "模擬速度は0/20/40/60km/hのみ" }
+        require(kmh in setOf(0, 20, 40, 60, 100)) { "模擬速度は0/20/40/60/100km/hのみ" }
         speedKmh = kmh
     }
 
