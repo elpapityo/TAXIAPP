@@ -9,7 +9,7 @@ assert.ok(a>=0&&b>a,'default helper exists');
 const sandbox={number(v){if(v===null||v===undefined||String(v).trim()==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;}};
 vm.createContext(sandbox);
 vm.runInContext(source.slice(a,b),sandbox);
-const apply=d=>vm.runInContext('applyUberDisplayedDefault(d)',vm.createContext({d,number:sandbox.number}));
+const apply=d=>{sandbox.d=d;return vm.runInContext('applyUberDisplayedDefault(d)',sandbox);};
 const make=(pay='U',meter='5000')=>({kind:'ride',raw:{E:'U',N:pay,K:meter},meta:{uberAppDisplayed:''}});
 const uber=make();
 assert.equal(apply(uber),true);
