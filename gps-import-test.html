@@ -44,7 +44,7 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 <p class="hint">左：必要な時だけ車両メーターの累計を手入力／中央：GPS／右：補正距離。<strong>次の補正距離＝前の補正距離＋次のGPS区間距離</strong>。各行で手入力した値を新しい基準にして再計算します。</p>
 <div class="buttons"><button class="secondary" type="button" id="reset">テストを初期化</button><button class="secondary" type="button" id="clipboard">コピー結果を使う</button></div></div>
 <div class="panel" id="auditPanel"><h2>GPSと車両トリップの区間比較</h2>
-<p class="hint">上の各行に入力した車両メーター累計から、前の入力行との差を区間距離として比較します。<strong>前後両方の地点に車両の実測値がある区間のみ</strong>比較します。追加の入力は必要ありません。</p>
+<p class="hint">上の各行に入力した車両メーター累計から、直前の行との差を区間距離として比較します。<strong>前後両方の地点に車両の実測値がある区間のみ</strong>比較します。追加の入力は必要ありません。</p>
 <div id="auditRows"></div><p id="auditSummary" class="auditSummary">GPSと車両トリップを照合する区間を入力してください。</p>
 <button class="secondary" id="auditCsv" type="button">区間比較をCSV保存</button>
 <p class="hint">400m不足などの原因調査用です。日報へは反映しません。CSVは端末への保存だけでクラウドへ送信しません。</p></div>
@@ -55,7 +55,7 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 <button class="secondary" type="button" id="readPaste">コピーしたGPS累計を選択中の行へ取り込む</button>
 </details></div>
 <div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。GPS位置座標はブラウザへ渡しません。安全のため必ず停車中に操作してください。</div>
-</main><script src="gps-bridge-test.js?v=036"></script><script src="gps-test-rows.js?v=036"></script><script src="gps-segment-audit.js?v=1"></script><script>
+</main><script src="gps-bridge-test.js?v=036"></script><script src="gps-test-rows.js?v=037"></script><script src="gps-segment-audit.js?v=1"></script><script>
 'use strict';
 const B=window.TaxiGpsBridge, R=window.GpsTestRows, A=window.GpsSegmentAudit;
 const $=id=>document.getElementById(id),
