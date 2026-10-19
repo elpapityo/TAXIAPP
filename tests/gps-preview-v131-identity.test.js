@@ -13,19 +13,46 @@ const makeFetch=(state, snapshot) => async url=>{
     const nonce=new URL(url).searchParams.get('nonce');
     return {ok:true,json:async()=>({ready:true,snapshot:{...good, ...snapshot,format:'GPS_DISTANCE_LAB_V1',nonce,target:'start',running:true,capturedAt:Date.now(),gpsAgeMs:500}})};
   }
+  // Production v1.4 is tried first; a transport failure allows legacy v1.3.1 fallback.
+  if(url.startsWith('http://127.0.0.1:48769/'))throw new TypeError('v1.4 unavailable');
   throw Error('unexpected endpoint '+url);
 };
 (async()=>{
  calls=[];
- await assert.rejects(gps.read(storage,makeFetch({...good,marker:'GPS_DISTANCE_LAB_DIARY_V1_3'}),{shiftId:'demo'}),/v1.3.1/);
- assert.equal(calls.length,1,'bad identity rejected before capture');
+ await assert.rejects(gps.read(storage,makeFetch({...good,marker:'GPS_DISTANCE_LAB_DIARY_V1_3'}),{shiftId:'demo'}),/識別情報/);
+ assert.equal(calls.length,2,'legacy status rejected before capture');
  calls=[];
- await assert.rejects(gps.read(storage,makeFetch({...good,packageId:'jp.taxiapp.gpsprototype.distancelabv122'}),{shiftId:'demo'}),/v1.3.1/);
- assert.equal(calls.length,1);
+ await assert.rejects(gps.read(storage,makeFetch({...good,packageId:'jp.taxiapp.gpsprototype.distancelabv122'}),{shiftId:'demo'}),/識別情報/);
+ assert.equal(calls.length,2);
  await assert.rejects(gps.read(storage,makeFetch(good),{shiftId:'demo'}),/模擬GPS/);
  store.set(PREFIX,'on');
  calls=[];
  await assert.rejects(gps.read(storage,makeFetch(good,{marker:'GPS_DISTANCE_LAB_DIARY_V1_3'}),{shiftId:'demo'}),/不正/);
+ const prod={...good,marker:'GPS_DISTANCE_LAB_DIARY_V1_4_0_100',
+   packageId:'jp.taxiapp.gpsprototype.distancelabv140',webVersion:'1.4.0',
+   runId:'native-v140-safe-run',simulated:false};
+ const makeProductionFetch=async url=>{
+  if(url==='http://127.0.0.1:48769/api/status')return {ok:true,json:async()=>prod};
+  if(url.startsWith('http://127.0.0.1:48769/api/capture?')){
+   const n=new URL(url).searchParams.get('nonce');
+   return {ok:true,json:async()=>({ready:true,snapshot:{...prod,format:'GPS_DISTANCE_LAB_V1',
+     nonce:n,target:'start',capturedAt:Date.now(),gpsAgeMs:500}})};
+  }
+  throw Error('must never query old port when new app is reachable: '+url);
+ };
+ const prodRead=await gps.read(storage,makeProductionFetch,{shiftId:'prod'});
+ assert.equal(prodRead.gpsSource,'v1.4.0');
+ assert.equal(prodRead.simulated,false);
+ assert.equal(gps.endpoint,'http://127.0.0.1:48769/');
+ const wrongPortStatus=async url=>({ok:true,json:async()=>({...prod,marker:good.marker,packageId:good.packageId,webVersion:good.webVersion})});
+ await assert.rejects(gps.read(storage,wrongPortStatus,{shiftId:'prod'}),/識別情報/);
+ // Production also rejects simulated checkpoints; only isolated preview's opt-in can allow them.
+ store.delete(PREFIX);
+ await assert.rejects(gps.read(storage,async url=>{
+   const data={...prod,simulated:true};
+   return {ok:true,json:async()=>data};
+ },{shiftId:'prod'}),/模擬GPS/);
+ store.set(PREFIX,'on');
  const got=await gps.read(storage,makeFetch(good),{shiftId:'demo'});
  assert.equal(got.tripKm,0.25);
  assert.equal(got.simulated,true);
