@@ -2494,7 +2494,7 @@ function handleAction(action,id){
    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
    if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
    current.externalGpsSnapshot={tripKm:trip,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
-   saveLater();toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
+   saveLater();const baselineStatus=appEl.querySelector('[data-native-gps-baseline-status]');if(baselineStatus)baselineStatus.textContent='GPS基準を登録しました。新しいGPS増分を車両トリップ '+value+'km から加算します。';toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
   }).catch(e=>toast('GPS基準を変更できません：'+e.message,true));
   return;
  }
