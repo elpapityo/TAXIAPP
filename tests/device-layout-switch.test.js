@@ -18,7 +18,7 @@ const code=[
 let saved=0;
 const model={prefs:{ui:{driveLayout:'guided',screenMode:'phone'}},shifts:[{id:'existing-sale',records:[{id:123}]}]};
 const doc={documentElement:{dataset:{},style:{}}};
-const context={model,document:doc,saveLater(){saved++;},refreshSettingChoice(){}};
+const context={model,document:doc,safeText:String,saveLater(){saved++;},refreshSettingChoice(){}};
 vm.createContext(context);
 vm.runInContext(code,context);
 const chooser=()=>vm.runInContext('renderDriveLayoutChooser()',context);
