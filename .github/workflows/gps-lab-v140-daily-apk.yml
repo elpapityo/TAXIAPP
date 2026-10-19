@@ -8,6 +8,8 @@ on:
       - 'gps-preview/v0359/**'
       - 'tests/gps-distance-lab.test.js'
       - 'tests/gps-preview-v131-identity.test.js'
+      - 'tests/gps-diary-bridge.test.js'
+      - 'tests/gps-preview-v131-isolation.test.js'
       - '.github/workflows/gps-lab-v140-daily-apk.yml'
   workflow_dispatch:
 permissions:
