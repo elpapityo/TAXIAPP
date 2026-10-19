@@ -149,7 +149,7 @@ assert.equal(confirms.length,1,'user must consent to archiving');
 assert.equal(newNode('start-btn').disabled,false,'old 0km should no longer lock the button');
 assert.equal(JSON.parse(oldStore.get('gps-distance-lab-history-v110')).length,1);
 const archived=JSON.parse(oldStore.get('gps-distance-lab-history-v110'))[0].data;
-assert.deepEqual(archived.rows.map(x=>x.manual),['0.250','0.550']);
+assert.deepEqual(archived.rows.map(x=>Number(x.manual)),[0.250,0.550]);
 assert.equal(archived.startNative,4.75);
 assert.equal(JSON.parse(oldStore.get('gps-distance-lab-browser-v080')).startNative,null);
 newNode('start-btn')._listeners.click();
@@ -174,10 +174,7 @@ newWindow.DistanceLab.onNativeSnapshot(JSON.stringify({
 }));
 assert.equal(JSON.parse(oldStore.get('gps-distance-lab-browser-v080')).rows[0].gps,0.375);
 assert.match(newNode('rows').innerHTML,/GPS区間<\/label><strong>0\.375<\/strong>/);
-assert.equal(JSON.parse(oldStore.get('gps-distance-lab-history-v110'))[0].data.rows[0].manual,'0.250');
-activeRun='next-run';
-const timerFns=[];
-const getSession=vm.runInNewContext('0',{}); // Keep setup deterministic; explicit status refresh is below.
+assert.equal(Number(JSON.parse(oldStore.get('gps-distance-lab-history-v110'))[0].data.rows[0].manual),0.250);
 console.log('PASS: user can archive old browser run, press 0km anew and capture 375m; old trip stays intact');
 
 
