@@ -1,0 +1,45 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const sections=require('../gps-preview/v0359/highway-sections.js');
+require('../gps-preview/v0359/highway-report.js');
+const report=globalThis.TAXIAPP_HIGHWAY_REPORT;
+const old={A:1,P:'実',Q:'吹田',R:'09:00',S:'12.0',T:'豊中',U:'09:10',V:'20.4',W:'680'};
+const d={id:'r1',kind:'ride',status:'complete',raw:{...old},meta:{}};
+const list=sections.initialize(d);
+assert.equal(list.length,1);assert.equal(list[0].mode,'実');
+assert.equal(list[0].fee,'680');
+list.push({mode:'実',entryIC:'西宮北',entryTime:'09:25',entryKm:'24.0',exitIC:'宝塚',exitTime:'09:43',exitKm:'33.6',fee:'900'});
+list.push({mode:'空',entryIC:'宝塚',entryTime:'09:50',entryKm:'33.6',exitIC:'有馬口',exitTime:'10:02',exitKm:'41.6',fee:'300'});
+const a=sections.aggregate(list);
+assert.equal(a.実.count,2);assert.equal(a.実.sectionKm,18.0);
+assert.equal(a.実.exemptKm,13.5);assert.equal(a.実.fee,1580);
+assert.equal(a.空.count,1);assert.equal(a.空.sectionKm,8.0);
+assert.equal(a.空.exemptKm,6.0);assert.equal(a.空.fee,300);
+const canonical=sections.project(d.raw,list);
+assert.equal(canonical.W,'1580');assert.equal(canonical.P,'実空');
+assert.equal(canonical.X,'18');assert.equal(canonical.Y,'13.5');
+assert.equal(canonical.AF,'300');assert.equal(canonical.AI,'300');
+assert.equal(canonical.AJ,'8');assert.equal(canonical.AK,'6');
+assert.deepEqual(sections.project(canonical,list),canonical,'never double count on repeated save/derive');
+assert.deepEqual(sections.validate(list),[]);
+list[1].exitKm='23.0';
+assert.match(sections.validate(list).join(','),/2区間の乗距離/);
+list[1].exitKm='33.6';
+const firstReport=report.collect({records:[d]});
+assert.equal(firstReport.count,3);
+assert.deepEqual(firstReport.entries.map(e=>e.mode),['実','実','空']);
+assert.deepEqual(firstReport.entries.map(e=>e.sectionKm),[8.4,9.6,8.0]);
+assert.deepEqual(firstReport.entries.map(e=>e.chargeYen),[680,900,300]);
+assert.equal(firstReport.chargeYen,1880);
+assert.equal(firstReport.exemptKm,19.5);
+const legacy=report.collect({records:[{...d,meta:{}}]});
+assert.equal(legacy.count,1);assert.equal(legacy.entries[0].chargeYen,680);
+const preview=fs.readFileSync('gps-preview/v0359/index.html','utf8');
+for(const key of ['highwayAdd','highwayRemove','data-hwy-field','data-hwy-time-field','renderHighwaySections',
+ 'kmOne','kmStep','data-km-step','discount-fold','TAXIAPP_HIGHWAY_SECTIONS.project']){
+ assert.ok(preview.includes(key),'missing '+key);
+}
+assert.ok(preview.includes('./highway-sections.js'));
+assert.ok(preview.includes('./highway-report.js'));
+assert.ok(!fs.readFileSync('index.html','utf8').includes('./highway-sections.js'));
+console.log('PASS preview: multiple highway segments per ride, legacy rows, charge aggregation, per-segment exemption, idempotent projection and one-decimal stepper code');
