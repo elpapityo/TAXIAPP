@@ -40,10 +40,10 @@
  }
  async function read(storage=localStorage,fetcher=fetch,options={}){
   const key=readKey(storage);
-  if(!/^[a-f0-9]{32}$/.test(key))throw Error('GPS連携キーが未登録です。先にGPS通信テストページでキーを登録してください');
+  // v0.3.10 native helper supports keyless read from the fixed trusted origin.
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),4500);
   try{
-   const resp=await fetcher(endpoint,{headers:{'X-GPS-Test-Key':key},cache:'no-store',signal:controller.signal});
+   const resp=await fetcher(endpoint,{headers:key?{'X-GPS-Test-Key':key}:{},cache:'no-store',signal:controller.signal});
    if(!resp.ok)throw Error('GPS通信エラー HTTP '+resp.status);
    const data=await resp.json();
    if(data.format!=='TAXIAPP_GPS_LOOPBACK_V1'||!Number.isFinite(data.tripKm)||data.tripKm<0)throw Error('GPS応答が不正です');
