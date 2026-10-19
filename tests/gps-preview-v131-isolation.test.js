@@ -38,7 +38,7 @@ assert.match(preview,/data-preview-simulator/);
 assert.ok(bridge.includes('http://127.0.0.1:48768/'));
 assert.match(bridge,/LEGACY_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100'/);
 assert.ok(bridge.includes("LEGACY_PACKAGE='jp.taxiapp.gpsprototype.distancelabv131'"));
-assert.match(bridge,/correctIdentity\(state\)/);
+assert.match(bridge,/correctIdentity\(state,endpoint\)/);
 assert.match(bridge,/correctIdentity\(x\)/);
 assert.doesNotMatch(preview,/taxiapp-gps-preview-v0358-store|taxiapp-preview-v0358-native-gps-baseline/);
 for(const action of ['gpsWaitOdo','gpsShiftEndOdo','gpsShiftRebase','gpsTripFill'])assert.ok(preview.includes(action));
