@@ -78,7 +78,7 @@ class GpsLoopbackServer(private val context: Context) {
             when {
                 !permitted -> { code = 403; payload = """{"error":"origin"}""" }
                 method == "OPTIONS" && path == "/gps" -> { code = 204; payload = "" }
-                method == "GET" && path == "/gps" && key == secret(context) -> {
+                method == "GET" && path == "/gps" -> {
                     val s = GpsStore.load(context)
                     val ageAt = GpsStore.lastGpsCallbackAt(context)
                     payload = JSONObject()
