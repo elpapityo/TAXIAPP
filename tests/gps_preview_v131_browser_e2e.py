@@ -210,7 +210,7 @@ try:
        const input=root.querySelector('[data-hwy-field="'+key+'"]');input.value=value;
        input.dispatchEvent(new Event('change',{bubbles:true}));
       }));""")
-    wait.until(lambda d: len(db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft'].get('meta',{}).get('highwaySections',[]))==2)
+    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft'].get('meta',{}).get('highwaySections',[{},{}])[1].get('entryIC',''))=='西宮北')
     record=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']
     assert record['meta']['highwaySections'][1]['entryIC']=='西宮北'
     projection=js("""return TAXIAPP_HIGHWAY_SECTIONS.project(arguments[0].raw,arguments[0].meta.highwaySections)""",record)
