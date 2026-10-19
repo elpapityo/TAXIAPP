@@ -630,7 +630,8 @@ html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active
 <script src="../../gps-trip-ui.js?v=0.3.35"></script>
 <script src="./gps-diary-bridge.js?v=20261019-1"></script>
 <script src="../../elapsed-alight-clock.js?v=1"></script>
-<script src="../../highway-report.js?v=0.3.36"></script>
+<script src="./highway-sections.js?v=20261019-1"></script>
+<script src="./highway-report.js?v=20261019-1"></script>
 <script src="../../bidirectional-sync.js?v=20261019-1"></script>
 <script src="../../cloud-sync-ui.js?v=20261017-10"></script>
 <script src="../../cross-device-state.js?v=20261017-10"></script>
@@ -773,6 +774,7 @@ function deriveRaw(row,settings={}){
  const exemption=d=>Math.round(d*0.75*1000)/1000;
  if(hasRealHighway(raw)){const d=distance('S','V');if(d!==null){raw.X=d;raw.Y=exemption(d);}}
  if(hasEmptyHighway(raw)){const d=distance('AB','AE');if(d!==null){raw.AJ=d;raw.AK=exemption(d);}}
+ if(Array.isArray(row.meta?.highwaySections)&&window.TAXIAPP_HIGHWAY_SECTIONS){Object.assign(raw,window.TAXIAPP_HIGHWAY_SECTIONS.project(raw,row.meta.highwaySections));}
  if((raw.O==='シ'||raw.O==='高')&&(number(raw.AR)===null||number(raw.AR)===0)&&!row.meta?.discountManual&&number(raw.K)!==null)raw.AR=calculatedDiscount(raw);
  const hasAlighted=Boolean(raw.M);
  raw.AQ=hasAlighted?goCollectionFee(row,cfg,true):0;
@@ -839,7 +841,7 @@ function estimatedCashDue(row,settings={},shiftDate=''){
  const app=uberAppAmounts(row,settings);
  const uberSurcharge=app?.valid&&uberDispatchFeeApplies(row,shiftDate,settings)?app.surcharge:0;
  const goFee=goCollectionFee(row,cfg,false);
- return Math.max(0,Math.round(meter+amount(raw.W)+uberReservation+uberSurcharge+goFee-discount));
+ return Math.max(0,Math.round(meter+amount(Array.isArray(row.meta?.highwaySections)?window.TAXIAPP_HIGHWAY_SECTIONS.project(raw,row.meta.highwaySections).W:raw.W)+uberReservation+uberSurcharge+goFee-discount));
 }
 function cashChange(row,settings={},shiftDate=''){
  const split=paymentBreakdown(row,settings,shiftDate);
@@ -990,6 +992,7 @@ function validateDraft(draft){let errs=[];if(!draft)errs.push('入力データ�
  }else if(draft.kind==='empty') {if(number(draft.raw.AI)===null&&!['AF','AG','AH'].some(k=>number(draft.raw[k])!==null))errs.push('空車高速金額');}
  if(distanceEnabled('S')&&hasRealHighway(draft?.raw)&&number(draft.raw.S)!==null&&number(draft.raw.V)!==null&&number(draft.raw.V)<number(draft.raw.S))errs.push('実車高速の降距離は乗距離以上');
  if(distanceEnabled('AB')&&hasEmptyHighway(draft?.raw)&&number(draft.raw.AB)!==null&&number(draft.raw.AE)!==null&&number(draft.raw.AE)<number(draft.raw.AB))errs.push('空車高速の降距離は乗距離以上');
+ if(Array.isArray(draft?.meta?.highwaySections))errs.push(...window.TAXIAPP_HIGHWAY_SECTIONS.validate(draft.meta.highwaySections));
  return errs;
 }
 function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
