@@ -217,6 +217,25 @@ try:
     assert projection['W']=='1550'
     assert projection['X']=='16.9'
     assert projection['Y']=='12.675'
+    # Save the entire ride: primary 44 columns carry rolled-up totals while meta
+    # retains both independent sections for route/75% exemption reporting.
+    js("""const meter=document.querySelector('[data-col=K]');
+      meter.value='1800';meter.dispatchEvent(new Event('change',{bubbles:true}));
+      document.querySelector('[data-setcol=N][data-value=現]').click();""")
+    js("document.querySelector('[data-action=saveDraft]').click()")
+    wait.until(lambda d: len(db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['records'])==1)
+    finished=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['records'][0]
+    assert finished['status']=='complete'
+    assert finished['raw']['W']=='1550'
+    assert finished['raw']['X']=='16.9'
+    assert finished['raw']['Y']=='12.675'
+    assert len(finished['meta']['highwaySections'])==2
+    assert finished['meta']['highwaySections'][0]['entryIC']=='吹田'
+    assert finished['meta']['highwaySections'][1]['entryIC']=='西宮北'
+    summary=js("return TAXIAPP_HIGHWAY_REPORT.collect(arguments[0])",
+      db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0])
+    assert summary['real']['count']==2 and summary['real']['chargeYen']==1550
+    assert summary['real']['exemptKm']==12.675
     assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
     print("PASS Chrome: preview boots, source opt-in, simulated opt-in, 0km departure and reload persisted, production IDB/localStorage preserved")
 except Exception:
