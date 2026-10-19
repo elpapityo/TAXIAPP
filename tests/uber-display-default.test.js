@@ -10,6 +10,7 @@ const sandbox={number(v){if(v===null||v===undefined||String(v).trim()==='')retur
 vm.createContext(sandbox);
 vm.runInContext(source.slice(a,b),sandbox);
 sandbox.feeSettings=settings=>({uberSurcharge:settings?.uberSurcharge??100});
+sandbox.amountDiscount=raw=>raw.O==='シ'||raw.O==='高'?Number(raw.AR||0):0;
 const apply=(d,settings={})=>{sandbox.d=d;sandbox.settings=settings;return vm.runInContext('applyUberDisplayedDefault(d,settings)',sandbox);};
 const make=(pay='U',meter='5000')=>({kind:'ride',raw:{E:'U',N:pay,K:meter},meta:{uberAppDisplayed:''}});
 const uber=make();
@@ -39,6 +40,16 @@ assert.equal(other.meta.uberAppDisplayed,'5100','in-cab payment defaults to mete
 const custom=make('現');
 assert.equal(apply(custom,{uberSurcharge:150}),true);
 assert.equal(custom.meta.uberAppDisplayed,'5150','configured surcharge is used');
+const discounted=make('現','6200');discounted.raw.O='シ';discounted.raw.AR='620';
+assert.equal(apply(discounted),true);
+assert.equal(discounted.meta.uberAppDisplayed,'5680','discounted 6200 minus 620 plus 100');
+discounted.raw.AR='700';
+assert.equal(apply(discounted),true);
+assert.equal(discounted.meta.uberAppDisplayed,'5600','changing discount updates auto amount');
+discounted.meta.uberAppDisplayed='5590';discounted.meta.uberAppDisplayedManual=true;
+discounted.raw.AR='800';
+assert.equal(apply(discounted),false,'manual edit takes priority over discount changes');
+assert.equal(discounted.meta.uberAppDisplayed,'5590');
 const unentered=make('現','');
 assert.equal(apply(unentered),false,'no meter must not create misleading zero');
 const historic=make('現');historic.meta.uberAppDisplayed='4300';
