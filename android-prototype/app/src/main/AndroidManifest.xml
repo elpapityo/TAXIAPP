@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="true" />
     <application
-        android:label="TAXIAPP GPS距離計 v0.3.10"
+        android:label="TAXIAPP TAXIAPP 日報 v0.3.11"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
         android:allowBackup="false">
@@ -28,6 +28,7 @@
                 <data android:scheme="taxiappgpsv036" android:host="measure" />
             </intent-filter>
         </activity>
+        <activity android:name=".TaxiDiaryActivity" android:exported="false" />
         <!-- Trusted fixed Web screen; Chrome can launch it once, without
              opening any new Chrome tab for subsequent GPS captures. -->
         <activity
