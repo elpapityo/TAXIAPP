@@ -31,6 +31,9 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
+    private lateinit var simButton: Button
+    private val speedButtons = mutableListOf<Pair<Int,Button>>()
+    private var pendingSimulationPermission = false
     private var refresh: Runnable? = null
 
     private fun rounded(fill: Int, border: Int): GradientDrawable =
@@ -70,9 +73,9 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.1 · 外部ブラウザ", 12f, 0xFF63EAD2.toInt()), 0)
-        add(label("GPS距離ラボ\n計測専用", 29f), 3)
-        add(label("この画面はGPS計測と受信状態の確認だけです。0kmの記録・区間距離・手入力補正は外部ブラウザで操作します。", 13f, 0xFFAFC6D3.toInt()), 8)
+        add(label("GPS DISTANCE LAB · v1.2 · 模擬走行テスト専用", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS距離ラボ\n模擬走行テスト", 29f), 3)
+        add(label("【テスト専用】車を動かさずに模擬走行できます。実GPSと模擬走行は同時に実行しません。0km登録・区間距離・補正は外部Chromeで操作します。", 13f, 0xFFFFD68A.toInt()), 8)
         val meter = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = rounded(0xFF152A3F.toInt(), 0xFF3C6478.toInt())
@@ -85,9 +88,33 @@ class MainActivity : Activity() {
         status = label("GPS受信状態を確認しています", 14f)
         meter.addView(status)
         add(meter, 17)
-        startButton = button("▶ GPS測定を開始", 0xFF63EAD2.toInt(), 0xFF091827.toInt())
-        startButton.setOnClickListener { startGps() }
+        startButton = button("▶ 実GPS測定を開始", 0xFF63EAD2.toInt(), 0xFF091827.toInt())
+        startButton.setOnClickListener { startGps(simulation=false) }
         add(startButton, 15)
+        simButton = button("▶ 模擬走行テスト開始（速度0km/h）", 0xFFFFD68A.toInt(), 0xFF091827.toInt())
+        simButton.setOnClickListener { startGps(simulation=true) }
+        add(simButton, 10)
+        add(label("模擬走行を開始 → 外部Chromeで0km登録 → 以下の速度を選択。0km/hは完全停止し、GPSドリフトは発生しません。",12f,0xFFFFD68A.toInt()),9)
+        for (pair in listOf(listOf(0,20),listOf(40,60))) {
+            val line=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+            for (speed in pair) {
+                val b=button("模擬 ${speed}km/h",0xFF24384E.toInt(),Color.WHITE)
+                b.textSize=14f
+                b.setOnClickListener {
+                    if (GpsStore.load(this).running && GpsStore.isSimulating(this)) {
+                        startService(Intent(this,GpsTrackingService::class.java)
+                            .setAction(GpsTrackingService.ACTION_SIM_SPEED)
+                            .putExtra(GpsTrackingService.EXTRA_SIM_SPEED,speed))
+                        handler.postDelayed({updateStatus()},300L)
+                    }
+                }
+                speedButtons.add(speed to b)
+                line.addView(b,LinearLayout.LayoutParams(0,-2,1f).apply {
+                    marginEnd=(5*dp).toInt()
+                })
+            }
+            add(line,7)
+        }
         stopButton = button("■ GPS測定を停止", 0xFF1A3749.toInt(), Color.WHITE)
         stopButton.setOnClickListener {
             startService(Intent(this, GpsTrackingService::class.java).setAction(GpsTrackingService.ACTION_STOP))
@@ -103,7 +130,7 @@ class MainActivity : Activity() {
             }
         }
         add(openWeb, 23)
-        add(label("操作：① GPS測定開始 → ② 有効GPSの受信確認 → ③ Web画面で0km記録。\n\nGPS取得時は同じブラウザタブ内で通信します。", 13f, 0xFFAFC6D3.toInt()), 12)
+        add(label("手順：① 模擬走行開始（速度0）→ ② 外部Chromeで0km登録 → ③ アプリに戻り速度20/40/60を押す → ④ Chromeへ戻りGPS取得。模擬中は同じブラウザタブに反映されます。\n\n本番GPSと記録は別アプリ・別ポートです。実走データには使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 12)
         val scroll=ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
@@ -131,7 +158,7 @@ class MainActivity : Activity() {
                     val result=JSONObject(reply)
                     verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
                         result.optString("packageId")==applicationContext.packageName &&
-                        result.optString("webVersion")=="1.1.0"
+                        result.optString("webVersion")=="1.2.0"
                     if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
                 }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
             }catch(e:Exception){
@@ -145,21 +172,22 @@ class MainActivity : Activity() {
                 } else {
                     AlertDialog.Builder(this)
                         .setTitle("外部ブラウザ接続を確認できません")
-                        .setMessage(detail+"\n\n以前の「GPS距離ラボ v0.8」「v0.9」のGPS測定を停止してください。v1.1でGPS測定を開始し直してから、このボタンを押してください。\n\nChromeの履歴・保存データは消さないでください。")
+                        .setMessage(detail+"\n\n別のテストアプリが同じ接続先を使用している可能性があります。模擬走行を停止してから再度開始してください。\n\nChromeの履歴・保存データは消さないでください。")
                         .setPositiveButton("確認",null).show()
                 }
             }
         },"gps-external-browser-owner-check").start()
     }
 
-    private fun startGps() {
+    private fun startGps(simulation: Boolean = false) {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            pendingSimulationPermission=simulation
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION), requestLocation)
             return
         }
         try {
-            startForegroundService(Intent(this, GpsTrackingService::class.java).setAction(GpsTrackingService.ACTION_START))
+            startForegroundService(Intent(this, GpsTrackingService::class.java).setAction(if(simulation) GpsTrackingService.ACTION_SIM_START else GpsTrackingService.ACTION_START))
             handler.postDelayed({ updateStatus() }, 500)
         } catch (e: RuntimeException) {
             Toast.makeText(this, "GPSを開始できません。正確な位置情報の許可をご確認ください。", Toast.LENGTH_LONG).show()
@@ -171,7 +199,7 @@ class MainActivity : Activity() {
         super.onRequestPermissionsResult(code, permissions, results)
         if (code == requestLocation) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-                startGps()
+                startGps(pendingSimulationPermission)
             else Toast.makeText(this, "正確な位置情報の許可が必要です", Toast.LENGTH_LONG).show()
         }
     }
@@ -182,14 +210,23 @@ class MainActivity : Activity() {
         val fixAt = GpsStore.lastValidGpsFixAt(this)
         val age = if (fixAt <= 0L) -1L else (System.currentTimeMillis() - fixAt).coerceAtLeast(0L)/1000L
         distance.text = String.format(Locale.JAPAN, "%.3f km", s.tripKm)
+        val sim=GpsStore.isSimulating(this)
+        val speed=GpsStore.simSpeedKmh(this)
         status.text = when {
-            !s.running -> "■ 停止中：GPS開始ボタンを押してください"
+            !s.running -> "■ 停止中：実GPSまたは模擬走行を選んでください"
+            sim -> "● 【模擬走行】 ${speed}km/h ／ 架空の位置データ"
             age < 0 -> "● GPS測位待ち：屋外で受信してください"
             age > 15 -> "⚠ GPSの有効受信が " + age + " 秒前"
             else -> "● GPS計測中 ／ 有効GPS " + age + " 秒前"
         } + "\n欠測 " + s.gapCount + " 回" +
             (if(s.unresolvedGap) " ／ ⚠ 車両トリップとの補正推奨" else "")
-        startButton.text = if(s.running) "↻ GPS測定を確認・再開" else "▶ GPS測定を開始"
+        startButton.text = "▶ 実GPS測定を開始"
+        startButton.isEnabled = !s.running
+        simButton.isEnabled = !s.running
+        for((v,b) in speedButtons){
+            b.isEnabled=s.running && sim
+            b.text=if(sim&&v==speed)"● 模擬 ${v}km/h" else "模擬 ${v}km/h"
+        }
         val webIssue = GpsStore.browserConnectionIssue(this)
         if(s.running && webIssue.isNotEmpty()) status.text = status.text.toString() +
             "\n⚠ 外部ブラウザ接続："+webIssue

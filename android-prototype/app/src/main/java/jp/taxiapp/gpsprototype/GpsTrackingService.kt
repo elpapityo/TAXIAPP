@@ -21,6 +21,7 @@ import android.os.Looper
 import android.os.SystemClock
 import java.util.concurrent.atomic.AtomicBoolean
 import jp.taxiapp.gps.Fix
+import jp.taxiapp.gps.SimulatedDrive
 import jp.taxiapp.gps.TripAccumulator
 import jp.taxiapp.gps.TripMode
 import java.util.Locale
@@ -33,6 +34,9 @@ import java.util.Locale
 class GpsTrackingService : Service() {
     companion object {
         const val ACTION_START = "jp.taxiapp.gpsprototype.START"
+        const val ACTION_SIM_START = "jp.taxiapp.gpsprototype.SIM_START"
+        const val ACTION_SIM_SPEED = "jp.taxiapp.gpsprototype.SIM_SPEED"
+        const val EXTRA_SIM_SPEED = "simulation_speed_kmh"
         const val ACTION_REFRESH = "jp.taxiapp.gpsprototype.REFRESH_FIX"
         const val ACTION_STOP = "jp.taxiapp.gpsprototype.STOP"
         const val ACTION_REAL = "jp.taxiapp.gpsprototype.REAL"
@@ -45,6 +49,31 @@ class GpsTrackingService : Service() {
     private lateinit var manager: LocationManager
     private lateinit var engine: TripAccumulator
     private var listening = false
+    private var simulating = false
+    private var simulatedDrive: SimulatedDrive? = null
+    private val simTicker=object: Runnable {
+        override fun run() {
+            if (!simulating || !engine.snapshot().running) return
+            val point=simulatedDrive?.point(SystemClock.elapsedRealtime()) ?: return
+            // Synthetic location enters the SAME accumulator as real GPS.
+            // LocationManager is never subscribed during simulation.
+            val fake=Location("GPS_LAB_SIMULATION").apply {
+                latitude=point.latitude
+                longitude=point.longitude
+                accuracy=point.accuracyMeters.toFloat()
+                elapsedRealtimeNanos=point.elapsedRealtimeMs * 1_000_000L
+                speed=(point.speedMetersPerSecond ?: 0.0).toFloat()
+            }
+            acceptLocation(fake)
+            mainHandler.postDelayed(this,2000L)
+        }
+    }
+    private fun stopSimulation() {
+        mainHandler.removeCallbacks(simTicker)
+        simulatedDrive=null
+        simulating=false
+        GpsStore.setSimulation(this,false,0)
+    }
     private var refreshFixSignal: CancellationSignal? = null
     private var refreshFixListener: LocationListener? = null
     private var lastFreshRequestAt = 0L
@@ -98,7 +127,7 @@ class GpsTrackingService : Service() {
      * an old cached getCurrentLocation() result as a fresh measurement.
      */
     private fun requestFreshFix() {
-        if (!engine.snapshot().running || !hasPreciseLocation()) return
+        if (simulating || !engine.snapshot().running || !hasPreciseLocation()) return
         val now = SystemClock.elapsedRealtime()
         if (now - lastFreshRequestAt in 0L..5999L) return
         if (refreshFixSignal != null || refreshFixListener != null) return
@@ -227,6 +256,7 @@ class GpsTrackingService : Service() {
         super.onCreate()
         manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val previous = GpsStore.load(this)
+        GpsStore.setSimulation(this,false,0)
         engine = TripAccumulator(previous)
         if (previous.running) {
             // Previous process died: do not bridge its last coordinate to a new fix.
@@ -243,6 +273,7 @@ class GpsTrackingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                stopSimulation()
                 clearAlightRequests()
                 stopListening()
                 cancelRefreshFix()
@@ -253,6 +284,15 @@ class GpsTrackingService : Service() {
                 GpsStore.save(this, engine.snapshot())
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_SIM_SPEED -> {
+                val kmh=intent.getIntExtra(EXTRA_SIM_SPEED,-1)
+                if(simulating && engine.snapshot().running && kmh in setOf(0,20,40,60)) {
+                    simulatedDrive?.setSpeed(kmh)
+                    GpsStore.setSimulation(this,true,kmh)
+                    updateNotification()
+                }
                 return START_NOT_STICKY
             }
             ACTION_REFRESH -> {
@@ -271,7 +311,7 @@ class GpsTrackingService : Service() {
                 }
                 return START_NOT_STICKY
             }
-            ACTION_START -> {
+            ACTION_START, ACTION_SIM_START -> {
                 if (!hasPreciseLocation()) {
                     engine.interrupted("位置情報の正確な許可が必要です")
                     engine.stop()
@@ -279,7 +319,8 @@ class GpsTrackingService : Service() {
                     stopSelf()
                     return START_NOT_STICKY
                 }
-                if (!listening) {
+                if (!engine.snapshot().running) {
+                    val simulation=intent.action == ACTION_SIM_START
                     GpsStore.setBrowserConnectionIssue(this,"準備中")
                     GpsStore.clearValidFix(this)
                     GpsStore.startNewRun(this)
@@ -293,7 +334,15 @@ class GpsTrackingService : Service() {
                     } else {
                         startForeground(NOTIFICATION_ID, notification())
                     }
-                    startListening()
+                    if (simulation) {
+                        simulating=true
+                        simulatedDrive=SimulatedDrive()
+                        GpsStore.setSimulation(this,true,0)
+                        mainHandler.post(simTicker)
+                    } else {
+                        stopSimulation()
+                        startListening()
+                    }
                     try {
                         if(loopback==null)loopback=GpsLoopbackServer(applicationContext).also{it.start()}
                         GpsStore.setBrowserConnectionIssue(this,"")
@@ -354,7 +403,7 @@ class GpsTrackingService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val s = engine.snapshot()
-        val label = if (pendingAlight) "降車GPS確認中" else if (s.mode == TripMode.REAL) "実車" else "空車"
+        val label = if(simulating) "【模擬走行】${simulatedDrive?.speedKmh ?: 0}km/h" else if (pendingAlight) "降車GPS確認中" else if (s.mode == TripMode.REAL) "実車" else "空車"
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentTitle("GPS距離ラボ・" + label)
@@ -378,6 +427,7 @@ class GpsTrackingService : Service() {
     // User explicitly removes this app from Android recent tasks.
     // Unlike Home/screen-off/app switching, task removal must end GPS tracking.
     override fun onTaskRemoved(rootIntent: Intent?) {
+        stopSimulation()
         clearAlightRequests()
         stopListening()
         cancelRefreshFix()
@@ -392,6 +442,7 @@ class GpsTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        stopSimulation()
         clearAlightRequests()
         stopListening()
         cancelRefreshFix()
