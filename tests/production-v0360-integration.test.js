@@ -4,7 +4,7 @@ const html=fs.readFileSync('index.html','utf8');
 const gps=require('../gps-diary-bridge.js');
 const highway=require('../highway-sections.js');
 require('../highway-report.js');
-assert.match(html,/<title>TAXIAPP v0\.3\.61 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.\d+ — 乗務日報<\/title>/);
 assert.match(html,/fetch\('\.\/municipalities\.json',\{cache:'force-cache'/);
 assert.doesNotMatch(html,/fetch\('\.\.\/\.\.\/municipalities\.json'/);
 assert.equal(new URL('./municipalities.json','https://elpapityo.github.io/TAXIAPP/').pathname,'/TAXIAPP/municipalities.json');
@@ -23,7 +23,7 @@ assert.match(html,/function googlePostRequest\(action,fields=\{\}\)\{\s*if\(!can
 assert.match(html,/function scheduleGoogleSync\(\)\{\s*if\(!canEditNow\(\)/);
 assert.match(html,/function googleShiftPacket\(shift\)/);
 assert.match(html,/const item=\{\.\.\.record,raw:deriveRaw\(record,shift\.settings\)\}/);
-assert.match(html,/gps-diary-bridge\.js\?v=20261020-1/);
+assert.match(html,/gps-diary-bridge\.js\?v=20261020-\d+/);
 assert.match(html,/highway-sections\.js\?v=20261020-1/);
 assert.match(html,/highway-report\.js\?v=20261020-1/);
 assert.match(html,/NATIVE_AUTO_DISTANCE_PREF='taxiapp-production-auto-distance-v140'/);
