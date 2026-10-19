@@ -1,0 +1,120 @@
+name: GPS Distance Lab v1.4.0 Daily APK
+on:
+  push:
+    branches:
+      - feat/gps-production-v140-20261019
+    paths:
+      - 'android-prototype/**'
+      - 'gps-preview/v0359/**'
+      - 'tests/gps-distance-lab.test.js'
+      - 'tests/gps-preview-v131-identity.test.js'
+      - '.github/workflows/gps-lab-v140-daily-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Native GPS and Chrome diary safety tests
+        run: |
+          node tests/gps-distance-lab.test.js
+          node tests/gps-diary-bridge.test.js
+          node tests/gps-preview-v131-identity.test.js
+          node tests/gps-preview-v131-isolation.test.js
+          node --check gps-preview/v0359/gps-diary-bridge.js
+      - name: Install Android SDK 35
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Android core tests and release APK compilation
+        run: |
+          cd android-prototype
+          gradle --no-daemon :core:test :app:assembleDebug
+      - name: APK identity and signing evidence
+        run: |
+          set -euo pipefail
+          APK="android-prototype/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.distancelabv140'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='1.4.0'"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > "$RUNNER_TEMP/signature.txt"
+          grep -F 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/signature.txt"
+          python3 - <<'PY'
+          from pathlib import Path
+          app=Path("android-prototype/app")
+          base=app/"src/main"
+          manifest=(base/"AndroidManifest.xml").read_text()
+          android=(app/"build.gradle.kts").read_text()
+          code=base/"java/jp/taxiapp/gpsprototype"
+          server=(code/"GpsLoopbackServer.kt").read_text()
+          activity=(code/"MainActivity.kt").read_text()
+          store=(code/"GpsStore.kt").read_text()
+          service=(code/"GpsTrackingService.kt").read_text()
+          bridge=(base/"assets/gps-external-bridge.js").read_text()
+          assert 'applicationId = "jp.taxiapp.gpsprototype.distancelabv140"' in android
+          assert 'android:label="GPS距離ラボ"' in manifest
+          assert 'android:scheme="taxiappgpsdiaryv140"' in manifest
+          assert 'const val PORT = 48769' in server
+          assert 'GPS_DISTANCE_LAB_DIARY_V1_4_0_100' in server
+          assert 'put("webVersion","1.4.0")' in server
+          assert 'origin!="https://elpapityo.github.io"' in server
+          assert 'put("simulated",GpsStore.isSimulating(context))' in server
+          assert "location.port!=='48769'" in bridge
+          assert 'result.optString("webVersion")=="1.4.0"' in activity
+          assert 'GpsStore.setDisplayZero(this, runId, baselineKm)' in activity
+          assert 'rawTripKm - base' in store
+          assert '.remove("displayZeroRunId")' in store
+          assert 'setOf(0,20,40,60,100)' in service
+          assert 'android:allowBackup="false"' in manifest
+          assert (base/"res/drawable-nodpi/gps_distance_icon.png").stat().st_size>0
+          print("PASS new app installed alongside v1.3.1; 48769; GPS+Chrome identity, native zero display and simulator protections")
+          PY
+      - name: Publish everyday-use APK without overwriting old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="gps-distance-lab-v1.4.0"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release already exists. Not overwriting an installed APK."
+            exit 1
+          fi
+          APK="$RUNNER_TEMP/GPS-Distance-Lab-v1.4.0.apk"
+          cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
+          cat > "$RUNNER_TEMP/notes.md" <<'EOF'
+          GPS距離ラボ v1.4.0 普段使い用（Android）。
+          - パッケージID jp.taxiapp.gpsprototype.distancelabv140 / 通信 127.0.0.1:48769。
+          - 旧v1.3.1とは別アプリです。旧アプリと測定データを削除せずインストールできます。
+          - GPS内部距離は画面表示0km設定の影響を受けません。模擬GPSは実走行と区別します。
+          - HTML日報v0.3.57、Google同期、精算履歴は変更していません。
+          - GitHub Actionsの一時デバッグ署名でビルド。将来の上書き更新には同一署名キーの恒久管理が必要です。
+          - 旧アプリはデータ保全のためアンインストールしないでください。
+          EOF
+          cat "$RUNNER_TEMP/signature.txt" >> "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "GPS距離ラボ v1.4.0 — 普段使い用" \
+            --notes-file "$RUNNER_TEMP/notes.md"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: GPS-Distance-Lab-v1.4.0-APK
+          path: android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 14
