@@ -351,7 +351,7 @@ class MainActivity : Activity() {
         startButton.isEnabled = true
         simButton.isEnabled = true
         for ((v,b) in speedButtons) {
-            b.isEnabled = true
+            b.isEnabled=true
             b.text = if(sim && v == speed) "● 模擬 $v km/h" else "模擬 $v km/h"
             b.background = rounded(
                 if(sim && v == speed) 0xFFA77828.toInt() else 0xFF24384E.toInt(),
