@@ -125,7 +125,8 @@ class MainActivity : Activity() {
         if (!state.running) { reportError(nonce, "GPS計測が停止しています"); return }
         if (last <= 0L || age > 30000L) { reportError(nonce, "GPS受信が古い、または未測位です"); return }
         if (state.unresolvedGap) { reportError(nonce, "未解決のGPS欠測があります。車両トリップを確認してください"); return }
-        if (state.lastAccuracyMeters == null || state.lastAccuracyMeters > 45.0) {
+        val accuracy = state.lastAccuracyMeters
+        if (accuracy == null || accuracy > 45.0) {
             reportError(nonce, "GPSの測位精度が不足しています")
             return
         }
