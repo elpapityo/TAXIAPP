@@ -14,7 +14,7 @@ const prefSource=cut('const UI_DEFAULTS=','const INPUT_DEFAULTS=')+
 const rideSource=cut('function dutyUiState(shift){','function renderGuidedHeading(shift){');
 const chooserSource=cut('function renderDriveLayoutChooser(){','function renderPreviewCompact(shift){');
 const updateSource=cut('function updateElapsedTimer(){','setInterval(updateElapsedTimer,1000);');
-const started=new Date(Date.now()-((44*60+21)*1000)).toISOString();
+const started=new Date(Date.now()-((44*60+21)*60*1000)).toISOString();
 const shift={id:'preserve',date:'20261019',startedIso:started,settings:{},
  records:[{id:'sale1',raw:{K:'2500'}}],draft:{kind:'ride',status:'boarding',raw:{AL:'北本町1',AM:''}},waiting:null};
 const preserved=JSON.stringify(shift);
