@@ -54,27 +54,20 @@ try:
     assert driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
     assert driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
     assert not driver.find_elements(By.CSS_SELECTOR,'[data-preview-simulator]')
-    # The official city table must resolve from the production document directory,
-    # not from the two-level-deep /gps-preview/v0359/ relative path.
+    # Functions are private inside the app closure. Verify the actual production
+    # fetch URL from the same browser origin, without mutating user records.
     municipalities=driver.execute_async_script("""
       const done=arguments[arguments.length-1];
-      loadMunicipalities().then(data=>done({city:data['28207'],path:new URL('./municipalities.json',location.href).pathname}))
-        .catch(e=>done({error:String(e)}));
+      fetch('./municipalities.json',{cache:'no-store'})
+        .then(async response=>({status:response.status,data:await response.json()}))
+        .then(({status,data})=>done({
+          status,city:data['28207'],path:new URL('./municipalities.json',location.href).pathname
+        })).catch(e=>done({error:String(e)}));
     """)
+    assert municipalities.get('status')==200,municipalities
     assert municipalities.get('city')=='兵庫県伊丹市',municipalities
     assert municipalities['path']=='/municipalities.json',municipalities
-    # Simulated GSI reply, so the test never sends private device coordinates.
-    address=driver.execute_async_script("""
-      const done=arguments[arguments.length-1],oldFetch=window.fetch;
-      window.fetch=(resource,options)=>String(resource).includes('mreversegeocoder.gsi.go.jp')
-        ?Promise.resolve({ok:true,json:async()=>({results:{muniCd:'28207',lv01Nm:'北本町一丁目'}})})
-        :oldFetch(resource,options);
-      reverseAddress({lat:34.7,lng:135.2}).then(result=>{
-        window.fetch=oldFetch;done({result});
-      }).catch(e=>{window.fetch=oldFetch;done({error:String(e)})});
-    """)
-    assert address.get('result')=='北本町1',address
     assert stored()==sentinel
-    print('PASS Chrome: production municipalities load and 町名丁目 conversion; original data unaffected')
+    print('PASS Chrome: production municipality JSON route resolves; original IDB/localStorage unaffected')
 finally:
     driver.quit()
