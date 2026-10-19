@@ -52,7 +52,7 @@ const ctx={
 vm.createContext(ctx);
 vm.runInContext(script.slice(begin,end),ctx);
 // Mock the existing real action area and draft renderer, verifying only the view switches.
-vm.runInContext("renderNewAction=()=>'<button data-action=beginWait>待機</button><button data-action=beginRide>乗車</button><button data-action=beginDispatch>迎車</button>';renderDraft=()=>'<button data-action=saveDraft>精算</button>';",ctx);
+vm.runInContext("renderNewAction=()=>'<button data-action=beginWait>待機</button><button data-action=beginRide>乗車</button><button data-action=beginDispatch>迎車</button>';renderDraft=()=>'<button data-action=saveDraft>精算</button>';renderPreviewCompact=()=>'<button data-action=beginRide>乗車</button><button data-action=saveDraft>精算</button>';",ctx);
 let markup=vm.runInContext('renderDrive(null)',ctx);
 assert.match(markup,/出庫・入庫メニューへ/);
 assert.match(markup,/data-ui-value="legacy" type="button" aria-pressed="true"/);
