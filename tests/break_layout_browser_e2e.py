@@ -12,7 +12,7 @@ opts.add_argument('--user-data-dir='+tempfile.mkdtemp(prefix='taxiapp-break-ui-'
 browser=webdriver.Chrome(options=opts)
 try:
     browser.get('http://127.0.0.1:8765/')
-    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.94' in d.title)
+    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.95' in d.title)
     browser.execute_script("""
       const host=document.createElement('div');
       host.id='test-break-layout-host';
@@ -117,34 +117,40 @@ try:
         assert x[4][2]>=x[0][2]*1.8,(mode,orientation,'history spans full row',result)
     # Separate Settings menus can be opened individually or together.
     browser.execute_script("document.querySelector('[data-tab=settings]').click()")
-    menus=[
-      'data-ride-field-settings','data-drive-status-settings',
-      'data-cruising-summary-settings','data-text-size-settings',
-      'data-button-size-settings','data-help-settings',
-      'data-theme-settings','data-ui-preview-settings'
+    topLevel=[
+      'data-business-field-settings','data-drive-status-settings',
+      'data-text-size-settings','data-button-size-settings',
+      'data-help-settings','data-theme-settings','data-ui-preview-settings'
     ]
     WebDriverWait(browser,12).until(
         lambda d: d.execute_script(
-            "return document.querySelectorAll('details.settings-advanced[data-ride-field-settings]').length===1"))
+            "return document.querySelectorAll('details.settings-advanced[data-business-field-settings]').length===1"))
     state=browser.execute_script("""
       const keys=arguments[0];
       const panels=keys.map(k=>document.querySelector('details.settings-advanced['+k+']'));
       if(panels.some(x=>!x))return {missing:keys.filter((_,i)=>!panels[i])};
-      const labels=panels.map(x=>x.querySelector(':scope>summary').textContent.trim());
-      const initiallyClosed=panels.every(x=>!x.open);
-      panels[0].open=true;panels[6].open=true;
-      const independentlyOpen=panels[0].open && panels[6].open && !panels[1].open;
-      return {labels,initiallyClosed,independentlyOpen,
+      const parent=panels[0];
+      const childA=parent.querySelector('details[data-ride-field-settings]');
+      const childB=parent.querySelector('details[data-cruising-summary-settings]');
+      const initiallyClosed=panels.every(x=>!x.open)&&!!childA&&!childA.open&&!!childB&&!childB.open;
+      const noSeparateMenus=document.querySelectorAll('details.settings-advanced[data-ride-field-settings],details.settings-advanced[data-cruising-summary-settings]').length===0;
+      parent.open=true;childA.open=true;
+      const independentlyOpen=parent.open&&childA.open&&!childB.open&&!panels[1].open;
+      childB.open=true;childA.open=false;
+      const secondIndependent=parent.open&&!childA.open&&childB.open;
+      return {initiallyClosed,noSeparateMenus,independentlyOpen,secondIndependent,
         obsolete:document.querySelectorAll('[data-ui-key=cruisingButtonsLayout]').length,
-        themeChoices:panels[6].querySelectorAll('[data-ui-key=theme]').length,
-        rideChoices:panels[0].querySelectorAll('[data-ride-field]').length};
-    """,menus)
+        themeChoices:panels[5].querySelectorAll('[data-ui-key=theme]').length,
+        rideChoices:childA.querySelectorAll('[data-ride-field]').length,
+        cruisingChoices:childB.querySelectorAll('[data-cruising-summary-field]').length};
+    """,topLevel)
     assert not state.get('missing'),state
     assert state['initiallyClosed'],state
-    assert state['independentlyOpen'],state
+    assert state['noSeparateMenus'],state
+    assert state['independentlyOpen'] and state['secondIndependent'],state
     assert state['obsolete']==0,state
     assert state['themeChoices']==2,state
-    assert state['rideChoices']>0,state
-    print('PASS Chrome: cruising fixed 2x2; 8 independent collapsed settings menus; obsolete selector absent')
+    assert state['rideChoices']>0 and state['cruisingChoices']>0,state
+    print('PASS Chrome: cruising fixed 2x2; grouped parent + 2 independently nested field menus')
 finally:
     browser.quit()
