@@ -22,7 +22,7 @@ def stored():
     """)
 try:
     driver.get('http://127.0.0.1:8765/')
-    wait.until(lambda _: 'TAXIAPP v0.3.60' in driver.title)
+    wait.until(lambda _: 'TAXIAPP v0.3.61' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert driver.find_elements(By.ID,'accountSignIn')
     assert driver.find_elements(By.ID,'accountViewSignIn')
@@ -44,7 +44,7 @@ try:
     js("localStorage.setItem('taxiapp-v1','PREEXISTING_FALLBACK')")
     js("localStorage.setItem('taxiapp-preview-v0359-simulator-optin','on')")
     driver.refresh()
-    wait.until(lambda _: 'TAXIAPP v0.3.60' in driver.title)
+    wait.until(lambda _: 'TAXIAPP v0.3.61' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert stored()==sentinel, 'existing production data changed during app startup'
     assert js("return localStorage.getItem('taxiapp-v1')")=='PREEXISTING_FALLBACK'
@@ -54,7 +54,27 @@ try:
     assert driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
     assert driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
     assert not driver.find_elements(By.CSS_SELECTOR,'[data-preview-simulator]')
+    # The official city table must resolve from the production document directory,
+    # not from the two-level-deep /gps-preview/v0359/ relative path.
+    municipalities=driver.execute_async_script("""
+      const done=arguments[arguments.length-1];
+      loadMunicipalities().then(data=>done({city:data['28207'],path:new URL('./municipalities.json',location.href).pathname}))
+        .catch(e=>done({error:String(e)}));
+    """)
+    assert municipalities.get('city')=='兵庫県伊丹市',municipalities
+    assert municipalities['path']=='/municipalities.json',municipalities
+    # Simulated GSI reply, so the test never sends private device coordinates.
+    address=driver.execute_async_script("""
+      const done=arguments[arguments.length-1],oldFetch=window.fetch;
+      window.fetch=(resource,options)=>String(resource).includes('mreversegeocoder.gsi.go.jp')
+        ?Promise.resolve({ok:true,json:async()=>({results:{muniCd:'28207',lv01Nm:'北本町一丁目'}})})
+        :oldFetch(resource,options);
+      reverseAddress({lat:34.7,lng:135.2}).then(result=>{
+        window.fetch=oldFetch;done({result});
+      }).catch(e=>{window.fetch=oldFetch;done({error:String(e)})});
+    """)
+    assert address.get('result')=='北本町1',address
     assert stored()==sentinel
-    print('PASS Chrome: production original IDB/localStorage unaffected by reload, login controls restored, GPS settings present')
+    print('PASS Chrome: production municipalities load and 町名丁目 conversion; original data unaffected')
 finally:
     driver.quit()
