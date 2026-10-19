@@ -36,6 +36,12 @@ assert.doesNotMatch(bridge,/taxiapp-native-diary-gps-baseline-v131/);
 assert.match(bridge,/previewSimulationAllowed\(storage\)/);
 assert.match(preview,/data-preview-simulator/);
 assert.match(preview,/data-native-auto-distance/);
+assert.match(preview,/const gpsButton=\['F','L','S','V','AB','AE'\]\.includes\(key\)&&nativeAutoDistanceEnabled\(\)/);
+assert.match(preview,/if\(gpsDistanceField&&nativeAutoDistanceEnabled\(\)\)/);
+assert.match(preview,/if\(currentDuty\?\.draft\?\.id===target\.id&&!nativeDiaryGpsEnabled\(\)&&nativeAutoDistanceEnabled\(\)\)/);
+assert.match(preview,/if\(duty\?\.waiting\?\.id===waitId&&nativeAutoDistanceEnabled\(\)\)/);
+assert.match(preview,/if\(e\.type==='change'&&target\.value&&nativeAutoDistanceEnabled\(\)&&!nativeDiaryGpsEnabled\(\)/);
+
 assert.match(preview,/距離の自動取得（Android GPS）/);
 assert.match(preview,/const NATIVE_AUTO_DISTANCE_PREF='taxiapp-preview-v0359-auto-distance-v131'/);
 assert.match(preview,/function nativeAutoDistanceEnabled\(\)/);
