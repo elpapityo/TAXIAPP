@@ -2543,6 +2543,23 @@ function discardInvalidAutoDropDistance(draft){
 }
 let gpsAlightPending=false;
 function handleAction(action,id){
+ if(action==='highwayAdd'){
+  const shift=getShift(),draft=shift?.draft;
+  if(!draft||draft.kind!=='ride'||draft.editId||!['実','空'].includes(id))return;
+  const sections=window.TAXIAPP_HIGHWAY_SECTIONS.initialize(draft);
+  if(sections.length>=20){toast('高速区間は1乗車につき20件までです',true);return;}
+  sections.push({mode:id,entryIC:'',entryTime:'',entryKm:'',exitIC:'',exitTime:'',exitKm:'',fee:''});
+  draft.raw.P=(sections.some(x=>x.mode==='実')?'実':'')+(sections.some(x=>x.mode==='空')?'空':'');
+  saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
+ }
+ if(action==='highwayRemove'){
+  const shift=getShift(),draft=shift?.draft,items=draft?.meta?.highwaySections,ix=Number(id);
+  if(!draft||draft.kind!=='ride'||!Array.isArray(items)||!Number.isInteger(ix)||ix<0||ix>=items.length)return;
+  if(!confirm('この高速区間の入力内容を削除しますか？'))return;
+  items.splice(ix,1);
+  draft.raw.P=(items.some(x=>x.mode==='実')?'実':'')+(items.some(x=>x.mode==='空')?'空':'');
+  saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
+ }
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
    return;
@@ -2942,6 +2959,18 @@ function rebaseNativeTripAfterManual(shift,value,stillCurrent){
  }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
+ if(target.dataset.hwyIndex!==undefined&&target.dataset.hwyField){
+  if(e.type!=='change')return;
+  const draft=s?.draft,items=draft?.meta?.highwaySections;
+  const ix=Number(target.dataset.hwyIndex),key=target.dataset.hwyField;
+  if(!Array.isArray(items)||!Number.isInteger(ix)||ix<0||ix>=items.length||
+   !['entryIC','entryTime','entryKm','exitIC','exitTime','exitKm','fee'].includes(key))return;
+  if(key==='entryKm'||key==='exitKm'){
+    if(target.value.trim()&&kmOne(target.value)==='')return;
+    target.value=kmOne(target.value);
+  }
+  items[ix][key]=target.value;saveLater();return;
+ }
  if(e.type==='change'&&target.matches?.('input[data-number-kind="distance"]')&&String(target.value).trim()!==''){
   const rounded=kmOne(target.value);if(rounded!=='')target.value=rounded;
  }
@@ -3340,6 +3369,33 @@ async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toas
  model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  upgradeWaitingHistory();await save();historyDate='';historyShiftId='';tab='history';render();toast(`${addition.length}乗務を追加しました。既存データは維持しました。`);}
 appEl.addEventListener('click',event=>{
+ const hwyTime=event.target.closest('[data-hwy-now]');
+ if(hwyTime){
+  event.preventDefault();
+  const index=Number(hwyTime.dataset.hwyNow),key=hwyTime.dataset.hwyTimeField;
+  const shift=getShift(),sections=shift?.draft?.meta?.highwaySections;
+  if(!Array.isArray(sections)||!sections[index]||!['entryTime','exitTime'].includes(key))return;
+  const seg=sections[index],distKey=key==='entryTime'?'entryKm':'exitKm';
+  seg[key]=stamp().slice(0,5);
+  const field=hwyTime.parentElement?.querySelector('[data-hwy-field="'+key+'"]');
+  if(field)field.value=seg[key];
+  saveLater();
+  if(nativeDiaryGpsEnabled()&&nativeAutoDistanceEnabled()&&!String(seg[distKey]??'').trim()){
+    const shiftId=shift.id,recordId=shift.draft.id;
+    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(gps=>{
+      const current=getShift();
+      if(!canEditNow()||current?.id!==shiftId||current.draft?.id!==recordId||
+        !nativeDiaryGpsEnabled()||!nativeAutoDistanceEnabled()||
+        !current.draft?.meta?.highwaySections?.includes(seg)||String(seg[distKey]??'').trim())return;
+      const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,shiftId);
+      seg[distKey]=window.TAXIAPP_EXTERNAL_GPS.calculated(gps.tripKm,base,gps.runId).toFixed(1);
+      const el=appEl.querySelector('[data-hwy-index="'+index+'"][data-hwy-field="'+distKey+'"]');
+      if(el&&document.activeElement!==el)el.value=seg[distKey];
+      saveLater();
+    }).catch(()=>{});
+  }
+  return;
+ }
  const step=event.target.closest('[data-km-step]');
  if(step){event.preventDefault();const input=step.parentElement?.querySelector('input[data-number-kind="distance"]');
   if(!input||input.disabled||input.readOnly)return;
