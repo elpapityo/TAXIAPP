@@ -2847,7 +2847,11 @@ function toggleRideHighway(mode){
   if(filled&&!confirm(`${mode==='実'?'実車分':'空車分'}の高速記録を解除し、入力内容も消しますか？`))return;
   for(const key of HIGHWAY_RAW_KEYS[mode])d.raw[key]='';
  }
- const real=mode==='実'?!was:hasRealHighway(d.raw),empty=mode==='空'?!was:hasEmptyHighway(d.raw);
+ if(Array.isArray(d.meta?.highwaySections)){
+   if(was)d.meta.highwaySections=d.meta.highwaySections.filter(x=>x.mode!==mode);
+   else d.meta.highwaySections.push(window.TAXIAPP_HIGHWAY_SECTIONS.fromLegacy(d.raw,mode));
+  }
+  const real=mode==='実'?!was:hasRealHighway(d.raw),empty=mode==='空'?!was:hasEmptyHighway(d.raw);
  d.raw.P=real&&empty?'実空':real?'実':empty?'空':'';
  syncCashChange(d,shift.settings,shift.date);saveLater();render();
 }
