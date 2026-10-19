@@ -51,8 +51,11 @@ try:
     js("document.querySelector('[data-tab=settings]').click()")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-gps-settings]')))
     js("document.querySelector('details[data-gps-settings]').open=true")
-    assert driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
-    assert driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
+    auto=driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
+    assert auto, 'auto-distance preference should remain configurable'
+    # The native-source selector is intentionally hidden when auto fill is OFF.
+    native=driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
+    assert bool(native)==(auto[0].get_attribute('value')=='on')
     assert not driver.find_elements(By.CSS_SELECTOR,'[data-preview-simulator]')
     # Functions are private inside the app closure. Verify the actual production
     # fetch URL from the same browser origin, without mutating user records.
