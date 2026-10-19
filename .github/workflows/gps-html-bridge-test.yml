@@ -2,6 +2,7 @@ name: GPS HTML bridge regression
 on:
   push:
     branches:
+      - feat/diary-distance-native-loopback-integration-20261019
       - feat/html-native-gps-loopback-20261018
     paths:
       - '*.js'
