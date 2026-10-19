@@ -777,7 +777,9 @@ function beginWaiting(shift,now=new Date()){
  shift.waiting={id:`wait-${now.getTime()}-${Math.floor(Math.random()*10000)}`,startedAt:stamp(now),startedIso:now.toISOString(),place:'',odometer:'',geo:null,gpsStatus:'GPSを取得中…'};
  return shift.waiting;
 }
-function breakDurationMinutes(item,now=new Date()){const a=Date.parse(item?.startedIso||''),b=Date.parse(item?.endedIso||'')||now.getTime();return Number.isFinite(a)?Math.max(0,Math.floor((b-a)/60000)):0;}
+function breakSeconds(item,now=new Date()){const a=Date.parse(item?.startedIso||''),b=item?.endedIso?Date.parse(item.endedIso):now.getTime();return Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,Math.floor((b-a)/1000)):0;}
+function breakElapsedText(item,now=new Date()){const n=breakSeconds(item,now);return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':');}
+function breakDurationMinutes(item,now=new Date()){return Math.floor(breakSeconds(item,now)/60);}
 function totalBreakMinutes(shift,now=new Date()){return (shift?.breakSessions||[]).reduce((sum,item)=>sum+breakDurationMinutes(item,now),0)+(shift?.breakActive?breakDurationMinutes(shift.breakActive,now):0);}
 function breakClockText(mins){return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');}
 function endBreak(shift,when=new Date()){if(!shift?.breakActive)return;const item={...shift.breakActive,endedAt:stamp(when),endedIso:when.toISOString()};(shift.breakSessions??=[]).push(item);shift.breakActive=null;}
@@ -2473,7 +2475,8 @@ window.addEventListener('scroll',syncFloatingDutySummary,{passive:true});
 window.addEventListener('resize',syncFloatingDutySummary,{passive:true});
 function updateElapsedTimer(){
  const active=getShift(), now=new Date(), w=active?.waiting;
- const breakElapsed=appEl.querySelector('[data-break-elapsed]');if(breakElapsed&&active?.breakActive)breakElapsed.textContent=breakClockText(breakDurationMinutes(active.breakActive,now));
+ const breakElapsed=appEl.querySelector('[data-break-elapsed]');if(breakElapsed&&active?.breakActive)breakElapsed.textContent=breakElapsedText(active.breakActive,now);
+ for(const el of appEl.querySelectorAll('[data-live-break-minutes]'))if(active?.breakActive)el.textContent=breakClockText(breakDurationMinutes(active.breakActive,now));
  const breakTotal=appEl.querySelector('[data-break-total]');if(breakTotal&&active)breakTotal.textContent=breakClockText(totalBreakMinutes(active,now));
  const display=appEl.querySelector('[data-wait-elapsed]');
  if(display&&w&&!active?.draft)display.textContent=elapsedWaitingText(w);
