@@ -7,7 +7,7 @@ const script=[...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].m
 assert.ok(script,'main drive logic found');
 new Function(script);
 assert.match(script,/driveLayout:'legacy'/,'preserve legacy as the default');
-assert.match(script,/driveLayout:\['legacy','compact'\]/);
+assert.match(script,/driveLayout:\['legacy','compact','guided','detail'\]/);
 assert.match(script,/if\(ui\.dataset\.uiKey==='driveLayout'&&tab==='drive'\)render\(\)/);
 assert.match(script,/appEl\.classList\?\.toggle\('drive-compact'/);
 assert.match(source,/\.drive-compact \.hero \.action-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
@@ -15,6 +15,7 @@ assert.match(source,/\.drive-compact \.wait-inputs/);
 assert.match(script,/renderDriveLayoutChooser\(\)/);
 assert.match(script,/function renderDutyStatus\(shift\)/);
 assert.match(script,/renderDutyStatus\(active\)/);
+assert.match(script,/function renderGuidedHeading\(shift\)/);
 assert.match(script,/renderUiChoice\('screenMode'/);
 assert.match(script,/renderUiChoice\('driveLayout'/);
 assert.match(script,/data-action="gpsWait"/);
