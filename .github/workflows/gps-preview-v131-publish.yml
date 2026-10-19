@@ -7,6 +7,7 @@ on:
       - 'tests/gps_preview_v131_browser_e2e.py'
       - 'tests/gps-preview-v131-isolation.test.js'
       - 'tests/gps-preview-v131-identity.test.js'
+      - 'tests/gps-preview-v131-bundle.test.js'
       - '.github/workflows/gps-preview-v131-browser.yml'
   push:
     branches:
@@ -30,6 +31,8 @@ jobs:
         run: |
           node tests/gps-preview-v131-isolation.test.js
           node tests/gps-preview-v131-identity.test.js
+          node tests/gps-preview-v131-bundle.test.js
+          node --check gps-preview/v0359/gps-bundle.js
           node --check gps-preview/v0359/gps-diary-bridge.js
       - name: Install Selenium
         run: python -m pip install --disable-pip-version-check 'selenium>=4.25,<5'
