@@ -51,7 +51,7 @@ assert.match(rideSummary,/data-duty-field="dispatchType">Uber<\/strong>/);
 assert.match(rideSummary,/data-duty-field="payment">現金<\/strong>/);
 shift.draft.raw.E='G';
 assert.match(evalExpr('renderDutyStatus(model.shifts[0])'),/data-duty-field="dispatchType">GO<\/strong>/);
-shift.draft.raw.E='';shift.draft.raw.N='';
+delete shift.draft.raw.E;delete shift.draft.raw.N;
 let htmlChooser=evalExpr('renderDriveLayoutChooser()');
 for(const [key,label] of [['portrait','縦表示'],['landscape','横表示']])assert.ok(htmlChooser.includes('data-ui-key="orientationMode" data-ui-value="'+key+'"')&&htmlChooser.includes(label));
 evalExpr("setUiOption('stickyDutySummary','off')");
