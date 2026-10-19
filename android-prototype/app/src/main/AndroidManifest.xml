@@ -7,9 +7,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
-    <uses-feature android:name="android.hardware.location.gps" android:required="true"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <application
-        android:label="GPS距離ラボ v1.1"
+        android:label="GPS距離ラボ v1.2 模擬テスト"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false"
         android:usesCleartextTraffic="true">
@@ -22,7 +22,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="taxiappgpslabv060" android:host="open"/>
+                <data android:scheme="taxiappgpslabsimv120" android:host="open"/>
             </intent-filter>
         </activity>
         <service

@@ -87,6 +87,16 @@ object GpsStore {
     fun currentRunId(context: Context): String =
         prefs(context).getString("currentRunId","") ?: ""
 
+    /** Simulation settings are private to the separate v1.2 APK. */
+    fun setSimulation(context: Context,enabled: Boolean,speedKmh: Int) {
+        prefs(context).edit()
+            .putBoolean("simulated",enabled).putInt("simSpeedKmh",speedKmh).apply()
+    }
+    fun isSimulating(context: Context): Boolean =
+        prefs(context).getBoolean("simulated",false)
+    fun simSpeedKmh(context: Context): Int =
+        prefs(context).getInt("simSpeedKmh",0)
+
     fun lastValidGpsFixAt(context: Context) =
         prefs(context).getLong("lastValidGpsFixAt", 0L)
 
