@@ -64,7 +64,7 @@ def tap_native_button(fragment):
                         x = (coords[0] + coords[2]) // 2
                         y = (coords[1] + coords[3]) // 2
                         adb("shell", "input", "tap", str(x), str(y), timeout=30)
-                        note("Tapped real Android native button", label=text, x=x, y=y)
+                        note("Tapped real Android native button", button_text=text, x=x, y=y)
                         return
         except ET.ParseError:
             pass
