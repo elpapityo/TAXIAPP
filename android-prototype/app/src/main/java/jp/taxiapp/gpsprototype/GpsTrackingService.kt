@@ -35,6 +35,7 @@ class GpsTrackingService : Service() {
         const val ACTION_STOP = "jp.taxiapp.gpsprototype.STOP"
         const val ACTION_REAL = "jp.taxiapp.gpsprototype.REAL"
         const val ACTION_EMPTY = "jp.taxiapp.gpsprototype.EMPTY"
+        const val ACTION_RECONNECT = "jp.taxiapp.gpsprototype.RECONNECT"
         private const val CHANNEL = "taxiapp_native_gps_test"
         private const val NOTIFICATION_ID = 201
     }
@@ -201,6 +202,18 @@ class GpsTrackingService : Service() {
                 GpsStore.save(this, engine.snapshot())
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_RECONNECT -> {
+                if (engine.snapshot().running) {
+                    engine.interrupted("手動でGPS受信を再接続しました")
+                    GpsStore.save(this, engine.snapshot())
+                    lastRecoveryElapsedMs = SystemClock.elapsedRealtime()
+                    lastCallbackElapsedMs = lastRecoveryElapsedMs
+                    stopListening()
+                    startListening()
+                    updateNotification()
+                }
                 return START_NOT_STICKY
             }
             ACTION_REAL, ACTION_EMPTY -> {
