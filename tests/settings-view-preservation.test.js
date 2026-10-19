@@ -13,7 +13,7 @@ const end=html.indexOf('function titleBlock(',start);
 assert.ok(start>0&&end>start,'settings rerender preservation code missing');
 const code=html.slice(start,end);
 const settingsHTML=html.slice(html.indexOf('function renderSettings(shift)'),html.indexOf('function download(',html.indexOf('function renderSettings(shift)')));
-const panelCount=(settingsHTML.match(/<details class="details settings-advanced"/g)||[]).length + 2;
+const panelCount=(settingsHTML.match(/<details class="details settings-advanced"/g)||[]).length + 4; // two nested field menus and GPS/address folds
 assert.ok(panelCount>=10,'all independent Settings sections should be represented in the stand-in');
 const windowMock={
  location:{protocol:'https:'},scrollX:0,scrollY:0,
@@ -23,7 +23,7 @@ let panels=[];
 const appEl={
  querySelector(selector){return null;},
  querySelectorAll(selector){
-  if(selector==='details.settings-advanced,details[data-gps-settings],details[data-address-settings]')return panels;
+  if(selector==='details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-gps-settings],details[data-address-settings]')return panels;
   if(selector==='[data-operation-panel]')return [];
   return [];
  },
