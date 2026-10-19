@@ -43,7 +43,7 @@
   // v0.3.10 native helper supports keyless read from the fixed trusted origin.
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),4500);
   try{
-   const nativeEmbedded=typeof navigator!=='undefined' && /TAXIAPPIntegrated\\/1/.test(navigator.userAgent||'');
+   const nativeEmbedded=typeof navigator!=='undefined' && (navigator.userAgent||'').includes('TAXIAPPIntegrated/1');
    const target=nativeEmbedded?'/TAXIAPP/native-gps':endpoint;
    const resp=await fetcher(target,{headers:!nativeEmbedded&&key?{'X-GPS-Test-Key':key}:{},cache:'no-store',signal:controller.signal});
    if(!resp.ok)throw Error('GPS通信エラー HTTP '+resp.status);
