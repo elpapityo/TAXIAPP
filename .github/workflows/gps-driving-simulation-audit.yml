@@ -25,7 +25,7 @@ jobs:
       - name: Run real Kotlin GPS accumulation replay tests
         run: |
           cd android-prototype
-          gradle --no-daemon :core:test --tests jp.taxiapp.gps.FieldDrivingSimulationTest --info
+          gradle --no-daemon :core:test
       - name: Upload exact test report
         if: always()
         uses: actions/upload-artifact@v4
