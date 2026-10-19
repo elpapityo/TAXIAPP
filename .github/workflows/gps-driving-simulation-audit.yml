@@ -26,6 +26,27 @@ jobs:
         run: |
           cd android-prototype
           gradle --no-daemon :core:test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Browser session and GPS native bridge regression
+        run: node tests/gps-distance-lab.test.js
+      - name: Install Android SDK 35
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Build complete Android APK, no release
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          cd android-prototype
+          gradle --no-daemon :app:assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Upload exact test report
         if: always()
         uses: actions/upload-artifact@v4
