@@ -15,6 +15,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
@@ -28,7 +29,18 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private val requestLocation = 734
     private lateinit var distance: TextView
+    private lateinit var rawTotal: TextView
     private lateinit var status: TextView
+    private lateinit var modeLabel: TextView
+    private lateinit var simSpeedLabel: TextView
+    private lateinit var meterPanel: LinearLayout
+    private lateinit var zeroButton: Button
+    private lateinit var simulationToggle: Button
+    private lateinit var simulationPanel: LinearLayout
+    private lateinit var detailToggle: Button
+    private lateinit var detailPanel: LinearLayout
+    private var simulationExpanded = false
+    private var detailExpanded = false
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
     private lateinit var simButton: Button
@@ -73,21 +85,56 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.3.1 · ボタン操作改善版", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS DISTANCE LAB · v1.3.1 · 実GPS／模擬テスト", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n日報距離連携テスト", 29f), 3)
-        add(label("【テスト専用】車を動かさずに模擬走行できます。実GPSと模擬走行は同時に実行しません。0km登録・区間距離・補正は外部Chromeで操作します。", 13f, 0xFFFFD68A.toInt()), 8)
-        val meter = LinearLayout(this).apply {
+        add(label("通常は実GPS測定を使用します。模擬走行は下の折り畳み欄から操作してください。日報の距離基準・手入力補正はHTML側で別に管理します。", 13f, 0xFFC1D9E5.toInt()), 8)
+        meterPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = rounded(0xFF152A3F.toInt(), 0xFF3C6478.toInt())
             setPadding((13*dp).toInt(), (14*dp).toInt(), (13*dp).toInt(), (14*dp).toInt())
         }
-        meter.addView(label("GPS内部累計（Webの0km補正前）", 12f, 0xFFC1D9E5.toInt()))
+        modeLabel = label("○ 実GPSモード", 17f, 0xFF63EAD2.toInt())
+        modeLabel.setTypeface(null, Typeface.BOLD)
+        meterPanel.addView(modeLabel)
+        simSpeedLabel = label("設定速度：0 km/h（模擬）", 21f, 0xFFFFD68A.toInt())
+        simSpeedLabel.setTypeface(null, Typeface.BOLD)
+        meterPanel.addView(simSpeedLabel)
+        meterPanel.addView(label("この乗務の走行距離（画面表示）", 12f, 0xFFC1D9E5.toInt()))
         distance = label("0.000 km", 35f, 0xFF63EAD2.toInt())
         distance.setTypeface(null, Typeface.BOLD)
-        meter.addView(distance)
+        meterPanel.addView(distance)
+        rawTotal = label("GPS内部累計：0.000 km（HTML連携用・変更なし）", 12f, 0xFFC1D9E5.toInt())
+        meterPanel.addView(rawTotal)
         status = label("GPS受信状態を確認しています", 14f)
-        meter.addView(status)
-        add(meter, 17)
+        meterPanel.addView(status)
+        add(meterPanel, 17)
+        zeroButton = button("◎ この地点を0.000 kmに設定（画面表示のみ）", 0xFF247E78.toInt(), Color.WHITE)
+        zeroButton.setOnClickListener {
+            val snapshot = GpsStore.load(this)
+            val runId = GpsStore.currentRunId(this)
+            val fixAt = GpsStore.lastValidGpsFixAt(this)
+            if(!snapshot.running || runId.isBlank()) {
+                Toast.makeText(this, "先にGPS測定を開始してください。", Toast.LENGTH_LONG).show()
+            } else if(fixAt <= 0L || System.currentTimeMillis() - fixAt > 15000L) {
+                Toast.makeText(this, "新しい有効GPS地点を取得してから0kmを登録してください。", Toast.LENGTH_LONG).show()
+            } else {
+                val baselineKm = snapshot.tripKm
+                AlertDialog.Builder(this)
+                    .setTitle("この地点を0.000 kmにしますか？")
+                    .setMessage("アプリの大きな距離表示だけを0kmにします。内部累計・HTML日報の距離基準・手入力補正は変更しません。")
+                    .setNegativeButton("キャンセル", null)
+                    .setPositiveButton("0kmに設定") { _, _ ->
+                        if(GpsStore.load(this).running &&
+                           GpsStore.setDisplayZero(this, runId, baselineKm)) {
+                            updateStatus()
+                            Toast.makeText(this, "この地点を表示上の0kmに設定しました。", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "計測が切り替わりました。もう一度確認してください。", Toast.LENGTH_LONG).show()
+                        }
+                    }.show()
+            }
+        }
+        add(zeroButton, 12)
         startButton = button("▶ 実GPS測定を開始", 0xFF63EAD2.toInt(), 0xFF091827.toInt())
         startButton.setOnClickListener {
             if(GpsStore.load(this).running){
@@ -95,6 +142,24 @@ class MainActivity : Activity() {
             } else startGps(simulation=false)
         }
         add(startButton, 15)
+        simulationToggle = button("▶ 模擬走行テスト（閉じる／開く）", 0xFF6B5126.toInt(), Color.WHITE)
+        simulationToggle.setOnClickListener {
+            simulationExpanded = !simulationExpanded
+            simulationPanel.visibility = if(simulationExpanded) View.VISIBLE else View.GONE
+            updateStatus()
+        }
+        add(simulationToggle, 14)
+        simulationPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(0xFF322817.toInt(), 0xFF9D7939.toInt())
+            setPadding((10*dp).toInt(), (10*dp).toInt(), (10*dp).toInt(), (12*dp).toInt())
+            visibility = View.GONE
+        }
+        fun addSim(v: android.view.View, topDp: Int) {
+            simulationPanel.addView(v, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = (topDp*dp).toInt()
+            })
+        }
         simButton = button("▶ 模擬走行を開始（または速度ボタンを押す）", 0xFFFFD68A.toInt(), 0xFF091827.toInt())
         simButton.setOnClickListener {
             if(GpsStore.load(this).running) {
@@ -104,8 +169,9 @@ class MainActivity : Activity() {
                     Toast.LENGTH_LONG).show()
             } else startGps(simulation=true)
         }
-        add(simButton, 10)
-        add(label("速度ボタンはそのまま押せます。模擬0km/hで開始 → Chromeで0km登録 → 模擬20/40/60/100km/h。模擬テストの開始に位置情報の許可は不要です。",12f,0xFFFFD68A.toInt()),9)
+        // Show speed buttons first when the test panel is expanded. On narrow
+        // phones the previous help text and start button pushed all speeds
+        // beneath the visible screen immediately after opening the panel.
         for (pair in listOf(listOf(0,20),listOf(40,60),listOf(100))) {
             val line=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
             for (speed in pair) {
@@ -131,14 +197,34 @@ class MainActivity : Activity() {
                     marginEnd=(5*dp).toInt()
                 })
             }
-            add(line,7)
+            addSim(line,7)
         }
+        addSim(simButton, 10)
+        addSim(label("模擬速度は画面上部にも表示します。模擬0km/hで開始して画面の0km登録後、20/40/60/100km/hへ変更できます。模擬テストに位置情報の許可は不要です。",12f,0xFFFFD68A.toInt()),9)
+        add(simulationPanel, 7)
         stopButton = button("■ GPS測定を停止", 0xFF1A3749.toInt(), Color.WHITE)
         stopButton.setOnClickListener {
             startService(Intent(this, GpsTrackingService::class.java).setAction(GpsTrackingService.ACTION_STOP))
             handler.postDelayed({ updateStatus() }, 500)
         }
         add(stopButton, 10)
+        detailToggle = button("▶ 詳細・テスト用ツール", 0xFF24384E.toInt(), Color.WHITE)
+        detailToggle.setOnClickListener {
+            detailExpanded = !detailExpanded
+            detailPanel.visibility = if(detailExpanded) View.VISIBLE else View.GONE
+            detailToggle.text = if(detailExpanded) "▼ 詳細・テスト用ツールを閉じる"
+                                else "▶ 詳細・テスト用ツール"
+        }
+        add(detailToggle, 19)
+        detailPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        fun addDetail(v: android.view.View, topDp: Int) {
+            detailPanel.addView(v, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = (topDp*dp).toInt()
+            })
+        }
         val openWeb = button("↗ 外部ブラウザで距離テストを開く", 0xFF88C6FF.toInt(), 0xFF0A1D2D.toInt())
         openWeb.setOnClickListener {
             if(!GpsStore.load(this).running) {
@@ -147,8 +233,9 @@ class MainActivity : Activity() {
                 openVerifiedExternalBrowser()
             }
         }
-        add(openWeb, 23)
-        add(label("手順：① 模擬0km/hを押すだけで開始 → ② 外部Chromeで0km登録 → ③ アプリに戻り模擬20/40/60/100km/h → ④ Chromeへ戻ってGPS取得。模擬中は同じブラウザタブに反映されます。\n\n本番GPSと記録は別アプリ・別ポートです。実走データには使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 12)
+        addDetail(openWeb, 8)
+        addDetail(label("これは単体検証用です。普段の日報入力は公開済みのGPS統合試験ページから行えます。\n\n模擬GPSは本番の日報に使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 10)
+        add(detailPanel, 4)
         val scroll=ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
@@ -176,7 +263,7 @@ class MainActivity : Activity() {
                     val result=JSONObject(reply)
                     verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
                         result.optString("packageId")==applicationContext.packageName &&
-                        result.optString("webVersion")=="1.3.0"
+                        result.optString("webVersion")=="1.3.1"
                     if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
                 }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
             }catch(e:Exception){
@@ -230,30 +317,53 @@ class MainActivity : Activity() {
         if (!::distance.isInitialized) return
         val s = GpsStore.load(this)
         val fixAt = GpsStore.lastValidGpsFixAt(this)
-        val age = if (fixAt <= 0L) -1L else (System.currentTimeMillis() - fixAt).coerceAtLeast(0L)/1000L
-        distance.text = String.format(Locale.JAPAN, "%.3f km", s.tripKm)
-        val sim=GpsStore.isSimulating(this)
-        val speed=GpsStore.simSpeedKmh(this)
+        val age = if (fixAt <= 0L) -1L else
+            (System.currentTimeMillis() - fixAt).coerceAtLeast(0L)/1000L
+        val sim = s.running && GpsStore.isSimulating(this)
+        val speed = GpsStore.simSpeedKmh(this)
+        val displayedKm = GpsStore.displayDistanceKm(this, s.tripKm)
+        distance.text = String.format(Locale.JAPAN, "%.3f km", displayedKm ?: s.tripKm)
+        rawTotal.text = String.format(Locale.JAPAN,
+            "GPS内部累計：%.3f km（HTML連携用・変更なし）", s.tripKm)
+        modeLabel.text = when {
+            sim -> "◆ 模擬走行・テスト中"
+            s.running -> "● 実GPS測定中"
+            else -> "○ GPS計測停止中"
+        }
+        modeLabel.setTextColor(if(sim) 0xFFFFC46C.toInt() else 0xFF63EAD2.toInt())
+        meterPanel.background = if(sim)
+            rounded(0xFF322817.toInt(), 0xFFDDAA58.toInt())
+        else rounded(0xFF152A3F.toInt(), 0xFF3C6478.toInt())
+        simSpeedLabel.visibility = if(sim) View.VISIBLE else View.GONE
+        simSpeedLabel.text = "設定速度：$speed km/h（架空の走行）"
+        distance.setTextColor(if(sim) 0xFFFFD68A.toInt() else 0xFF63EAD2.toInt())
+        zeroButton.isEnabled = s.running
         status.text = when {
             !s.running -> "■ 停止中：実GPSまたは模擬走行を選んでください"
-            sim -> "● 【模擬走行】 ${speed}km/h ／ 架空の位置データ"
+            sim -> "【模擬GPS】実際の走行距離ではありません"
             age < 0 -> "● GPS測位待ち：屋外で受信してください"
             age > 15 -> "⚠ GPSの有効受信が " + age + " 秒前"
             else -> "● GPS計測中 ／ 有効GPS " + age + " 秒前"
-        } + "\n欠測 " + s.gapCount + " 回" +
+        } + "\n" +
+            (if(displayedKm == null) "表示0km基準：未設定" else "表示0km基準：設定済み") +
+            " ／ 欠測 " + s.gapCount + " 回" +
             (if(s.unresolvedGap) " ／ ⚠ 車両トリップとの補正推奨" else "")
-        startButton.text = "▶ 実GPS測定を開始"
-        // Keep the controls tappable and explain conflicts rather than
-        // silently disabling them. Tapping any speed while stopped starts sim.
-        startButton.isEnabled=true
-        simButton.isEnabled=true
-        for((v,b) in speedButtons){
+        simulationToggle.text = (if(simulationExpanded) "▼ " else "▶ ") +
+            (if(sim) "模擬走行テスト（設定 $speed km/h）"
+             else "模擬走行テスト（使用時のみ開く）")
+        startButton.isEnabled = true
+        simButton.isEnabled = true
+        for ((v,b) in speedButtons) {
             b.isEnabled=true
-            b.text=if(sim&&v==speed)"● 模擬 ${v}km/h" else "模擬 ${v}km/h"
+            b.text = if(sim && v == speed) "● 模擬 $v km/h" else "模擬 $v km/h"
+            b.background = rounded(
+                if(sim && v == speed) 0xFFA77828.toInt() else 0xFF24384E.toInt(),
+                if(sim && v == speed) 0xFFFFD68A.toInt() else 0xFF48677A.toInt()
+            )
         }
         val webIssue = GpsStore.browserConnectionIssue(this)
         if(s.running && webIssue.isNotEmpty()) status.text = status.text.toString() +
-            "\n⚠ 外部ブラウザ接続："+webIssue
+            "\n⚠ 外部ブラウザ接続：" + webIssue
         stopButton.isEnabled = s.running
     }
 

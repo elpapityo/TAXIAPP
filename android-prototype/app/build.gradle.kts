@@ -9,8 +9,8 @@ android {
         applicationId = "jp.taxiapp.gpsprototype.distancelabv131"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.3.1-100kmh-diary-preview"
+        versionCode = 2
+        versionName = "1.3.2-ui-test"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
