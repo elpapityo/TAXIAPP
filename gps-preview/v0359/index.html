@@ -2398,7 +2398,7 @@ function refreshDraftGpsFields(shiftId,recordId){
  for(const key of ['AL','AM','F','L','S','V','AB','AE']){
   const value=String(draft.raw?.[key]??'');
   appEl.querySelectorAll('[data-col="'+key+'"]').forEach(input=>{
-   if(document.activeElement!==input&&String(input.value)!==value)input.value=value;
+   if(document.activeElement!==input&&String(input.value)!==value)input.value=KM_KEYS.has(key)?kmOne(value):value;
   });
  }
 }
@@ -2421,7 +2421,7 @@ function fillNativeDistanceSilently(shift,record,col,waiting=false){
     String(waiting?target.odometer??'':target.raw?.[col]??'').trim()!=='')return false;
   const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,id);
   if(!base)return false;
-  const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(3);
+  const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(1);
   const timestamp=new Date(data.capturedAt).toISOString();
   if(waiting){
    target.odometer=value;target.gpsAutoOdometer={km:value,at:timestamp,source:'native-auto'};
@@ -2573,7 +2573,7 @@ function handleAction(action,id){
    const activeInput=appEl.querySelector(target);
    if(!activeInput||String(activeInput.value)!==before)return;
    const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,shiftId);
-   const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(3);
+   const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(1);
    if(waiting){current.waiting.odometer=value;current.waiting.gpsAutoOdometer={km:value,at:new Date().toISOString(),source:'native'};}
    else {current.endingOdo=value;current.gpsAutoEndingOdo={km:value,at:new Date().toISOString(),source:'native'};}
    current.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
@@ -2597,7 +2597,7 @@ function handleAction(action,id){
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const base=bridge.baseline(localStorage,shiftId);
    if(!base)throw Error('出庫時のAndroid GPS基準が未登録です。「出庫・入庫」→「GPS基準の再設定」から現在の車両トリップ実測値を登録してください。途中の距離を0kmとみなして入力しません');
-   const km=bridge.calculated(data.tripKm,base,data.runId).toFixed(3);
+   const km=bridge.calculated(data.tripKm,base,data.runId).toFixed(1);
    active.draft.raw[id]=km;
    active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
@@ -2907,6 +2907,9 @@ function rebaseNativeTripAfterManual(shift,value,stillCurrent){
  }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
+ if(e.type==='change'&&target.matches?.('input[data-number-kind="distance"]')&&String(target.value).trim()!==''){
+  const rounded=kmOne(target.value);if(rounded!=='')target.value=rounded;
+ }
  if(target.matches?.('[data-native-auto-distance]')){
   if(e.type!=='change')return;
   try{localStorage.setItem(NATIVE_AUTO_DISTANCE_PREF,target.value==='on'?'on':'off');}catch{return;}
@@ -3301,7 +3304,18 @@ async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toas
  model.shifts.push(...addition);
  model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  upgradeWaitingHistory();await save();historyDate='';historyShiftId='';tab='history';render();toast(`${addition.length}乗務を追加しました。既存データは維持しました。`);}
-appEl.addEventListener('click',event=>{const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
+appEl.addEventListener('click',event=>{
+ const step=event.target.closest('[data-km-step]');
+ if(step){event.preventDefault();const input=step.parentElement?.querySelector('input[data-number-kind="distance"]');
+  if(!input||input.disabled||input.readOnly)return;
+  const delta=Number(step.dataset.kmStep);
+  if(![-1,1].includes(delta))return;
+  const next=kmStep(input.value,delta);if(next===null)return;
+  if(keypadActive)closeKeypad(false,true);
+  input.value=next;input.dispatchEvent(new Event('input',{bubbles:true}));
+  input.dispatchEvent(new Event('change',{bubbles:true}));return;
+ }
+ const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
