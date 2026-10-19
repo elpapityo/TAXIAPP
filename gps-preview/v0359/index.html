@@ -2983,9 +2983,10 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
   if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
  }if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
-  if(nativeDiaryGpsEnabled()){
-   // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
+  if(nativeAutoDistanceEnabled()){
+   // Manual trip remains authoritative; rebase future GPS increments silently.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
+   s.externalGpsManualPending=true;
    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
     if(!canEditNow())return;
     const active=getShift();
@@ -2994,23 +2995,24 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue,data.runId);
     // A fresh GPS position plus vehicle-trip correction reconciles only gaps already observed.
     if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+    active.externalGpsManualPending=false;
     // A driver's corrected vehicle trip must immediately update this shift's remaining distance.
     active.externalGpsSnapshot={tripKm:Number(manualValue),rawGpsKm:data.tripKm,at:new Date().toISOString()};
     saveLater();
-    toast('GPS新基準を設定しました。以降は増加分を加算します。');
    }).catch(err=>{
     // Never overwrite a manually entered vehicle trip or pretend a GPS gap was measured.
     const active=getShift();
     if(active?.id===shiftId){active.externalGpsSnapshot=null;saveLater();updateElapsedTimer();}
-    toast('車両トリップの手入力は保存しました。GPS受信の復帰後、現在の車両トリップ値をもう一度入力して計測基準を合わせてください：'+err.message,true);
+    // Silent for manually entered values; keep auto-distance blocked if rebase fails.
    });
-  }else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
+  }else if(nativeDiaryGpsEnabled()){s.externalGpsManualPending=true;}
+   else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
  }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';
   if(applyUberDisplayedDefault(s.draft,s.settings)){
    const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
    if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
   }
- }if(e.type==='change'&&target.value&&gpsTripUI?.trusted(s)&&!s.draft.editId){
+ }if(e.type==='change'&&target.value&&!nativeDiaryGpsEnabled()&&gpsTripUI?.trusted(s)&&!s.draft.editId){
   const paired={R:'S',U:'V',AA:'AB',AD:'AE'}[col];
   if(paired&&gpsTripUI?.fillDistance(s,s.draft,paired,'timeChange:'+col)){
    const distanceInput=appEl.querySelector('[data-col="'+paired+'"]');
