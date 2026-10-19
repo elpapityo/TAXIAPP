@@ -2133,6 +2133,10 @@ function jumpFromDutyPanel(key){
   setUiOption('driveLayout','detail');render();
  }
  let target=appEl.querySelector('#main-content '+selector);
+ if(!target&&draft&&displayPrefs().driveLayout==='compact'){
+  setUiOption('driveLayout','detail');render();
+  target=appEl.querySelector('#main-content '+selector);
+ }
  if(key==='highway'&&target){target.open=true;target=target.querySelector('summary')||target}
  if(!target)return;
  target.scrollIntoView({behavior:'smooth',block:'center'});
