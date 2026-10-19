@@ -684,6 +684,11 @@ html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active
 .preview-duty-summary:has(>.preview-duty-route:first-child){padding-top:10px}
 
 .break-page{padding:15px!important}.break-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}.break-dashboard>div{background:#edf3fa;border-radius:11px;padding:10px;min-width:0}.break-dashboard small{display:block;color:#60778b;font-size:12px}.break-dashboard strong{display:block;font-size:clamp(20px,5vw,27px);white-space:nowrap}.break-place-line{display:flex;gap:7px}.break-place-line input{min-width:0;flex:1}.break-actions{margin:16px 0}.break-actions .btn{min-height:55px}.break-list-title{display:flex;justify-content:space-between;align-items:center;gap:6px;border-top:1px solid #adc3d9;padding-top:13px}.break-table-scroll{overflow-x:auto}.break-table{width:100%;border-collapse:collapse;font-size:13px}.break-table td,.break-table th{padding:9px 5px;text-align:left;border-bottom:1px solid #a8bacc}.break-duration{text-align:right!important}
+/* Night mode: break time cards must remain legible against their own backgrounds. */
+html[data-ui-theme="night"] .break-dashboard>div{background:#263d56;color:#edf5ff}
+html[data-ui-theme="night"] .break-dashboard small{color:#c3d7eb}
+html[data-ui-theme="night"] .break-dashboard strong{color:#edf5ff;-webkit-text-fill-color:#edf5ff}
+
 
 /* v0.3.91: vertical-density refinement; button height is user-selectable. */
 html[data-ui-buttons="ultra"] .btn{padding:5px 9px;line-height:1.2}
