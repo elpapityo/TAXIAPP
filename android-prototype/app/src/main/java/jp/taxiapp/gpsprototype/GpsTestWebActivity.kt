@@ -42,7 +42,7 @@ class GpsTestWebActivity : Activity() {
     private var alive = true
     private val trustedHost = "elpapityo.github.io"
     private val testPath = "/TAXIAPP/gps-import-test.html"
-    private val scheme = "taxiappgpsv036"
+    private val scheme = "taxiappgpsaudit"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,7 +111,7 @@ class GpsTestWebActivity : Activity() {
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(root)
         if (savedInstanceState == null) {
-            web.loadUrl("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=036&embedded=1")
+            web.loadUrl("https://elpapityo.github.io/TAXIAPP/gps-import-test.html?v=040&embedded=1")
         } else {
             web.restoreState(savedInstanceState)
         }

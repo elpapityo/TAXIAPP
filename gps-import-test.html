@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TAXIAPP GPS距離・住所・時刻テスト</title>
+<title>TAXIAPP 距離管理テスト（キー不要）</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <style>
 :root{color-scheme:dark;font-family:system-ui,"Noto Sans JP",sans-serif;background:#061522;color:#f1f8ff}
@@ -37,8 +37,8 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 .footer{color:#adc6d8;font-size:12px}
 @media(max-width:350px){.row{padding:6px}.columns{grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:4px}input{font-size:17px;padding:5px}button[data-gps]{font-size:13px}.infoRow{grid-template-columns:1fr}}
 </style></head><body><main>
-<header><h1>🚕 GPS距離・住所・時間 テスト</h1>
-<div id="openAppNotice" class="notice"><strong>⚠ ChromeからGPS取得するとタブが増える場合があります。</strong> タブを増やさず測定するには、次のボタンからGPSアプリ内の専用テスト画面を開き、その画面でGPSを押してください。<a href="taxiappgpsv036://web" style="display:block;background:#176d82;color:#fff;text-align:center;text-decoration:none;border:1px solid #addfff;border-radius:9px;padding:12px;font-weight:bold;margin-top:8px;">GPSアプリ内でテストを開く（タブ増加防止）</a></div>
+<header><h1>🚕 距離管理テスト（キー不要）</h1>
+<div id="openAppNotice" class="notice"><strong>⚠ ChromeからGPS取得するとタブが増える場合があります。</strong> タブを増やさず測定するには、次のボタンからGPSアプリ内の専用テスト画面を開き、その画面でGPSを押してください。<a href="taxiappgpsaudit://web" style="display:block;background:#176d82;color:#fff;text-align:center;text-decoration:none;border:1px solid #addfff;border-radius:9px;padding:12px;font-weight:bold;margin-top:8px;">GPSアプリ内でテストを開く（タブ増加防止）</a></div>
 <div class="hint">スタート行でGPS基準を取得すると、その地点を画面上の<strong>0.000km</strong>にします。スタート→1→2→3…の順にGPSを押すと、スタートからのGPS累計と各GPSボタン間の区間距離を表示します。車両トリップを手入力すると、その値を次回からの加算基準にします。</div></header>
 <div class="panel"><div id="rows" aria-label="GPS距離テスト表"></div><button class="add" id="add" type="button">＋ 次の測定行を追加</button>
 <p class="hint">左：必要な時だけ車両メーターの累計を手入力／中央：GPS／右：補正距離。<strong>次の補正距離＝前の補正距離＋次のGPS区間距離</strong>。各行で手入力した値を新しい基準にして再計算します。</p>
@@ -55,7 +55,7 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 <button class="secondary" type="button" id="readPaste">コピーしたGPS累計を選択中の行へ取り込む</button>
 </details></div>
 <div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。GPS位置座標はブラウザへ渡しません。安全のため必ず停車中に操作してください。</div>
-</main><script src="gps-bridge-test.js?v=036"></script><script src="gps-test-rows.js?v=037"></script><script src="gps-segment-audit.js?v=1"></script><script>
+</main><script src="gps-bridge-test.js?v=040"></script><script src="gps-test-rows.js?v=037"></script><script src="gps-segment-audit.js?v=1"></script><script>
 'use strict';
 const B=window.TaxiGpsBridge, R=window.GpsTestRows, A=window.GpsSegmentAudit;
 const $=id=>document.getElementById(id),
