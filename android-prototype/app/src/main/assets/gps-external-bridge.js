@@ -1,7 +1,7 @@
 /* External browser GPS bridge: only 127.0.0.1, no tab or app switching. */
 (function(){
  'use strict';
- if(location.hostname!=='127.0.0.1'||location.port!=='48767')return;
+ if(location.hostname!=='127.0.0.1'||location.port!=='48768')return;
  var current={running:false,ageMs:null,gaps:0,accuracyMeters:null,unresolvedGap:false};
  var inFlight=false,MAX_WAIT=30000;
  var latestWaitMessage='GPS受信を待っています';

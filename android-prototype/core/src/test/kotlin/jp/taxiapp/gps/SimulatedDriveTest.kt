@@ -32,6 +32,27 @@ class SimulatedDriveTest {
         assertTrue(trip.snapshot().tripKm in 0.39..0.41)
         assertEquals(0,trip.snapshot().gapCount)
     }
+    @Test fun speed100GeneratesOneKmIn36SecondsThenStops() {
+        val source = SimulatedDrive()
+        val trip = TripAccumulator()
+        trip.start()
+        trip.ingest(source.point(100000L),100000L)
+        source.setSpeed(100)
+        for (i in 1..18) {
+            val t = 100000L + i * 2000L
+            trip.ingest(source.point(t),t)
+        }
+        assertTrue(source.generatedMeters() in 999.0..1001.0)
+        assertTrue(trip.snapshot().tripKm in 0.98..1.02)
+        assertEquals(0,trip.snapshot().gapCount)
+        source.setSpeed(0)
+        val stopDistance = trip.snapshot().tripKm
+        for (i in 19..25) {
+            val t = 100000L + i * 2000L
+            trip.ingest(source.point(t),t)
+        }
+        assertEquals(stopDistance,trip.snapshot().tripKm)
+    }
     @Test fun speed0StopsImmediatelyWithoutCountingGpsNoise() {
         val source=SimulatedDrive()
         val trip=TripAccumulator()

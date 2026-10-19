@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
-        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_DIARY_V1_3"
-        const val PORT = 48767
-        const val URL = "http://127.0.0.1:48767/"
+        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_DIARY_V1_3_1_100"
+        const val PORT = 48768
+        const val URL = "http://127.0.0.1:48768/"
     }
     private val active=AtomicBoolean(false)
     private var listeningSocket: ServerSocket?=null
@@ -76,7 +76,7 @@ class GpsLoopbackServer(private val context: Context) {
                     if(line.startsWith("Origin:",true))origin=line.substringAfter(":").trim()
                     if(line.startsWith("Access-Control-Request-Private-Network:",true))privateNetwork=line.substringAfter(":").trim().equals("true",true)
                 }
-                if(host!="127.0.0.1:48767"){
+                if(host!="127.0.0.1:48768"){
                     reply(s,403,"text/plain; charset=utf-8","Invalid Host");return
                 }
                 // Only the user's deployed diary site can read native GPS from
@@ -105,7 +105,7 @@ class GpsLoopbackServer(private val context: Context) {
                     route=="/api/identity"->respond(200,"application/json; charset=utf-8",
                         JSONObject().put("marker",IDENTITY_MARKER)
                             .put("packageId",context.packageName)
-                            .put("webVersion","1.3.0")
+                            .put("webVersion","1.3.1")
                             .toString())
                     route=="/api/status"->respond(200,"application/json; charset=utf-8",status())
                     route.startsWith("/api/capture?")->{
@@ -138,6 +138,9 @@ class GpsLoopbackServer(private val context: Context) {
         val last=GpsStore.lastValidGpsFixAt(context)
         val age=if(last<=0L)null else(System.currentTimeMillis()-last).coerceAtLeast(0L)
         return JSONObject()
+            .put("marker",IDENTITY_MARKER)
+            .put("packageId",context.packageName)
+            .put("webVersion","1.3.1")
             .put("running",s.running)
             .put("runId",GpsStore.currentRunId(context))
             .put("tripKm",s.tripKm)
@@ -174,6 +177,9 @@ class GpsLoopbackServer(private val context: Context) {
                 .toString()
         }
         return res.put("snapshot",JSONObject()
+            .put("marker",IDENTITY_MARKER)
+            .put("packageId",context.packageName)
+            .put("webVersion","1.3.1")
             .put("format","GPS_DISTANCE_LAB_V1")
             .put("nonce",nonce)
             .put("target",target)
