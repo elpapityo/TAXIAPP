@@ -78,7 +78,7 @@ async function main(){
  assert.equal(B.gapAcknowledged(storage,'another-shift',3),false);
  await assert.rejects(B.read(storage,mockFetch({},403)),/HTTP 403/);
  const empty={getItem:()=>null};
- await assert.rejects(B.read(empty,mockFetch()),/未登録/);
- console.log('GPS network responses, security key, correction and shift isolation: PASS');
+ assert.equal((await B.read(empty,async()=>({ok:true,json:async()=>sample}))).tripKm,12.345);
+ console.log('GPS network responses, keyless connection, correction and shift isolation: PASS');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
