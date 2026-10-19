@@ -27,6 +27,21 @@
         error: r.error || '', at: r.at || null, place: typeof r.place === 'string' ? r.place : '' };
     });
   }
+  // Derive vehicle leg distances from cumulative hand-entered vehicle trip readings.
+  // Never treat a GPS-derived/display-only value as a vehicle meter reading.
+  function compareFromCumulative(derived) {
+    if (!derived || !Array.isArray(derived.rows)) throw Error('比較データが不正です');
+    let previous = km(derived.startKm), previousKnown = previous !== null;
+    const legs = derived.rows.map(r => {
+      const current = km(r.manualKm);
+      const delta = previousKnown && current !== null && current >= previous ?
+        Math.round((current - previous) * 1000) / 1000 : null;
+      previous = current;
+      previousKnown = current !== null;
+      return delta;
+    });
+    return compare(derived, legs);
+  }
   function csvCell(value) {
     let text = value === null || value === undefined ? '' : String(value);
     if (/^[\s]*[=+@\-]/.test(text)) text = "'" + text; // Excel formula protection
@@ -38,5 +53,5 @@
       r.differencePercent, r.at ? new Date(r.at).toISOString() : '', r.place]);
     return lines.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
-  return { km, compare, csv };
+  return { km, compare, compareFromCumulative, csv };
 });
