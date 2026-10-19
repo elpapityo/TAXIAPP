@@ -1,0 +1,52 @@
+name: TAXIAPP v0.3.60 production Chrome data preservation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'gps-diary-bridge.js'
+      - 'highway-sections.js'
+      - 'highway-report.js'
+      - 'tests/production_v0360_browser_e2e.py'
+      - '.github/workflows/production-v0360-browser.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'gps-diary-bridge.js'
+      - 'highway-sections.js'
+      - 'highway-report.js'
+      - 'tests/production_v0360_browser_e2e.py'
+permissions:
+  contents: read
+jobs:
+  chrome-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate strict GPS production identity and data compatibility
+        run: |
+          node tests/production-v0360-integration.test.js
+          node --check gps-diary-bridge.js
+          node --check highway-sections.js
+          node --check highway-report.js
+      - name: Install Selenium
+        run: python -m pip install --disable-pip-version-check 'selenium>=4.25,<5'
+      - name: Serve production locally
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/taxiapp-prod.log 2>&1 &
+          python3 - <<'PY'
+          import urllib.request,time
+          for attempt in range(25):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8765/',timeout=2)
+                  break
+              except Exception:time.sleep(1)
+          else:raise SystemExit('Server did not start')
+          PY
+      - name: Verify previous user shifts survive production reload
+        run: python3 tests/production_v0360_browser_e2e.py
