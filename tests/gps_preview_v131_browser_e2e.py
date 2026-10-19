@@ -36,6 +36,7 @@ try:
     # Create a production-style sentinel *on the same origin* before visiting the preview.
     js("localStorage.setItem('taxiapp-v1','DO_NOT_MODIFY_PRODUCTION_LOCAL')")
     js("localStorage.setItem('taxiapp-device-native-gps-v130','off')")
+    js("localStorage.setItem('taxiapp-device-native-gps-v131','off')")
     js("localStorage.setItem('taxiapp-preview-v0358-simulator-optin','OLD_PREVIEW_SENTINEL')")
     driver.execute_async_script("""
       const done=arguments[arguments.length-1],o=indexedDB.open('taxiapp-store-v1',1);

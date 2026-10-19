@@ -9,6 +9,7 @@ on:
       - 'tests/gps-distance-lab.test.js'
       - 'gps-preview/v0359/**'
       - 'tests/gps-preview-v131-isolation.test.js'
+      - 'tests/gps-preview-v131-identity.test.js'
       - '.github/workflows/android-gps-diary-v131.yml'
   workflow_dispatch:
 
@@ -38,6 +39,7 @@ jobs:
       - name: Verify isolated v0.3.59 diary preview and v1.3.1 identity
         run: |
           node tests/gps-preview-v131-isolation.test.js
+          node tests/gps-preview-v131-identity.test.js
           node tests/gps-diary-bridge.test.js
           node --check gps-preview/v0359/gps-diary-bridge.js
       - name: Prepare Android SDK 35
