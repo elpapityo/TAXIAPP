@@ -161,7 +161,7 @@ class GpsTrackingService : Service() {
         }
         val notifications = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notifications.createNotificationChannel(
-            NotificationChannel(CHANNEL, "TAXIAPP GPS試験計測", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(CHANNEL, "GPS距離ラボ 計測中", NotificationManager.IMPORTANCE_LOW)
         )
     }
 
@@ -262,7 +262,7 @@ class GpsTrackingService : Service() {
         val label = if (pendingAlight) "降車GPS確認中" else if (s.mode == TripMode.REAL) "実車" else "空車"
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle("TAXIAPP GPS試験版・" + label)
+            .setContentTitle("GPS距離ラボ・" + label)
             .setContentText(
                 String.format(Locale.JAPAN, "推定 %.1f km / 欠測 %d回", s.tripKm, s.gapCount)
             )
