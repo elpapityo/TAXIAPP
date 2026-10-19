@@ -37,7 +37,7 @@ jobs:
           const before=cp.execFileSync('git',['show','FETCH_HEAD:index.html'],{encoding:'utf8'});
           if(main===before){console.log('App HTML unchanged');process.exit(0);}
           const version=text=>{
-            const match=text.match(/<title>TAXIAPP v(\\d+)\\.(\\d+)\\.(\\d+) — 乗務日報<\\/title>/);
+            const match=text.match(/<title>TAXIAPP v(\d+)\.(\d+)\.(\d+) — 乗務日報<\/title>/);
             if(!match)throw new Error('TAXIAPP app version is missing');
             return match.slice(1).map(Number);
           };
