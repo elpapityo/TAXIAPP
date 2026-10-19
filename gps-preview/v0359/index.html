@@ -3426,7 +3426,7 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.matches('[data-plan-end]')){const active=getShift();if(active){active.plannedEndAt=event.target.value;saveLater();render();}return;}
 if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target.value)){setGoogleStatus('接続キーを保存しました。送信テストを行ってください');saveLater();}return;}
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
-if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-preview-simulator] ,[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-duty-plan]')){handleInput(event);}});
+if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-hwy-index],[data-preview-simulator] ,[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-duty-plan]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
 await load();if(upgradeWaitingHistory())await save();render();
  // No GPS watch or duty mutation until Firebase confirms the editing session.
