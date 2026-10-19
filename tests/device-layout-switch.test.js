@@ -23,20 +23,21 @@ vm.createContext(context);
 vm.runInContext(code,context);
 const chooser=()=>vm.runInContext('renderDriveLayoutChooser()',context);
 
-// The choice is visible on the ride screen, not just in collapsed Settings.
-const labels={full:'全画面',half:'半画面',phone:'スマホ',tablet:'タブレット',pc:'PC'};
+// The settings menu owns layout selection; the driving screen only references it.
 const initial=chooser();
-assert.match(initial,/表示サイズを選択/);
-assert.match(initial,/aria-label="端末の表示方式"/);
-for(const [mode,label] of Object.entries(labels)){
- assert.ok(initial.includes('data-ui-key="screenMode" data-ui-value="'+mode+'"'),mode+' must be clickable');
- assert.ok(initial.includes('>'+label+'</button>'),mode+' must be labeled');
+assert.match(initial,/入力方式・表示サイズ・画面の向きは「設定」から変更できます/);
+assert.doesNotMatch(initial,/data-ui-key="screenMode"/);
+assert.match(html,/<summary>営業入力の画面サイズ・向き<\/summary>/);
+assert.match(html,/renderUiChoice\('screenMode'/);
+const labels={full:'全画面',half:'半画面',phone:'スマホ',tablet:'タブレット',pc:'PC'};
+const choices=Object.entries(labels);
+const picker=()=>vm.runInContext('renderUiChoice("screenMode",'+JSON.stringify(choices)+')',context);
+for(const [mode,label] of choices){
+ assert.ok(picker().includes('data-ui-key="screenMode" data-ui-value="'+mode+'"'),mode+' must be selectable in Settings');
+ assert.ok(picker().includes('>'+label+'</button>'),mode+' must be labeled');
 }
-assert.match(initial,/class="btn active" data-ui-key="screenMode" data-ui-value="phone"[^>]*aria-pressed="true"/);
-assert.match(initial,/data-ui-key="driveLayout" data-ui-value="guided"/,
- 'four existing ride input modes must still be present');
-
-// Selecting a screen size uses existing saved UI preferences; business data is untouched.
+assert.match(picker(),/class="chip active" data-ui-key="screenMode" data-ui-value="phone"[^>]*aria-pressed="true"/);
+// Changing screen mode persists user UI preferences, not the business shifts.
 const preserved=JSON.stringify(model.shifts);
 vm.runInContext("setUiOption('screenMode','tablet')",context);
 assert.equal(model.prefs.ui.screenMode,'tablet');
@@ -44,14 +45,9 @@ assert.equal(model.prefs.ui.driveLayout,'guided');
 assert.equal(doc.documentElement.dataset.uiScreenMode,'tablet');
 assert.equal(JSON.stringify(model.shifts),preserved);
 assert.equal(saved,1);
-assert.match(chooser(),/class="btn active" data-ui-key="screenMode" data-ui-value="tablet"[^>]*aria-pressed="true"/);
+assert.match(picker(),/class="chip active" data-ui-key="screenMode" data-ui-value="tablet"[^>]*aria-pressed="true"/);
 vm.runInContext("setUiOption('screenMode','invalid')",context);
 assert.equal(model.prefs.ui.screenMode,'tablet');
 assert.equal(saved,1,'invalid choice must not persist');
-
-// Manual sizing wins over the newer full-width dashboard CSS.
-for(const mode of ['half','phone','tablet','pc']){
- assert.ok(html.includes('html[data-ui-screen-mode="'+mode+'"] #main-content'),'missing main-width rule for '+mode);
-}
-assert.match(html,/<summary>入力方式・スマホ／タブレット表示<\/summary>/);
-console.log('Visible manual device layout passed: options, active state, persistence, no business-data edits.');
+for(const mode of ['half','phone','tablet','pc'])assert.ok(html.includes('html[data-ui-screen-mode="'+mode+'"] #main-content'),'missing width rule '+mode);
+console.log('Settings-based device layout passed: options, active state, persistence, no business-data edits.');
