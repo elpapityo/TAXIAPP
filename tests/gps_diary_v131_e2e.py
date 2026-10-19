@@ -63,14 +63,22 @@ def tap_native_button(fragment):
                     if len(coords) == 4:
                         x = (coords[0] + coords[2]) // 2
                         y = (coords[1] + coords[3]) // 2
+                        if y > 2240 or y < 60:
+                            adb("shell", "input", "swipe", "530", "1980", "530", "1150", "350", timeout=30)
+                            time.sleep(1)
+                            break
                         adb("shell", "input", "tap", str(x), str(y), timeout=30)
                         note("Tapped real Android native button", button_text=text, x=x, y=y)
                         return
         except ET.ParseError:
             pass
-        # ScrollView hides speed buttons below the visible Android viewport.
-        adb("shell","input","swipe","500","1350","500","500","400",check=False)
-        time.sleep(2)
+        adb("shell", "input", "swipe", "530", "1980", "530", "1150", "350", timeout=30)
+        time.sleep(1)
+    note("Native button dump on failure",
+         requested=fragment,
+         xml=adb("shell","cat","/sdcard/gps-test-window.xml",check=False)[:14000],
+         active=adb("shell","dumpsys","activity","activities",check=False)[-4500:],
+         packages=adb("shell","pm","list","packages",APP,check=False))
     raise AssertionError(f"Could not locate native button after scrolling: {fragment}")
 
 def http(path, timeout=5):
