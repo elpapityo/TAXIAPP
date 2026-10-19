@@ -1246,7 +1246,7 @@ function renderNow(){
    appEl.appendChild(mirror);
   }
  }
- syncFloatingDutySummary();
+ if(typeof syncFloatingDutySummary==='function')syncFloatingDutySummary();
  lastRenderedTab=tab;
  if(highwayWasOpen){
   const highway=appEl.querySelector('[data-highway-fold]');
@@ -2089,7 +2089,7 @@ function updateElapsedTimer(){
  const display=appEl.querySelector('[data-wait-elapsed]');
  if(display&&w&&!active?.draft)display.textContent=elapsedWaitingText(w);
  // Refresh the pinned summary without redrawing a partially edited fare form.
- if(active&&tab==='drive'&&appEl.querySelector('#main-content .preview-duty-summary')){
+ if(active&&tab==='drive'&&appEl.querySelector('.preview-duty-summary')){
   const summary=appEl.querySelector('.preview-duty-summary'),draft=active.draft,raw=draft?.raw||{};
   const mins=Math.max(0,Math.floor((now.getTime()-Date.parse(active.startedIso||''))/60000));
   const elapsed=Number.isFinite(mins)?String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'):'--:--';
@@ -2106,7 +2106,7 @@ function updateElapsedTimer(){
    if(el.textContent!==text)el.textContent=text;
   }
  }
- syncFloatingDutySummary();
+ if(typeof syncFloatingDutySummary==='function')syncFloatingDutySummary();
  const pay=appEl.querySelector('[data-last-payment-elapsed]');
  if(pay&&active){
   const current=window.TAXIAPP_ALIGHT_CLOCK.reference(active,now);
