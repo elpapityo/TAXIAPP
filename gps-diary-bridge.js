@@ -1,5 +1,5 @@
 /* Native Android GPS -> production browser diary. Read-only loopback GPS snapshot: no direct shift writes.
- * Strictly no write to daily records here. Native simulated driving is rejected.
+ * Strictly no write to daily records here. Simulated input is flagged to the caller.
  * Auto correction basis lives in this browser, keyed by the actual shift ID.
  */
 (function(root,factory){
@@ -97,8 +97,6 @@
    }
    if(!correctIdentity(state,endpoint))throw Error('GPS距離ラボのアプリ識別情報が接続先と一致しません。48769（v1.4.0）または48768（v1.3.1）を確認してください');
    if(state.running!==true)throw Error('GPSアプリの計測が停止しています');
-   if(state.simulated===true)
-      throw Error('模擬GPSは営業日報に入力できません。アプリで実GPS測定を開始してください');
    if(typeof state.runId!=='string'||!state.runId)
       throw Error('GPS計測の識別番号がありません');
    const n=nonce();
@@ -112,8 +110,6 @@
           !Number.isFinite(x.capturedAt)||
           !Number.isFinite(x.gpsAgeMs)||x.gpsAgeMs<0||x.gpsAgeMs>15000)
          throw Error('GPS応答の内容が不正または古いです');
-       if(x.simulated===true)
-         throw Error('模擬GPSの距離を日報へ転記できません');
        const gaps=Number.isInteger(state.gaps)?state.gaps:0;
        if(x.unresolvedGap===true&&!options.allowUnresolvedGap&&
           !gapAcknowledged(storage,options.shiftId,gaps))
