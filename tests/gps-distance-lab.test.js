@@ -132,7 +132,8 @@ const v2=derive(state);
 assert.equal(v2[1].finalKm,12);
 assert.equal(v2[2].finalKm,13.5);
 state.rows[1].gps=null;
-assert.equal(derive(state)[2].finalKm,null,'must not bridge an unknown GPS segment');
+assert.equal(derive(state)[2].finalKm,13.5,'later raw GPS cumulative is still usable after a missing checkpoint');
+assert.match(derive(state)[2].error,/未取得地点を含むGPS差分/,'cross-gap distance must be explicitly labelled, not silently attributed');
 assert.ok(!/location\.href\s*=|window\.open\s*\(|taxiappgpsaudit:\/\/measure/.test(source),
  'GPS collection must not open an external browser');
 
