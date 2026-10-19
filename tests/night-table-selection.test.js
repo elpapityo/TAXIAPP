@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const html=fs.readFileSync('index.html','utf8');
+assert.match(html,/<title>TAXIAPP v0\.3\.53 — 乗務日報<\/title>/);
+assert.match(html,/html\[data-ui-theme="night"\] \.data-table tbody tr:hover,/);
+assert.match(html,/background:#294a68!important;color:#f5fbff!important/);
+assert.match(html,/html\[data-ui-theme="night"\] \.data-table tbody tr:hover > td,/);
+assert.match(html,/html\[data-ui-theme="night"\] \.data-table tbody tr:focus-within/);
+assert.match(html,/html\[data-ui-theme="night"\] \.data-table tbody tr:active/);
+console.log('Night-theme table hover/selection contrast regression passed');
