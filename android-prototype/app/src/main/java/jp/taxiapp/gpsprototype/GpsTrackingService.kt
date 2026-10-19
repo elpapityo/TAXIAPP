@@ -312,7 +312,7 @@ class GpsTrackingService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_START, ACTION_SIM_START -> {
-                if (!hasPreciseLocation()) {
+                if (intent.action == ACTION_START && !hasPreciseLocation()) {
                     engine.interrupted("位置情報の正確な許可が必要です")
                     engine.stop()
                     GpsStore.save(this, engine.snapshot())
@@ -329,15 +329,18 @@ class GpsTrackingService : Service() {
                     if (Build.VERSION.SDK_INT >= 29) {
                         startForeground(
                             NOTIFICATION_ID, notification(),
-                            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                            if(simulation) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                            else ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
                         )
                     } else {
                         startForeground(NOTIFICATION_ID, notification())
                     }
                     if (simulation) {
                         simulating=true
-                        simulatedDrive=SimulatedDrive()
-                        GpsStore.setSimulation(this,true,0)
+                        simulatedDrive=SimulatedDrive().also{
+                            it.setSpeed(intent.getIntExtra(EXTRA_SIM_SPEED,0).takeIf{v->v in setOf(0,20,40,60)} ?: 0)
+                        }
+                        GpsStore.setSimulation(this,true,simulatedDrive?.speedKmh ?: 0)
                         mainHandler.post(simTicker)
                     } else {
                         stopSimulation()
@@ -350,7 +353,7 @@ class GpsTrackingService : Service() {
                         // A port conflict is not a GPS-location gap. Preserve
                         // actual distance integrity and show a separate warning.
                         loopback=null
-                        GpsStore.setBrowserConnectionIssue(this,"旧アプリがポート48764を使用中の可能性があります。旧版のGPS測定を停止してください。")
+                        GpsStore.setBrowserConnectionIssue(this,"模擬テスト用ポート48766が使用中です。古い模擬走行アプリを停止してください。")
                     }
                 }
             }

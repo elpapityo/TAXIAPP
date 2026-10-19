@@ -1,0 +1,59 @@
+name: GPS v1.2.1 Simulator Buttons Android to Chrome E2E
+on:
+  push:
+    branches:
+      - fix/gps-simulator-buttons-v121-20261019
+    paths:
+      - 'tests/gps_simulator_v121_e2e.py'
+      - '.github/workflows/gps-simulator-v121-e2e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emulator-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable emulator KVM
+        run: |
+          if test -e /dev/kvm; then sudo chmod 666 /dev/kvm; fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Python/Selenium
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check 'selenium>=4.25,<5'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build APK and core simulation tests
+        run: |
+          cd android-prototype
+          gradle --no-daemon :core:test :app:assembleDebug
+      - name: Actual APK synthetic GPS through HTTP to external Chrome
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 2048M
+          heap-size: 512M
+          disk-size: 4096M
+          emulator-boot-timeout: 700
+          disable-animations: true
+          script: |
+            .venv/bin/python tests/gps_simulator_v121_e2e.py
+      - name: Upload browser and GPS evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gps-v121-simulator-e2e-results
+          path: gps-e2e-evidence/
+          retention-days: 21
