@@ -10,7 +10,7 @@ on:
       - 'gps-preview/v0359/**'
       - 'tests/gps-preview-v131-isolation.test.js'
       - 'tests/gps-preview-v131-identity.test.js'
-      - '.github/workflows/android-gps-diary-v131.yml'
+      - '.github/workflows/android-gps-v131-mode-ui-test.yml'
   workflow_dispatch:
 
 permissions:
