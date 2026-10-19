@@ -418,7 +418,7 @@ html[data-ui-theme="night"] .drive-layout-choice{background:#182a3f}
 <script src="./daily-reference.js?v=0.3.27"></script>
 <script src="./gps-trip.js?v=0.3.34"></script>
 <script src="./gps-trip-ui.js?v=0.3.35"></script>
-<script src="./gps-native-bridge.js?v=3"></script>
+<script src="./gps-native-bridge.js?v=4"></script>
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-report.js?v=0.3.36"></script>
 <script src="./bidirectional-sync.js?v=20261019-1"></script>
@@ -1114,7 +1114,7 @@ function field(key,raw,opts={}){const info=RAW_COLUMNS.find(x=>x[0]===key)||[key
  return `<div class="field time-field"><div class="time-field-header"><span class="field-label">${safeText(label)}${required}</span></div><div class="inline-time-field"><input class="control time-input" data-col="${key}" type="time" step="60" value="${value?safeText(shortTime(value)): ''}" aria-label="${safeText(label)}（手動修正可）"><button class="btn time-now inline-field-icon" data-time-now="${key}" type="button" aria-label="${safeText(label)}に現在時刻を入力" title="${safeText(label)}に現在時刻を入力">◷</button></div></div>`;
  }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${['F','L','S','V','AB','AE','X','Y','AJ','AK'].includes(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
- const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&(gpsTripUI?.active(getShift())||Boolean(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)))
+ const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&(gpsTripUI?.active(getShift())||Boolean(window.TAXIAPP_EXTERNAL_GPS))
   ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}にGPS距離を入力" title="GPS距離を入力">⌖</button>`:'';
  const labelText=`<span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>`;
  if(gpsButton)return `<div class="field">${labelText}<div class="inline-distance-field">${control}${gpsButton}</div></div>`;
@@ -2001,7 +2001,7 @@ function handleAction(action,id){
   }).finally(()=>{gpsAlightPending=false;});
   return;
  }
- if(action==='gpsTripFill'&&window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
+ if(action==='gpsTripFill'&&window.TAXIAPP_EXTERNAL_GPS){
   const bridge=window.TAXIAPP_EXTERNAL_GPS;
   if(!shift?.draft||shift.draft.editId){toast('過去の営業履歴はGPSで自動変更しません。',true);return;}
   if(!['F','L','S','V','AB','AE'].includes(id))return;
@@ -2055,7 +2055,7 @@ function handleAction(action,id){
   const newRecord=newShift(when,model.prefs);
   newRecord.startingOdo=odometer;newRecord.endingOdo='';newRecord.distanceMode='trip'; 
    // Capture the actual departure GPS baseline now, before the first fare.
-   if(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
+   if(window.TAXIAPP_EXTERNAL_GPS){
     const departingId=newRecord.id,startedAt=newRecord.startedIso;
     window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
      if(!canEditNow())return;
@@ -2068,7 +2068,7 @@ function handleAction(action,id){
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
    }
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
-  const nativeGpsLinked=Boolean(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage));
+  const nativeGpsLinked=Boolean(window.TAXIAPP_EXTERNAL_GPS);
   const gpsOptIn=model.prefs.gpsTripAtStart!=='off';
   save();
   // When native GPS is paired, don't start the older browser GPS tracker in parallel.
@@ -2339,7 +2339,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   saveLater();return;
  }
  if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&!s.draft.editId){
-  if(window.TAXIAPP_EXTERNAL_GPS?.readKey(localStorage)){
+  if(window.TAXIAPP_EXTERNAL_GPS){
    // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
