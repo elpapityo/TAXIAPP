@@ -5,7 +5,7 @@ const start=src.indexOf('const CRUISING_SUMMARY_FIELDS='),end=src.indexOf('funct
 assert.ok(start>0&&end>start);
 const model={prefs:{}},ctx={model,number:v=>v==null||v===''?null:Number(v),
  safeText:String,money:n=>'¥'+n,driverDutyPlan:()=>({distanceKm:275}),
- dutyRemaining:()=>({minutes:75,distanceKm:125}),
+ dutyRemaining:()=>({minutes:75,distanceKm:125}),cruisingUnitMetrics:()=>({kmUnit:100,hourUnit:200,rideUnit:400,distanceProjection:6000}),
  totals:()=>({meter:3200}),
  currentDutySummary:()=>({state:'空車・流し',from:'未記録',to:'未記録',dispatch:false,waiting:false}),
  dutyUiState:()=> '空車・流し'};
@@ -15,10 +15,14 @@ ctx.shift=shift;
 const render=()=>vm.runInContext('renderDutyStatus(shift)',ctx);
 let first=render();
 for(const label of ['現在の営業状態','現在の売上','残り時間','基準距離の残り','乗車地','降車地'])assert.ok(first.includes(label),label);
-model.prefs.cruisingSummaryFields={state:false,sales:false,remaining:false,distance:false,route:false};
+assert.doesNotMatch(first,/税抜売上/);
+model.prefs.cruisingSummaryFields={netSales:true};
+assert.match(render(),/税抜売上（10%換算）/);
+assert.match(render(),/¥2909/);
+model.prefs.cruisingSummaryFields={state:false,sales:false,remaining:false,distance:false,netSales:false,kmUnit:false,distanceProjection:false,hourUnit:false,rideUnit:false,route:false};
 const cleared=render();
 for(const label of ['現在の営業状態','現在の売上','残り時間','基準距離の残り','乗車地','降車地'])assert.ok(!cleared.includes(label),'should hide '+label);
-model.prefs.cruisingSummaryFields={state:true,sales:false,remaining:false,distance:false,route:true};
+model.prefs.cruisingSummaryFields={state:true,sales:false,netSales:false,kmUnit:false,distanceProjection:false,hourUnit:false,rideUnit:false,remaining:false,distance:false,route:true};
 const selective=render();
 assert.match(selective,/現在の営業状態/);
 assert.match(selective,/乗車地/);
