@@ -13,6 +13,9 @@ assert.match(script,/appEl\.classList\?\.toggle\('drive-compact'/);
 assert.match(source,/\.drive-compact \.hero \.action-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
 assert.match(source,/\.drive-compact \.wait-inputs/);
 assert.match(script,/renderDriveLayoutChooser\(\)/);
+assert.match(script,/function renderDutyStatus\(shift\)/);
+assert.match(script,/renderDutyStatus\(active\)/);
+assert.match(script,/renderUiChoice\('screenMode'/);
 assert.match(script,/renderUiChoice\('driveLayout'/);
 assert.match(script,/data-action="gpsWait"/);
 assert.match(script,/data-action="beginDispatch"/);
@@ -36,6 +39,7 @@ const ctx={
  paymentElapsedPanel:()=>'<div>経過時間</div>',
  totals:()=>({}),
  metrics:()=>'<section class="metrics">集計</section>',
+ renderDutyStatus:()=>'<div class="duty-status-strip">現在：空車</div>',
  renderRecent:()=>'<section>直近</section>',
  friendlyDate:()=> '2026-10-18',
  shortTime:()=> '09:00',
