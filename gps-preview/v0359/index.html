@@ -2119,7 +2119,7 @@ function renderSettings(shift){const active=getShift();return `${titleBlock('設
 <option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：距離は手入力（初期設定）</option>
 <option value="on" ${nativeAutoDistanceEnabled()?'selected':''}>ON：現在時刻・現在地の取得に距離を連動</option></select></label>
 <p class="caption-note">【ONで距離が入る条件】Android GPS距離ラボv1.3.1が選択され計測中／GPS基準登録済み／欠測未補正なし／位置データが新しい／同じ乗務の入力中／対象距離欄が空欄、のすべてを満たす場合です。乗降・高速入口出口の「現在時刻」と迎車先・乗降地・待機場所の「現在地」取得時、対象の距離だけを追加入力します。以前の手入力は上書きしません。</p>
-<p class="caption-note">【OFF・手入力】時刻と現在地は従来どおりです。自動距離のGPS通信・エラー通知・補正メッセージは出しません。ONでもGPSが取得できない場合は距離欄を空欄のまま残します。手入力は最優先です。</p>
+<p class="caption-note">【OFF・手入力】時刻と現在地は従来どおりです。自動距離のGPS通信・エラー通知・補正メッセージは出しません。ONでもGPSが取得できない場合は距離欄を空欄のまま残します。手入力は最優先です。OFF中に距離を手入力した後でONに変更する場合は、「GPS基準の再設定」で現在の車両トリップ実測値を登録してください。</p>
 <label class="field"><input type="checkbox" data-preview-simulator ${previewSimulatedGpsEnabled()?'checked':''}> 模擬GPSの距離入力を許可する（この試験版の中だけ）</label>
  <p class="caption-note">模擬GPSが有効でも本番の記録やクラウドには送信しません。実GPS精度の確認は別に必要です。</p>
  <p class="caption-note">試験版のAndroidアプリを起動して、Chromeのローカルネットワーク接続を許可した場合のみ使用してください。この端末だけの設定です。PC等には同期しません。切替前の手入力・車両トリップやGoogle保存データは変更しません。出庫中に切り替えた場合は車両トリップ実測値からGPS基準を再登録してください。</p></section>${active&&nativeDiaryGpsEnabled()?renderNativeGpsBaselinePanel(active):''}<section class="card"><h2 class="h2">出庫時GPS試験計測</h2><label class="field"><span class="field-label">出庫時のブラウザGPS自動開始（Android GPS選択時は無効）</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="footnote">IndexedDB: taxiapp-gps-preview-v0359-store / state / taxiapp-gps-preview-v0359、代替: localStorage の taxiapp-gps-preview-v0359-local-v1。保存先はURLとブラウザ環境に依存します。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
@@ -2374,9 +2374,10 @@ function updateElapsedTimer(){
  }
 }
 setInterval(updateElapsedTimer,1000);
+let suppressManualGpsToast=false;
 const gpsTripUI=window.TAXIAPP_GPS_UI?window.TAXIAPP_GPS_UI({
  getShift:()=>getShift(),persist:(cloud)=>save(cloud===false),render:()=>render(),
- toast:(message,error)=>toast(message,error),gpsMessage:(error)=>gpsMessage(error),
+ toast:(message,error)=>{if(!suppressManualGpsToast)toast(message,error);},gpsMessage:(error)=>gpsMessage(error),
  number:(value)=>number(value),safeText:(value)=>safeText(value)
 }):null;
 // GPS/address callbacks must not rebuild the active fare entry form.
@@ -2957,7 +2958,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
    if(nativeAutoDistanceEnabled()){
     const edited=target.value.trim();
     rebaseNativeTripAfterManual(s,edited,a=>String(a.endingOdo).trim()===edited);
-   }else gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');
+   }else{ suppressManualGpsToast=true;try{gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');}finally{suppressManualGpsToast=false;} }
   }saveLater();}return;
  }
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
@@ -2975,7 +2976,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
    if(nativeAutoDistanceEnabled()){
     const edited=target.value.trim(),waitId=s.waiting.id;
     rebaseNativeTripAfterManual(s,edited,a=>a.waiting?.id===waitId&&String(a.waiting.odometer).trim()===edited&&!a.draft);
-   }else gpsTripUI?.correct(s,target.value,'待機距離の手動修正');
+   }else{ suppressManualGpsToast=true;try{gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}finally{suppressManualGpsToast=false;} }
   }}
   saveLater();return;
  }
@@ -3006,7 +3007,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     // Silent for manually entered values; keep auto-distance blocked if rebase fails.
    });
   }else if(nativeDiaryGpsEnabled()){s.externalGpsManualPending=true;}
-   else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
+   else{ suppressManualGpsToast=true;try{gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');}finally{suppressManualGpsToast=false;} }
  }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';
   if(applyUberDisplayedDefault(s.draft,s.settings)){
    const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
