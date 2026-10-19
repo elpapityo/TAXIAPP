@@ -169,7 +169,7 @@ assert.doesNotMatch(bridge,/location\.href\s*=|window\.open\s*\(|taxiappgpslab/)
 assert.match(manifest,/android\.permission\.INTERNET/);
 assert.match(manifest,/android:usesCleartextTraffic="true"/);
 assert.doesNotMatch(manifest,/GpsTestWebActivity/);
-assert.match(manifest,/android:label="GPS距離ラボ v0.8"/);
+assert.match(manifest,/android:label="GPS距離ラボ v0.9"/);
 assert.match(manifest,/android:scheme="taxiappgpslabv060"/);
 console.log('PASS: external browser loopback 127.0.0.1:48764, on-demand GPS refresh, same-tab capture, zero basis, no embedded WebView');
 
