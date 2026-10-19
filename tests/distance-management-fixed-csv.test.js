@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const html=fs.readFileSync('index.html','utf8');
+const columns=html.slice(html.indexOf('const RAW_COLUMNS='),html.indexOf('const TYPES='));
+assert.ok(columns.includes("['AR','割引(金)'"));
+const keys=[...columns.matchAll(/\['([A-Z]{1,2})','[^']*','[^']*'\]/g)].map(m=>m[1]);
+assert.equal(keys.length,44,'legacy CSV header must retain all 44 columns');
+assert.equal(new Set(keys).size,44,'legacy CSV keys must be unique');
+assert.match(html,/function exportRows\(shift\)\{return shift\.records\.filter\(r=>r\.kind!=='dispatch'\)\.map\(r=>RAW_COLUMNS\.map\(\(\[k\]\)=>deriveRaw\(r,shift\.settings\)\[k\]\?\?''\)\);\}/);
+assert.match(html,/function exportCsv\(shift\)\{return .*RAW_COLUMNS\.map\(x=>x\[1\]\)/);
+assert.match(html,/if\(!distanceEnabled\(key\)\)return ''/,'OFF hides input fields, not export columns');
+assert.match(html,/if\(distanceEnabled\('F'\)&&number\(draft\.raw\.F\)===null\)/,'OFF allows absent pickup distance');
+console.log('Fixed 44-column CSV, stable order and OFF UI / validation guards: PASS');
