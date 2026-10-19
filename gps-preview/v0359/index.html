@@ -623,6 +623,7 @@ html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active
 <script src="../../gps-trip.js?v=0.3.34"></script>
 <script src="../../gps-trip-ui.js?v=0.3.35"></script>
 <script src="./gps-diary-bridge.js?v=20261019-1"></script>
+<script src="./gps-bundle.js?v=20261019-1"></script>
 <script src="../../elapsed-alight-clock.js?v=1"></script>
 <script src="../../highway-report.js?v=0.3.36"></script>
 <script src="../../bidirectional-sync.js?v=20261019-1"></script>
@@ -1363,6 +1364,10 @@ function renderNativeGpsBaselinePanel(shift){
   <p class="footnote">100km/h模擬走行中は速度を0km/hにしてから登録してください。以前の未計測距離は自動補完しません。実車の場合は必ず車両トリップの現在値を入力してください。</p>
  </section>`;
 }
+function gpsBundleButton(target,label){
+ return nativeDiaryGpsEnabled()&&window.TAXIAPP_GPS_BUNDLE?.definition(target)
+ ?`<div class="actions" style="margin:10px 0"><button class="btn teal" type="button" data-action="gpsBundle" data-id="${target}">⌖ ${safeText(label)}：時間・距離・位置をまとめて取得</button></div>`:'';
+}
 function field(key,raw,opts={}){
  // OFF means do not manage this distance: hide the entire input and GPS button.
  if(!distanceEnabled(key))return '';const info=RAW_COLUMNS.find(x=>x[0]===key)||[key,key];const label=opts.label||info[1];const value=String(raw[key]??'');const required=opts.required?' <span style="color:#b54848">*</span>':'';let control;
@@ -1528,11 +1533,11 @@ const t=totals(active.records,active.settings,active.date);
 function renderNewAction(shift){const count=shift.records.length,waiting=shift.waiting;
  const places=waitingPlaces();
  const placeSelect=`<input class="control" type="text" list="waitPlaceCandidates" data-wait-field="place" aria-label="待機場所" maxlength="60" autocomplete="off" value="${safeText(waiting?.place||'')}" placeholder="現在地で入力／名前を直接入力"><datalist id="waitPlaceCandidates">${places.map(p=>`<option value="${safeText(p)}"></option>`).join('')}</datalist>`;
- const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地</button>${nativeDiaryGpsEnabled()?'<button class="btn" data-action="gpsWaitOdo" type="button">⌖ GPS距離</button>':''}<button class="btn primary" data-action="registerWaitPlace">＋ 登録</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
+ const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps">${gpsBundleButton("waiting","待機")}<button class="btn" data-action="gpsWait">⌖ 現在地</button>${nativeDiaryGpsEnabled()?'<button class="btn" data-action="gpsWaitOdo" type="button">⌖ GPS距離</button>':''}<button class="btn primary" data-action="registerWaitPlace">＋ 登録</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
  return `<section class="card hero"><div class="eyebrow">次の記録 / № ${count+1}</div><h2 class="hero-heading" data-mobility>${waiting?'現在：待機中':'現在：空車・流し'}</h2>${waitInfo}<div class="action-grid" style="margin-top:18px"><button class="btn primary big" data-action="beginRide" ${count>=MAX_RECORDS?'disabled':''}>🚕 乗車</button><button class="btn teal big" data-action="beginDispatch" ${count>=MAX_RECORDS?'disabled':''}>📲 アプリ迎車</button>${!waiting?`<button class="btn big" data-action="beginWait">🅿 待機開始</button>`:''}<button class="btn" data-tab="history">▤ 営業履歴</button></div><p class="footnote">待機中の場所・距離は入力した時点で自動保存します。待機中に乗車すると乗車情報に引き継ぎ、必要なら修正できます。流し中のボタン操作は不要です。</p>${count>=MAX_RECORDS?'<div class="warn">60件に達しました。</div>':''}</section>`;
 }
 function renderDraft(shift){const d=shift.draft,r=d.raw,editing=Boolean(d.editId);const heading=d.kind==='dispatch'?'迎車中 / お迎え先の確認':d.kind==='ride'?(d.status==='alighted'?'降車・精算入力':'実車中 / 乗車情報'):d.kind==='empty'?'空車高速の記録':'迎車キャンセルの記録';return `<section class="card hero"><div class="section-heading"><div><div class="eyebrow">${editing?'営業履歴の修正':`営業№ ${r.A}`}</div><h2 class="hero-heading">${heading}</h2></div><span class="pill ${d.kind==='empty'?'mint':d.kind==='cancel'||d.kind==='dispatch'?'amber':''}">${d.kind==='ride'?(d.status==='alighted'?'精算待ち':'実車中'):prettyTag(d)}</span></div>${d.kind==='dispatch'?renderDispatchForm(shift,d):d.kind==='ride'?renderRideForm(shift,d):d.kind==='empty'?renderEmptyForm(shift,d):renderCancelForm(shift,d)}${d.kind==='ride'?'':`<div class="actions"><button class="btn red" data-action="discardDraft">${d.kind==='dispatch'?'迎車入力を取り消す（営業記録なし）':'入力を取り消す'}</button></div>`}</section>`;}
-function renderDispatchForm(shift,d){const r=d.raw;return `<div class="field-label" style="margin-bottom:8px">配車元</div>${selector('E',DISPATCH_TYPES,r.E,true)}<div class="dispatch-received">${field('C',r,{label:'迎車受信時刻（変更可）'})}</div><div class="dispatch-arrival"><div class="dispatch-address-action">${locationField('AL',r,'お迎え場所・住所','gpsPickup')}</div>${field('F',r,{label:'迎車先到着時の走行距離（km）'})}</div><label class="field" style="margin-top:12px"><span class="field-label">依頼メモ（任意）</span><input class="control" data-meta="dispatchNote" value="${safeText(d.meta?.dispatchNote||'')}" placeholder="待ち合わせ場所・目印など"></label><div class="warn">迎車中にキャンセルになった場合は「迎車キャンセル」を押してください。待機記録は消しません。</div><div class="action-grid"><button class="btn primary big" data-action="boardDispatch">🚕 お客様が乗車</button><button class="btn red big" data-action="cancelDispatch">× 迎車キャンセル</button></div>${renderAllFields(d)}`;}
+function renderDispatchForm(shift,d){const r=d.raw;return `<div class="field-label" style="margin-bottom:8px">配車元</div>${selector('E',DISPATCH_TYPES,r.E,true)}<div class="dispatch-received">${field('C',r,{label:'迎車受信時刻（変更可）'})}</div><div class="dispatch-arrival"><div class="dispatch-address-action">${locationField('AL',r,'お迎え場所・住所','gpsPickup')}</div>${field('F',r,{label:'迎車先到着時の走行距離（km）'})}</div>${gpsBundleButton('dispatch','迎車先到着')}<label class="field" style="margin-top:12px"><span class="field-label">依頼メモ（任意）</span><input class="control" data-meta="dispatchNote" value="${safeText(d.meta?.dispatchNote||'')}" placeholder="待ち合わせ場所・目印など"></label><div class="warn">迎車中にキャンセルになった場合は「迎車キャンセル」を押してください。待機記録は消しません。</div><div class="action-grid"><button class="btn primary big" data-action="boardDispatch">🚕 お客様が乗車</button><button class="btn red big" data-action="cancelDispatch">× 迎車キャンセル</button></div>${renderAllFields(d)}`;}
 function amountDiscount(r){return (r.O==='シ'||r.O==='高')&&(number(r.AR)===null||number(r.AR)===0)?calculatedDiscount(r):amount(r.AR);}
 function passengerChoice(col,value,label){return `<div class="passenger-control"><div class="field-label">${label}人数（タップで選択）</div>${selector(col,[['0','0'],['1','1'],['2','2'],['3','3'],['4','4'],['5','5']],String(value??''),false)}<div class="caption-note">6人以上の場合は下の「すべての入力項目」から変更できます。</div></div>`;}
 
@@ -1565,18 +1570,18 @@ function renderPaymentSplit(shift,d){
 function renderRideForm(shift,d){
  const r=d.raw,rideUber=r.E==='U',rate=feeSettings(shift.settings);updateDiscountForDraft(d);
  if(applyUberDisplayedDefault(d,shift.settings))saveLater();
- const pickupFields=`<div class="pickup-received-time">${field('C',r,{label:'データ受信・待機開始時刻'})}</div><div class="field-label" style="margin:14px 0 8px">配車区分</div>${selector('E',TYPES,r.E)}<div class="form-grid pickup-main-fields" style="margin-top:15px">${field('G',r,{label:'乗車時刻'})}${field('F',r,{label:'乗車時の走行距離（km）',required:true})}</div><div class="pickup-address-line">${locationField('AL',r,'乗車地・住所','gpsPickup')}</div>`;
+ const pickupFields=`<div class="pickup-received-time">${field('C',r,{label:'データ受信・待機開始時刻'})}</div><div class="field-label" style="margin:14px 0 8px">配車区分</div>${selector('E',TYPES,r.E)}<div class="form-grid pickup-main-fields" style="margin-top:15px">${field('G',r,{label:'乗車時刻'})}${field('F',r,{label:'乗車時の走行距離（km）',required:true})}</div><div class="pickup-address-line">${locationField('AL',r,'乗車地・住所','gpsPickup')}</div>${gpsBundleButton('pickup','乗車')}`;
  const passengers=`<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div>`;
  const payment=`<div class="field-label" style="font-weight:800;margin:13px 0 8px">支払方法</div>${selector('N',PAYMENTS,r.N,true)}`;
  const realHighway=hasRealHighway(r),emptyHighway=hasEmptyHighway(r);
  const highwayMode=(mode,label,active)=>`<button class="btn highway-choice" type="button" data-highway-mode="${mode}" aria-pressed="${active}">${active?'✓ ':''}${label}</button>`;
- const realHighwayFields=realHighway?`<div class="highway-mode-fields" aria-label="実車分の高速入力"><h3>実車分（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター'})}${field('T',r,{label:'降インター'})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div></div>`:'';
+ const realHighwayFields=realHighway?`<div class="highway-mode-fields" aria-label="実車分の高速入力"><h3>実車分（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター'})}${field('T',r,{label:'降インター'})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div>${gpsBundleButton('realEntry','実車高速入口')}${gpsBundleButton('realExit','実車高速出口')}</div>`:'';
  const has=k=>number(r[k])!==null;
  const emptyAmountField=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r,{label:RAW_COLUMNS.find(x=>x[0]===key)?.[1]||key})}</div>`;
- const emptyHighwayFields=emptyHighway?`<div class="highway-mode-fields" aria-label="空車分の高速入力"><h3>空車分（雑損・お客様負担なし）</h3><div class="form-grid">${field('Z',r,{label:'乗インター'})}${field('AC',r,{label:'降インター'})}${field('AA',r,{label:'乗時間'})}${field('AD',r,{label:'降時間'})}${field('AB',r,{label:'乗距離（km）'})}${field('AE',r,{label:'降距離（km）'})}</div><div class="empty-toll-progress" aria-label="空車高速料金の入力"><div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0))}</strong></div></div></div>`:'';
+ const emptyHighwayFields=emptyHighway?`<div class="highway-mode-fields" aria-label="空車分の高速入力"><h3>空車分（雑損・お客様負担なし）</h3><div class="form-grid">${field('Z',r,{label:'乗インター'})}${field('AC',r,{label:'降インター'})}${field('AA',r,{label:'乗時間'})}${field('AD',r,{label:'降時間'})}${field('AB',r,{label:'乗距離（km）'})}${field('AE',r,{label:'降距離（km）'})}</div>${gpsBundleButton('emptyEntry','空車高速入口')}${gpsBundleButton('emptyExit','空車高速出口')}<div class="empty-toll-progress" aria-label="空車高速料金の入力"><div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0))}</strong></div></div></div>`:'';
  const highway=`<details class="details highway-fold" data-highway-fold><summary>🛣 高速 ${realHighway||emptyHighway?'（入力あり）':''}</summary><div class="inner"><div class="highway-choices" role="group" aria-label="この実車に関連する高速の区分">${highwayMode('実','実車分',realHighway)}${highwayMode('空','空車分',emptyHighway)}</div>${realHighwayFields}${emptyHighwayFields}</div></details>`;
  const result=cashChange(d,shift.settings,shift.date),moneyText=x=>x===null?'—':money(x);
- return `<div class="stepper"><span class="step-num">1</span><span class="step-name">乗車情報</span><span class="tag">${shortTime(r.G)} 乗車</span></div><div class="pickup-visible">${pickupFields}</div><div style="margin-top:15px">${passengers}${payment}</div>${highway}<div class="settlement-section"><div class="stepper"><span class="step-num">2</span><span class="step-name">降車・精算</span><span class="tag" data-alight-indicator>${r.M?shortTime(r.M)+' 降車':'メーター入力で時刻記録'}</span></div>${gpsTripUI?.active(shift)&&!r.M?`<div class="actions" style="margin-top:12px"><button class="btn teal big" type="button" data-action="gpsTripAlight">🚕 GPSを確認して降車</button></div><p class="footnote">実車→空車の切替は降車時に押してください。後でメーター金額を入力すると、その時刻で距離が確定してしまいます。</p>`:''}<div class="form-grid" style="margin-top:14px">${field('K',r,{label:'メーター金額（円）',required:true})}${field('L',r,{label:'降車時の走行距離（km）'})}</div><div class="form-grid alight-main-fields" style="margin-top:14px">${field('M',r,{label:'降車時刻（変更可能）'})}${locationField('AM',r,'降車地・住所','gpsDrop')}</div>${rideUber?`<div class="uber-settlement"><label class="field"><span class="field-label">Uberアプリ表示額（円）</span><input class="control" data-meta="uberAppDisplayed" data-number-kind="money" type="text" inputmode="none" value="${safeText(d.meta?.uberAppDisplayed??'')}" placeholder="Uber画面の精算額"></label><div class="uber-summary"><div>Uberアプリ決済額（差額）<strong data-uber-app-payment>${uberAppAmounts(d)?.valid?money(uberAppAmounts(d).appPaid):'—'}</strong></div><div>車内決済（運賃分）<strong data-uber-cabin-fare>${number(d.meta?.uberAppDisplayed)!==null?money(number(d.meta.uberAppDisplayed)):'—'}</strong></div><div>Uber配車手数料（会社に納金不要）<strong data-uber-dispatch>${uberDispatchFeeApplies(d,shift.date,shift.settings)?money(rate.uberSurcharge):'¥0'}</strong></div></div><div class="caption-note">メーター2,000円→表示1,800円ならUber決済200円・車内1,800円。表示2,100円なら車内2,100円・アプリ決済0円、配車料100円は納金不要です。</div></div>`:''}<div class="form-grid" style="margin-top:14px"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額'})}</div><div class="actions settlement-save-first"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button><button class="btn red big" data-action="discardDraft">入力を取り消す</button></div>${renderPaymentSplit(shift,d)}<div class="cash-checkout" aria-label="預り金とおつり" style="display:${paymentBreakdown(d,shift.settings,shift.date).items.some(x=>x.type==='現')?'grid':'none'}"><div class="cash-due"><span>現金で支払う額</span><strong data-estimate>${moneyText(result.due)}</strong></div><label class="field"><span class="field-label">預り金（円）</span><input class="control cash-deposit" type="text" inputmode="none" data-number-kind="money" data-col="AO" value="${safeText(r.AO??'')}" placeholder="0"></label><div class="deposit-buttons"><button class="btn" type="button" data-deposit="exact">ちょうど</button><button class="btn" type="button" data-deposit="1000">千円</button><button class="btn" type="button" data-deposit="5000">五千円</button><button class="btn" type="button" data-deposit="10000">一万円</button><button class="btn deposit-clear" type="button" data-deposit="clear">クリア</button></div><div class="cash-change" role="status"><span>おつり</span><strong data-change>${moneyText(result.change)}</strong><span class="cash-shortfall" data-shortfall>${result.shortage>0?'不足 '+money(result.shortage):''}</span></div></div><div class="actions settlement-save-bottom"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button></div></div>${renderAllFields(d)}`;
+ return `<div class="stepper"><span class="step-num">1</span><span class="step-name">乗車情報</span><span class="tag">${shortTime(r.G)} 乗車</span></div><div class="pickup-visible">${pickupFields}</div><div style="margin-top:15px">${passengers}${payment}</div>${highway}<div class="settlement-section"><div class="stepper"><span class="step-num">2</span><span class="step-name">降車・精算</span><span class="tag" data-alight-indicator>${r.M?shortTime(r.M)+' 降車':'メーター入力で時刻記録'}</span></div>${gpsTripUI?.active(shift)&&!r.M?`<div class="actions" style="margin-top:12px"><button class="btn teal big" type="button" data-action="gpsTripAlight">🚕 GPSを確認して降車</button></div><p class="footnote">実車→空車の切替は降車時に押してください。後でメーター金額を入力すると、その時刻で距離が確定してしまいます。</p>`:''}<div class="form-grid" style="margin-top:14px">${field('K',r,{label:'メーター金額（円）',required:true})}${field('L',r,{label:'降車時の走行距離（km）'})}</div><div class="form-grid alight-main-fields" style="margin-top:14px">${field('M',r,{label:'降車時刻（変更可能）'})}${locationField('AM',r,'降車地・住所','gpsDrop')}</div>${gpsBundleButton('drop','降車')}${rideUber?`<div class="uber-settlement"><label class="field"><span class="field-label">Uberアプリ表示額（円）</span><input class="control" data-meta="uberAppDisplayed" data-number-kind="money" type="text" inputmode="none" value="${safeText(d.meta?.uberAppDisplayed??'')}" placeholder="Uber画面の精算額"></label><div class="uber-summary"><div>Uberアプリ決済額（差額）<strong data-uber-app-payment>${uberAppAmounts(d)?.valid?money(uberAppAmounts(d).appPaid):'—'}</strong></div><div>車内決済（運賃分）<strong data-uber-cabin-fare>${number(d.meta?.uberAppDisplayed)!==null?money(number(d.meta.uberAppDisplayed)):'—'}</strong></div><div>Uber配車手数料（会社に納金不要）<strong data-uber-dispatch>${uberDispatchFeeApplies(d,shift.date,shift.settings)?money(rate.uberSurcharge):'¥0'}</strong></div></div><div class="caption-note">メーター2,000円→表示1,800円ならUber決済200円・車内1,800円。表示2,100円なら車内2,100円・アプリ決済0円、配車料100円は納金不要です。</div></div>`:''}<div class="form-grid" style="margin-top:14px"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額'})}</div><div class="actions settlement-save-first"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button><button class="btn red big" data-action="discardDraft">入力を取り消す</button></div>${renderPaymentSplit(shift,d)}<div class="cash-checkout" aria-label="預り金とおつり" style="display:${paymentBreakdown(d,shift.settings,shift.date).items.some(x=>x.type==='現')?'grid':'none'}"><div class="cash-due"><span>現金で支払う額</span><strong data-estimate>${moneyText(result.due)}</strong></div><label class="field"><span class="field-label">預り金（円）</span><input class="control cash-deposit" type="text" inputmode="none" data-number-kind="money" data-col="AO" value="${safeText(r.AO??'')}" placeholder="0"></label><div class="deposit-buttons"><button class="btn" type="button" data-deposit="exact">ちょうど</button><button class="btn" type="button" data-deposit="1000">千円</button><button class="btn" type="button" data-deposit="5000">五千円</button><button class="btn" type="button" data-deposit="10000">一万円</button><button class="btn deposit-clear" type="button" data-deposit="clear">クリア</button></div><div class="cash-change" role="status"><span>おつり</span><strong data-change>${moneyText(result.change)}</strong><span class="cash-shortfall" data-shortfall>${result.shortage>0?'不足 '+money(result.shortage):''}</span></div></div><div class="actions settlement-save-bottom"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button></div></div>${renderAllFields(d)}`;
 }
 
 function renderEmptyForm(shift,d){
@@ -1585,7 +1590,7 @@ function renderEmptyForm(shift,d){
  const emptyAmountField=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r)}</div>`;
  const sum=['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0);
  return `<div class="panel-strip explainer"><strong>空車高速は雑損</strong><br>乗客には請求せず、日報の空車高速代として記録します。</div>
- ${userFields(['Z','AA','AB','AC','AD','AE'],r)}
+ ${userFields(['Z','AA','AB','AC','AD','AE'],r)}${gpsBundleButton('emptyEntry','空車高速入口')}${gpsBundleButton('emptyExit','空車高速出口')}
  <div class="empty-toll-progress" aria-label="空車高速料金の入力">
   <div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div>
   <div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(sum)}</strong></div>
@@ -2371,10 +2376,10 @@ const gpsTripUI=window.TAXIAPP_GPS_UI?window.TAXIAPP_GPS_UI({
 function refreshDraftGpsFields(shiftId,recordId){
  const active=getShift(),draft=active?.draft;
  if(active?.id!==shiftId||draft?.id!==recordId||tab!=='drive')return;
- for(const key of ['AL','AM','F','L','S','V','AB','AE']){
+ for(const key of ['AL','AM','F','L','S','V','AB','AE','G','M','R','U','AA','AD']){
   const value=String(draft.raw?.[key]??'');
   appEl.querySelectorAll('[data-col="'+key+'"]').forEach(input=>{
-   if(document.activeElement!==input&&String(input.value)!==value)input.value=value;
+   if(document.activeElement!==input&&String(input.value)!==(timeFields.has(key)?shortTime(value):value))input.value=timeFields.has(key)?shortTime(value):value;
   });
  }
 }
@@ -2446,6 +2451,90 @@ function discardInvalidAutoDropDistance(draft){
  return true;
 }
 let gpsAlightPending=false;
+const gpsBundlePending=new Set();
+function captureGpsBundle(key){
+ const cfg=window.TAXIAPP_GPS_BUNDLE?.definition(key),s=getShift(),bridge=window.TAXIAPP_EXTERNAL_GPS;
+ if(!cfg||!nativeDiaryGpsEnabled()||!s||s.endedAt||s.endedIso){toast('Android GPSで乗務中のみ取得できます',true);return;}
+ const isWait=key==='waiting',d=s.draft;
+ if(isWait?(!s.waiting||d):(!d||d.editId||(cfg.kind!=='any'&&cfg.kind!==d.kind))){
+   toast('現在の営業状態では使用できません',true);return;
+ }
+ if(cfg.distance&&!distanceEnabled(cfg.distance)){toast('距離入力が設定でOFFです',true);return;}
+ if(!navigator.geolocation){toast('Chromeで位置情報を許可してください',true);return;}
+ const shiftId=s.id,recordId=isWait?s.waiting.id:d.id,token=shiftId+':'+recordId+':'+key;
+ if(gpsBundlePending.has(token))return;
+ const originals=isWait?[String(s.waiting.odometer??'')]:
+   [String(d.raw[cfg.time]??''),String(d.raw[cfg.distance]??''),String(cfg.coordinate?d.raw[cfg.coordinate]??'':'')];
+ gpsBundlePending.add(token);
+ const btn=appEl.querySelector('[data-action="gpsBundle"][data-id="'+key+'"]');
+ if(btn){btn.disabled=true;btn.textContent='⌖ まとめて取得中…';}
+ Promise.all([bridge.read(localStorage,fetch,{shiftId}),
+   window.TAXIAPP_GPS_BUNDLE.positionOnce(navigator.geolocation)]).then(async ([gps,pos])=>{
+  const got=window.TAXIAPP_GPS_BUNDLE.validate(gps,pos),active=getShift();
+  const target=isWait?active?.waiting:active?.draft;
+  if(!canEditNow()||!nativeDiaryGpsEnabled()||active?.id!==shiftId||
+    active?.endedAt||active?.endedIso||target?.id!==recordId||
+    (!isWait&&target.editId))return;
+  const nowFields=isWait?[String(target.odometer??'')]:
+    [String(target.raw[cfg.time]??''),String(target.raw[cfg.distance]??''),
+     String(cfg.coordinate?target.raw[cfg.coordinate]??'':'')];
+  if(JSON.stringify(nowFields)!==JSON.stringify(originals))
+    throw Error('取得中に入力値が変更されたため、上書きしませんでした');
+  const base=bridge.baseline(localStorage,shiftId);
+  if(!base)throw Error('出庫時GPS基準がありません。「設定」でAndroid GPS基準を登録してください');
+  const km=bridge.calculated(gps.tripKm,base,gps.runId).toFixed(3);
+  const captured=new Date(got.timeMs);
+  const geo={lat:got.lat,lng:got.lng,accuracy:got.accuracy,
+    recordedAt:new Date(got.positionTimeMs).toISOString(),source:'chrome-device-gps',
+    simulatedDistance:got.simulated};
+  const sample={time:captured.toISOString(),locationTime:geo.recordedAt,km,
+    rawGpsKm:gps.tripKm,runId:gps.runId,geo,simulated:got.simulated,
+    distanceSource:'android-v1.3.1',positionSource:'chrome-device-gps'};
+  if(isWait){
+    target.odometer=km;target.geo=geo;target.gpsBundle=sample;
+    target.gpsAutoOdometer={km,at:sample.time,source:'native-bundle'};
+    target.gpsStatus=got.simulated?'端末の実位置（模擬走行位置とは別）':'時間・距離・位置取得済み';
+  }else{
+    if(cfg.time)target.raw[cfg.time]=stamp(captured);
+    if(cfg.distance)target.raw[cfg.distance]=km;
+    if(cfg.coordinate)target.raw[cfg.coordinate]=got.lat.toFixed(6)+','+got.lng.toFixed(6);
+    target.meta??={};target.meta.gpsBundle??={};
+    target.meta.gpsBundle[key]=sample;
+    target.meta.externalGpsFilledFields??={};
+    target.meta.externalGpsFilledFields[cfg.distance]={km,rawGpsKm:gps.tripKm,
+      runId:gps.runId,at:sample.time};
+    if(key==='pickup'||key==='dispatch'){
+      target.meta.pickupGeo=geo;
+      if(key==='dispatch')target.meta.dispatchArrivalIso=sample.time;
+    }else if(key==='drop'){
+      target.meta.dropGeo=geo;target.meta.alightIso=sample.time;target.status='alighted';
+    }
+  }
+  active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:gps.tripKm,
+    runId:gps.runId,at:sample.time};
+  saveLater();refreshDraftGpsFields(shiftId,recordId);
+  if(isWait)refreshWaitView(recordId);
+  else if(key==='drop')render();
+  toast(got.simulated?'時間・距離と端末の実位置を取得（模擬走行位置ではありません）':
+    cfg.label+'：時間・距離・位置をまとめて取得しました');
+  if(!isWait&&cfg.address&&!got.simulated&&model.prefs.reverseAddress!=='off'&&
+    !String(target.raw[cfg.address]??'').trim()){
+   try{
+    const address=await reverseAddress(geo),current=getShift();
+    if(address&&current?.id===shiftId&&current.draft?.id===recordId&&
+       current.draft.meta?.gpsBundle?.[key]?.time===sample.time&&
+       !String(current.draft.raw[cfg.address]??'').trim()){
+      current.draft.raw[cfg.address]=address;saveLater();
+      refreshDraftGpsFields(shiftId,recordId);
+    }
+   }catch(err){console.warn('GPS address lookup unavailable',err);}
+  }
+ }).catch(e=>toast('まとめて取得できません：'+(e?.message||e),true))
+ .finally(()=>{gpsBundlePending.delete(token);if(btn&&btn.isConnected){
+   btn.disabled=false;btn.textContent='⌖ 時間・距離・位置をまとめて取得';
+ }});
+}
+
 function handleAction(action,id){
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
@@ -2455,6 +2544,7 @@ function handleAction(action,id){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();
+ if(action==='gpsBundle'){captureGpsBundle(id);return;}
  if(action==='gpsTripStart'){if(nativeDiaryGpsEnabled()){toast('Android GPSを使用中です。GPS距離ラボから測定してください。');return;}if(shift)gpsTripUI?.start(shift);return;}
  if(action==='gpsTripStop'){if(shift)gpsTripUI?.stop(shift);return;}
  if(action==='gpsTripCorrect'){
