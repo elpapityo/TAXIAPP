@@ -12,6 +12,9 @@ const start=html.indexOf('let settingsOpenState=null,lastRenderedTab=null;');
 const end=html.indexOf('function titleBlock(',start);
 assert.ok(start>0&&end>start,'settings rerender preservation code missing');
 const code=html.slice(start,end);
+const settingsHTML=html.slice(html.indexOf('function renderSettings(shift)'),html.indexOf('function download(',html.indexOf('function renderSettings(shift)')));
+const panelCount=(settingsHTML.match(/<details class="details settings-advanced"/g)||[]).length + 2;
+assert.ok(panelCount>=10,'all independent Settings sections should be represented in the stand-in');
 const windowMock={
  location:{protocol:'https:'},scrollX:0,scrollY:0,
  scrollTo(x,y){this.scrollX=x;this.scrollY=y;}
@@ -20,7 +23,7 @@ let panels=[];
 const appEl={
  querySelector(selector){return null;},
  querySelectorAll(selector){
-  if(selector==='details.settings-advanced')return panels;
+  if(selector==='details.settings-advanced,details[data-gps-settings],details[data-address-settings]')return panels;
   if(selector==='[data-operation-panel]')return [];
   return [];
  },
@@ -28,7 +31,7 @@ const appEl={
   // Replacing the whole page destroys details elements and their open state.
   // Simulate the browser clamping scroll back to the top on replacement.
   panels=String(content).includes('test-settings')
-   ? Array.from({length:7},()=>({open:false})):[];
+   ? Array.from({length:panelCount},()=>({open:false})):[];
   windowMock.scrollX=0;windowMock.scrollY=0;
  }
 };
@@ -43,28 +46,30 @@ const context={
  renderHighwayReport(){return '';},renderPrint(){return '';},
  selectedPrintShift(){return null;},renderShiftManager(){return '';},
  renderSettings(){return 'test-settings';},
- applyInputKeyboardMode(){},readGpsPermission(){}
+ applyInputKeyboardMode(){},readGpsPermission(){},requestAnimationFrame(callback){callback();}
 };
 vm.createContext(context);
 vm.runInContext(code,context);
 const render=()=>vm.runInContext('renderNow()',context);
 render(); // first load
-assert.equal(panels.length,7,'all seven settings sections must be present');
-[1,3,5,6].forEach(i=>panels[i].open=true);
+assert.equal(panels.length,panelCount,'all independent Settings sections must be present');
+const opened=[1,3,5,panelCount-1];
+opened.forEach(i=>panels[i].open=true);
+const expected=()=>panels.map((_,i)=>opened.includes(i));
 windowMock.scrollX=0;windowMock.scrollY=463;
 render(); // saving a setting rebuilds the UI
-assert.deepEqual(panels.map(p=>p.open),[false,true,false,true,false,true,true]);
+assert.deepEqual(panels.map(p=>p.open),expected());
 assert.equal(windowMock.scrollY,463,'settings scroll should not reset on save');
-panels[3].open=false; // deliberate close must remain closed
+panels[3].open=false; opened.splice(opened.indexOf(3),1); // deliberate close must remain closed
 windowMock.scrollY=620;
 render(); // background sync refresh
-assert.deepEqual(panels.map(p=>p.open),[false,true,false,false,false,true,true]);
+assert.deepEqual(panels.map(p=>p.open),expected());
 assert.equal(windowMock.scrollY,620,'background refresh should preserve location');
 context.tab='drive';render();
 assert.equal(windowMock.scrollY,0,'switching to a different menu should start at top');
 context.tab='settings';render();
-assert.deepEqual(panels.map(p=>p.open),[false,true,false,false,false,true,true],
- 'returning to settings should remember which categories were expanded');
+assert.deepEqual(panels.map(p=>p.open),expected(),
+ 'returning to settings should remember which independent categories were expanded');
 console.log('Settings view preservation passed: edits, background refresh, deliberate collapse and tab navigation.');
 
 // Settings controls update their buttons and CSS without rebuilding the page.
