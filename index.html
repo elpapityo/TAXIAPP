@@ -510,6 +510,12 @@ html[data-ui-orientation-mode="portrait"][data-ui-screen-mode="tablet"] #main-co
 html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="tablet"] #main-content{max-width:1120px!important}
 html[data-ui-orientation-mode="portrait"] .preview-quick-inputs{grid-template-columns:minmax(0,1fr)}
 html[data-ui-orientation-mode="landscape"] .preview-quick-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="phone"] .form-grid,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="tablet"] .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .form-grid,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .action-grid,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .pickup-main-fields,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .highway-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 @media(max-width:700px){
  html[data-ui-orientation-mode="portrait"] .form-grid,html[data-ui-orientation-mode="portrait"] .action-grid{grid-template-columns:minmax(0,1fr)}
  html[data-ui-orientation-mode="landscape"] .form-grid,html[data-ui-orientation-mode="landscape"] .action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
