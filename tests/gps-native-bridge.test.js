@@ -17,7 +17,7 @@ async function main(){
  const html=fs.readFileSync('index.html','utf8');
  assert.match(html,/newRecord\.distanceMode='trip'/);
  assert.match(html,/if\(!nativeGpsLinked&&gpsOptIn&&gpsTripUI\)gpsTripUI\.start\(newRecord\)/);
- assert.match(html,/ensureStart\(localStorage,departingId,data\.tripKm,odometer\)/);
+ assert.match(html,/ensureStart\(localStorage,departingId,data\.tripKm,odometer,data\.runId\)/);
  assert.match(html,/current\.externalGpsSnapshot=\{tripKm:b\.value,rawGpsKm:data\.tripKm/);
  assert.match(html,/active\.externalGpsSnapshot=\{tripKm:Number\(manualValue\),rawGpsKm:data\.tripKm/);
  assert.match(html,/active\.externalGpsSnapshot=\{tripKm:Number\(km\),rawGpsKm:data\.tripKm/);
