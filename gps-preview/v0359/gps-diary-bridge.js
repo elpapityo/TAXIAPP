@@ -8,13 +8,21 @@
  else root.TAXIAPP_EXTERNAL_GPS=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
- const ENDPOINT='http://127.0.0.1:48768/';
- const EXPECTED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100';
- const EXPECTED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv131';
- const EXPECTED_WEB_VERSION='1.3.1';
- function correctIdentity(value){
-   return value && value.marker===EXPECTED_MARKER &&
-     value.packageId===EXPECTED_PACKAGE && value.webVersion===EXPECTED_WEB_VERSION;
+ // Main everyday-use APK gets a dedicated package and port so previous
+ // v1.3.1 keeps its Android data; fallback keeps existing users connected.
+ const ENDPOINT='http://127.0.0.1:48769/';
+ const LEGACY_ENDPOINT='http://127.0.0.1:48768/';
+ const EXPECTED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_4_0_100';
+ const EXPECTED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv140';
+ const EXPECTED_WEB_VERSION='1.4.0';
+ const LEGACY_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100';
+ const LEGACY_PACKAGE='jp.taxiapp.gpsprototype.distancelabv131';
+ function correctIdentity(value,endpoint=ENDPOINT){
+   if(!value)return false;
+   return endpoint===ENDPOINT
+     ?value.marker===EXPECTED_MARKER&&value.packageId===EXPECTED_PACKAGE&&value.webVersion===EXPECTED_WEB_VERSION
+     :endpoint===LEGACY_ENDPOINT&&value.marker===LEGACY_MARKER&&
+       value.packageId===LEGACY_PACKAGE&&value.webVersion==='1.3.1';
  }
  const PREFIX='taxiapp-preview-v0359-native-gps-baseline:';
  const GAP='taxiapp-preview-v0359-native-gps-gaps:';
@@ -67,10 +75,10 @@
    return Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
  }
  function pause(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
- async function getJson(path,fetcher){
+ async function getJson(path,fetcher,endpoint=ENDPOINT){
    const control=new AbortController(),timer=setTimeout(()=>control.abort(),4700);
    try{
-     const response=await fetcher(ENDPOINT+path,{cache:'no-store',signal:control.signal,targetAddressSpace:'loopback'});
+     const response=await fetcher(endpoint+path,{cache:'no-store',signal:control.signal,targetAddressSpace:'loopback'});
      if(!response.ok)throw Error('GPS通信 HTTP '+response.status);
      return await response.json();
    }catch(e){
@@ -82,8 +90,16 @@
  async function read(storage,fetcher,options={}){
    const call=fetcher||(typeof fetch==='undefined'?null:fetch.bind(globalThis));
    if(!call)throw Error('GPS通信を使用できません');
-   const state=await getJson('api/status',call);
-   if(!correctIdentity(state))throw Error('GPSアプリがv1.3.1ではありません。48768番の接続先・アプリ識別情報を確認してください');
+   let endpoint=ENDPOINT,state;
+   try{state=await getJson('api/status',call,endpoint);}
+   catch(error){
+     // Only transport failure permits compatibility fallback: an identity
+     // mismatch on the production port is never silently accepted.
+     if(!String(error?.message||'').includes('Android日報GPSと通信できません'))throw error;
+     endpoint=LEGACY_ENDPOINT;
+     state=await getJson('api/status',call,endpoint);
+   }
+   if(!correctIdentity(state,endpoint))throw Error('GPS距離ラボのアプリ識別情報が接続先と一致しません。48769番（正式版）または48768番（旧版）を確認してください');
    if(state.running!==true)throw Error('GPSアプリの計測が停止しています');
    if(state.simulated===true&&!options.allowSimulation&&!previewSimulationAllowed(storage))
       throw Error('模擬GPSは営業日報に入力できません。アプリで実GPS測定を開始してください');
@@ -92,10 +108,10 @@
    const n=nonce();
    let last='';
    for(let attempt=0;attempt<5;attempt++){
-     const p=await getJson('api/capture?target=start&nonce='+n,call);
+     const p=await getJson('api/capture?target=start&nonce='+n,call,endpoint);
      if(p.ready===true){
        const x=p.snapshot;
-       if(!correctIdentity(x)||!x||x.format!==FORMAT||x.nonce!==n||x.target!=='start'||
+       if(!correctIdentity(x,endpoint)||!x||x.format!==FORMAT||x.nonce!==n||x.target!=='start'||
           x.runId!==state.runId||!finiteKm(x.tripKm)||x.running!==true||
           !Number.isFinite(x.capturedAt)||
           !Number.isFinite(x.gpsAgeMs)||x.gpsAgeMs<0||x.gpsAgeMs>15000)
@@ -109,7 +125,8 @@
        return {format:'TAXIAPP_GPS_DIARY_V131',tripKm:x.tripKm,runId:x.runId,
                capturedAt:x.capturedAt,gpsAgeMs:x.gpsAgeMs,
                gapCount:gaps,unresolvedGap:x.unresolvedGap===true,
-               simulated:x.simulated===true,accuracyMeters:state.accuracyMeters};
+               simulated:x.simulated===true,accuracyMeters:state.accuracyMeters,
+               gpsSource:endpoint===ENDPOINT?'v1.4.0':'v1.3.1'};
      }
      last=p.message||'再取得中';
      if(attempt<4)await pause(800);
@@ -117,5 +134,5 @@
    throw Error('新しいGPS地点を取得できません：'+last);
  }
  return {read,baseline,ensureStart,recordManual,calculated,acknowledgeGap,
-         gapAcknowledged,endpoint:ENDPOINT,format:'TAXIAPP_GPS_DIARY_V131'};
+         gapAcknowledged,endpoint:ENDPOINT,legacyEndpoint:LEGACY_ENDPOINT,format:'TAXIAPP_GPS_DIARY_V131'};
 });
