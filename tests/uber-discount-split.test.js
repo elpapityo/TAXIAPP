@@ -19,5 +19,5 @@ assert.equal(paid.surcharge,0);
 const partial=get(sample('5000'));
 assert.equal(partial.appPaid,580,'partial app settlement is measured after discount');
 assert.equal(partial.valid,true);
-assert.equal(get(sample('6300','現','')).valid,false,'undiscounted value must not appear valid as surcharge with discount mode');
+assert.equal(get(sample('6300','現','620')).valid,false,'discount ignored by display would be an invalid extra charge');
 console.log('Uber discount split handling passed');
