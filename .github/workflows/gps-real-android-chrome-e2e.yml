@@ -1,0 +1,52 @@
+name: GPS v1.1 Published APK Real Android to Chrome E2E
+on:
+  push:
+    branches:
+      - test/gps-external-browser-real-android-e2e-20261019
+    paths:
+      - 'tests/gps_external_browser_e2e.py'
+      - '.github/workflows/gps-real-android-chrome-e2e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emulator-chrome-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Chrome WebDriver dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check 'selenium>=4.25,<5'
+          google-chrome --version || true
+          chromedriver --version || true
+      - name: Download exact publicly released GPS v1.1 APK
+        run: |
+          curl --fail --location --retry 4 --retry-delay 3 \
+            'https://github.com/elpapityo/TAXIAPP/releases/download/gps-distance-lab-v1.1.0/GPS-Distance-Lab-v1.1.0.apk' \
+            -o gps-lab-v110-shipped.apk
+          file gps-lab-v110-shipped.apk
+          test "$(stat -c%s gps-lab-v110-shipped.apk)" -gt 50000
+          sha256sum gps-lab-v110-shipped.apk
+      - name: Run installed APK on Android emulator with real loopback HTTP and Chrome
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 2048M
+          heap-size: 512M
+          disk-size: 4096M
+          emulator-boot-timeout: 900
+          disable-animations: true
+          script: |
+            .venv/bin/python tests/gps_external_browser_e2e.py
+      - name: Upload evidence and failure logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v110-published-apk-emulator-chrome-e2e
+          path: gps-e2e-evidence/
+          retention-days: 14
