@@ -56,7 +56,7 @@ window.DistanceLab.onNativeSnapshot(JSON.stringify({
 }));
 assert.match(node('start-detail').textContent,/基準点を 0.000 km に設定済み/);
 assert.match(node('start-feedback').textContent,/記録が完了/);
-assert.equal(JSON.parse(local.get('gps-distance-lab-browser-simulator-v120')).startNative,88.25);
+assert.equal(JSON.parse(local.get('gps-distance-lab-browser-simulator-v121')).startNative,88.25);
 // Captures remain on one screen; with prior missing GPS allowed after retry.
 
 // Reproduce 2026-10-19 real screenshot: "取得済み" button, but GPS all
@@ -85,7 +85,7 @@ assert.equal(recover[2].confirmed,true);
 assert.equal(recover[3].confirmed,false,'timestamp missing is retryable');
 assert.equal(stored.rows[1].manual,'200');
 assert.equal(stored.rows[2].manual,'300');
-const previewLocal=new Map([['gps-distance-lab-browser-simulator-v120',JSON.stringify(stored)]]);
+const previewLocal=new Map([['gps-distance-lab-browser-simulator-v121',JSON.stringify(stored)]]);
 const previewNodes=new Map();
 function previewNode(id){
  if(!previewNodes.has(id))previewNodes.set(id,{
@@ -109,7 +109,7 @@ assert.match(uiRows,/GPS区間<\/label><strong>0\.200<\/strong>/);
 assert.match(uiRows,/再取得/);
 assert.match(uiRows,/GPS累計<\/label><strong>0\.300<\/strong>/);
 assert.match(uiRows,/200mなら 0\.200/);
-assert.equal(JSON.parse(previewLocal.get('gps-distance-lab-browser-simulator-v120')).rows[1].manual,'200');
+assert.equal(JSON.parse(previewLocal.get('gps-distance-lab-browser-simulator-v121')).rows[1].manual,'200');
 console.log('PASS: screenshot missing-time records repaired without loss, later GPS and corrections visible');
 // Regression: screenshot showed ZERO SET from prior v0.8, but current APK native
 // cumulative had restarted at 0.000km. User must start a new measurement without
@@ -120,7 +120,7 @@ const oldTrip={
        {gps:5.3,manual:'0.550',at:1792381220000}],
  sessionId:null
 };
-const oldStore=new Map([['gps-distance-lab-browser-simulator-v120',JSON.stringify(oldTrip)]]);
+const oldStore=new Map([['gps-distance-lab-browser-simulator-v121',JSON.stringify(oldTrip)]]);
 const newNodes=new Map();
 function newNode(id){
  if(!newNodes.has(id))newNodes.set(id,{
@@ -147,11 +147,11 @@ assert.equal(newNode('new-session-btn').disabled,false,'new measurement button i
 newNode('new-session-btn')._listeners.click();
 assert.equal(confirms.length,1,'user must consent to archiving');
 assert.equal(newNode('start-btn').disabled,false,'old 0km should no longer lock the button');
-assert.equal(JSON.parse(oldStore.get('gps-distance-lab-history-v120')).length,1);
-const archived=JSON.parse(oldStore.get('gps-distance-lab-history-v120'))[0].data;
+assert.equal(JSON.parse(oldStore.get('gps-distance-lab-history-v121')).length,1);
+const archived=JSON.parse(oldStore.get('gps-distance-lab-history-v121'))[0].data;
 assert.deepEqual(archived.rows.map(x=>Number(x.manual)),[0.250,0.550]);
 assert.equal(archived.startNative,4.75);
-assert.equal(JSON.parse(oldStore.get('gps-distance-lab-browser-simulator-v120')).startNative,null);
+assert.equal(JSON.parse(oldStore.get('gps-distance-lab-browser-simulator-v121')).startNative,null);
 newNode('start-btn')._listeners.click();
 assert.equal(nativeQueue[0].target,'start');
 newWindow.DistanceLab.onNativeSnapshot(JSON.stringify({
@@ -159,7 +159,7 @@ newWindow.DistanceLab.onNativeSnapshot(JSON.stringify({
  target:'start',tripKm:0,runId:activeRun,capturedAt:Date.now(),
  gpsAgeMs:500,running:true,unresolvedGap:false
 }));
-const newBaseline=JSON.parse(oldStore.get('gps-distance-lab-browser-simulator-v120'));
+const newBaseline=JSON.parse(oldStore.get('gps-distance-lab-browser-simulator-v121'));
 assert.equal(newBaseline.startNative,0);
 assert.equal(newBaseline.sessionId,'new-native-run');
 assert.equal(newNode('start-btn').disabled,true);
@@ -172,9 +172,9 @@ newWindow.DistanceLab.onNativeSnapshot(JSON.stringify({
  target:'0',tripKm:0.375,runId:activeRun,capturedAt:Date.now(),
  gpsAgeMs:500,running:true,unresolvedGap:false
 }));
-assert.equal(JSON.parse(oldStore.get('gps-distance-lab-browser-simulator-v120')).rows[0].gps,0.375);
+assert.equal(JSON.parse(oldStore.get('gps-distance-lab-browser-simulator-v121')).rows[0].gps,0.375);
 assert.match(newNode('rows').innerHTML,/GPS区間<\/label><strong>0\.375<\/strong>/);
-assert.equal(Number(JSON.parse(oldStore.get('gps-distance-lab-history-v120'))[0].data.rows[0].manual),0.250);
+assert.equal(Number(JSON.parse(oldStore.get('gps-distance-lab-history-v121'))[0].data.rows[0].manual),0.250);
 console.log('PASS: user can archive old browser run, press 0km anew and capture 375m; old trip stays intact');
 
 
@@ -216,32 +216,41 @@ assert.match(service,/loopback\?\.stop/);
 assert.match(service,/GpsStore.noteValidFix/);
 assert.match(gpsStore,/fun lastValidGpsFixAt/);
 assert.match(loopback,/ServerSocket\(PORT,8,InetAddress\.getByName\("127\.0\.0\.1"\)\)/);
-assert.match(loopback,/host!="127\.0\.0\.1:48765"/);
+assert.match(loopback,/host!="127\.0\.0\.1:48766"/);
 assert.match(loopback,/route=="\/api\/status"/);
 assert.match(loopback,/route\.startsWith\("\/api\/capture\?"\)/);
 assert.match(loopback,/GpsStore\.lastValidGpsFixAt/);
 assert.doesNotMatch(loopback,/Access-Control-Allow-Origin:\s*\*/);
 assert.match(bridge,/location\.hostname!=='127\.0\.0\.1'/);
-assert.match(bridge,/location\.port!=='48765'/);
+assert.match(bridge,/location\.port!=='48766'/);
 assert.match(loopback,/GpsTrackingService.ACTION_REFRESH/);
 assert.match(service,/ACTION_REFRESH/);
 assert.match(activity,/api\/identity/,'launch must verify local server owner');
 assert.match(activity,/IDENTITY_MARKER/);
 assert.match(activity,/openVerifiedExternalBrowser/);
 assert.match(loopback,/route=="\/api\/identity"/);
-assert.match(loopback,/GPS_DISTANCE_LAB_SIMULATOR_V1_2/);
+assert.match(loopback,/GPS_DISTANCE_LAB_SIMULATOR_V1_2_1/);
 assert.match(loopback,/put\("packageId",context.packageName\)/);
-assert.match(loopback,/put\("webVersion","1.2.0"\)/);
+assert.match(loopback,/put\("webVersion","1.2.1"\)/);
 assert.match(service,/GpsStore.setBrowserConnectionIssue/);
 assert.doesNotMatch(service,/engine.interrupted\("外部ブラウザのローカル接続ができません"\)/);
-assert.match(html,/Web v1.2/);
-assert.match(html,/gps-distance-lab-browser-simulator-v120/,'keep old Chrome data');
+assert.match(html,/Web v1.2.1/);
+assert.match(html,/gps-distance-lab-browser-simulator-v121/,'keep old Chrome data');
 assert.match(activity,/旧バージョンのアプリが接続先を使用/);
 assert.match(gpsStore,/fun startNewRun/);
 assert.match(gpsStore,/fun currentRunId/);
 assert.match(service,/GpsStore.startNewRun\(this\)/);
-assert.match(activity,/模擬走行テスト開始/);
+assert.match(activity,/模擬走行を開始/);
 assert.match(activity,/speedButtons.add\(speed to b\)/);
+assert.match(activity,/b.isEnabled=true/,'all speed buttons must remain tappable when stopped');
+assert.match(activity,/startGps\(simulation=true,initialSpeed=speed\)/,'a speed tap auto-starts simulator');
+assert.match(activity,/if \(!simulation && checkSelfPermission/,'only real GPS requires location grant');
+assert.match(service,/intent.action == ACTION_START && !hasPreciseLocation\(\)/,'simulate without GPS permission');
+assert.match(service,/FOREGROUND_SERVICE_TYPE_DATA_SYNC/);
+assert.match(manifest,/android.permission.FOREGROUND_SERVICE_DATA_SYNC/);
+assert.match(manifest,/foregroundServiceType="location\|dataSync"/);
+assert.match(service,/intent.getIntExtra\(EXTRA_SIM_SPEED,0\)/);
+
 assert.match(activity,/ACTION_SIM_SPEED/);
 assert.match(service,/ACTION_SIM_START/);
 assert.match(service,/simTicker/);
@@ -253,17 +262,17 @@ assert.match(service,/stopSimulation\(\)/);
 assert.match(gpsStore,/fun isSimulating/);
 assert.match(loopback,/put\("simulated",GpsStore.isSimulating\(context\)\)/);
 assert.match(loopback,/put\("simSpeedKmh",GpsStore.simSpeedKmh\(context\)\)/);
-assert.match(html,/模擬走行テスト専用 v1.2/);
-assert.match(html,/gps-distance-lab-browser-simulator-v120/);
+assert.match(html,/模擬走行テスト専用 v1.2.1/);
+assert.match(html,/gps-distance-lab-browser-simulator-v121/);
 assert.doesNotMatch(html,/gps-distance-lab-browser-v080/);
-assert.match(bridge,/location.port!=='48765'/);
+assert.match(bridge,/location.port!=='48766'/);
 
 assert.match(loopback,/put\("runId",GpsStore.currentRunId\(context\)\)/);
 assert.match(html,/新しい計測を開始（旧記録は保存）/);
 assert.match(html,/history-content/);
 assert.match(html,/sessionMismatch\(\)/);
-assert.match(html,/gps-distance-lab-history-v120/);
-assert.match(html,/gps-distance-lab-browser-simulator-v120/,'existing browser records must survive');
+assert.match(html,/gps-distance-lab-history-v121/);
+assert.match(html,/gps-distance-lab-browser-simulator-v121/,'existing browser records must survive');
 
 
 assert.match(service,/requestFreshFix\(\)/);
@@ -277,9 +286,9 @@ assert.doesNotMatch(bridge,/location\.href\s*=|window\.open\s*\(|taxiappgpslab/)
 assert.match(manifest,/android\.permission\.INTERNET/);
 assert.match(manifest,/android:usesCleartextTraffic="true"/);
 assert.doesNotMatch(manifest,/GpsTestWebActivity/);
-assert.match(manifest,/android:label="GPS距離ラボ v1.2 模擬テスト"/);
-assert.match(manifest,/android:scheme="taxiappgpslabsimv120"/);
-console.log('PASS: external browser loopback 127.0.0.1:48765, on-demand GPS refresh, same-tab capture, zero basis, no embedded WebView');
+assert.match(manifest,/android:label="GPS距離ラボ v1.2.1 模擬テスト"/);
+assert.match(manifest,/android:scheme="taxiappgpslabsimv121"/);
+console.log('PASS: external browser loopback 127.0.0.1:48766, on-demand GPS refresh, same-tab capture, zero basis, no embedded WebView');
 
 (async function(){
  const response=[];
@@ -290,7 +299,7 @@ console.log('PASS: external browser loopback 127.0.0.1:48765, on-demand GPS refr
   onNativeError(nonce,message){response.push({type:'error',nonce,message});}
  }};
  const ctx={
-  window:w,location:{hostname:'127.0.0.1',port:'48765'},
+  window:w,location:{hostname:'127.0.0.1',port:'48766'},
   setInterval(){},setTimeout(f){setImmediate(f);},
   fetch(path){
    count++;
