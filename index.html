@@ -777,6 +777,11 @@ function beginWaiting(shift,now=new Date()){
  shift.waiting={id:`wait-${now.getTime()}-${Math.floor(Math.random()*10000)}`,startedAt:stamp(now),startedIso:now.toISOString(),place:'',odometer:'',geo:null,gpsStatus:'GPSを取得中…'};
  return shift.waiting;
 }
+function getBreakPlaceGps(shiftId,breakId){
+ const active=()=>{const shift=model.shifts.find(x=>x.id===shiftId);return shift?.breakActive?.id===breakId?shift.breakActive:null;};
+ if(!navigator.geolocation||!window.isSecureContext)return;
+ navigator.geolocation.getCurrentPosition(async pos=>{const item=active();if(!item)return;const geo={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,recordedAt:new Date().toISOString()};item.geo=geo;saveLater();try{const address=await reverseAddress(geo);const latest=active();if(!latest||latest.geo?.recordedAt!==geo.recordedAt||latest.placeEdited)return;latest.place=address;saveLater();const input=appEl.querySelector('[data-break-place]');if(input&&document.activeElement!==input)input.value=address;}catch{}},()=>{},{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
 function breakSeconds(item,now=new Date()){const a=Date.parse(item?.startedIso||''),b=item?.endedIso?Date.parse(item.endedIso):now.getTime();return Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,Math.floor((b-a)/1000)):0;}
 function breakElapsedText(item,now=new Date()){const n=breakSeconds(item,now);return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':');}
 function breakDurationMinutes(item,now=new Date()){return Math.floor(breakSeconds(item,now)/60);}
@@ -2849,8 +2854,15 @@ function handleAction(action,id){
  }
  if(action==='beginBreak'){
   if(!shift||shift.draft||shift.waiting||shift.breakActive)return;
-  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};save();render();toast('休憩を開始しました');return;
+  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};save();render();getBreakPlaceGps(shift.id,shift.breakActive.id);toast('休憩を開始しました');return;
  }
+ if(action==='breakBoard'||action==='breakDispatch'){
+  if(!shift?.breakActive||shift.draft||shift.waiting)return;
+  if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}
+  const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');}
+  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');save();render();}return;
+ }
+ if(action==='gpsBreakPlace'){if(shift?.breakActive)getBreakPlaceGps(shift.id,shift.breakActive.id);return;}
  if(action==='endBreak'){
   if(!shift?.breakActive)return;
   endBreak(shift,new Date());save();render();toast('休憩を終了しました');return;
@@ -3155,6 +3167,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }saveLater();}return;
  }
  if(target.dataset.waitRegisterAddress!==undefined&&s?.waiting&&!s.draft){s.waiting.address=target.value;s.waiting.addressSource='manual';saveLater();return;}
+ if(target.dataset.breakPlace!==undefined&&s?.breakActive&&!s.draft){s.breakActive.place=target.value;s.breakActive.placeEdited=true;saveLater();return;}
  if(target.dataset.waitPick&&s?.waiting&&!s.draft){const name=target.value;if(waitingPlaces().includes(name)){s.waiting.place=name;s.waiting.placeId=waitMeta(name).id||'';s.waiting.address=waitAddress(name);s.waiting.placeSource='manual';saveLater();render();}return;}
  if(target.dataset.waitMetaAddress!==undefined||target.dataset.waitMetaRadius!==undefined){if(e.type!=='change')return;const idx=Number(target.dataset.waitMetaAddress??target.dataset.waitMetaRadius),name=waitingPlaces()[idx];if(!name)return;model.prefs.waitPlaceInfo??={};const item={...waitMeta(name)};if(target.dataset.waitMetaAddress!==undefined)item.address=normalizeWaitName(target.value);else{const v=Number(target.value);if(!Number.isInteger(v)||v<10||v>2000){toast('判定距離は10～2000mです',true);return;}item.radius=v;}model.prefs.waitPlaceInfo[name]=item;saveLater();return;}
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
