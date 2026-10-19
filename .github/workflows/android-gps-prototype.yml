@@ -1,0 +1,146 @@
+name: Android GPS prototype (isolated branch)
+on:
+  push:
+    branches:
+      - prototype/android-background-gps-20261016
+    paths:
+      - 'android-prototype/**'
+      - '.github/workflows/android-gps-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-android-prototype:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Ensure Android 35 SDK packages
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: JVM distance tests and Android debug build
+        run: |
+          cd android-prototype
+          gradle --no-daemon :core:test :app:assembleDebug
+      - name: Check side-by-side APK identity
+        run: |
+          APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -f "$APK"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.bridgev036'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='0.3.6-internet-fixed'"
+          # AAPT prints localized app labels differently across runner environments.
+          # Verify source label exactly and print the actual APK labels for diagnosis.
+          grep -F 'android:label="TAXIAPP GPS距離計 修正版"' android-prototype/app/src/main/AndroidManifest.xml
+          "$AAPT" dump badging "$APK" | grep -F 'application-label:' || true
+      - name: Check explicit exit and background separation
+        run: |
+          MAIN=android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt
+          SERVICE=android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTrackingService.kt
+          grep -F '✕ アプリを終了（GPSも停止）' "$MAIN"
+          grep -F 'GPSテストWebを開く' "$MAIN"
+          grep -F 'private fun exitAppCompletely()' "$MAIN"
+          grep -F 'override fun onTaskRemoved(rootIntent: Intent?)' "$SERVICE"
+          grep -F 'engine.stop()' "$SERVICE"
+          grep -F 'android:scheme="taxiappgpsv036"' android-prototype/app/src/main/AndroidManifest.xml
+      - name: Cross-check browser and Android bridge schemes
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          activity = Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt").read_text()
+          manifest = Path("android-prototype/app/src/main/AndroidManifest.xml").read_text()
+          actual = re.search(r'if \(data\.scheme != "([a-z0-9]+)"', activity)
+          declared = re.search(r'android:scheme="([a-z0-9]+)"', manifest)
+          assert actual and declared, "bridge scheme not found"
+          assert actual.group(1) == declared.group(1) == "taxiappgpsv036", (actual.group(1), declared.group(1))
+          assert "if (data.scheme != \"taxiappgpsauto\"" not in activity
+          print("Android URI scheme matches manifest and handler: " + actual.group(1))
+          PY
+      - name: Verify minimal GPS UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          ui=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt").read_text()
+          for word in ["GPS測定を開始","GPS測定を停止","GPSテストWebを開く","アプリを終了","距離をゼロに戻す","offerBrowserDistance","taxiappgpsv036"]:
+              assert word in ui, word
+          for word in ["詳細・実車計測","お客様が乗車","お客様が降車","実車距離を比較","計測結果をコピー","車両の実車区間距離"]:
+              assert word not in ui, word
+          print("Minimal GPS UI verified")
+          PY
+      - name: Verify GPS WebView uses one internal page
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          ui=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/MainActivity.kt").read_text()
+          page=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTestWebActivity.kt").read_text()
+          manifest=Path("android-prototype/app/src/main/AndroidManifest.xml").read_text()
+          assert 'Intent(this, GpsTestWebActivity::class.java)' in ui
+          assert 'android:name=".GpsTestWebActivity"' in manifest
+          assert 'android:host="web"' in manifest
+          assert 'private val scheme = "taxiappgpsv036"' in page
+          assert 'window.location.hash=' in page
+          assert 'web.evaluateJavascript(' in page
+          assert 'WebViewClient' in page
+          assert 'embedded=1' in page
+          assert 'GPSテストWebを開く' in ui
+          print("In-app GPS WebView link and tab-free callback verified")
+          PY
+      - name: Check WebView Internet permission in built APK
+        run: |
+          APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$AAPT" dump permissions "$APK" | grep -F "android.permission.INTERNET"
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest=Path("android-prototype/app/src/main/AndroidManifest.xml").read_text()
+          screen=Path("android-prototype/app/src/main/java/jp/taxiapp/gpsprototype/GpsTestWebActivity.kt").read_text()
+          assert '<uses-permission android:name="android.permission.INTERNET" />' in manifest
+          assert '↻ 再読み込み' in screen
+          assert 'onReceivedError(' in screen
+          assert 'private val scheme = "taxiappgpsv036"' in screen
+          assert '?v=036&embedded=1' in screen
+          print("Internet permission and Web error recovery verified")
+          PY
+      - name: Upload installable GPS test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TAXIAPP-GPS-distance-test-APK
+          path: android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish directly installable Android test APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK="$RUNNER_TEMP/TAXIAPP-GPS-internet-fixed-v0.3.6.apk"
+          cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
+          TAG="gps-distance-internet-v0.3.6"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "TAXIAPP GPS距離計 Web表示修正版 v0.3.6" \
+              --notes "GPS距離測定専用。累計・GPS受信状態・開始停止・Webリンク・終了と確認付きリセットのみ。乗車降車・比較・コピーの表示を撤去。明示終了ではGPS停止、他アプリ利用中は継続。旧試験アプリと共存、計測データは別管理。" \
+              --prerelease
+          fi
