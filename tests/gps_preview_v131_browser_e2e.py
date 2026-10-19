@@ -149,6 +149,12 @@ try:
     assert js("return window.__distanceCalls")==0
     assert "GPS" not in driver.find_element(By.ID,'notice').text
     wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['F']=='4.2')
+    # On-screen 0.1km steppers work even when GPS auto-fill is OFF.
+    js("document.querySelector('[data-col=F]').parentElement.querySelector('[data-km-step=\\\"1\\\"]').click()")
+    wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['F']=='4.3')
+    js("document.querySelector('[data-col=F]').parentElement.querySelector('[data-km-step=\\\"-1\\\"]').click()")
+    wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['F']=='4.2')
+    assert js("return window.__distanceCalls")==0
     # Enable auto, explicitly rebase after OFF/manual checkpoint, then advance GPS +0.5km.
     js("document.querySelector('[data-tab=settings]').click()")
     js("document.querySelector('details[data-gps-settings]').open=true")
@@ -164,10 +170,10 @@ try:
        tripKm:10.154,runId:'v131-native-manual-rebase-ci-test',
        capturedAt:Date.now(),unresolvedGap:false,gapCount:0});""")
     js("document.querySelector('[data-time-now=M]').click()")
-    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359') or {}).get('shifts',[{}])[0].get('draft',{}).get('raw',{}).get('L')=='4.700')
+    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359') or {}).get('shifts',[{}])[0].get('draft',{}).get('raw',{}).get('L')=='4.7')
     draft=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']
     assert draft['raw']['F']=='4.2', 'manual F must stay intact'
-    assert draft['raw']['L']=='4.700', 'native GPS +0.5 km after manual baseline'
+    assert draft['raw']['L']=='4.7', 'native GPS +0.5 km after manual baseline'
     assert draft['raw']['M'], 'time is still recorded'
     # ON + manual: a driver-corrected value must silently become the next GPS baseline.
     js("""const el=document.querySelector('[data-col=L]');
@@ -190,6 +196,46 @@ try:
     assert js("return window.__distanceCalls")==0
     wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['L']=='6.3')
     assert 'MUST_NOT_BE_CALLED' not in driver.find_element(By.ID,'notice').text
+    assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
+    # Highway can be entered in two sections within the same ride, no extra duty.
+    js("document.querySelector('[data-action=highwayAdd][data-id=実]').click()")
+    assert js("return document.querySelectorAll('[data-hwy-row]').length")==1
+    js("document.querySelector('[data-action=highwayAdd][data-id=実]').click()")
+    assert js("return document.querySelectorAll('[data-hwy-row]').length")==2
+    js("""const sections=document.querySelectorAll('[data-hwy-row]');
+      const data=[
+       {entryIC:'吹田',entryTime:'10:00',entryKm:'20.1',exitIC:'豊中',exitTime:'10:12',exitKm:'27.4',fee:'650'},
+       {entryIC:'西宮北',entryTime:'10:25',entryKm:'30.0',exitIC:'宝塚',exitTime:'10:45',exitKm:'39.6',fee:'900'}];
+      sections.forEach((root,index)=>Object.entries(data[index]).forEach(([key,value])=>{
+       const input=root.querySelector('[data-hwy-field="'+key+'"]');input.value=value;
+       input.dispatchEvent(new Event('change',{bubbles:true}));
+      }));""")
+    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft'].get('meta',{}).get('highwaySections',[{},{}])[1].get('entryIC',''))=='西宮北')
+    record=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']
+    assert record['meta']['highwaySections'][1]['entryIC']=='西宮北'
+    projection=js("""return TAXIAPP_HIGHWAY_SECTIONS.project(arguments[0].raw,arguments[0].meta.highwaySections)""",record)
+    assert projection['W']=='1550'
+    assert projection['X']=='16.9'
+    assert projection['Y']=='12.675'
+    # Save the entire ride: primary 44 columns carry rolled-up totals while meta
+    # retains both independent sections for route/75% exemption reporting.
+    js("""const meter=document.querySelector('[data-col=K]');
+      meter.value='1800';meter.dispatchEvent(new Event('change',{bubbles:true}));
+      document.querySelector('[data-setcol=N][data-value=現]').click();""")
+    js("document.querySelector('[data-action=saveDraft]').click()")
+    wait.until(lambda d: len(db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['records'])==1)
+    finished=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['records'][0]
+    assert finished['status']=='complete'
+    assert finished['raw']['W']=='1550'
+    assert finished['raw']['X']=='16.9'
+    assert finished['raw']['Y']=='12.675'
+    assert len(finished['meta']['highwaySections'])==2
+    assert finished['meta']['highwaySections'][0]['entryIC']=='吹田'
+    assert finished['meta']['highwaySections'][1]['entryIC']=='西宮北'
+    summary=js("return TAXIAPP_HIGHWAY_REPORT.collect(arguments[0])",
+      db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0])
+    assert summary['real']['count']==2 and summary['real']['chargeYen']==1550
+    assert summary['real']['exemptKm']==12.675
     assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
     print("PASS Chrome: preview boots, source opt-in, simulated opt-in, 0km departure and reload persisted, production IDB/localStorage preserved")
 except Exception:
