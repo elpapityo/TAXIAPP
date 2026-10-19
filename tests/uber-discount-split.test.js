@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const html=fs.readFileSync('index.html','utf8');
+const a=html.indexOf('function uberAppAmounts(row,settings={}){'),b=html.indexOf('function estimatedCashDue(',a);
+assert.ok(a>0&&b>a);
+const c={number:x=>x==null||x===''?null:Number(x),amountDiscount:r=>Number(r.AR||0),feeSettings:()=>({uberSurcharge:100}),uberHasInCabPayment:r=>r.raw.N!=='U'};
+vm.createContext(c);vm.runInContext(html.slice(a,b),c);
+const sample=(shown,pay='現',discount='620')=>({kind:'ride',raw:{E:'U',N:pay,K:'6200',O:'シ',AR:discount},meta:{uberAppDisplayed:shown}});
+function get(x){c.row=x;return vm.runInContext('uberAppAmounts(row,{})',c)}
+const result=get(sample('5680'));
+assert.equal(result.appPaid,0,'discount is not an Uber app payment');
+assert.equal(result.surcharge,100);
+assert.equal(result.valid,true);
+c.row=sample('5680');
+assert.equal(vm.runInContext('uberDispatchFeeApplies(row,\'\',{})',c),true);
+const paid=get(sample('0','U'));
+assert.equal(paid.appPaid,5580,'app settles discounted fare');
+assert.equal(paid.surcharge,0);
+const partial=get(sample('5000'));
+assert.equal(partial.appPaid,580,'partial app settlement is measured after discount');
+assert.equal(partial.valid,true);
+assert.equal(get(sample('6300','現','')).valid,false,'undiscounted value must not appear valid as surcharge with discount mode');
+console.log('Uber discount split handling passed');
