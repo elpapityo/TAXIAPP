@@ -104,7 +104,7 @@ try:
           el.value='on';el.dispatchEvent(new Event('change',{bubbles:true}));""")
     js("document.querySelector('details[data-gps-settings]').open=true")
     wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,"[data-native-gps-baseline-panel]")))
-    assert "GPS基準は未登録" in driver.find_element(By.CSS_SELECTOR,"[data-native-gps-baseline-status]").text
+    assert "GPS基準は未登録" in js("return document.querySelector('[data-native-gps-baseline-status]').textContent")
     assert not driver.find_elements(By.CSS_SELECTOR,".gps-trip-panel"),"legacy GPS panel shown while Android selected"
     # Browser-only smoke: stub the Android GPS HTTP result. Actual APK/Chrome
     # integration has a separate real-emulator test.
@@ -122,7 +122,53 @@ try:
     assert abs(js("""return window.TAXIAPP_EXTERNAL_GPS.calculated(
        10.154,window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,arguments[0]),
        'v131-native-manual-rebase-ci-test')""",duty_id)-0.5)<0.0001
-    assert "GPS基準を登録しました" in driver.find_element(By.CSS_SELECTOR,"[data-native-gps-baseline-status]").text
+    assert "GPS基準を登録しました" in js("return document.querySelector('[data-native-gps-baseline-status]').textContent")
+    assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
+    assert js("return localStorage.getItem('taxiapp-preview-v0359-auto-distance-v131')") is None
+    # OFF: existing time/location updates work, GPS distance must never be requested.
+    js("""Object.defineProperty(navigator,'geolocation',{configurable:true,value:{
+       getCurrentPosition:ok=>ok({coords:{latitude:34.7001,longitude:135.2001,accuracy:9},timestamp:Date.now()})
+    }});""")
+    js("document.querySelector('[data-tab=drive]').click()")
+    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'[data-action=beginRide]')))
+    js("document.querySelector('[data-action=beginRide]').click()")
+    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'[data-time-now=G]')))
+    js("""window.__distanceCalls=0;
+       window.TAXIAPP_EXTERNAL_GPS.read=async()=>{
+          window.__distanceCalls++;
+          return {tripKm:9.654,runId:'v131-native-manual-rebase-ci-test',
+             capturedAt:Date.now(),unresolvedGap:false,gapCount:0};
+       };""")
+    js("document.querySelector('[data-time-now=G]').click()")
+    assert js("return window.__distanceCalls")==0
+    draft=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']
+    assert str(draft['raw']['F'])==''
+    # Manual input while OFF is silent and must never invoke the GPS bridge.
+    js("""const el=document.querySelector('[data-col=F]');
+       el.value='4.2';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    assert js("return window.__distanceCalls")==0
+    assert "GPS" not in driver.find_element(By.ID,'notice').text
+    assert db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['F']=='4.2'
+    # Enable auto, explicitly rebase after OFF/manual checkpoint, then advance GPS +0.5km.
+    js("document.querySelector('[data-tab=settings]').click()")
+    js("document.querySelector('details[data-gps-settings]').open=true")
+    js("""const el=document.querySelector('[data-native-auto-distance]');
+       el.value='on';el.dispatchEvent(new Event('change',{bubbles:true}));""")
+    assert js("return localStorage.getItem('taxiapp-preview-v0359-auto-distance-v131')")=='on'
+    js("document.querySelector('details[data-gps-settings]').open=true")
+    js("""document.getElementById('gpsShiftRebaseValue').value='4.2';
+       document.querySelector('[data-action=gpsShiftRebase]').click();""")
+    wait.until(lambda d: abs(json.loads(js("return localStorage.getItem('taxiapp-preview-v0359-native-gps-baseline:'+arguments[0])",duty_id))['value']-4.2)<0.001)
+    js("document.querySelector('[data-tab=drive]').click()")
+    js("""window.TAXIAPP_EXTERNAL_GPS.read=async()=>({
+       tripKm:10.154,runId:'v131-native-manual-rebase-ci-test',
+       capturedAt:Date.now(),unresolvedGap:false,gapCount:0});""")
+    js("document.querySelector('[data-time-now=M]').click()")
+    wait.until(lambda d: (db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359') or {}).get('shifts',[{}])[0].get('draft',{}).get('raw',{}).get('L')=='4.700')
+    draft=db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']
+    assert draft['raw']['F']=='4.2', 'manual F must stay intact'
+    assert draft['raw']['L']=='4.700', 'native GPS +0.5 km after manual baseline'
+    assert draft['raw']['M'], 'time is still recorded'
     assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
     print("PASS Chrome: preview boots, source opt-in, simulated opt-in, 0km departure and reload persisted, production IDB/localStorage preserved")
 except Exception:
