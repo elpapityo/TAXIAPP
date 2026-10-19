@@ -39,6 +39,7 @@ class GpsTrackingService : Service() {
         private const val NOTIFICATION_ID = 201
     }
 
+    private var loopback: GpsLoopbackServer?=null
     private lateinit var manager: LocationManager
     private lateinit var engine: TripAccumulator
     private var listening = false
@@ -173,6 +174,8 @@ class GpsTrackingService : Service() {
             ACTION_STOP -> {
                 clearAlightRequests()
                 stopListening()
+                loopback?.stop()
+                loopback=null
                 engine.stop()
                 GpsStore.save(this, engine.snapshot())
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -212,6 +215,12 @@ class GpsTrackingService : Service() {
                         startForeground(NOTIFICATION_ID, notification())
                     }
                     startListening()
+                    try {
+                        if(loopback==null)loopback=GpsLoopbackServer(applicationContext).also{it.start()}
+                    }catch(_:Exception){
+                        engine.interrupted("外部ブラウザのローカル接続ができません")
+                        GpsStore.save(this,engine.snapshot())
+                    }
                 }
             }
             else -> {
@@ -289,6 +298,8 @@ class GpsTrackingService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         clearAlightRequests()
         stopListening()
+        loopback?.stop()
+        loopback=null
         engine.stop()
         GpsStore.save(this, engine.snapshot())
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -299,6 +310,8 @@ class GpsTrackingService : Service() {
     override fun onDestroy() {
         clearAlightRequests()
         stopListening()
+        loopback?.stop()
+        loopback=null
         // If killed without ACTION_STOP, mark an incomplete trip for inspection.
         if (engine.snapshot().running) {
             engine.interrupted("計測サービスが終了しました")

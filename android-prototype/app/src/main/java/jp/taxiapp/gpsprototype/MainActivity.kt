@@ -3,6 +3,7 @@ package jp.taxiapp.gpsprototype
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
@@ -67,7 +68,7 @@ class MainActivity : Activity() {
         }
         add(label("GPS DISTANCE LAB · NATIVE SENSOR", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n計測専用", 29f), 3)
-        add(label("この画面はGPS計測と受信状態の確認だけです。0kmの記録・区間距離・手入力補正は別のWeb画面で操作します。", 13f, 0xFFAFC6D3.toInt()), 8)
+        add(label("この画面はGPS計測と受信状態の確認だけです。0kmの記録・区間距離・手入力補正は外部ブラウザで操作します。", 13f, 0xFFAFC6D3.toInt()), 8)
         val meter = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = rounded(0xFF152A3F.toInt(), 0xFF3C6478.toInt())
@@ -89,10 +90,17 @@ class MainActivity : Activity() {
             handler.postDelayed({ updateStatus() }, 500)
         }
         add(stopButton, 10)
-        val openWeb = button("↗ 距離テストWeb画面を開く（アプリ内）", 0xFF88C6FF.toInt(), 0xFF0A1A2D.toInt())
-        openWeb.setOnClickListener { startActivity(Intent(this, GpsTestWebActivity::class.java)) }
+        val openWeb = button("↗ 外部ブラウザで距離テストを開く", 0xFF88C6FF.toInt(), 0xFF0A1D2D.toInt())
+        openWeb.setOnClickListener {
+            if(!GpsStore.load(this).running){
+                Toast.makeText(this,"先にGPS測定を開始してください",Toast.LENGTH_LONG).show()
+            }else{
+                startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(GpsLoopbackServer.URL))
+                    .addCategory(Intent.CATEGORY_BROWSABLE))
+            }
+        }
         add(openWeb, 23)
-        add(label("操作：① GPS測定開始 → ② 有効GPSの受信確認 → ③ Web画面で0km記録。\n\nGPSを取得してもChromeのタブは増えません。", 13f, 0xFFAFC6D3.toInt()), 12)
+        add(label("操作：① GPS測定開始 → ② 有効GPSの受信確認 → ③ Web画面で0km記録。\n\nGPS取得時は同じブラウザタブ内で通信します。", 13f, 0xFFAFC6D3.toInt()), 12)
         val scroll=ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
