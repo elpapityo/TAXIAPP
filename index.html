@@ -441,6 +441,18 @@ html[data-ui-theme="night"] .drive-layout-choice .btn.active{background:#1680c7;
 html[data-ui-theme="night"] .hero .btn.big{border-radius:14px}
 html[data-ui-theme="night"] .card{box-shadow:0 10px 32px #020b182b}
 @media(min-width:1051px){html[data-ui-screen-mode="full"] .content-layout,html[data-ui-screen-mode="pc"] .content-layout{grid-template-columns:235px minmax(0,1fr)}}
+/* Match UI LAB desktop canvas: original navigation stays usable, but the diary fills the page. */
+@media(min-width:1051px){
+ #app:has(.preview-duty-summary) .content-layout{display:block}
+ #app:has(.preview-duty-summary) .sidebar{position:static;margin:0 0 10px}
+ #app:has(.preview-duty-summary) .sidebar .nav{display:flex;gap:6px;padding:5px;background:#132436;border-radius:15px}
+ #app:has(.preview-duty-summary) .sidebar .nav button{width:auto;flex:1;justify-content:center;min-height:42px;padding:8px;gap:5px}
+ #app:has(.preview-duty-summary) .sidebar .nav .nav-label{font-size:12px}
+ #app:has(.preview-duty-summary) .sidebar-note{display:none}
+}
+#app:has(.preview-duty-summary) .layout{max-width:1450px}
+#app:has(.preview-duty-summary) .preview-compact{box-shadow:0 15px 50px #020b1845}
+#app:has(.preview-duty-summary) .preview-duty-summary{box-shadow:0 8px 25px #020b1829}
 /* Compact UI LAB screen matches the reference's information hierarchy. */
 .preview-compact{background:#132436;border:1px solid #36516a;border-radius:18px;padding:12px;color:#f5faff}
 .preview-quick-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:11px}
