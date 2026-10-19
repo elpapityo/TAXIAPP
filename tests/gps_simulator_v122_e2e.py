@@ -74,6 +74,11 @@ def tap_native_button(fragment):
             pass
         adb("shell", "input", "swipe", "530", "1980", "530", "1150", "350", timeout=30)
         time.sleep(1)
+    note("Native button dump on failure",
+         requested=fragment,
+         xml=adb("shell","cat","/sdcard/gps-test-window.xml",check=False)[:14000],
+         active=adb("shell","dumpsys","activity","activities",check=False)[-4500:],
+         packages=adb("shell","pm","list","packages",APP,check=False))
     raise AssertionError(f"Could not locate native button after scrolling: {fragment}")
 
 def http(path, timeout=5):
@@ -269,6 +274,11 @@ try:
          browser_second_km=second_gps, corrected_second_km=expected)
 except Exception as exc:
     note("FAIL", error=str(exc), traceback=traceback.format_exc())
+    try:
+        adb("shell","screencap","-p","/sdcard/gps-lab-android-failure.png",check=False)
+        adb("pull","/sdcard/gps-lab-android-failure.png",str(ROOT/"failure-android.png"),check=False)
+    except Exception:
+        pass
     if driver:
         try:
             driver.save_screenshot(str(ROOT / "failure-browser.png"))
