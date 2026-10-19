@@ -2,6 +2,7 @@ name: TAXIAPP tests
 on:
   push:
     branches:
+      - feat/diary-distance-native-loopback-integration-20261019
       - main
       - "feature/**"
       - "fix/**"
