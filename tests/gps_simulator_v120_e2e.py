@@ -123,7 +123,7 @@ try:
     adb("forward", "tcp:48765", "tcp:48765")
 
     identity = wait_http("api/identity",
-        lambda x: x.get("webVersion") == "1.1.0" and
+        lambda x: x.get("webVersion") == "1.2.0" and
                   x.get("packageId") == APP, timeout=45)
     note("Real native localhost HTTP identity verified", identity=identity)
     assert identity.get("marker") == "GPS_DISTANCE_LAB_SIMULATOR_V1_2"
@@ -185,11 +185,11 @@ try:
     # the same TripAccumulator and the same local HTTP server as normal GPS.
     tap_native_button("模擬 40km/h")
     before = wait_http("api/status",
-        lambda x: x.get("simSpeedKmh")==40 and x.get("tripKm",0)>=0.08,
+        lambda x: x.get("simSpeedKmh")==40 and x.get("tripKm",0)>=0.12,
         timeout=35)
     note("Android SIMULATED native GPS cumulative increased", status=before)
     assert before["simulated"] is True
-    assert before["tripKm"]>0.08, "simulator must generate nonzero distance"
+    assert before["tripKm"]>0.12, "simulator must generate nonzero distance"
 
     browser_row_button = driver.find_element(By.CSS_SELECTOR, "[data-capture='0']")
     assert browser_row_button.is_enabled()
