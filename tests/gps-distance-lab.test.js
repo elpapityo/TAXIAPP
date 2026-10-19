@@ -59,6 +59,59 @@ assert.match(node('start-feedback').textContent,/記録が完了/);
 assert.equal(JSON.parse(local.get('gps-distance-lab-browser-v080')).startNative,88.25);
 // Captures remain on one screen; with prior missing GPS allowed after retry.
 
+// Reproduce 2026-10-19 real screenshot: "取得済み" button, but GPS all
+// em dashes and "記録時刻：未取得" after a missing preceding checkpoint.
+// Do not delete the stored GPS value or manual correction during recovery.
+const missingHistory=fresh => ({
+  startNative:1.372,startAt:1792381200000,
+  rows:[
+   {gps:null,manual:'',at:null},
+   {gps:1.572,manual:'200',at:null},
+   {gps:1.672,manual:'300',at:1792381220000},
+   {gps:1.772,manual:'',at:null}
+  ]
+});
+const stored=missingHistory();
+const recover=window.DistanceLabTest.derive(stored);
+assert.equal(recover[0].finalKm,null,'never invent a missing first checkpoint');
+assert.equal(recover[1].gpsKm,0.2,'later GPS cumulative stays visible');
+assert.equal(recover[1].legKm,0.2,'gap from last known native baseline is explicit');
+assert.equal(recover[1].finalKm,200,'manual input preserved, not silently dropped');
+assert.equal(recover[1].confirmed,false,'GPS time missing is unverified');
+assert.match(recover[1].error,/記録時刻がありません/);
+assert.equal(recover[2].gpsKm,0.3,'following readings do not become invisible');
+assert.equal(recover[2].legKm,0.1);
+assert.equal(recover[2].confirmed,true);
+assert.equal(recover[3].confirmed,false,'timestamp missing is retryable');
+assert.equal(stored.rows[1].manual,'200');
+assert.equal(stored.rows[2].manual,'300');
+const previewLocal=new Map([['gps-distance-lab-browser-v080',JSON.stringify(stored)]]);
+const previewNodes=new Map();
+function previewNode(id){
+ if(!previewNodes.has(id))previewNodes.set(id,{
+  textContent:'',innerHTML:'',hidden:false,disabled:false,value:'',className:'',
+  addEventListener(){},getAttribute(){return null;}
+ });
+ return previewNodes.get(id);
+}
+const previewWin={DistanceNative:{getStatus(){return JSON.stringify({
+  running:true,ageMs:1000,accuracyMeters:8,gaps:0,unresolvedGap:false
+ });},requestCapture(){}}};
+previewWin.crypto=context.crypto;
+vm.runInNewContext(source,{window:previewWin,document:{getElementById:previewNode},
+  localStorage:{getItem(k){return previewLocal.get(k)||null;},setItem(k,v){previewLocal.set(k,v);}},
+  setInterval(){},Date,Math,JSON,Number,String,Array,Object,RegExp,crypto:context.crypto,confirm(){return true;}
+});
+const uiRows=previewNode('rows').innerHTML;
+assert.match(uiRows,/保存済みGPS内部累計：1\.572 km（未確認）/);
+assert.match(uiRows,/GPS累計<\/label><strong>0\.200<\/strong>/);
+assert.match(uiRows,/GPS区間<\/label><strong>0\.200<\/strong>/);
+assert.match(uiRows,/再取得/);
+assert.match(uiRows,/GPS累計<\/label><strong>0\.300<\/strong>/);
+assert.match(uiRows,/200mなら 0\.200/);
+assert.equal(JSON.parse(previewLocal.get('gps-distance-lab-browser-v080')).rows[1].manual,'200');
+console.log('PASS: screenshot missing-time records repaired without loss, later GPS and corrections visible');
+
 const {fresh,derive,goodKm}=window.DistanceLabTest;
 let state=fresh();
 state.startNative=70.25;

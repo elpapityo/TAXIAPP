@@ -108,23 +108,37 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){sh
 function fmt(k){return k===null?'—':k.toFixed(3);}
 function when(t){return t?new Date(t).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'未取得';}
 function derive(s){
- var last=s.startNative,base=0,valid=last!==null,rawAccum=0;
+ // Every GPS checkpoint keeps its native cumulative reading independently.
+ // An unrecorded checkpoint must NOT hide every later checkpoint's measurements.
+ var cursor=s.startNative,base=0,skipped=0;
  return s.rows.map(function(r,i){
-  var leg=null,auto=null,cum=null,previousBase=base,error='';
-  if(r.gps!==null){
-   if(!valid){error='前の地点でGPSを取得してください';}
-   else if(r.gps+0.00001<last){error='GPS累計がリセットされています';}
-   else{
-    leg=goodKm(r.gps-last);
-    cum=goodKm(r.gps-s.startNative);
-    auto=goodKm(base+leg);
-   }
+  var leg=null,auto=null,cum=null,previousBase=base,error='',usable=false;
+  var stamped=Number.isFinite(r.at)&&r.at>0;
+  if(r.gps===null){
+   skipped++;
+  }else if(s.startNative===null){
+   error='0km基準点が未記録です。先に基準点を設定してください。';skipped++;
+  }else if(r.gps+0.00001<s.startNative||r.gps+0.00001<cursor){
+   error='保存済みのGPS累計 '+fmt(r.gps)+' km は基準点または前回GPSより小さいため再取得が必要です。';
+   skipped++;
+  }else{
+   // A later cumulative GPS reading remains valid even when a row was missed.
+   leg=goodKm(r.gps-cursor);
+   cum=goodKm(r.gps-s.startNative);
+   auto=goodKm(base+leg);
+   usable=true;
+   if(skipped)error='前の未取得地点を含むGPS差分です。欠けた地点ごとの距離には分割できません。';
+   if(!stamped)error+=' 保存済みGPS値には記録時刻がありません。値を確認し、必要なら再取得してください。';
+   cursor=r.gps;skipped=0;
   }
   var man=goodKm(r.manual),result=auto!==null?(man!==null?man:auto):null;
-  if(auto!==null){last=r.gps;base=result;valid=true;}else{valid=false;}
-  return {number:i+1,gpsKm:cum,legKm:leg,autoKm:auto,baseKm:previousBase,manualKm:man,finalKm:result,at:r.at,error:error};
+  if(usable)base=result;
+  return {number:i+1,gpsKm:cum,legKm:leg,autoKm:auto,baseKm:previousBase,
+    manualKm:man,finalKm:result,at:r.at,error:error,
+    usable:usable,confirmed:usable&&stamped,rawGps:r.gps,missingBefore:skipped>0};
  });
 }
+
 function show(message,error){$('message').textContent=message;$('message').className='notice'+(error?' error':'');}
 function startFeedback(message,variant){$('start-feedback').textContent=message;$('start-feedback').className='start-feedback'+(variant?' '+variant:'');}
 function safe(s){return String(s).replace(/[&<>"']/g,function(v){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[v];});}
@@ -141,7 +155,7 @@ function render(){
  $('gps-leg').textContent=last?fmt(last.legKm)+' km':'—';
  $('hero-mark').textContent=last?'CHECK '+String(last.number).padStart(2,'0'):(state.startNative===null?'START READY':'ZERO SET');
  $('rows').innerHTML=view.map(function(r,i){
-   var deltaText=r.autoKm===null?'GPS取得後に表示':'前の補正距離 '+fmt(r.baseKm)+' + GPS区間 '+fmt(r.legKm)+' = '+fmt(r.autoKm)+' km';
+   var deltaText=r.autoKm===null?'GPS未取得・計算不可':'前の補正距離 '+fmt(r.baseKm)+' + GPS区間 '+fmt(r.legKm)+' = '+fmt(r.autoKm)+' km';
    if(r.manualKm!==null&&r.autoKm!==null)deltaText+=' ／ 手入力で '+fmt(r.manualKm)+' km に変更';
    var diff='',prevManual=i===0?0:goodKm(state.rows[i-1].manual);
    if(r.manualKm!==null&&r.legKm!==null&&prevManual!==null&&r.manualKm>=prevManual){
@@ -152,12 +166,16 @@ function render(){
     }
    }
    return '<article class="record"><div class="record-hd"><div><small>CHECKPOINT '+String(i+1).padStart(2,'0')+'</small><h3>計測地点 '+(i+1)+'</h3></div>'+
-    '<button class="measure-btn" data-capture="'+i+'" '+(!nativeReady||state.startNative===null||!!pending||r.gps!==null||(i>0&&view[i-1].finalKm===null)?'disabled':'')+' type="button">'+(r.gps===null?'GPS取得':'取得済み')+'</button></div>'+
+    '<button class="measure-btn" data-capture="'+i+'" '+(!nativeReady||state.startNative===null||!!pending||r.confirmed?'disabled':'')+' type="button">'+(r.confirmed?'取得済み':r.gps!==null?'再取得':'GPS取得')+'</button></div>'+
     '<div class="metrics"><div class="metric"><label>GPS累計</label><strong>'+fmt(r.gpsKm)+'</strong></div><div class="metric"><label>GPS区間</label><strong>'+fmt(r.legKm)+'</strong></div><div class="metric"><label>補正後累計</label><strong>'+fmt(r.finalKm)+'</strong></div></div>'+
     '<label class="input-hd" for="manual-'+i+'">車両トリップ累計の補正（任意・km）</label><input id="manual-'+i+'" class="vehicle" data-manual="'+i+'" inputmode="decimal" type="number" step=".001" min="0" max="10000" placeholder="車両の値を入力" value="'+safe(state.rows[i].manual)+'">'+
-    '<div class="capture-feedback" aria-live="polite"></div><div class="explain">'+safe(r.error||deltaText)+'</div>'+diff+'<div class="read-time">記録時刻：'+safe(when(r.at))+'</div></article>';
+    '<div class="helper">※ 距離の単位はkmです。200mなら 0.200 と入力。</div><div class="capture-feedback" aria-live="polite"></div><div class="explain">'+safe(r.error||deltaText)+'</div>'+
+    (r.rawGps!==null&&!r.confirmed?'<div class="read-time">保存済みGPS内部累計：'+fmt(r.rawGps)+' km（未確認）</div>':'')+
+    diff+'<div class="read-time">記録時刻：'+safe(when(r.at))+'</div></article>';
  }).join('');
  $('add-btn').disabled=view.length>=MAX;
+ var anomalies=view.filter(function(x){return x.rawGps!==null&&!x.confirmed||x.error!=='';});
+ $('row-count').textContent=view.length+' 区間'+(anomalies.length?'・要確認 '+anomalies.length:'');
 }
 function request(target){
  if(!nativeReady){show('GPS計測アプリからこの外部ブラウザ画面を開いてください。',true);return;}
@@ -165,7 +183,9 @@ function request(target){
  if(state.startNative!==null&&target==='start'){show('開始地点は記録済みです。やり直す場合は初期化してください。',true);return;}
  if(target!=='start'){
   var i=Number(target),v=derive(state);
-  if(!Number.isInteger(i)||i<0||i>=state.rows.length||state.startNative===null||(i>0&&v[i-1].finalKm===null)||state.rows[i].gps!==null){show('GPSはスタートから順番に取得してください。',true);return;}
+  if(!Number.isInteger(i)||i<0||i>=state.rows.length||state.startNative===null||v[i].confirmed){
+   show('その地点は取得済みです。未確認地点だけ再取得できます。',true);return;
+  }
  }
  if(!window.crypto||!crypto.getRandomValues){show('安全な取得番号を作成できません。',true);return;}
  var bytes=crypto.getRandomValues(new Uint8Array(16));
@@ -188,8 +208,20 @@ function onNativeSnapshot(payload){
    if(state.rows.some(function(x){return x.gps!==null;}))throw Error('基準地点は途中変更できません');
    state.startNative=n;state.startAt=d.capturedAt;
   }else{
-   var i=Number(target),prev=i===0?state.startNative:state.rows[i-1].gps;
-   if(!Number.isInteger(i)||i<0||i>=state.rows.length||prev===null||n<prev)throw Error('GPS累計が前回より小さいため記録できません');
+   var i=Number(target);
+   if(!Number.isInteger(i)||i<0||i>=state.rows.length)throw Error('取得地点が不正です');
+   // Check against the most recent usable earlier checkpoint, not necessarily
+   // the immediately previous row (which may never have obtained GPS).
+   var before=state.startNative;
+   for(var j=0;j<i;j++){
+    if(state.rows[j].gps!==null&&state.rows[j].gps>=before)before=state.rows[j].gps;
+   }
+   if(n+0.00001<before)throw Error('GPS累計が前の記録より小さいため取得できません。GPS測定の再起動を確認してください。');
+   var after=null;
+   for(var k=i+1;k<state.rows.length;k++){
+    if(state.rows[k].gps!==null){after=state.rows[k].gps;break;}
+   }
+   if(after!==null&&n>after+0.00001)throw Error('この地点の後に保存されたGPS累計を超えます。過去の地点には現在のGPSを割り当てられません。末尾に新しい地点を追加してください。');
    state.rows[i].gps=n;state.rows[i].at=d.capturedAt;
   }
   pending=null;save();render();show((target==='start'?'基準地点':'地点 '+(Number(target)+1))+' のGPS取得が完了しました。'+(d.unresolvedGap?' ⚠ 過去のGPS欠測があります。必要に応じて車両トリップで補正してください。':''),d.unresolvedGap);
