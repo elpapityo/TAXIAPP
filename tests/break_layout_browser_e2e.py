@@ -12,7 +12,7 @@ opts.add_argument('--user-data-dir='+tempfile.mkdtemp(prefix='taxiapp-break-ui-'
 browser=webdriver.Chrome(options=opts)
 try:
     browser.get('http://127.0.0.1:8765/')
-    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.95' in d.title)
+    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.96' in d.title)
     browser.execute_script("""
       const host=document.createElement('div');
       host.id='test-break-layout-host';
@@ -118,9 +118,7 @@ try:
     # Separate Settings menus can be opened individually or together.
     browser.execute_script("document.querySelector('[data-tab=settings]').click()")
     topLevel=[
-      'data-business-field-settings','data-drive-status-settings',
-      'data-text-size-settings','data-button-size-settings',
-      'data-help-settings','data-theme-settings','data-ui-preview-settings'
+      'data-business-field-settings','data-drive-status-settings','data-appearance-settings'
     ]
     WebDriverWait(browser,12).until(
         lambda d: d.execute_script(
@@ -132,25 +130,49 @@ try:
       const parent=panels[0];
       const childA=parent.querySelector('details[data-ride-field-settings]');
       const childB=parent.querySelector('details[data-cruising-summary-settings]');
-      const initiallyClosed=panels.every(x=>!x.open)&&!!childA&&!childA.open&&!!childB&&!childB.open;
-      const noSeparateMenus=document.querySelectorAll('details.settings-advanced[data-ride-field-settings],details.settings-advanced[data-cruising-summary-settings]').length===0;
+      const appearance=panels[2];
+      const appearanceKeys=['data-text-size-settings','data-button-size-settings',
+        'data-help-settings','data-theme-settings','data-ui-preview-settings'];
+      const appearanceChildren=appearanceKeys.map(k=>appearance.querySelector('details['+k+']'));
+      const allPresent=appearanceChildren.every(x=>!!x);
+      const initiallyClosed=panels.every(x=>!x.open)&&!!childA&&!childA.open&&
+        !!childB&&!childB.open&&allPresent&&appearanceChildren.every(x=>!x.open);
+      const noSeparateMenus=document.querySelectorAll(
+        'details.settings-advanced[data-text-size-settings],'+
+        'details.settings-advanced[data-button-size-settings],'+
+        'details.settings-advanced[data-help-settings],'+
+        'details.settings-advanced[data-theme-settings],'+
+        'details.settings-advanced[data-ui-preview-settings],'+
+        'details.settings-advanced[data-ride-field-settings],'+
+        'details.settings-advanced[data-cruising-summary-settings]').length===0;
       parent.open=true;childA.open=true;
       const independentlyOpen=parent.open&&childA.open&&!childB.open&&!panels[1].open;
       childB.open=true;childA.open=false;
       const secondIndependent=parent.open&&!childA.open&&childB.open;
+      appearance.open=true;appearanceChildren[0].open=true;
+      const appearanceIndependent=appearance.open&&appearanceChildren[0].open&&
+        appearanceChildren.slice(1).every(x=>!x.open);
+      appearanceChildren[1].open=true;appearanceChildren[0].open=false;
+      const appearanceSecond=appearance.open&&!appearanceChildren[0].open&&appearanceChildren[1].open;
+      const appearanceOptions=appearanceKeys.map((k,i)=>appearanceChildren[i].querySelectorAll(
+        '[data-ui-key], [data-action=resetUi]')).map(nodes=>nodes.length);
       return {initiallyClosed,noSeparateMenus,independentlyOpen,secondIndependent,
+        appearanceIndependent,appearanceSecond,appearanceOptions,allPresent,
         obsolete:document.querySelectorAll('[data-ui-key=cruisingButtonsLayout]').length,
-        themeChoices:panels[5].querySelectorAll('[data-ui-key=theme]').length,
+        themeChoices:appearanceChildren[3].querySelectorAll('[data-ui-key=theme]').length,
         rideChoices:childA.querySelectorAll('[data-ride-field]').length,
         cruisingChoices:childB.querySelectorAll('[data-cruising-summary-field]').length};
     """,topLevel)
     assert not state.get('missing'),state
     assert state['initiallyClosed'],state
     assert state['noSeparateMenus'],state
+    assert state['allPresent'],state
     assert state['independentlyOpen'] and state['secondIndependent'],state
+    assert state['appearanceIndependent'] and state['appearanceSecond'],state
+    assert len(state['appearanceOptions'])==5 and all(x>0 for x in state['appearanceOptions']),state
     assert state['obsolete']==0,state
     assert state['themeChoices']==2,state
     assert state['rideChoices']>0 and state['cruisingChoices']>0,state
-    print('PASS Chrome: cruising fixed 2x2; grouped parent + 2 independently nested field menus')
+    print('PASS Chrome: cruising fixed 2x2; 2 field choices and 5 appearance panels grouped/independent')
 finally:
     browser.quit()
