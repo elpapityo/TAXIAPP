@@ -18,7 +18,7 @@ for(const label of ['現在の営業状態','現在の売上','残り時間','�
 model.prefs.cruisingSummaryFields={state:false,sales:false,remaining:false,distance:false,route:false};
 const cleared=render();
 for(const label of ['現在の営業状態','現在の売上','残り時間','基準距離の残り','乗車地','降車地'])assert.ok(!cleared.includes(label),'should hide '+label);
-model.prefs.cruisingSummaryFields={state:true,route:true};
+model.prefs.cruisingSummaryFields={state:true,sales:false,remaining:false,distance:false,route:true};
 const selective=render();
 assert.match(selective,/現在の営業状態/);
 assert.match(selective,/乗車地/);
