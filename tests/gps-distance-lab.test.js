@@ -286,7 +286,7 @@ assert.doesNotMatch(bridge,/location\.href\s*=|window\.open\s*\(|taxiappgpslab/)
 assert.match(manifest,/android\.permission\.INTERNET/);
 assert.match(manifest,/android:usesCleartextTraffic="true"/);
 assert.doesNotMatch(manifest,/GpsTestWebActivity/);
-assert.match(manifest,/android:label="GPS距離ラボ v1.3.1 模擬テスト"/);
+assert.match(manifest,/android:label="GPS距離ラボ v1.3.2 UI検証"/);
 assert.match(manifest,/android:scheme="taxiappgpsdiaryv131"/);
 console.log('PASS: external browser loopback 127.0.0.1:48768, on-demand GPS refresh, same-tab capture, zero basis, no embedded WebView');
 
