@@ -62,6 +62,30 @@ object GpsStore {
     fun browserConnectionIssue(context: Context): String =
         prefs(context).getString("browserIssue","") ?: ""
 
+    /**
+     * UI-only zero point for the current measurement run.
+     * It never mutates the native cumulative GPS trip or the HTTP API,
+     * so the diary's independent manual corrections remain authoritative.
+     */
+    fun setDisplayZero(context: Context, runId: String, rawTripKm: Double): Boolean {
+        if (runId.isBlank() || currentRunId(context) != runId ||
+            !rawTripKm.isFinite() || rawTripKm < 0.0) return false
+        return prefs(context).edit()
+            .putString("displayZeroRunId", runId)
+            .putString("displayZeroRawKm", rawTripKm.toString())
+            .commit()
+    }
+
+    fun displayDistanceKm(context: Context, rawTripKm: Double): Double? {
+        val p = prefs(context)
+        val runId = currentRunId(context)
+        if (runId.isBlank() || p.getString("displayZeroRunId", "") != runId) return null
+        val base = p.getString("displayZeroRawKm", null)?.toDoubleOrNull() ?: return null
+        if (!rawTripKm.isFinite() || !base.isFinite() ||
+            rawTripKm < 0.0 || base < 0.0 || rawTripKm + 0.00001 < base) return null
+        return (rawTripKm - base).coerceAtLeast(0.0)
+    }
+
     fun clear(context: Context) { prefs(context).edit().clear().apply() }
     fun noteGpsCallback(context: Context) {
         prefs(context).edit().putLong("lastGpsCallbackAt", System.currentTimeMillis()).apply()
@@ -82,6 +106,8 @@ object GpsStore {
     fun startNewRun(context: Context) {
         prefs(context).edit()
             .putString("currentRunId", java.util.UUID.randomUUID().toString())
+            .remove("displayZeroRunId")
+            .remove("displayZeroRawKm")
             .commit()
     }
     fun currentRunId(context: Context): String =
