@@ -57,8 +57,13 @@ assert.match(rideSummary,/data-duty-field="payment">現金<\/strong>/);
 shift.draft.raw.E='G';
 assert.match(evalExpr('renderDutyStatus(model.shifts[0])'),/data-duty-field="dispatchType">GO<\/strong>/);
 delete shift.draft.raw.E;delete shift.draft.raw.N;
-let htmlChooser=evalExpr('renderDriveLayoutChooser()');
-for(const [key,label] of [['portrait','縦表示'],['landscape','横表示']])assert.ok(htmlChooser.includes('data-ui-key="orientationMode" data-ui-value="'+key+'"')&&htmlChooser.includes(label));
+const htmlChooser=evalExpr('renderDriveLayoutChooser()');
+assert.match(htmlChooser,/画面の向きは「設定」から変更できます/,'drive header refers to settings menu');
+assert.doesNotMatch(htmlChooser,/data-ui-key="orientationMode"/);
+const orientationChoices=evalExpr("renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])");
+for(const [key,label] of [['portrait','縦表示'],['landscape','横表示']])
+ assert.ok(orientationChoices.includes('data-ui-key="orientationMode" data-ui-value="'+key+'"')&&orientationChoices.includes(label));
+assert.match(html,/<summary>営業入力の画面サイズ・向き<\/summary>/);
 evalExpr("setUiOption('stickyDutySummary','off')");
 assert.equal(document.documentElement.dataset.uiStickyDutySummary,'off');
 evalExpr("setUiOption('stickyDutySummary','on')");
