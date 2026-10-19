@@ -87,5 +87,64 @@ try:
         assert data['buttonHeight']>=37,(theme,mode,'button target unexpectedly small',data)
         print('PASS',theme,mode,orientation,button_size,width,'2x2, contrast, spacing')
     print('PASS Chrome: break 2x2 across display modes, day/night clock visibility, global card density')
+    # The old cruising layout setting is gone. Its actions remain 2x2 under
+    # every manually selected device/orientation mode, including portrait and half.
+    browser.execute_script("""
+      const host=document.getElementById('test-break-layout-host');
+      host.insertAdjacentHTML('beforeend',
+        '<div class="action-grid cruising-action-grid cruising-action-compact" id="test-cruising-actions">'+
+        '<button class="btn big">乗車</button><button class="btn big">アプリ迎車</button>'+
+        '<button class="btn big">待機</button><button class="btn big">休憩</button>'+
+        '<button class="btn cruising-history-btn">営業履歴</button></div>');
+    """)
+    for mode,orientation,width in (('phone','portrait',360),('half','portrait',320),
+                                   ('half','landscape',560),('tablet','landscape',900)):
+        browser.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',
+            {'width':width,'height':850,'deviceScaleFactor':1,'mobile':True})
+        result=browser.execute_script("""
+          document.documentElement.dataset.uiScreenMode=arguments[0];
+          document.documentElement.dataset.uiOrientationMode=arguments[1];
+          const grid=document.getElementById('test-cruising-actions');
+          const buttons=[...grid.querySelectorAll('button')].map(el=>el.getBoundingClientRect());
+          return {columns:getComputedStyle(grid).gridTemplateColumns,
+            positions:buttons.map(r=>[r.left,r.top,r.width])};
+        """,mode,orientation)
+        x=result['positions']
+        assert abs(x[0][1]-x[1][1])<2,(mode,orientation,'cruising first row',result)
+        assert abs(x[2][1]-x[3][1])<2,(mode,orientation,'cruising second row',result)
+        assert x[1][0]>x[0][0]+15,(mode,orientation,'cruising columns',result)
+        assert x[2][1]>x[0][1]+15,(mode,orientation,'cruising rows',result)
+        assert x[4][2]>=x[0][2]*1.8,(mode,orientation,'history spans full row',result)
+    # Separate Settings menus can be opened individually or together.
+    browser.execute_script("document.querySelector('[data-tab=settings]').click()")
+    menus=[
+      'data-ride-field-settings','data-drive-status-settings',
+      'data-cruising-summary-settings','data-text-size-settings',
+      'data-button-size-settings','data-help-settings',
+      'data-theme-settings','data-ui-preview-settings'
+    ]
+    WebDriverWait(browser,12).until(
+        lambda d: d.execute_script(
+            "return document.querySelectorAll('details.settings-advanced[data-ride-field-settings]').length===1"))
+    state=browser.execute_script("""
+      const keys=arguments[0];
+      const panels=keys.map(k=>document.querySelector('details.settings-advanced['+k+']'));
+      if(panels.some(x=>!x))return {missing:keys.filter((_,i)=>!panels[i])};
+      const labels=panels.map(x=>x.querySelector(':scope>summary').textContent.trim());
+      const initiallyClosed=panels.every(x=>!x.open);
+      panels[0].open=true;panels[6].open=true;
+      const independentlyOpen=panels[0].open && panels[6].open && !panels[1].open;
+      return {labels,initiallyClosed,independentlyOpen,
+        obsolete:document.querySelectorAll('[data-ui-key=cruisingButtonsLayout]').length,
+        themeChoices:panels[6].querySelectorAll('[data-ui-key=theme]').length,
+        rideChoices:panels[0].querySelectorAll('[data-ride-field]').length};
+    """,menus)
+    assert not state.get('missing'),state
+    assert state['initiallyClosed'],state
+    assert state['independentlyOpen'],state
+    assert state['obsolete']==0,state
+    assert state['themeChoices']==2,state
+    assert state['rideChoices']>0,state
+    print('PASS Chrome: cruising fixed 2x2; 8 independent collapsed settings menus; obsolete selector absent')
 finally:
     browser.quit()
