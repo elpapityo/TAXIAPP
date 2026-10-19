@@ -57,6 +57,7 @@ function factory(deps){
  function fillDistance(shift,record,field,source='event'){
   // A linked native GPS device is the sole source of automatic distance values.
   try{if(root.TAXIAPP_EXTERNAL_GPS)return false;}catch{}
+  if(root.TAXIAPP_DISTANCE_ENABLED?.(field)===false)return false;
   if(!trusted(shift)||!record||record.editId||!distanceKeys.has(field))return false;
   const current=String(record.raw?.[field]??'').trim();
   const prior=record.meta?.gpsFilledFields?.[field];
