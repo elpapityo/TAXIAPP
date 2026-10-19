@@ -1,0 +1,120 @@
+name: GPS Distance Lab v1.2.2 Always-Enabled Simulator Buttons APK
+on:
+  push:
+    branches:
+      - feat/gps-simulator-100kmh-v122-20261019
+    paths:
+      - 'android-prototype/**'
+      - 'distance-console.html'
+      - 'tests/gps-distance-lab.test.js'
+      - '.github/workflows/android-gps-simulator-v122.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test native GPS to external browser integration
+        run: node tests/gps-distance-lab.test.js
+      - name: Prepare Android SDK 35
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compile Android and run GPS measurement tests
+        run: |
+          cd android-prototype
+          gradle --no-daemon :core:test :app:assembleDebug
+      - name: Verify external browser and loopback-only GPS
+        run: |
+          APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -s "$APK"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.distancelabv122'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='1.2.2-100kmh-simulator'"
+          grep -F 'android:label="GPS距離ラボ v1.2.2 模擬テスト"' android-prototype/app/src/main/AndroidManifest.xml
+          "$AAPT" dump permissions "$APK" | grep -F "android.permission.INTERNET"
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path('android-prototype/app/src/main/java/jp/taxiapp/gpsprototype')
+          native=(base/'MainActivity.kt').read_text()
+          web=(base/'GpsLoopbackServer.kt').read_text()
+          ui=Path('android-prototype/app/src/main/assets/distance-console.html').read_text()
+          assert 'Intent(Intent.ACTION_VIEW' in native
+          assert 'class GpsLoopbackServer' in web
+          assert 'route.startsWith("/api/capture?")' in web
+          assert 'ServerSocket(PORT,8,InetAddress.getByName("127.0.0.1"))' in web
+          assert 'GpsTrackingService.ACTION_REFRESH' in web
+          assert '48767' in web
+          assert 'ACTION_SIM_START' in (base/'GpsTrackingService.kt').read_text()
+          assert 'SimulatedDrive' in (base/'GpsTrackingService.kt').read_text()
+          assert 'put("simulated",GpsStore.isSimulating(context))' in web
+          activity=(base/'MainActivity.kt').read_text()
+          service=(base/'GpsTrackingService.kt').read_text()
+          manifest=Path('android-prototype/app/src/main/AndroidManifest.xml').read_text()
+          assert 'b.isEnabled=true' in activity
+          assert 'startGps(simulation=true,initialSpeed=speed)' in activity
+          assert 'if (!simulation && checkSelfPermission' in activity
+          assert 'FOREGROUND_SERVICE_TYPE_DATA_SYNC' in service
+          assert 'android.permission.FOREGROUND_SERVICE_DATA_SYNC' in manifest
+
+          assert 'route=="/api/identity"' in web
+          assert 'GPS_DISTANCE_LAB_SIMULATOR_V1_2_2' in web
+          assert 'openVerifiedExternalBrowser()' in native
+          assert 'Web v1.2.2' in ui
+          assert 'setOf(0,20,40,60,100)' in service
+          assert 'listOf(100)' in activity
+          assert 'gps-distance-lab-browser-simulator-v122' in ui
+          assert 'gps-distance-lab-history-v122' in ui
+          assert 'new-session-btn' in ui
+          assert 'sessionMismatch()' in ui
+          assert 'put("runId",GpsStore.currentRunId(context))' in web
+          assert 'id="start-feedback"' in ui
+          assert 'id="native-start"' not in ui
+          assert 'id="native-stop"' not in ui
+          assert 'addJavascriptInterface' not in native and 'WebView' not in native
+          assert 'gps-import-test.html' not in web
+          print('Simulation APK v1.2 uses external Chrome on dedicated local port')
+          PY
+      - name: Upload installable test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GPS-Distance-Lab-v1.2.2-APK
+          path: android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish directly installable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK="$RUNNER_TEMP/GPS-Distance-Lab-v1.2.2.apk"
+          cp android-prototype/app/build/outputs/apk/debug/app-debug.apk "$APK"
+          TAG="gps-distance-lab-v1.2.2"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "GPS距離ラボ v1.2.2 模擬テスト — 模擬走行100km/h追加版" \
+              --notes "模擬0/20/40/60/100km/hの速度ボタンから模擬走行を直接開始可能。模擬走行に正確な位置情報の許可不要。GPS積算・外部Chromeへの距離受信を実行検証。別APKと127.0.0.1:48767で既存データを保護。" \
+              --prerelease
+          fi
