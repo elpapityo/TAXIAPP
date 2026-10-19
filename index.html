@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
-<meta name="description" content="TAXIAPP 乗務日報・ブラウザ公開版">
-<title>TAXIAPP v0.3.57 — 乗務日報</title>
+<meta name="description" content="TAXIAPP 乗務日報・GPS統合正式版">
+<title>TAXIAPP v0.3.60 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -205,6 +205,11 @@ html[data-ui-theme="night"] .pay-sum[readonly]{background:#31485d!important;colo
 @media(max-width:700px){.empty-toll-fields{grid-template-columns:1fr}}
 html[data-ui-theme="night"] .empty-toll-progress{background:#20364e}
 html[data-ui-theme="night"] .empty-toll-calculated{background:#163b3c;color:#e0fff5}
+.highway-section-row{padding:13px;margin:12px 0;border:1px solid var(--line);border-radius:12px;background:var(--sheet)}
+.highway-section-header{display:flex;justify-content:space-between;align-items:center;gap:7px;margin-bottom:11px}
+.highway-section-header strong{font-size:calc(16px * var(--ui-font))}
+.highway-section-row .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:550px){.highway-section-row .form-grid{grid-template-columns:1fr}}
 /* v0.3.1: highway tolls are always attached to the selected ride. */
 .highway-choices{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 15px}
 .highway-choice{flex:1;min-width:125px;min-height:var(--ui-touch);font-size:calc(18px * var(--ui-font));font-weight:850}
@@ -241,6 +246,22 @@ html[data-ui-theme="night"] .wait-place-move:disabled{background:#20364e}
 .time-field .time-input{display:block;width:100%;min-width:0;max-width:100%;padding-inline:9px;font-variant-numeric:tabular-nums}
 .time-field .time-now{min-width:48px;width:48px;padding:0;font-size:24px}
 
+.km-step-control{display:flex;align-items:stretch;gap:5px;min-width:0;width:100%}.km-step-control .control{min-width:0;flex:1 1 0;width:0}
+.km-step{flex:0 0 43px;min-width:43px;min-height:48px;padding:0 6px;font-size:25px;font-weight:850;border-radius:11px}
+.inline-distance-field .km-step-control{flex:1 1 0;min-width:0}.inline-distance-field .gps-fill-button{flex:none}
+.field>input[data-number-kind="distance"]+.km-step{margin-left:6px}.field>.km-step+.km-step{margin-left:4px}
+@media(max-width:370px){.km-step{flex-basis:39px;min-width:39px}}
+.discount-fold{margin:10px 0;border-color:var(--line)}.discount-fold summary{font-weight:750;min-height:44px}
+/* v0.3.59 narrow-pane distance layout: prevent 0.1km controls hiding odometer digits.
+   Container width, not device viewport: a mirrored phone/half-screen can still have a sidebar. */
+.form-grid{container-type:inline-size;container-name:distance-fields}
+@container distance-fields (max-width:650px){
+ .form-grid>.field:has(.km-step-control){grid-column:1 / -1;min-width:0}
+}
+.km-step-control{max-width:100%}
+.km-step-control .control{font-variant-numeric:tabular-nums;text-overflow:clip}
+.inline-distance-field{width:100%}
+.inline-distance-field>.km-step-control{min-width:0;width:100%}
 /* v0.3.7: compact precision keypad (one decimal only for km); close on scroll. */
 .calc-detail{background:#f6faff;border:1px solid #cbddea;border-radius:12px;padding:12px 13px;margin:15px 0 5px}
 .calc-detail-title{font-weight:850;font-size:calc(14px * var(--ui-font));margin:0 0 8px}
@@ -618,9 +639,10 @@ html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active
 <script src="./daily-reference.js?v=0.3.27"></script>
 <script src="./gps-trip.js?v=0.3.34"></script>
 <script src="./gps-trip-ui.js?v=0.3.35"></script>
-<script src="./gps-native-bridge.js?v=5"></script>
+<script src="./gps-diary-bridge.js?v=20261020-1"></script>
 <script src="./elapsed-alight-clock.js?v=1"></script>
-<script src="./highway-report.js?v=0.3.36"></script>
+<script src="./highway-sections.js?v=20261020-1"></script>
+<script src="./highway-report.js?v=20261020-1"></script>
 <script src="./bidirectional-sync.js?v=20261019-1"></script>
 <script src="./cloud-sync-ui.js?v=20261017-10"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
@@ -763,6 +785,7 @@ function deriveRaw(row,settings={}){
  const exemption=d=>Math.round(d*0.75*1000)/1000;
  if(hasRealHighway(raw)){const d=distance('S','V');if(d!==null){raw.X=d;raw.Y=exemption(d);}}
  if(hasEmptyHighway(raw)){const d=distance('AB','AE');if(d!==null){raw.AJ=d;raw.AK=exemption(d);}}
+ if(Array.isArray(row.meta?.highwaySections)&&window.TAXIAPP_HIGHWAY_SECTIONS){Object.assign(raw,window.TAXIAPP_HIGHWAY_SECTIONS.project(raw,row.meta.highwaySections));}
  if((raw.O==='シ'||raw.O==='高')&&(number(raw.AR)===null||number(raw.AR)===0)&&!row.meta?.discountManual&&number(raw.K)!==null)raw.AR=calculatedDiscount(raw);
  const hasAlighted=Boolean(raw.M);
  raw.AQ=hasAlighted?goCollectionFee(row,cfg,true):0;
@@ -829,7 +852,7 @@ function estimatedCashDue(row,settings={},shiftDate=''){
  const app=uberAppAmounts(row,settings);
  const uberSurcharge=app?.valid&&uberDispatchFeeApplies(row,shiftDate,settings)?app.surcharge:0;
  const goFee=goCollectionFee(row,cfg,false);
- return Math.max(0,Math.round(meter+amount(raw.W)+uberReservation+uberSurcharge+goFee-discount));
+ return Math.max(0,Math.round(meter+amount(Array.isArray(row.meta?.highwaySections)?window.TAXIAPP_HIGHWAY_SECTIONS.project(raw,row.meta.highwaySections).W:raw.W)+uberReservation+uberSurcharge+goFee-discount));
 }
 function cashChange(row,settings={},shiftDate=''){
  const split=paymentBreakdown(row,settings,shiftDate);
@@ -978,8 +1001,9 @@ function exportFeesCsv(shift){const headings=['日報番号','配車区分','金
 function validateDraft(draft){let errs=[];if(!draft)errs.push('入力データがありません');else if(draft.kind==='ride'){
  if(!draft.raw.G)errs.push('乗車時刻');if(distanceEnabled('F')&&number(draft.raw.F)===null)errs.push('乗車時の走行距離');if(!draft.raw.M)errs.push('降車時刻');if(number(draft.raw.K)===null)errs.push('メーター金額');if(!draft.raw.N)errs.push('金種');if(distanceEnabled('F')&&number(draft.raw.F)!==null&&number(draft.raw.L)!==null&&number(draft.raw.L)<number(draft.raw.F))errs.push('降車距離は乗車距離以上');
  }else if(draft.kind==='empty') {if(number(draft.raw.AI)===null&&!['AF','AG','AH'].some(k=>number(draft.raw[k])!==null))errs.push('空車高速金額');}
- if(distanceEnabled('S')&&hasRealHighway(draft?.raw)&&number(draft.raw.S)!==null&&number(draft.raw.V)!==null&&number(draft.raw.V)<number(draft.raw.S))errs.push('実車高速の降距離は乗距離以上');
- if(distanceEnabled('AB')&&hasEmptyHighway(draft?.raw)&&number(draft.raw.AB)!==null&&number(draft.raw.AE)!==null&&number(draft.raw.AE)<number(draft.raw.AB))errs.push('空車高速の降距離は乗距離以上');
+ if(!Array.isArray(draft?.meta?.highwaySections)&&distanceEnabled('S')&&hasRealHighway(draft?.raw)&&number(draft.raw.S)!==null&&number(draft.raw.V)!==null&&number(draft.raw.V)<number(draft.raw.S))errs.push('実車高速の降距離は乗距離以上');
+ if(!Array.isArray(draft?.meta?.highwaySections)&&distanceEnabled('AB')&&hasEmptyHighway(draft?.raw)&&number(draft.raw.AB)!==null&&number(draft.raw.AE)!==null&&number(draft.raw.AE)<number(draft.raw.AB))errs.push('空車高速の降距離は乗距離以上');
+ if(Array.isArray(draft?.meta?.highwaySections))errs.push(...window.TAXIAPP_HIGHWAY_SECTIONS.validate(draft.meta.highwaySections));
  return errs;
 }
 function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
@@ -1029,7 +1053,7 @@ function setDeviceMode(next,previous='',detail=''){
  if(next!=='writer'){
   try{gpsTripUI?.clearWatch();}catch(e){console.warn('gps-watch-cleanup',e);}
  }else if(prior==='viewer'||prior==='pending'){
-  if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+  if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
   scheduleGoogleSync();
  }
 }
@@ -1339,6 +1363,32 @@ function renderNow(){
 function titleBlock(title,kicker,description){return `<div class="section-heading"><div><div class="eyebrow">${safeText(kicker)}</div><h1 class="h1">${safeText(title)}</h1>${description?`<div class="helper">${description}</div>`:''}</div></div>`;}
 function metrics(shift){const t=totals(shift.records,shift.settings,shift.date),check=meterCheckValues(t);return `<div class="metrics compact-metrics"><div class="metric"><div class="label">本日の記録数</div><strong>${t.records}件</strong><small>営業 ${t.rides}件・キャンセル ${t.cancels}件</small></div><div class="metric highlight"><div class="label">メーター売上</div><strong>${money(t.meter)}</strong><small>営業売上のみ（キャンセルは含まない）</small></div><div class="metric meter-check"><div class="label">メーター照合用累計（キャンセル迎車料を含む）</div><strong>${money(check.total)}</strong><small>売上 ${money(t.meter)} ＋ キャンセル ${check.cancelCount}件 × ${money(CANCEL_METER_CHECK_AMOUNT)} ＝ ${money(check.total)}。入力チェック専用・売上や納金には加算しません。</small></div></div>`;}
 function selector(col,values,current,descriptions=false){return `<div class="selector" role="group" aria-label="${safeText(col==='N'?'支払方法':col==='I'?'男性人数':col==='J'?'女性人数':col)}">${values.map(v=>{let key=Array.isArray(v)?v[0]:v,label=Array.isArray(v)?v[1]:v;const visible=(col==='N'||col==='I'||col==='J')?key:(descriptions?`${key} · ${label}`:label);return `<button type="button" data-setcol="${safeText(col)}" data-value="${safeText(key)}" class="chip label-chip ${String(current)===String(key)?'active':''}" aria-label="${safeText(label)}" title="${safeText(label)}" aria-pressed="${String(current)===String(key)}">${safeText(visible)}</button>`}).join('')}</div>`;}
+const NATIVE_DIARY_GPS_PREF='taxiapp-production-native-gps-v140';
+const NATIVE_AUTO_DISTANCE_PREF='taxiapp-production-auto-distance-v140';
+function nativeAutoDistanceEnabled(){
+ try{return localStorage.getItem(NATIVE_AUTO_DISTANCE_PREF)==='on';}catch{return false;}
+}
+function nativeDiaryGpsEnabled(){
+ try{return Boolean(window.TAXIAPP_EXTERNAL_GPS)&&localStorage.getItem(NATIVE_DIARY_GPS_PREF)==='on';}
+ catch{return false;}
+}
+function renderNativeGpsBaselinePanel(shift){
+ if(!shift||shift.endedAt||shift.endedIso)return '';
+ const base=window.TAXIAPP_EXTERNAL_GPS?.baseline(localStorage,shift.id);
+ const status=base?'GPS基準は登録済みです。GPS計測を再起動した場合や車両トリップの値が違う場合だけ、現在の実測値で再設定してください。':'GPS基準は未登録です。途中からAndroid GPSを選択した場合、最初の距離を推定せず現在の車両トリップ実測値から計測を開始します。';
+ return `<section class="card" data-native-gps-baseline-panel>
+  <h2 class="h2">Android GPS距離の基準登録</h2>
+  <p class="helper" data-native-gps-baseline-status>${safeText(status)}</p>
+  <label class="field"><span class="field-label">現在の車両トリップ実測値（km）</span>
+  <input class="control" id="gpsShiftRebaseValue" data-number-kind="distance" type="text" inputmode="decimal" placeholder="例：0"></label>
+  <div class="actions"><button class="btn primary" type="button" data-action="gpsShiftRebase">⌖ 現在の値でGPS基準を登録・補正</button></div>
+  <p class="footnote">100km/h模擬走行中は速度を0km/hにしてから登録してください。以前の未計測距離は自動補完しません。実車の場合は必ず車両トリップの現在値を入力してください。</p>
+ </section>`;
+}
+const KM_KEYS=new Set(['F','L','S','V','AB','AE','X','Y','AJ','AK']);
+function kmOne(v){const n=number(v);return n===null?'':(Math.round((n+Number.EPSILON)*10)/10).toFixed(1);}
+function kmStep(v,delta){const n=number(v);if(n!==null&&n<0)return null;return (Math.max(0,Math.round((n??0)*10)+delta)/10).toFixed(1);}
+function kmControl(input){return `<div class="km-step-control">${input}<button type="button" class="btn km-step" data-km-step="-1" aria-label="距離を0.1km減らす">−</button><button type="button" class="btn km-step" data-km-step="1" aria-label="距離を0.1km増やす">＋</button></div>`;}
 function field(key,raw,opts={}){
  // OFF means do not manage this distance: hide the entire input and GPS button.
  if(!distanceEnabled(key))return '';const info=RAW_COLUMNS.find(x=>x[0]===key)||[key,key];const label=opts.label||info[1];const value=String(raw[key]??'');const required=opts.required?' <span style="color:#b54848">*</span>':'';let control;
@@ -1348,10 +1398,12 @@ function field(key,raw,opts={}){
  }else if(timeFields.has(key)){
  // Edit and display time to the minute (HH:mm). Keep any older stored seconds internally.
  return `<div class="field time-field"><div class="time-field-header"><span class="field-label">${safeText(label)}${required}</span></div><div class="inline-time-field"><input class="control time-input" data-col="${key}" type="time" step="60" value="${value?safeText(shortTime(value)): ''}" aria-label="${safeText(label)}（手動修正可）"><button class="btn time-now inline-field-icon" data-time-now="${key}" type="button" aria-label="${safeText(label)}に現在時刻を入力" title="${safeText(label)}に現在時刻を入力">◷</button></div></div>`;
- }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${['F','L','S','V','AB','AE','X','Y','AJ','AK'].includes(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
+ }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${KM_KEYS.has(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(KM_KEYS.has(key)?kmOne(value):value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
- const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&(gpsTripUI?.active(getShift())||Boolean(window.TAXIAPP_EXTERNAL_GPS))
-  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}にGPS距離を入力" title="GPS距離を入力">⌖</button>`:'';
+ if(KM_KEYS.has(key))control=kmControl(control);
+ const gpsSourceName=nativeDiaryGpsEnabled()?'Android GPS距離ラボ v1.4.0／旧v1.3.1':'従来のブラウザGPS';
+ const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&nativeAutoDistanceEnabled()&&(gpsTripUI?.active(getShift())||nativeDiaryGpsEnabled())
+  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}に${gpsSourceName}の距離を入力" title="${gpsSourceName}からGPS距離を入力">⌖</button>`:'';
  const labelText=`<span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>`;
  if(gpsButton)return `<div class="field">${labelText}<div class="inline-distance-field">${control}${gpsButton}</div></div>`;
  return `<label class="field">${labelText}${control}</label>`;}
@@ -1503,7 +1555,7 @@ const t=totals(active.records,active.settings,active.date);
 function renderNewAction(shift){const count=shift.records.length,waiting=shift.waiting;
  const places=waitingPlaces();
  const placeSelect=`<input class="control" type="text" list="waitPlaceCandidates" data-wait-field="place" aria-label="待機場所" maxlength="60" autocomplete="off" value="${safeText(waiting?.place||'')}" placeholder="現在地で入力／名前を直接入力"><datalist id="waitPlaceCandidates">${places.map(p=>`<option value="${safeText(p)}"></option>`).join('')}</datalist>`;
- const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(waiting.odometer??'')}" placeholder="例：12345.6"></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地</button><button class="btn primary" data-action="registerWaitPlace">＋ 登録</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
+ const waitInfo=waiting?`<div class="wait-display" aria-label="待機中の記録"><div class="wait-clock"><div><span class="wait-title">待機開始</span><strong>${safeText(shortTime(waiting.startedAt))}</strong></div><div><span class="wait-title">経過時間</span><strong data-wait-elapsed>${elapsedWaitingText(waiting)}</strong></div></div><div class="wait-inputs"><label class="field wait-selection"><span class="field-label">待機場所（現在地・候補・直接入力）</span>${placeSelect}</label><label class="field"><span class="field-label">現在の走行距離（km）</span><input class="control" data-wait-field="odometer" data-number-kind="distance" type="text" inputmode="none" value="${safeText(kmOne(waiting.odometer))}" placeholder="例：12345.6"><button type="button" class="btn km-step" data-km-step="-1" aria-label="距離を0.1km減らす">−</button><button type="button" class="btn km-step" data-km-step="1" aria-label="距離を0.1km増やす">＋</button></label></div><div class="wait-gps"><button class="btn" data-action="gpsWait">⌖ 現在地</button>${nativeDiaryGpsEnabled()?'<button class="btn" data-action="gpsWaitOdo" type="button">⌖ GPS距離</button>':''}<button class="btn primary" data-action="registerWaitPlace">＋ 登録</button><span data-wait-gps-status role="status">${safeText(waiting.gpsStatus||'位置未取得')}</span></div></div>`:'';
  return `<section class="card hero"><div class="eyebrow">次の記録 / № ${count+1}</div><h2 class="hero-heading" data-mobility>${waiting?'現在：待機中':'現在：空車・流し'}</h2>${waitInfo}<div class="action-grid" style="margin-top:18px"><button class="btn primary big" data-action="beginRide" ${count>=MAX_RECORDS?'disabled':''}>🚕 乗車</button><button class="btn teal big" data-action="beginDispatch" ${count>=MAX_RECORDS?'disabled':''}>📲 アプリ迎車</button>${!waiting?`<button class="btn big" data-action="beginWait">🅿 待機開始</button>`:''}<button class="btn" data-tab="history">▤ 営業履歴</button></div><p class="footnote">待機中の場所・距離は入力した時点で自動保存します。待機中に乗車すると乗車情報に引き継ぎ、必要なら修正できます。流し中のボタン操作は不要です。</p>${count>=MAX_RECORDS?'<div class="warn">60件に達しました。</div>':''}</section>`;
 }
 function renderDraft(shift){const d=shift.draft,r=d.raw,editing=Boolean(d.editId);const heading=d.kind==='dispatch'?'迎車中 / お迎え先の確認':d.kind==='ride'?(d.status==='alighted'?'降車・精算入力':'実車中 / 乗車情報'):d.kind==='empty'?'空車高速の記録':'迎車キャンセルの記録';return `<section class="card hero"><div class="section-heading"><div><div class="eyebrow">${editing?'営業履歴の修正':`営業№ ${r.A}`}</div><h2 class="hero-heading">${heading}</h2></div><span class="pill ${d.kind==='empty'?'mint':d.kind==='cancel'||d.kind==='dispatch'?'amber':''}">${d.kind==='ride'?(d.status==='alighted'?'精算待ち':'実車中'):prettyTag(d)}</span></div>${d.kind==='dispatch'?renderDispatchForm(shift,d):d.kind==='ride'?renderRideForm(shift,d):d.kind==='empty'?renderEmptyForm(shift,d):renderCancelForm(shift,d)}${d.kind==='ride'?'':`<div class="actions"><button class="btn red" data-action="discardDraft">${d.kind==='dispatch'?'迎車入力を取り消す（営業記録なし）':'入力を取り消す'}</button></div>`}</section>`;}
@@ -1537,6 +1589,34 @@ function renderPaymentSplit(shift,d){
  return `<section class="payment-split" aria-label="支払内訳"><h3>支払内訳</h3>${line(0)}${line(1)}${renderPaymentDetails(shift,d)}<div class="pay-total"><span>お客様への請求額（手数料含む）</span><strong data-pay-total>${p.due===null?'—':money(p.due)}</strong></div><p class="pay-alert" data-pay-alert>${safeText(warning)}</p><p class="caption-note">金種は精算時にも変更できます。片方の金額を入力すると、もう片方に残額が灰色で表示されます。灰色の金額欄もタップで編集できます。</p></section>`;
 }
 
+function renderHighwaySections(d,mode){
+ const rows=d.meta?.highwaySections;
+ if(!Array.isArray(rows))return '';
+ const list=rows.map((seg,index)=>({seg,index})).filter(x=>x.seg.mode===mode);
+ const labels={entryIC:'入口インター',entryTime:'入口時刻',entryKm:'入口距離（km）',
+ exitIC:'出口インター',exitTime:'出口時刻',exitKm:'出口距離（km）',fee:'高速料金（円）'};
+ const fieldHtml=(seg,index,key)=>{
+  const value=String(seg[key]??''),distance=key==='entryKm'||key==='exitKm',time=key==='entryTime'||key==='exitTime';
+  let el='<input class="control" data-hwy-index="'+index+'" data-hwy-field="'+key+'"'+
+   (distance?' data-number-kind="distance"':'')+' type="'+(time?'time':'text')+'"'+
+   (time?' step="60"':'')+' inputmode="'+(distance?'none':'text')+'" value="'+
+   safeText(distance?kmOne(value):time?shortTime(value):value)+'" aria-label="'+labels[key]+'">';
+  if(distance)el=kmControl(el);
+  if(time)el+='<button type="button" class="btn time-now inline-field-icon" data-hwy-now="'+index+
+   '" data-hwy-time-field="'+key+'" aria-label="'+labels[key]+'に現在時刻を入力">◷</button>';
+  return '<label class="field"><span class="field-label">'+labels[key]+'</span>'+el+'</label>';
+ };
+ return list.map(({seg,index},n)=>{
+  const km=window.TAXIAPP_HIGHWAY_SECTIONS.entryDistance(seg);
+  const exempt=km===null?'未計算':(Math.round(km*.75*1000)/1000).toFixed(3)+' km';
+  return '<div class="highway-section-row" data-hwy-row="'+index+'"><div class="highway-section-header"><strong>'+
+   (mode==='実'?'実車':'空車')+'高速 '+(n+1)+'区間</strong><button class="btn" type="button" data-action="highwayRemove" data-id="'+index+'">この区間を削除</button></div>'+
+   '<div class="form-grid">'+['entryIC','entryTime','entryKm','exitIC','exitTime','exitKm','fee'].map(k=>fieldHtml(seg,index,k)).join('')+'</div>'+
+   '<p class="caption-note">区間距離：'+(km===null?'未記録':km.toFixed(1)+' km')+' ／ 免除距離：'+exempt+'</p></div>';
+ }).join('');
+}
+
+let discountFoldOpen=false;
 function renderRideForm(shift,d){
  const r=d.raw,rideUber=r.E==='U',rate=feeSettings(shift.settings);updateDiscountForDraft(d);
  if(applyUberDisplayedDefault(d,shift.settings))saveLater();
@@ -1545,13 +1625,13 @@ function renderRideForm(shift,d){
  const payment=`<div class="field-label" style="font-weight:800;margin:13px 0 8px">支払方法</div>${selector('N',PAYMENTS,r.N,true)}`;
  const realHighway=hasRealHighway(r),emptyHighway=hasEmptyHighway(r);
  const highwayMode=(mode,label,active)=>`<button class="btn highway-choice" type="button" data-highway-mode="${mode}" aria-pressed="${active}">${active?'✓ ':''}${label}</button>`;
- const realHighwayFields=realHighway?`<div class="highway-mode-fields" aria-label="実車分の高速入力"><h3>実車分（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター'})}${field('T',r,{label:'降インター'})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div></div>`:'';
+ const realHighwayFields=realHighway&&Array.isArray(d.meta?.highwaySections)?`<div class="highway-mode-fields" aria-label="実車分の高速入力">${renderHighwaySections(d,'実')}</div>`:realHighway?`<div class="highway-mode-fields" aria-label="実車分の高速入力"><h3>実車分（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター'})}${field('T',r,{label:'降インター'})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div></div>`:'';
  const has=k=>number(r[k])!==null;
  const emptyAmountField=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r,{label:RAW_COLUMNS.find(x=>x[0]===key)?.[1]||key})}</div>`;
- const emptyHighwayFields=emptyHighway?`<div class="highway-mode-fields" aria-label="空車分の高速入力"><h3>空車分（雑損・お客様負担なし）</h3><div class="form-grid">${field('Z',r,{label:'乗インター'})}${field('AC',r,{label:'降インター'})}${field('AA',r,{label:'乗時間'})}${field('AD',r,{label:'降時間'})}${field('AB',r,{label:'乗距離（km）'})}${field('AE',r,{label:'降距離（km）'})}</div><div class="empty-toll-progress" aria-label="空車高速料金の入力"><div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0))}</strong></div></div></div>`:'';
- const highway=`<details class="details highway-fold" data-highway-fold><summary>🛣 高速 ${realHighway||emptyHighway?'（入力あり）':''}</summary><div class="inner"><div class="highway-choices" role="group" aria-label="この実車に関連する高速の区分">${highwayMode('実','実車分',realHighway)}${highwayMode('空','空車分',emptyHighway)}</div>${realHighwayFields}${emptyHighwayFields}</div></details>`;
+ const emptyHighwayFields=emptyHighway&&Array.isArray(d.meta?.highwaySections)?`<div class="highway-mode-fields" aria-label="空車分の高速入力">${renderHighwaySections(d,'空')}</div>`:emptyHighway?`<div class="highway-mode-fields" aria-label="空車分の高速入力"><h3>空車分（雑損・お客様負担なし）</h3><div class="form-grid">${field('Z',r,{label:'乗インター'})}${field('AC',r,{label:'降インター'})}${field('AA',r,{label:'乗時間'})}${field('AD',r,{label:'降時間'})}${field('AB',r,{label:'乗距離（km）'})}${field('AE',r,{label:'降距離（km）'})}</div><div class="empty-toll-progress" aria-label="空車高速料金の入力"><div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0))}</strong></div></div></div>`:'';
+ const highway=`<details class="details highway-fold" data-highway-fold><summary>🛣 高速 ${realHighway||emptyHighway?'（入力あり）':''}</summary><div class="inner"><div class="highway-choices" role="group" aria-label="この実車に関連する高速の区分">${highwayMode('実','実車分',realHighway)}${highwayMode('空','空車分',emptyHighway)}</div>${realHighwayFields}${emptyHighwayFields}<div class="actions"><button type="button" class="btn" data-action="highwayAdd" data-id="実">＋ 実車高速区間を追加</button><button type="button" class="btn" data-action="highwayAdd" data-id="空">＋ 空車高速区間を追加</button></div><p class="caption-note">高速は1乗車で複数区間を記録できます。料金・免除距離は区間別に計算します。</p></div></details>`;
  const result=cashChange(d,shift.settings,shift.date),moneyText=x=>x===null?'—':money(x);
- return `<div class="stepper"><span class="step-num">1</span><span class="step-name">乗車情報</span><span class="tag">${shortTime(r.G)} 乗車</span></div><div class="pickup-visible">${pickupFields}</div><div style="margin-top:15px">${passengers}${payment}</div>${highway}<div class="settlement-section"><div class="stepper"><span class="step-num">2</span><span class="step-name">降車・精算</span><span class="tag" data-alight-indicator>${r.M?shortTime(r.M)+' 降車':'メーター入力で時刻記録'}</span></div>${gpsTripUI?.active(shift)&&!r.M?`<div class="actions" style="margin-top:12px"><button class="btn teal big" type="button" data-action="gpsTripAlight">🚕 GPSを確認して降車</button></div><p class="footnote">実車→空車の切替は降車時に押してください。後でメーター金額を入力すると、その時刻で距離が確定してしまいます。</p>`:''}<div class="form-grid" style="margin-top:14px">${field('K',r,{label:'メーター金額（円）',required:true})}${field('L',r,{label:'降車時の走行距離（km）'})}</div><div class="form-grid alight-main-fields" style="margin-top:14px">${field('M',r,{label:'降車時刻（変更可能）'})}${locationField('AM',r,'降車地・住所','gpsDrop')}</div>${rideUber?`<div class="uber-settlement"><label class="field"><span class="field-label">Uberアプリ表示額（円）</span><input class="control" data-meta="uberAppDisplayed" data-number-kind="money" type="text" inputmode="none" value="${safeText(d.meta?.uberAppDisplayed??'')}" placeholder="Uber画面の精算額"></label><div class="uber-summary"><div>Uberアプリ決済額（差額）<strong data-uber-app-payment>${uberAppAmounts(d)?.valid?money(uberAppAmounts(d).appPaid):'—'}</strong></div><div>車内決済（運賃分）<strong data-uber-cabin-fare>${number(d.meta?.uberAppDisplayed)!==null?money(number(d.meta.uberAppDisplayed)):'—'}</strong></div><div>Uber配車手数料（会社に納金不要）<strong data-uber-dispatch>${uberDispatchFeeApplies(d,shift.date,shift.settings)?money(rate.uberSurcharge):'¥0'}</strong></div></div><div class="caption-note">メーター2,000円→表示1,800円ならUber決済200円・車内1,800円。表示2,100円なら車内2,100円・アプリ決済0円、配車料100円は納金不要です。</div></div>`:''}<div class="form-grid" style="margin-top:14px"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額'})}</div><div class="actions settlement-save-first"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button><button class="btn red big" data-action="discardDraft">入力を取り消す</button></div>${renderPaymentSplit(shift,d)}<div class="cash-checkout" aria-label="預り金とおつり" style="display:${paymentBreakdown(d,shift.settings,shift.date).items.some(x=>x.type==='現')?'grid':'none'}"><div class="cash-due"><span>現金で支払う額</span><strong data-estimate>${moneyText(result.due)}</strong></div><label class="field"><span class="field-label">預り金（円）</span><input class="control cash-deposit" type="text" inputmode="none" data-number-kind="money" data-col="AO" value="${safeText(r.AO??'')}" placeholder="0"></label><div class="deposit-buttons"><button class="btn" type="button" data-deposit="exact">ちょうど</button><button class="btn" type="button" data-deposit="1000">千円</button><button class="btn" type="button" data-deposit="5000">五千円</button><button class="btn" type="button" data-deposit="10000">一万円</button><button class="btn deposit-clear" type="button" data-deposit="clear">クリア</button></div><div class="cash-change" role="status"><span>おつり</span><strong data-change>${moneyText(result.change)}</strong><span class="cash-shortfall" data-shortfall>${result.shortage>0?'不足 '+money(result.shortage):''}</span></div></div><div class="actions settlement-save-bottom"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button></div></div>${renderAllFields(d)}`;
+ return `<div class="stepper"><span class="step-num">1</span><span class="step-name">乗車情報</span><span class="tag">${shortTime(r.G)} 乗車</span></div><div class="pickup-visible">${pickupFields}</div><div style="margin-top:15px">${passengers}${payment}</div>${highway}<div class="settlement-section"><div class="stepper"><span class="step-num">2</span><span class="step-name">降車・精算</span><span class="tag" data-alight-indicator>${r.M?shortTime(r.M)+' 降車':'メーター入力で時刻記録'}</span></div>${gpsTripUI?.active(shift)&&!r.M?`<div class="actions" style="margin-top:12px"><button class="btn teal big" type="button" data-action="gpsTripAlight">🚕 GPSを確認して降車</button></div><p class="footnote">実車→空車の切替は降車時に押してください。後でメーター金額を入力すると、その時刻で距離が確定してしまいます。</p>`:''}<div class="form-grid" style="margin-top:14px">${field('K',r,{label:'メーター金額（円）',required:true})}${field('L',r,{label:'降車時の走行距離（km）'})}</div><div class="form-grid alight-main-fields" style="margin-top:14px">${field('M',r,{label:'降車時刻（変更可能）'})}${locationField('AM',r,'降車地・住所','gpsDrop')}</div>${rideUber?`<div class="uber-settlement"><label class="field"><span class="field-label">Uberアプリ表示額（円）</span><input class="control" data-meta="uberAppDisplayed" data-number-kind="money" type="text" inputmode="none" value="${safeText(d.meta?.uberAppDisplayed??'')}" placeholder="Uber画面の精算額"></label><div class="uber-summary"><div>Uberアプリ決済額（差額）<strong data-uber-app-payment>${uberAppAmounts(d)?.valid?money(uberAppAmounts(d).appPaid):'—'}</strong></div><div>車内決済（運賃分）<strong data-uber-cabin-fare>${number(d.meta?.uberAppDisplayed)!==null?money(number(d.meta.uberAppDisplayed)):'—'}</strong></div><div>Uber配車手数料（会社に納金不要）<strong data-uber-dispatch>${uberDispatchFeeApplies(d,shift.date,shift.settings)?money(rate.uberSurcharge):'¥0'}</strong></div></div><div class="caption-note">メーター2,000円→表示1,800円ならUber決済200円・車内1,800円。表示2,100円なら車内2,100円・アプリ決済0円、配車料100円は納金不要です。</div></div>`:''}<div class="form-grid" style="margin-top:14px"><details class="details discount-fold" ${discountFoldOpen?'open':''}><summary>割引：${safeText(r.O==='シ'?'障がい者':r.O==='高'?'高齢者':r.O?'設定あり':'なし')}${number(r.AR)!==null?'（'+safeText(r.AR)+'円）':''}</summary><div class="inner"><div class="form-grid"><div class="field"><span class="field-label">割引</span>${selector('O',[['','なし'],['シ','シ'],['高','高']],r.O)}</div>${field('AR',r,{label:'割引金額'})}</div></div></details></div><div class="actions settlement-save-first"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button><button class="btn red big" data-action="discardDraft">入力を取り消す</button></div>${renderPaymentSplit(shift,d)}<div class="cash-checkout" aria-label="預り金とおつり" style="display:${paymentBreakdown(d,shift.settings,shift.date).items.some(x=>x.type==='現')?'grid':'none'}"><div class="cash-due"><span>現金で支払う額</span><strong data-estimate>${moneyText(result.due)}</strong></div><label class="field"><span class="field-label">預り金（円）</span><input class="control cash-deposit" type="text" inputmode="none" data-number-kind="money" data-col="AO" value="${safeText(r.AO??'')}" placeholder="0"></label><div class="deposit-buttons"><button class="btn" type="button" data-deposit="exact">ちょうど</button><button class="btn" type="button" data-deposit="1000">千円</button><button class="btn" type="button" data-deposit="5000">五千円</button><button class="btn" type="button" data-deposit="10000">一万円</button><button class="btn deposit-clear" type="button" data-deposit="clear">クリア</button></div><div class="cash-change" role="status"><span>おつり</span><strong data-change>${moneyText(result.change)}</strong><span class="cash-shortfall" data-shortfall>${result.shortage>0?'不足 '+money(result.shortage):''}</span></div></div><div class="actions settlement-save-bottom"><button class="btn primary big fill" data-action="saveDraft">✓ 精算して保存</button></div></div>${renderAllFields(d)}`;
 }
 
 function renderEmptyForm(shift,d){
@@ -1745,16 +1825,17 @@ function renderShiftManager(lastShift){
  if(!active)return `${titleBlock('出庫・入庫','SHIFT MANAGEMENT','出庫と入庫の走行距離を記録します。')}
  <section class="card hero"><h2 class="h2">出庫・乗務開始</h2>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫日時（変更可能）</span><input id="shiftStartAt" class="control" type="datetime-local" value="${localDateTime(new Date())}"></label>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時の車両トリップ（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"></label>
- <button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時の車両トリップ（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"><button type="button" class="btn km-step" data-km-step="-1" aria-label="出庫距離を0.1km減らす">−</button><button type="button" class="btn km-step" data-km-step="1" aria-label="出庫距離を0.1km増やす">＋</button></label>
+ <p class="caption-note">出庫距離は車両トリップの実測値を入力してください。実GPS計測中なら出庫登録時にGPS累計を基準として紐づけます。</p><button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
  ${model.shifts.filter(x=>!x.endedAt&&!x.endedIso).map(x=>'<section class="card"><h2 class="h2">他端末から受信した乗務を編集</h2><p class="helper">'+safeText(x.date)+'　出庫 '+shortTime(x.startedAt)+' ／ '+x.records.length+'件。編集競合を避けるため他端末との同時入力にご注意ください。</p><button class="btn teal" data-action="resumeSyncedShift" data-id="'+safeText(x.id)+'">この端末で乗務入力を開く</button></section>').join('')}
  ${lastShift?`<section class="card"><h2 class="h2">前回の入庫記録</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(lastShift.date)}</b></div><div class="statline"><span>出庫</span><b>${shortTime(lastShift.startedAt)}</b></div><div class="statline"><span>出庫距離</span><b>${number(lastShift.startingOdo)===null?'未記録':safeText(lastShift.startingOdo)+' km'}</b></div><div class="statline"><span>入庫</span><b>${shortTime(lastShift.endedAt)}</b></div><div class="statline"><span>入庫距離</span><b>${number(lastShift.endingOdo)===null?'未記録':safeText(lastShift.endingOdo)+' km'}</b></div>${lastShift.endedAt?`<div class="actions" style="margin-top:14px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(lastShift.id)}">↶ 入庫を取り消して乗務を再開</button></div><p class="footnote">直近の乗務のみ取り消せます。営業記録は残り、入庫時刻・距離は再入力できます。</p>`:''}</section>`:''}`;
  const departure=number(active.startingOdo),arrival=number(active.endingOdo);
  return `${titleBlock('出庫・入庫','SHIFT MANAGEMENT','出庫距離の修正と入庫処理はこの画面で行えます。')}
  <section class="card"><h2 class="h2">現在の乗務</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(active.date)}</b></div><div class="statline"><span>記録済み</span><b>${active.records.length}件</b></div>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時刻（後から修正可能）</span><input class="control" data-shiftstart type="time" step="60" value="${shortTime(active.startedAt)}"></label>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'出庫時の車両トリップ（km）':'出庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="start" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.startingOdo??'')}" placeholder="車両トリップの値"></label>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'入庫時の車両トリップ（km）':'入庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="end" data-number-kind="distance" type="text" inputmode="none" value="${safeText(active.endingOdo??'')}" placeholder="車両トリップの値"></label>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'出庫時の車両トリップ（km）':'出庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="start" data-number-kind="distance" type="text" inputmode="none" value="${safeText(kmOne(active.startingOdo))}" placeholder="車両トリップの値"><button type="button" class="btn km-step" data-km-step="-1" aria-label="距離を0.1km減らす">−</button><button type="button" class="btn km-step" data-km-step="1" aria-label="距離を0.1km増やす">＋</button></label>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">${active.distanceMode==='trip'?'入庫時の車両トリップ（km）':'入庫時走行距離（旧記録・km）'}</span><input class="control" data-shift-odo="end" data-number-kind="distance" type="text" inputmode="none" value="${safeText(kmOne(active.endingOdo))}" placeholder="車両トリップの値"><button type="button" class="btn km-step" data-km-step="-1" aria-label="距離を0.1km減らす">−</button><button type="button" class="btn km-step" data-km-step="1" aria-label="距離を0.1km増やす">＋</button></label>
+ ${nativeDiaryGpsEnabled()?'<div class="actions"><button class="btn" type="button" data-action="gpsShiftEndOdo">⌖ GPSで入庫距離を取得（入庫前）</button></div><div class="field"><span class="field-label">GPS基準の再設定（計測再起動後）</span><div class="inline-distance-field"><input class="control" id="gpsShiftRebaseValue" data-number-kind="distance" type="text" inputmode="decimal" placeholder="現在の車両トリップ実測値"><button class="btn" type="button" data-action="gpsShiftRebase">GPS基準を登録</button></div></div>':''}
  ${departure!==null&&arrival!==null&&arrival>=departure?`<div class="statline"><span>走行距離合計</span><b>${(arrival-departure).toLocaleString('ja-JP')} km</b></div>`:''}
  <button class="btn big red fill" type="button" data-action="endShift" ${active.draft?'disabled title="編集中の営業を保存してから入庫してください"':''}>入庫・乗務終了</button>
  ${active.draft?'<p class="caption-note">編集中の記録があるため入庫できません。営業を保存してください。</p>':''}</section>`;
@@ -1784,7 +1865,7 @@ function exportFileName(kind,shift){
 }
 // Google Apps Script bridge: local save is independent of cloud delivery.
 // The device-local key is never added to model.prefs or exported in JSON backups.
-const TAXIAPP_CLOUD_KEY='taxiapp-google-access-v1';
+const TAXIAPP_CLOUD_KEY='taxiapp-preview-disabled-google-access';
 let cloudStatus='接続設定待ち',cloudTimer=null,cloudRunning=false,cloudLastDigest=new Map();
 function googleWriteKey(){try{return localStorage.getItem(TAXIAPP_CLOUD_KEY)||'';}catch{return '';}}
 function setGoogleWriteKey(value){
@@ -2074,7 +2155,17 @@ function renderDeviceManagementPanel(){
   '<div class="actions"><button class="btn red" type="button" data-action="importDevice">この端末の営業記録と設定をPCデータで上書き</button></div>'+
   '<p class="footnote">取り込み前の端末データを暗号化してバックアップした後に上書きします。移行直後のGoogle送信は手動設定になります。</p></section>';
 }
-function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced"><summary>入力方式・スマホ／タブレット表示</summary><div class="inner"><section class="card"><h2 class="h2">入力画面を選択</h2><p class="helper">4方式とも同じ営業データ・GPS・料金計算・保存処理を使います。ui-preview.htmlを基準に表示方式を選べます。</p>${renderUiChoice('driveLayout',[['compact','1画面'],['guided','段階入力'],['detail','詳細入力'],['legacy','従来']])}<h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-data-management><summary>データ管理（乗務単位の削除）</summary><div class="inner">${renderDataManagement()}</div></details><details class="details settings-advanced"><summary>表示設定</summary><div class="inner">${renderCruisingSummarySettings()}<section class="card"><h2 class="h2">文字の大きさ</h2><p class="helper">画面全体の文字を変更します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}<hr class="divider"><h2 class="h2">ボタンの大きさ</h2><p class="helper">走行中には操作せず、安全に停車した状態で押してください。</p>${renderUiChoice('buttons',[['normal','標準'],['compact','控えめ'],['large','大きめ'],['extra','特大']])}<hr class="divider"><h2 class="h2">説明文の表示</h2>${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}<hr class="divider"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}<div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで運転席から文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details><details class="details settings-advanced"><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced"><summary>Googleスプレッドシート</summary><div class="inner">${renderSheetTargetSettings()}</div></details><details class="details settings-advanced"><summary>乗務員・勤務形態・待機場所・料金設定</summary><div class="inner">${renderDriverDefaults()}${renderDutyPlanSettings()}${renderWaitPlaceSettings()}${shift?`<section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section>`:''}</div></details><details class="details settings-advanced" data-gps-settings><summary>GPS距離テスト・位置情報・住所変換</summary><div class="inner"><section class="card"><h2 class="h2">距離管理のON / OFF</h2><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（自動取得する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を自動取得する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p></section><section class="card"><h2 class="h2">出庫時GPS試験計測</h2><label class="field"><span class="field-label">出庫時のGPS自動開始</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>'}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="footnote">IndexedDB: taxiapp-store-v1 / state / taxiapp、代替: localStorage の taxiapp-v1。保存先はURLとブラウザ環境に依存します。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
+function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced"><summary>入力方式・スマホ／タブレット表示</summary><div class="inner"><section class="card"><h2 class="h2">入力画面を選択</h2><p class="helper">4方式とも同じ営業データ・GPS・料金計算・保存処理を使います。ui-preview.htmlを基準に表示方式を選べます。</p>${renderUiChoice('driveLayout',[['compact','1画面'],['guided','段階入力'],['detail','詳細入力'],['legacy','従来']])}<h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-data-management><summary>データ管理（乗務単位の削除）</summary><div class="inner">${renderDataManagement()}</div></details><details class="details settings-advanced"><summary>表示設定</summary><div class="inner">${renderCruisingSummarySettings()}<section class="card"><h2 class="h2">文字の大きさ</h2><p class="helper">画面全体の文字を変更します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}<hr class="divider"><h2 class="h2">ボタンの大きさ</h2><p class="helper">走行中には操作せず、安全に停車した状態で押してください。</p>${renderUiChoice('buttons',[['normal','標準'],['compact','控えめ'],['large','大きめ'],['extra','特大']])}<hr class="divider"><h2 class="h2">説明文の表示</h2>${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}<hr class="divider"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}<div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで運転席から文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details><details class="details settings-advanced"><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced"><summary>Googleスプレッドシート</summary><div class="inner">${renderSheetTargetSettings()}</div></details><details class="details settings-advanced"><summary>乗務員・勤務形態・待機場所・料金設定</summary><div class="inner">${renderDriverDefaults()}${renderDutyPlanSettings()}${renderWaitPlaceSettings()}${shift?`<section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section>`:''}</div></details><details class="details settings-advanced" data-gps-settings><summary>GPS距離テスト・位置情報・住所変換</summary><div class="inner"><section class="card"><h2 class="h2">距離管理のON / OFF</h2><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（自動取得する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を自動取得する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p></section><section class="card"><h2 class="h2">Android GPS距離ラボとの連携（検証用）</h2>
+ <label class="field"><span class="field-label">GPS距離の取得元</span><select class="control" data-native-diary-gps>
+ <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>従来のブラウザGPS（初期設定）</option>
+ <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>GPS距離ラボ v1.4.0（48769）／旧v1.3.1（48768）</option>
+ </select></label>
+ <label class="field"><span class="field-label">距離の自動取得（Android GPS）</span><select class="control" data-native-auto-distance>
+<option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：距離は手入力（初期設定）</option>
+<option value="on" ${nativeAutoDistanceEnabled()?'selected':''}>ON：現在時刻・現在地の取得に距離を連動</option></select></label>
+<p class="caption-note">【ON】現在時刻・現在地の取得時に、対応する距離欄が空欄ならGPS距離を自動入力します。Android方式では、v1.3.1の測定中・基準登録済み・欠測なし・同じ乗務中・有効な新しい測位が条件です。ブラウザ方式では有効なGPS計測が必要です。手入力済みの距離は上書きしません。</p>
+<p class="caption-note">【OFF】距離は手入力のみ。時刻・現在地は従来どおり取得します。距離の自動取得と関連メッセージは出しません。ONでもGPSが不確かな場合は空欄のままです。OFFで手入力した後Androidの自動取得を再開する場合は、現在の車両トリップ値でGPS基準を合わせてください。</p>
+<p class="caption-note">模擬GPSは本番日報に取り込めません。実GPS測定中、Chromeのローカルネットワーク許可とGPS基準登録が必要です。距離の取得元を途中変更したときは現在の車両トリップ値で再登録してください。</p></section>${active&&nativeDiaryGpsEnabled()?renderNativeGpsBaselinePanel(active):''}<section class="card"><h2 class="h2">出庫時GPS計測</h2><label class="field"><span class="field-label">出庫時のブラウザGPS自動開始（Android GPS選択時は無効）</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">本番の従来データ保存先を継続します。入力はログインと操作権の確認後に利用できます。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
 function download(textData,file,type){const blob=new Blob([textData],{type}),link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download=file;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 let gpsPermissionText='';
 function setGpsPermissionStatus(message){gpsPermissionText=String(message);const el=appEl.querySelector('[data-gps-permission-status]');if(el)el.textContent=gpsPermissionText;}
@@ -2096,7 +2187,7 @@ let municipalityLookupPromise=null;
 const gsiAddressCache=new Map();
 function loadMunicipalities(){
  if(!municipalityLookupPromise){
-  municipalityLookupPromise=fetch('./municipalities.json',{cache:'force-cache',signal:AbortSignal.timeout(8000)})
+  municipalityLookupPromise=fetch('../../municipalities.json',{cache:'force-cache',signal:AbortSignal.timeout(8000)})
    .then(resp=>{if(!resp.ok)throw Error('市区町村表を取得できません');return resp.json();})
    .then(data=>{if(!data||typeof data!=='object'||!data['28207'])throw Error('市区町村表が不正です');return data;})
    .catch(err=>{municipalityLookupPromise=null;throw err;});
@@ -2155,7 +2246,10 @@ async function getWaitGps(shift,waiting){
   const geo={lat:position.coords.latitude,lng:position.coords.longitude,accuracy:position.coords.accuracy,recordedAt:new Date().toISOString()};
   target.geo=geo;
   const duty=model.shifts.find(s=>s.id===shiftId);
-  if(duty?.waiting?.id===waitId)gpsTripUI?.fillWaitDistance(duty,target,'waitLocation');
+  if(duty?.waiting?.id===waitId&&nativeAutoDistanceEnabled()){
+    if(nativeDiaryGpsEnabled())fillNativeDistanceSilently(duty,target,'odometer',true);
+    else gpsTripUI?.fillWaitDistance(duty,target,'waitLocation');
+   }
   if(target.place&&target.placeSource!=='gps'){
    // Only the explicit registration button can change the registered coordinate.
    target.gpsStatus='位置取得済み';
@@ -2298,7 +2392,7 @@ function updateElapsedTimer(){
   if(heading&&heading.textContent!==label)heading.textContent=label;
   if(card)card.setAttribute('aria-label',label+'の経過時間');
  }
- gpsTripUI?.tick();
+ if(!nativeDiaryGpsEnabled())gpsTripUI?.tick();
  const nowEl=appEl.querySelector('[data-live-now]');if(nowEl)nowEl.textContent=shortTime(stamp(now));
  if(active&&appEl.querySelector('[data-live-elapsed]')){
   const v=liveBusinessNumbers(active,now);
@@ -2323,9 +2417,10 @@ function updateElapsedTimer(){
  }
 }
 setInterval(updateElapsedTimer,1000);
+let suppressManualGpsToast=false;
 const gpsTripUI=window.TAXIAPP_GPS_UI?window.TAXIAPP_GPS_UI({
  getShift:()=>getShift(),persist:(cloud)=>save(cloud===false),render:()=>render(),
- toast:(message,error)=>toast(message,error),gpsMessage:(error)=>gpsMessage(error),
+ toast:(message,error)=>{if(!suppressManualGpsToast)toast(message,error);},gpsMessage:(error)=>gpsMessage(error),
  number:(value)=>number(value),safeText:(value)=>safeText(value)
 }):null;
 // GPS/address callbacks must not rebuild the active fare entry form.
@@ -2335,10 +2430,45 @@ function refreshDraftGpsFields(shiftId,recordId){
  for(const key of ['AL','AM','F','L','S','V','AB','AE']){
   const value=String(draft.raw?.[key]??'');
   appEl.querySelectorAll('[data-col="'+key+'"]').forEach(input=>{
-   if(document.activeElement!==input&&String(input.value)!==value)input.value=value;
+   if(document.activeElement!==input&&String(input.value)!==value)input.value=KM_KEYS.has(key)?kmOne(value):value;
   });
  }
 }
+
+const nativeDistancePending=new Set();
+function fillNativeDistanceSilently(shift,record,col,waiting=false){
+ if(!nativeDiaryGpsEnabled()||!nativeAutoDistanceEnabled()||!canEditNow()||!shift||shift.endedAt||shift.endedIso||
+   shift.externalGpsManualPending||!distanceEnabled(col))return Promise.resolve(false);
+ const id=shift.id,recordId=record?.id,field=waiting?'odometer':col;
+ if(!recordId||(!waiting&&(record?.editId||!['F','L','S','V','AB','AE'].includes(col))))return Promise.resolve(false);
+ if(String(waiting?record.odometer??'':record.raw?.[col]??'').trim()!=='')return Promise.resolve(false);
+ const token=id+'/'+recordId+'/'+field;
+ if(nativeDistancePending.has(token))return Promise.resolve(false);
+ nativeDistancePending.add(token);
+ return window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId:id}).then(data=>{
+  if(!canEditNow()||!nativeDiaryGpsEnabled()||!nativeAutoDistanceEnabled())return false;
+  const live=getShift(),target=waiting?live?.waiting:live?.draft;
+  if(!live||live.id!==id||live.endedAt||live.endedIso||
+    live.externalGpsManualPending||target?.id!==recordId||(!waiting&&target.editId)||
+    String(waiting?target.odometer??'':target.raw?.[col]??'').trim()!=='')return false;
+  const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,id);
+  if(!base)return false;
+  const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(1);
+  const timestamp=new Date(data.capturedAt).toISOString();
+  if(waiting){
+   target.odometer=value;target.gpsAutoOdometer={km:value,at:timestamp,source:'native-auto'};
+   const input=appEl.querySelector('[data-wait-field="odometer"]');
+   if(input&&document.activeElement!==input)input.value=value;
+  }else{
+   target.raw[col]=value;target.meta??={};target.meta.externalGpsFilledFields??={};
+   target.meta.externalGpsFilledFields[col]={km:value,rawGpsKm:data.tripKm,runId:data.runId,at:timestamp};
+   refreshDraftGpsFields(id,recordId);
+  }
+  live.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:timestamp};
+  saveLater();return true;
+ }).catch(()=>false).finally(()=>nativeDistancePending.delete(token));
+}
+
 function gpsTarget(shift,id){const stable=model.shifts.find(x=>x.id===shift.id);return stable?.draft?.id===id?stable.draft:stable?.records?.find(x=>x.id===id); }
 async function getGps(shift,d,when){const key=when==='pickup'?'pickup':'drop';const active=gpsTarget(shift,d.id);if(!active)return;
  if(!navigator.geolocation||!window.isSecureContext){const message='この開き方ではGPSが使えません。HTTPSのURLをChromeで開く必要があります。';active.meta[key+'GpsStatus']=message;saveLater();refreshDraftGpsFields(shift.id,d.id);toast(message,true);return;}
@@ -2347,11 +2477,13 @@ async function getGps(shift,d,when){const key=when==='pickup'?'pickup':'drop';co
   // The same 'current location' action copies a *trusted* GPS trip reading.
   // A manually entered or corrected vehicle-trip value must never be overwritten.
   const currentDuty=model.shifts.find(s=>s.id===shift.id);
-  if(currentDuty?.draft?.id===target.id)gpsTripUI?.fillLocationDistance(currentDuty,target,when);
+  if(currentDuty?.draft?.id===target.id&&!nativeDiaryGpsEnabled()&&nativeAutoDistanceEnabled())gpsTripUI?.fillLocationDistance(currentDuty,target,when);
   target.meta[key+'Geo']=gps;target.raw[locationKey]=`${gps.lat.toFixed(6)},${gps.lng.toFixed(6)}`;
   // Coordinates belong in the dedicated location column and metadata, not the human-readable address.
   if(when==='pickup'&&target.meta.pickupWaitProvisional&&target.raw.AL===target.meta.waitPlace){target.raw.AL='';target.meta.pickupWaitProvisional=false;}
-  target.meta[key+'GpsStatus']='GPS座標を保存しました。丁目までの推定住所を取得中…';await save();refreshDraftGpsFields(shift.id,d.id);toast('GPS座標を記録しました。');
+  target.meta[key+'GpsStatus']='GPS座標を保存しました。丁目までの推定住所を取得中…';await save();refreshDraftGpsFields(shift.id,d.id);
+  if(currentDuty?.draft?.id===target.id&&nativeDiaryGpsEnabled())fillNativeDistanceSilently(currentDuty,target,when==='pickup'?'F':'L');
+  toast('GPS座標を記録しました。');
  if(model.prefs.reverseAddress==='off'){const latest=gpsTarget(shift,d.id);if(latest){latest.meta[key+'GpsStatus']='GPS座標は内部保存しました（住所変換OFF）。住所欄は手入力してください。';saveLater();refreshDraftGpsFields(shift.id,d.id);}return;}
  try{const address=await reverseAddress(gps),latest=gpsTarget(shift,d.id);if(!latest)return;if(address){const old=latest.raw[addressKey];if(!old||/^\s*-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?\s*$/.test(String(old))){latest.raw[addressKey]=address;latest.meta[key+'AddressProvider']='国土地理院';latest.meta[key+'GpsStatus']='GPS座標保存済み。国土地理院の町名・丁目（推定）です。';await save();refreshDraftGpsFields(shift.id,d.id);toast('推定住所を入力しました。住所を確認してください。');}else{latest.meta[key+'GpsStatus']='GPS座標保存済み。手入力した住所は維持しました。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}}catch(e){const last=gpsTarget(shift,d.id);if(last){last.meta[key+'GpsStatus']='GPS座標は保存済み。町名・丁目を取得できませんでした。住所は手入力できます。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}},err=>{const live=gpsTarget(shift,d.id);if(live){live.meta[key+'GpsStatus']=gpsMessage(err);saveLater();refreshDraftGpsFields(shift.id,d.id);}toast(gpsMessage(err),true);},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
@@ -2408,6 +2540,23 @@ function discardInvalidAutoDropDistance(draft){
 }
 let gpsAlightPending=false;
 function handleAction(action,id){
+ if(action==='highwayAdd'){
+  const shift=getShift(),draft=shift?.draft;
+  if(!draft||draft.kind!=='ride'||draft.editId||!['実','空'].includes(id))return;
+  const sections=window.TAXIAPP_HIGHWAY_SECTIONS.initialize(draft);
+  if(sections.length>=20){toast('高速区間は1乗車につき20件までです',true);return;}
+  sections.push({mode:id,entryIC:'',entryTime:'',entryKm:'',exitIC:'',exitTime:'',exitKm:'',fee:''});
+  draft.raw.P=(sections.some(x=>x.mode==='実')?'実':'')+(sections.some(x=>x.mode==='空')?'空':'');
+  saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
+ }
+ if(action==='highwayRemove'){
+  const shift=getShift(),draft=shift?.draft,items=draft?.meta?.highwaySections,ix=Number(id);
+  if(!draft||draft.kind!=='ride'||!Array.isArray(items)||!Number.isInteger(ix)||ix<0||ix>=items.length)return;
+  if(!confirm('この高速区間の入力内容を削除しますか？'))return;
+  items.splice(ix,1);
+  draft.raw.P=(items.some(x=>x.mode==='実')?'実':'')+(items.some(x=>x.mode==='空')?'空':'');
+  saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
+ }
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
    return;
@@ -2416,7 +2565,7 @@ function handleAction(action,id){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();
- if(action==='gpsTripStart'){if(shift)gpsTripUI?.start(shift);return;}
+ if(action==='gpsTripStart'){if(nativeDiaryGpsEnabled()){toast('Android GPSを使用中です。GPS距離ラボから測定してください。');return;}if(shift)gpsTripUI?.start(shift);return;}
  if(action==='gpsTripStop'){if(shift)gpsTripUI?.stop(shift);return;}
  if(action==='gpsTripCorrect'){
   if(!shift||!gpsTripUI?.active(shift))return;
@@ -2442,7 +2591,47 @@ function handleAction(action,id){
   }).finally(()=>{gpsAlightPending=false;});
   return;
  }
- if(action==='gpsTripFill'&&window.TAXIAPP_EXTERNAL_GPS){
+ if(action==='gpsShiftRebase'&&nativeDiaryGpsEnabled()){
+  if(!shift||shift.endedAt||shift.endedIso)return;
+  const input=appEl.querySelector('#gpsShiftRebaseValue');
+  const value=String(input?.value??'').trim(),trip=number(value);
+  if(trip===null||trip<0){toast('現在の車両トリップ実測値を入力してください。推定値ではGPS基準を変更しません。',true);return;}
+  const shiftId=shift.id;
+  window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId,allowUnresolvedGap:true}).then(data=>{
+   if(!canEditNow())return;
+   const current=getShift();
+   if(current?.id!==shiftId||current.endedAt||String(input?.value??'').trim()!==value)return;
+   window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
+   if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+   current.externalGpsManualPending=false;
+   current.externalGpsSnapshot={tripKm:trip,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
+   saveLater();const baselineStatus=appEl.querySelector('[data-native-gps-baseline-status]');if(baselineStatus)baselineStatus.textContent='GPS基準を登録しました。新しいGPS増分を車両トリップ '+value+'km から加算します。';toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
+  }).catch(e=>toast('GPS基準を変更できません：'+e.message,true));
+  return;
+ }
+ if((action==='gpsShiftEndOdo'||action==='gpsWaitOdo')&&nativeDiaryGpsEnabled()){
+  if(!shift||shift.endedAt||shift.endedIso)return;
+  const waiting=action==='gpsWaitOdo',target=waiting?'[data-wait-field="odometer"]':'[data-shift-odo="end"]';
+  if(waiting&&(!shift.waiting||shift.draft))return;
+  const input=appEl.querySelector(target),before=String(input?.value??''),shiftId=shift.id,waitId=shift.waiting?.id;
+  window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(data=>{
+   if(!canEditNow())return;
+   const current=getShift();
+   if(current?.id!==shiftId||current.endedAt||current.endedIso||
+      (waiting&&(current.draft||current.waiting?.id!==waitId)))return;
+   const activeInput=appEl.querySelector(target);
+   if(!activeInput||String(activeInput.value)!==before)return;
+   const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,shiftId);
+   const value=window.TAXIAPP_EXTERNAL_GPS.calculated(data.tripKm,base,data.runId).toFixed(1);
+   if(waiting){current.waiting.odometer=value;current.waiting.gpsAutoOdometer={km:value,at:new Date().toISOString(),source:'native'};}
+   else {current.endingOdo=value;current.gpsAutoEndingOdo={km:value,at:new Date().toISOString(),source:'native'};}
+   current.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
+   activeInput.value=value;saveLater();updateElapsedTimer();
+   toast('GPS距離 '+value+'km を入力しました。車両トリップと照合してください。');
+  }).catch(e=>toast('GPS距離を取得できません：'+e.message,true));
+  return;
+ }
+ if(action==='gpsTripFill'&&nativeDiaryGpsEnabled()){
   const bridge=window.TAXIAPP_EXTERNAL_GPS;
   if(!shift?.draft||shift.draft.editId){toast('過去の営業履歴はGPSで自動変更しません。',true);return;}
   if(!['F','L','S','V','AB','AE'].includes(id))return;
@@ -2456,19 +2645,19 @@ function handleAction(action,id){
    if(active?.endedAt||active?.endedIso)return;
    if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[id]??'')!==originalField)return;
    const base=bridge.baseline(localStorage,shiftId);
-   if(!base)throw Error('出庫時のGPS基準が未記録です。途中から0kmとして計算せず、車両トリップの実測値を入力してください');
-   const km=bridge.calculated(data.tripKm,base).toFixed(3);
+   if(!base)throw Error('出庫時のAndroid GPS基準が未登録です。「出庫・入庫」→「GPS基準の再設定」から現在の車両トリップ実測値を登録してください。途中の距離を0kmとみなして入力しません');
+   const km=bridge.calculated(data.tripKm,base,data.runId).toFixed(1);
    active.draft.raw[id]=km;
    active.externalGpsSnapshot={tripKm:Number(km),rawGpsKm:data.tripKm,at:new Date().toISOString()};
    active.draft.meta??={};active.draft.meta.externalGpsFilledFields??={};
-   active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,at:new Date().toISOString()};
+   active.draft.meta.externalGpsFilledFields[id]={km,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
    saveLater();refreshDraftGpsFields(shiftId,draftId);updateElapsedTimer();toast('GPSアプリの走行距離 '+km+'km を取得しました。');
   }).catch(e=>toast('外部GPS：'+e.message,true)).finally(()=>{if(btn&&btn.isConnected)btn.disabled=false;});
   return;
  }
  if(action==='gpsTripFill'){
   if(!shift?.draft||!gpsTripUI?.active(shift)||!['F','L','S','V','AB','AE'].includes(id)||!distanceEnabled(id))return;
-  if(!gpsTripUI.trusted(shift)){toast('未測位・欠測あり：車両トリップを確認・補正してからGPS距離を入力してください。',true);return;}
+  if(!gpsTripUI.trusted(shift)){toast('現在は従来のブラウザGPS方式です。未測位・欠測のため入力できません。v1.3.1を使う場合は「設定 → GPS距離テスト → GPS距離の取得元」でAndroid GPSを選択してください。',true);return;}
   const km=gpsTripUI.fmt(shift.gpsTrip.tripKm);
   shift.draft.raw[id]=km;
   shift.draft.meta??={};shift.draft.meta.gpsFilledFields??={};
@@ -2497,20 +2686,20 @@ function handleAction(action,id){
   const newRecord=newShift(when,model.prefs);
   newRecord.startingOdo=odometer;newRecord.endingOdo='';newRecord.distanceMode='trip'; 
    // Capture the actual departure GPS baseline now, before the first fare.
-   if(window.TAXIAPP_EXTERNAL_GPS){
+   if(nativeDiaryGpsEnabled()){
     const departingId=newRecord.id,startedAt=newRecord.startedIso;
     window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
      if(!canEditNow())return;
      const current=getShift();
      if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
-     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer);
+     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
      current.externalGpsSnapshot={tripKm:b.value,rawGpsKm:data.tripKm,at:new Date().toISOString()};
      saveLater();updateElapsedTimer();
      toast('出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。');
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
    }
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
-  const nativeGpsLinked=Boolean(window.TAXIAPP_EXTERNAL_GPS);
+  const nativeGpsLinked=nativeDiaryGpsEnabled();
   const gpsOptIn=model.prefs.gpsTripAtStart!=='off';
   save();
   // When native GPS is paired, don't start the older browser GPS tracker in parallel.
@@ -2655,7 +2844,11 @@ function toggleRideHighway(mode){
   if(filled&&!confirm(`${mode==='実'?'実車分':'空車分'}の高速記録を解除し、入力内容も消しますか？`))return;
   for(const key of HIGHWAY_RAW_KEYS[mode])d.raw[key]='';
  }
- const real=mode==='実'?!was:hasRealHighway(d.raw),empty=mode==='空'?!was:hasEmptyHighway(d.raw);
+ if(Array.isArray(d.meta?.highwaySections)){
+   if(was)d.meta.highwaySections=d.meta.highwaySections.filter(x=>x.mode!==mode);
+   else d.meta.highwaySections.push(window.TAXIAPP_HIGHWAY_SECTIONS.fromLegacy(d.raw,mode));
+  }
+  const real=mode==='実'?!was:hasRealHighway(d.raw),empty=mode==='空'?!was:hasEmptyHighway(d.raw);
  d.raw.P=real&&empty?'実空':real?'実':empty?'空':'';
  syncCashChange(d,shift.settings,shift.date);saveLater();render();
 }
@@ -2740,13 +2933,62 @@ function fillCurrentTime(col){
  if(!d||!timeFields.has(col))return;
  const now=new Date();d.raw[col]=stamp(now);
  const gpsDistanceField={G:'F',M:'L',R:'S',U:'V',AA:'AB',AD:'AE'}[col];
- if(gpsDistanceField&&d.kind==='ride')gpsTripUI?.fillDistance(s,d,gpsDistanceField,'time:'+col);
+ if(gpsDistanceField&&nativeAutoDistanceEnabled()){
+  if(nativeDiaryGpsEnabled())fillNativeDistanceSilently(s,d,gpsDistanceField);
+  else if(d.kind==='ride')gpsTripUI?.fillDistance(s,d,gpsDistanceField,'time:'+col);
+ }
  if(col==='M'&&d.kind==='ride'){
-  d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();gpsTripUI?.alight(s,d);requestDropLocation(s,d);
+  d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();if(!nativeDiaryGpsEnabled()&&nativeAutoDistanceEnabled())gpsTripUI?.alight(s,d);requestDropLocation(s,d);
  }
  saveLater();render();toast((RAW_COLUMNS.find(x=>x[0]===col)?.[1]||'時刻')+'に現在時刻を入力しました');
 }
+// Preserve the actual driver-entered vehicle-trip checkpoint, then rebase native
+// GPS for following segments without ever changing the manually entered field.
+function rebaseNativeTripAfterManual(shift,value,stillCurrent){
+ if(!nativeAutoDistanceEnabled()||number(value)===null||number(value)<0)return;
+ const shiftId=shift.id;
+ shift.externalGpsManualPending=true;saveLater();
+ window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
+  const active=getShift();
+  if(!canEditNow()||!nativeDiaryGpsEnabled()||!active||active.id!==shiftId||
+     active.endedAt||active.endedIso||!stillCurrent(active))return;
+  window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
+  if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+  active.externalGpsManualPending=false;
+  active.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
+  saveLater();
+ }).catch(()=>{ /* No GPS notice for manual input. */ });
+}
 function handleInput(e){const target=e.target;const s=getShift();
+ if(target.dataset.hwyIndex!==undefined&&target.dataset.hwyField){
+  if(e.type!=='change')return;
+  const draft=s?.draft,items=draft?.meta?.highwaySections;
+  const ix=Number(target.dataset.hwyIndex),key=target.dataset.hwyField;
+  if(!Array.isArray(items)||!Number.isInteger(ix)||ix<0||ix>=items.length||
+   !['entryIC','entryTime','entryKm','exitIC','exitTime','exitKm','fee'].includes(key))return;
+  if(key==='entryKm'||key==='exitKm'){
+    if(target.value.trim()&&kmOne(target.value)==='')return;
+    target.value=kmOne(target.value);
+  }
+  items[ix][key]=target.value;saveLater();if(key==='fee')updateEstimate();return;
+ }
+ if(e.type==='change'&&target.matches?.('input[data-number-kind="distance"]')&&String(target.value).trim()!==''){
+  const rounded=kmOne(target.value);if(rounded!=='')target.value=rounded;
+ }
+ if(target.matches?.('[data-native-auto-distance]')){
+  if(e.type!=='change')return;
+  try{localStorage.setItem(NATIVE_AUTO_DISTANCE_PREF,target.value==='on'?'on':'off');}catch{return;}
+  render();return;
+ }
+ if(target.matches?.('[data-native-diary-gps]')){
+  if(e.type!=='change')return;
+  const choice=target.value;
+  if(choice!=='on'&&choice!=='off')return;
+  try{localStorage.setItem(NATIVE_DIARY_GPS_PREF,choice);}catch{toast('この端末のGPS連携設定を保存できません',true);return;}
+  if(choice==='on'&&s?.gpsTrip?.enabled)gpsTripUI?.stop(s,true);
+  else if(choice==='on')gpsTripUI?.clearWatch();
+  render();toast(choice==='on'?(s?'Android GPSに変更しました。出庫中のため「出庫・入庫」→「GPS基準の再設定」で車両トリップ実測値を登録してください。':'Android GPS距離の取得を有効にしました。出庫時のGPS基準を確認してください。'):'従来のブラウザGPS方式に戻しました。');return;
+ }
  if(target.dataset.cruisingSummaryField){
   const key=target.dataset.cruisingSummaryField;
   if(!CRUISING_SUMMARY_FIELDS.some(([name])=>name===key)||e.type!=='change')return;
@@ -2785,7 +3027,12 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   const n=number(target.value);
   if(target.value.trim()!==''&&(n===null||n<0)){if(e.type==='change')toast('走行距離は0以上で入力してください',true);return;}
   const key=target.dataset.shiftOdo==='start'?'startingOdo':target.dataset.shiftOdo==='end'?'endingOdo':null;
-  if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');saveLater();}return;
+  if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim()){
+   if(nativeAutoDistanceEnabled()){
+    const edited=target.value.trim();
+    rebaseNativeTripAfterManual(s,edited,a=>String(a.endingOdo).trim()===edited);
+   }else{ suppressManualGpsToast=true;try{gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');}finally{suppressManualGpsToast=false;} }
+  }saveLater();}return;
  }
  if(target.dataset.waitField&&s?.waiting&&!s.draft){
   const key=target.dataset.waitField;if(!['place','odometer'].includes(key))return;
@@ -2798,41 +3045,48 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     if(!registerWaitName(name,s.waiting.geo))toast('登録候補は30件までです（待機履歴には保存されます）',true);
     else {target.value=name;refreshWaitView(s.waiting.id);}
    }
-  }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim())gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}
+  }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim()){
+   if(nativeAutoDistanceEnabled()){
+    const edited=target.value.trim(),waitId=s.waiting.id;
+    rebaseNativeTripAfterManual(s,edited,a=>a.waiting?.id===waitId&&String(a.waiting.odometer).trim()===edited&&!a.draft);
+   }else{ suppressManualGpsToast=true;try{gpsTripUI?.correct(s,target.value,'待機距離の手動修正');}finally{suppressManualGpsToast=false;} }
+  }}
   saveLater();return;
  }
  if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(['K','E','N'].includes(col)&&applyUberDisplayedDefault(s.draft,s.settings)){
   const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
   if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
  }if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
-  if(window.TAXIAPP_EXTERNAL_GPS){
-   // Manual entry is saved as entered. Query GPS NOW rather than using a stale prior capture.
+  if(nativeAutoDistanceEnabled()){
+   // Manual trip remains authoritative; rebase future GPS increments silently.
    const shiftId=s.id,draftId=s.draft.id,manualValue=target.value.trim();
+   s.externalGpsManualPending=true;
    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
     if(!canEditNow())return;
     const active=getShift();
     if(active?.endedAt||active?.endedIso)return;
     if(active?.id!==shiftId||active.draft?.id!==draftId||active.draft?.editId||String(active.draft.raw[col])!==manualValue)return;
-    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue);
+    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue,data.runId);
     // A fresh GPS position plus vehicle-trip correction reconciles only gaps already observed.
     if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+    active.externalGpsManualPending=false;
     // A driver's corrected vehicle trip must immediately update this shift's remaining distance.
     active.externalGpsSnapshot={tripKm:Number(manualValue),rawGpsKm:data.tripKm,at:new Date().toISOString()};
     saveLater();
-    toast('GPS新基準を設定しました。以降は増加分を加算します。');
    }).catch(err=>{
     // Never overwrite a manually entered vehicle trip or pretend a GPS gap was measured.
     const active=getShift();
     if(active?.id===shiftId){active.externalGpsSnapshot=null;saveLater();updateElapsedTimer();}
-    toast('車両トリップの手入力は保存しました。GPS受信の復帰後、現在の車両トリップ値をもう一度入力して計測基準を合わせてください：'+err.message,true);
+    // Silent for manually entered values; keep auto-distance blocked if rebase fails.
    });
-  }else gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');
+  }else if(nativeDiaryGpsEnabled()){s.externalGpsManualPending=true;}
+   else{ suppressManualGpsToast=true;try{gpsTripUI?.atInputDistance(s,col,target.value,'距離欄'+col+'の手動補正');}finally{suppressManualGpsToast=false;} }
  }if(col==='K'||col==='O'||col==='AR'){updateDiscountForDraft(s.draft,col);const discountField=appEl.querySelector('[data-col="AR"]');if(discountField&&col!=='AR')discountField.value=s.draft.raw.AR??'';
   if(applyUberDisplayedDefault(s.draft,s.settings)){
    const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
    if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
   }
- }if(e.type==='change'&&target.value&&gpsTripUI?.trusted(s)&&!s.draft.editId){
+ }if(e.type==='change'&&target.value&&nativeAutoDistanceEnabled()&&!nativeDiaryGpsEnabled()&&gpsTripUI?.trusted(s)&&!s.draft.editId){
   const paired={R:'S',U:'V',AA:'AB',AD:'AE'}[col];
   if(paired&&gpsTripUI?.fillDistance(s,s.draft,paired,'timeChange:'+col)){
    const distanceInput=appEl.querySelector('[data-col="'+paired+'"]');
@@ -2840,7 +3094,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }
  }
  if(col==='M'&&s.draft.kind==='ride'){
-  if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';if(e.type==='change'){gpsTripUI?.alight(s,s.draft);requestDropLocation(s,s.draft);}}
+  if(target.value){s.draft.status='alighted';s.draft.meta.alightIso='';if(e.type==='change'){if(nativeAutoDistanceEnabled())gpsTripUI?.alight(s,s.draft);requestDropLocation(s,s.draft);}}
   const badge=appEl.querySelector('[data-alight-indicator]');if(badge)badge.textContent=target.value?shortTime(target.value)+' 降車':'メーター入力で時刻記録';
  }if(['AF','AG','AH'].includes(col))refreshEmptyHighwayAmounts(s.draft,col);if(col==='N'&&s.draft.meta?.splitPayment?.second===target.value)s.draft.meta.splitPayment={second:'',manualSlot:null,manualAmount:''};updateEstimate();saveLater();if(col==='K'&&e.type==='change'&&s.draft.kind==='ride'&&s.draft.raw.M)requestDropLocation(s,s.draft);if(col==='P'&&e.type==='change')render();return;}
  if(target.dataset.meta&&s?.draft){s.draft.meta[target.dataset.meta]=target.value;
@@ -3093,7 +3347,7 @@ async function deleteWholeShift(shiftId){
   model=previous;
   try{
    await save(true);
-   if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+   if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
   }catch(restoreError){
    toast('削除・復元とも失敗しました。事前のJSONバックアップを確認してください：'+String(restoreError.message||restoreError),true);
    return;
@@ -3109,10 +3363,49 @@ async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toas
  model.shifts.push(...addition);
  model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  upgradeWaitingHistory();await save();historyDate='';historyShiftId='';tab='history';render();toast(`${addition.length}乗務を追加しました。既存データは維持しました。`);}
-appEl.addEventListener('click',event=>{const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
+appEl.addEventListener('click',event=>{
+ const hwyTime=event.target.closest('[data-hwy-now]');
+ if(hwyTime){
+  event.preventDefault();
+  const index=Number(hwyTime.dataset.hwyNow),key=hwyTime.dataset.hwyTimeField;
+  const shift=getShift(),sections=shift?.draft?.meta?.highwaySections;
+  if(!Array.isArray(sections)||!sections[index]||!['entryTime','exitTime'].includes(key))return;
+  const seg=sections[index],distKey=key==='entryTime'?'entryKm':'exitKm';
+  seg[key]=stamp().slice(0,5);
+  const field=hwyTime.parentElement?.querySelector('[data-hwy-field="'+key+'"]');
+  if(field)field.value=seg[key];
+  saveLater();
+  if(nativeDiaryGpsEnabled()&&nativeAutoDistanceEnabled()&&!String(seg[distKey]??'').trim()){
+    const shiftId=shift.id,recordId=shift.draft.id;
+    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(gps=>{
+      const current=getShift();
+      if(!canEditNow()||current?.id!==shiftId||current.draft?.id!==recordId||
+        !nativeDiaryGpsEnabled()||!nativeAutoDistanceEnabled()||
+        !current.draft?.meta?.highwaySections?.includes(seg)||String(seg[distKey]??'').trim())return;
+      const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,shiftId);
+      seg[distKey]=window.TAXIAPP_EXTERNAL_GPS.calculated(gps.tripKm,base,gps.runId).toFixed(1);
+      const el=appEl.querySelector('[data-hwy-index="'+index+'"][data-hwy-field="'+distKey+'"]');
+      if(el&&document.activeElement!==el)el.value=seg[distKey];
+      saveLater();
+    }).catch(()=>{});
+  }
+  return;
+ }
+ const step=event.target.closest('[data-km-step]');
+ if(step){event.preventDefault();const input=step.parentElement?.querySelector('input[data-number-kind="distance"]');
+  if(!input||input.disabled||input.readOnly)return;
+  const delta=Number(step.dataset.kmStep);
+  if(![-1,1].includes(delta))return;
+  const next=kmStep(input.value,delta);if(next===null)return;
+  if(keypadActive)closeKeypad(false,true);
+  input.value=next;input.dispatchEvent(new Event('input',{bubbles:true}));
+  input.dispatchEvent(new Event('change',{bubbles:true}));return;
+ }
+ const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
+appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
 appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-distance-setting]')){const key=event.target.dataset.distanceSetting;if(!['pickupDropDistance','highwayDistance'].includes(key))return;model.prefs[key]=event.target.value==='off'?'off':'on';saveLater();render();toast('距離管理の設定を保存しました');return;}
@@ -3123,7 +3416,7 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.matches('[data-plan-end]')){const active=getShift();if(active){active.plannedEndAt=event.target.value;saveLater();render();}return;}
 if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target.value)){setGoogleStatus('接続キーを保存しました。送信テストを行ってください');saveLater();}return;}
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
-if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method]')){handleInput(event);}});
+if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-hwy-index],[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-duty-plan]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
 await load();if(upgradeWaitingHistory())await save();render();
  // No GPS watch or duty mutation until Firebase confirms the editing session.
@@ -3153,7 +3446,7 @@ window.addEventListener('online',()=>{
   if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();
   else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
  });
-document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();});
+document.addEventListener('visibilitychange',()=>{if(!nativeDiaryGpsEnabled())gpsTripUI?.hidden();});
 // No periodic duty polling. Writer sends when changed; viewer pulls on login or button.
 
 })().catch(function (err) {

@@ -17,6 +17,25 @@
   for(const [i,record] of (shift?.records||[]).entries()){
    if(record?.status!=='complete'||!['ride','empty'].includes(record.kind))continue;
    const raw=record.raw||{};
+   const segments=record.meta?.highwaySections;
+   if(Array.isArray(segments)){
+    for(const [si,seg] of segments.entries()){
+     if(!seg||!['実','空'].includes(seg.mode))continue;
+     const entryKm=value(seg.entryKm),exitKm=value(seg.exitKm);
+     const validDistance=entryKm!==null&&entryKm>=0&&exitKm!==null&&exitKm>=entryKm;
+     const sectionKm=validDistance?rounded(exitKm-entryKm,1):null;
+     const exemptKm=validDistance?rounded(sectionKm*.75):null;
+     const chargeYen=value(seg.fee);
+     entries.push({
+       id:(written(record.id)||String(i))+'-'+si,no:written(raw.A)||String(i+1),
+       mode:seg.mode,entryIC:written(seg.entryIC),entryTime:written(seg.entryTime),
+       entryKm,exitIC:written(seg.exitIC),exitTime:written(seg.exitTime),exitKm,
+       sectionKm,exemptKm,chargeYen,distanceMissing:!validDistance,
+       chargeMissing:chargeYen===null,legacyDerivedKm:null
+     });
+    }
+    continue;
+   }
    const flag=written(raw.P);
    if(!flag.includes('実')&&!flag.includes('空'))continue;
    const derived=typeof deriveRaw==='function'?deriveRaw(record):raw;

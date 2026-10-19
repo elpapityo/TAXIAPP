@@ -41,5 +41,5 @@ for(const key of ['highwayAdd','highwayRemove','data-hwy-field','data-hwy-time-f
 }
 assert.ok(preview.includes('./highway-sections.js'));
 assert.ok(preview.includes('./highway-report.js'));
-assert.ok(!fs.readFileSync('index.html','utf8').includes('./highway-sections.js'));
+assert.ok(fs.readFileSync('index.html','utf8').includes('./highway-sections.js'),'v0.3.60 formally integrates the already-proven multi-highway module');
 console.log('PASS preview: multiple highway segments per ride, legacy rows, charge aggregation, per-segment exemption, idempotent projection and one-decimal stepper code');
