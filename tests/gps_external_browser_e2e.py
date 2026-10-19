@@ -4,6 +4,8 @@ Runs on Android emulator GitHub Actions, NOT mocked browser/GPS data. The browse
 opens exactly the localhost URL served by the Android APK over adb port-forward.
 """
 import json
+import re
+import xml.etree.ElementTree as ET
 import os
 import pathlib
 import subprocess
@@ -43,6 +45,31 @@ def adb(*args, timeout=30, check=True):
     if check and out.returncode:
         raise RuntimeError(f"{command}: {out.returncode}; stderr={out.stderr}; stdout={out.stdout}")
     return out.stdout.strip()
+
+def tap_native_button(fragment):
+    """Tap a visible button inside the APP, not an unexported Android Service.
+    The app itself starts foreground GPS with its normal permission lifecycle.
+    """
+    for _ in range(8):
+        adb("shell", "uiautomator", "dump", "/sdcard/gps-test-window.xml",
+            timeout=45, check=False)
+        xml = adb("shell", "cat", "/sdcard/gps-test-window.xml", timeout=15, check=False)
+        try:
+            root = ET.fromstring(xml)
+            for item in root.iter("node"):
+                text = item.attrib.get("text", "")
+                if fragment in text:
+                    coords = list(map(int, re.findall(r"\d+", item.attrib.get("bounds", ""))))
+                    if len(coords) == 4:
+                        x = (coords[0] + coords[2]) // 2
+                        y = (coords[1] + coords[3]) // 2
+                        adb("shell", "input", "tap", str(x), str(y), timeout=30)
+                        note("Tapped real Android native button", label=text, x=x, y=y)
+                        return
+        except ET.ParseError:
+            pass
+        time.sleep(2)
+    raise AssertionError(f"Could not locate native button: {fragment}")
 
 def http(path, timeout=5):
     req = urllib.request.Request(BASE + path, headers={"Cache-Control": "no-store"})
@@ -87,8 +114,7 @@ try:
     adb("shell", "cmd", "location", "set-location-enabled", "true", check=False)
     adb("shell", "am", "start", "-n", f"{APP}/{MAIN}", timeout=25)
     time.sleep(1)
-    adb("shell", "am", "start-foreground-service",
-        "-n", f"{APP}/{SERVICE}", "-a", "jp.taxiapp.gpsprototype.START", timeout=25)
+    tap_native_button("GPS測定を開始")
     adb("forward", "tcp:48764", "tcp:48764")
 
     identity = wait_http("api/identity",
@@ -197,11 +223,10 @@ try:
     assert len(driver.window_handles) == 1, "GPS capture unexpectedly opened new Chrome tabs"
 
     # Android foreground-service restart must change runId and warn about prior browser 0km.
-    adb("shell", "am", "startservice", "-n", f"{APP}/{SERVICE}",
-        "-a", "jp.taxiapp.gpsprototype.STOP", timeout=25, check=False)
+    adb("shell", "am", "start", "-n", f"{APP}/{MAIN}", timeout=35)
+    tap_native_button("GPS測定を停止")
     time.sleep(2)
-    adb("shell", "am", "start-foreground-service", "-n", f"{APP}/{SERVICE}",
-        "-a", "jp.taxiapp.gpsprototype.START", timeout=25)
+    tap_native_button("GPS測定を開始")
     new_status = wait_http("api/status",
         lambda x: x.get("running") and x.get("runId") != status["runId"], timeout=45)
     note("Restarting native Android GPS created a new runId", new_status=new_status)
