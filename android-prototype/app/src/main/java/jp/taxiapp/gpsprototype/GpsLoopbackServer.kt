@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
-        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_SIMULATOR_V1_2_1"
-        const val PORT = 48766
-        const val URL = "http://127.0.0.1:48766/"
+        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_SIMULATOR_V1_2_2"
+        const val PORT = 48767
+        const val URL = "http://127.0.0.1:48767/"
     }
     private val active=AtomicBoolean(false)
     private var listeningSocket: ServerSocket?=null
@@ -71,7 +71,7 @@ class GpsLoopbackServer(private val context: Context) {
                     if(line.length>4096||++lines>50)return
                     if(line.startsWith("Host:",true))host=line.substringAfter(":").trim()
                 }
-                if(host!="127.0.0.1:48766"){
+                if(host!="127.0.0.1:48767"){
                     reply(s,403,"text/plain; charset=utf-8","Invalid Host");return
                 }
                 when {
@@ -84,7 +84,7 @@ class GpsLoopbackServer(private val context: Context) {
                     route=="/api/identity"->reply(s,200,"application/json; charset=utf-8",
                         JSONObject().put("marker",IDENTITY_MARKER)
                             .put("packageId",context.packageName)
-                            .put("webVersion","1.2.1")
+                            .put("webVersion","1.2.2")
                             .toString())
                     route=="/api/status"->reply(s,200,"application/json; charset=utf-8",status())
                     route.startsWith("/api/capture?")->{

@@ -73,7 +73,7 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.2.1 · ボタン操作改善版", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS DISTANCE LAB · v1.2.2 · ボタン操作改善版", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n模擬走行テスト", 29f), 3)
         add(label("【テスト専用】車を動かさずに模擬走行できます。実GPSと模擬走行は同時に実行しません。0km登録・区間距離・補正は外部Chromeで操作します。", 13f, 0xFFFFD68A.toInt()), 8)
         val meter = LinearLayout(this).apply {
@@ -105,8 +105,8 @@ class MainActivity : Activity() {
             } else startGps(simulation=true)
         }
         add(simButton, 10)
-        add(label("速度ボタンはそのまま押せます。模擬0km/hで開始 → Chromeで0km登録 → 模擬20/40/60km/h。模擬テストの開始に位置情報の許可は不要です。",12f,0xFFFFD68A.toInt()),9)
-        for (pair in listOf(listOf(0,20),listOf(40,60))) {
+        add(label("速度ボタンはそのまま押せます。模擬0km/hで開始 → Chromeで0km登録 → 模擬20/40/60/100km/h。模擬テストの開始に位置情報の許可は不要です。",12f,0xFFFFD68A.toInt()),9)
+        for (pair in listOf(listOf(0,20),listOf(40,60),listOf(100))) {
             val line=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
             for (speed in pair) {
                 val b=button("模擬 ${speed}km/h",0xFF24384E.toInt(),Color.WHITE)
@@ -148,7 +148,7 @@ class MainActivity : Activity() {
             }
         }
         add(openWeb, 23)
-        add(label("手順：① 模擬0km/hを押すだけで開始 → ② 外部Chromeで0km登録 → ③ アプリに戻り模擬20/40/60km/h → ④ Chromeへ戻ってGPS取得。模擬中は同じブラウザタブに反映されます。\n\n本番GPSと記録は別アプリ・別ポートです。実走データには使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 12)
+        add(label("手順：① 模擬0km/hを押すだけで開始 → ② 外部Chromeで0km登録 → ③ アプリに戻り模擬20/40/60/100km/h → ④ Chromeへ戻ってGPS取得。模擬中は同じブラウザタブに反映されます。\n\n本番GPSと記録は別アプリ・別ポートです。実走データには使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 12)
         val scroll=ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)

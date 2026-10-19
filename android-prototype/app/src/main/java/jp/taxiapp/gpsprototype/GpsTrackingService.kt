@@ -288,7 +288,7 @@ class GpsTrackingService : Service() {
             }
             ACTION_SIM_SPEED -> {
                 val kmh=intent.getIntExtra(EXTRA_SIM_SPEED,-1)
-                if(simulating && engine.snapshot().running && kmh in setOf(0,20,40,60)) {
+                if(simulating && engine.snapshot().running && kmh in setOf(0,20,40,60,100)) {
                     simulatedDrive?.setSpeed(kmh)
                     GpsStore.setSimulation(this,true,kmh)
                     updateNotification()
@@ -338,7 +338,7 @@ class GpsTrackingService : Service() {
                     if (simulation) {
                         simulating=true
                         simulatedDrive=SimulatedDrive().also{
-                            it.setSpeed(intent.getIntExtra(EXTRA_SIM_SPEED,0).takeIf{v->v in setOf(0,20,40,60)} ?: 0)
+                            it.setSpeed(intent.getIntExtra(EXTRA_SIM_SPEED,0).takeIf{v->v in setOf(0,20,40,60,100)} ?: 0)
                         }
                         GpsStore.setSimulation(this,true,simulatedDrive?.speedKmh ?: 0)
                         mainHandler.post(simTicker)
@@ -353,7 +353,7 @@ class GpsTrackingService : Service() {
                         // A port conflict is not a GPS-location gap. Preserve
                         // actual distance integrity and show a separate warning.
                         loopback=null
-                        GpsStore.setBrowserConnectionIssue(this,"模擬テスト用ポート48766が使用中です。古い模擬走行アプリを停止してください。")
+                        GpsStore.setBrowserConnectionIssue(this,"模擬テスト用ポート48767が使用中です。古い模擬走行アプリを停止してください。")
                     }
                 }
             }

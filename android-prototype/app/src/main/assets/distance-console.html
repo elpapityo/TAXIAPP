@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'; form-action 'none'; base-uri 'none'">
-<title>GPS距離ラボ v1.2.1 | 外部ブラウザで距離確認</title>
+<title>GPS距離ラボ v1.2.2 | 外部ブラウザで距離確認</title>
 <style>
 :root{color-scheme:dark;--bg:#090f1b;--layer:#111d2e;--soft:#17273a;--border:#334b63;--text:#eaf5ff;--muted:#a7baca;--mint:#63ead2;--blue:#88c6ff;--amber:#ffd68a;font:15px/1.5 system-ui,"Noto Sans JP",sans-serif}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}body{padding:18px 14px 60px}button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}
@@ -29,13 +29,13 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
 </head>
 <body>
 <main>
-<div style="background:#573c12;border:2px solid #ffcf72;color:#fff1cd;padding:12px 14px;border-radius:14px;margin-bottom:16px;font-weight:800">⚠ 模擬走行テスト専用 v1.2.1 — 表示される走行距離は架空のテストデータです。営業日報や実走行の証明には使用しないでください。</div>
+<div style="background:#573c12;border:2px solid #ffcf72;color:#fff1cd;padding:12px 14px;border-radius:14px;margin-bottom:16px;font-weight:800">⚠ 模擬走行テスト専用 v1.2.2 — 表示される走行距離は架空のテストデータです。営業日報や実走行の証明には使用しないでください。</div>
 <header class="heading">
-<div class="eyebrow">GPS DISTANCE LAB · EXTERNAL BROWSER v1.2.1</div>
+<div class="eyebrow">GPS DISTANCE LAB · EXTERNAL BROWSER v1.2.2</div>
 <h1>計測して、<span>必要な分だけ補正。</span></h1>
 <p>GPS距離はそのまま記録。車両トリップを入力した地点から、次の区間だけを加算します。</p>
 </header>
-<div class="state-line"><strong>距離計測テスト <span style="color:var(--mint)">Web v1.2.1</span></strong><span class="pill" id="connection">接続を確認中</span></div>
+<div class="state-line"><strong>距離計測テスト <span style="color:var(--mint)">Web v1.2.2</span></strong><span class="pill" id="connection">接続を確認中</span></div>
 <div class="notice" id="browser-only" hidden>先にGPS計測アプリでGPSを開始し、アプリの「外部ブラウザで距離テストを開く」からアクセスしてください。通常のブラウザで距離を取得できます。</div>
 <div id="native-status" class="gpsStatus">GPS受信状態を確認中です</div>
 <section class="hero">
@@ -69,7 +69,7 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
 <script>
 (function(){
 'use strict';
-var KEY='gps-distance-lab-browser-simulator-v121', HISTORY_KEY='gps-distance-lab-history-v121', MAX=60, pending=null, lastNativeRunId=null;
+var KEY='gps-distance-lab-browser-simulator-v122', HISTORY_KEY='gps-distance-lab-history-v122', MAX=60, pending=null, lastNativeRunId=null;
 var $=function(id){return document.getElementById(id);};
 var nativeReady=!!(window.DistanceNative&&typeof window.DistanceNative.requestCapture==='function');
 function goodKm(v){

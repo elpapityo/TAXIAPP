@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <application
-        android:label="GPS距離ラボ v1.2.1 模擬テスト"
+        android:label="GPS距離ラボ v1.2.2 模擬テスト"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false"
         android:usesCleartextTraffic="true">
@@ -23,7 +23,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="taxiappgpslabsimv121" android:host="open"/>
+                <data android:scheme="taxiappgpslabsimv122" android:host="open"/>
             </intent-filter>
         </activity>
         <service
