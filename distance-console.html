@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'; form-action 'none'; base-uri 'none'">
 <title>GPS距離ラボ | 距離確認Web画面</title>
 <style>
 :root{color-scheme:dark;--bg:#090f1b;--layer:#111d2e;--soft:#17273a;--border:#334b63;--text:#eaf5ff;--muted:#a7baca;--mint:#63ead2;--blue:#88c6ff;--amber:#ffd68a;font:15px/1.5 system-ui,"Noto Sans JP",sans-serif}
@@ -28,12 +28,12 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
 <body>
 <main>
 <header class="heading">
-<div class="eyebrow">GPS DISTANCE LAB · 走行距離の専用検証</div>
+<div class="eyebrow">GPS DISTANCE LAB · 外部ブラウザで走行距離を検証</div>
 <h1>計測して、<span>必要な分だけ補正。</span></h1>
 <p>GPS距離はそのまま記録。車両トリップを入力した地点から、次の区間だけを加算します。</p>
 </header>
 <div class="state-line"><strong>距離計測テスト</strong><span class="pill" id="connection">接続を確認中</span></div>
-<div class="notice" id="browser-only" hidden>このページはアプリ内でGPSを取得します。Chromeで開いた場合は下のボタンから専用アプリへ切り替えてください。以降、GPS取得ごとにChromeの新しいタブは開きません。<div><a class="launch" href="taxiappgpslabv060://open">GPS計測アプリを開く ↗</a></div></div>
+<div class="notice" id="browser-only" hidden>先にGPS計測アプリでGPSを開始し、アプリの「外部ブラウザで距離テストを開く」からアクセスしてください。通常のブラウザで距離を取得できます。</div>
 <div id="native-status" class="gpsStatus">GPS受信状態を確認中です</div>
 <section class="hero">
  <div class="hero-top"><span>補正後の走行累計</span><span id="hero-mark">START READY</span></div>
@@ -57,13 +57,13 @@ main{max-width:760px;margin:0 auto}.eyebrow{font-size:11px;letter-spacing:.17em;
  <button class="secondary add" type="button" id="add-btn">＋ 次の計測地点を追加</button>
  <div class="toolbar"><button class="secondary" type="button" id="reset-btn">このテスト記録を初期化</button></div>
 </section>
-<div class="notice" role="status" aria-live="polite" id="message">アプリのGPS計測画面で「GPS測定を開始」し、基準地点を記録してください。</div>
+<div class="notice" role="status" aria-live="polite" id="message">GPS計測アプリで測定を開始し、外部ブラウザで0km基準を記録してください。</div>
 <div class="footer">距離はGPS測位点間から計算した推定値です。欠測・古い測位・停止中は取り込みません。営業日報・売上・Google同期とは独立しています。操作は停車中だけにしてください。</div>
 </main>
 <script>
 (function(){
 'use strict';
-var KEY='gps-distance-lab-console-v1', MAX=60, pending=null;
+var KEY='gps-distance-lab-browser-v070', MAX=60, pending=null;
 var $=function(id){return document.getElementById(id);};
 var nativeReady=!!(window.DistanceNative&&typeof window.DistanceNative.requestCapture==='function');
 function goodKm(v){
@@ -86,7 +86,7 @@ function restore(){
 }
 var state=restore();
 function updateNativeStatus(){
- if(!nativeReady||typeof window.DistanceNative.getStatus!=='function'){ $('native-status').textContent='ブラウザからはGPSを測定できません。専用APKで開いてください。';return;}
+ if(!nativeReady||typeof window.DistanceNative.getStatus!=='function'){ $('native-status').textContent='GPS計測アプリから、この外部ブラウザ画面を開いてください。';return;}
  try{
   var x=JSON.parse(window.DistanceNative.getStatus());
   var age=typeof x.ageMs==='number'&&x.ageMs>=0?Math.floor(x.ageMs/1000)+'秒前':'未受信';
@@ -129,7 +129,7 @@ function startFeedback(message,variant){$('start-feedback').textContent=message;
 function safe(s){return String(s).replace(/[&<>"']/g,function(v){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[v];});}
 function render(){
  var view=derive(state),last=view.filter(function(x){return x.finalKm!==null;}).slice(-1)[0];
- $('connection').textContent=nativeReady?'アプリ内GPS連携':'ブラウザ表示のみ';
+ $('connection').textContent=nativeReady?'外部ブラウザGPS接続':'ブラウザ単独（GPS未接続）';
  $('browser-only').hidden=nativeReady;
  $('start-detail').textContent=state.startNative===null?'基準点未記録':'基準点を 0.000 km に設定済み · '+when(state.startAt);
  if(state.startNative!==null)startFeedback('0km基準点は記録済みです。次の計測地点からGPSを取得してください。','ok');
@@ -159,7 +159,7 @@ function render(){
  $('add-btn').disabled=view.length>=MAX;
 }
 function request(target){
- if(!nativeReady){show('距離取得には専用Androidアプリを使用してください。',true);return;}
+ if(!nativeReady){show('GPS計測アプリからこの外部ブラウザ画面を開いてください。',true);return;}
  if(pending){show('前のGPS取得処理中です。',true);return;}
  if(state.startNative!==null&&target==='start'){show('開始地点は記録済みです。やり直す場合は初期化してください。',true);return;}
  if(target!=='start'){
