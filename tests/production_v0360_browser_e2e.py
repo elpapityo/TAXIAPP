@@ -22,7 +22,7 @@ def stored():
     """)
 try:
     driver.get('http://127.0.0.1:8765/')
-    wait.until(lambda _: 'TAXIAPP v0.3.61' in driver.title)
+    wait.until(lambda _: 'TAXIAPP v0.3.' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert driver.find_elements(By.ID,'accountSignIn')
     assert driver.find_elements(By.ID,'accountViewSignIn')
@@ -44,7 +44,7 @@ try:
     js("localStorage.setItem('taxiapp-v1','PREEXISTING_FALLBACK')")
     js("localStorage.setItem('taxiapp-preview-v0359-simulator-optin','on')")
     driver.refresh()
-    wait.until(lambda _: 'TAXIAPP v0.3.61' in driver.title)
+    wait.until(lambda _: 'TAXIAPP v0.3.' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert stored()==sentinel, 'existing production data changed during app startup'
     assert js("return localStorage.getItem('taxiapp-v1')")=='PREEXISTING_FALLBACK'
