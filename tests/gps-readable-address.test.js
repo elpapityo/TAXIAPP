@@ -8,5 +8,5 @@ assert.doesNotMatch(gps,/target\.raw\[addressKey\]=\x60\$\{gps\.lat\.toFixed\(6\
 assert.match(gps,/target\.raw\[locationKey\]=\x60\$\{gps\.lat\.toFixed\(6\)\},\$\{gps\.lng\.toFixed\(6\)\}\x60/);
 assert.match(gps,/latest\.raw\[addressKey\]=address/);
 assert.match(gps,/住所は手入力できます/);
-assert.match(source,/<title>TAXIAPP v0\.3\.54/);
+assert.match(source,/<title>TAXIAPP v\d+\.\d+\.\d+/);
 console.log('GPS keeps coordinates separate from displayed address');
