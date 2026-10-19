@@ -542,6 +542,13 @@ html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .highway-
  #floating-duty-summary .preview-duty-stat strong{font-size:clamp(15px,4vw,21px)}
  #floating-duty-summary .preview-duty-route{padding:6px 8px}}
 @media print{#floating-duty-summary{display:none!important}}
+
+/* Contextual ride-only header: no daily totals or start-of-shift duration. */
+.preview-duty-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.preview-duty-stats:has(> :nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+.preview-duty-stats:has(> :only-child){grid-template-columns:minmax(0,1fr)}
+.preview-duty-stat strong[data-duty-field="state"]{color:#7de5b7}
+.preview-duty-route{min-height:0}
 </style>
 </head>
 <body>
@@ -1291,17 +1298,34 @@ function dutyUiState(shift){
  const d=shift?.draft;
  return d?.kind==='dispatch'?'迎車中':d?.kind==='ride'?(d.status==='alighted'||d.raw.M?'降車・精算':'実車中'):d?.kind==='empty'?'空車高速':d?.kind==='cancel'?'キャンセル':shift?.waiting?'空車・待機':'空車・流し';
 }
+function currentDutySummary(shift){
+ const d=shift?.draft,raw=d?.raw||{};
+ const state=dutyUiState(shift);
+ const routeFrom=raw.AL||d?.meta?.waitPlace||shift?.waiting?.place||'未記録';
+ const routeTo=raw.AM||'未記録';
+ const dispatch=d?.kind==='dispatch';
+ const waiting=!d&&!!shift?.waiting;
+ const dispatchSource=DISPATCH_TYPES.find(([code])=>code===raw.E)?.[1]||'未選択';
+ const payment=raw.N?PAYMENTS.find(([code])=>code===raw.N)?.[1]||'未選択':'未選択';
+ const meter=number(raw.K)===null?'未入力':money(raw.K);
+ return {state,dispatch,waiting,dispatchSource,from:routeFrom,to:routeTo,payment,meter};
+}
 function renderDutyStatus(shift){
  if(!shift)return '';
- const d=shift.draft,raw=d?.raw||{},t=totals(shift.records,shift.settings,shift.date);
- const from=raw.AL||d?.meta?.waitPlace||shift.waiting?.place||'未記録',to=raw.AM||'未記録';
- const started=Date.parse(shift.startedIso||'');
- const span=Number.isFinite(started)?Math.max(0,Math.floor((Date.now()-started)/60000)):0;
- const elapsed=Number.isFinite(started)?String(Math.floor(span/60)).padStart(2,'0')+':'+String(span%60).padStart(2,'0'):'--:--';
- const total=Number(t?.meter||0);
+ const status=currentDutySummary(shift);
+ const stat=(label,value,field)=>`<div class="preview-duty-stat"><small>${label}</small><strong data-duty-field="${field}">${safeText(value)}</strong></div>`;
+ const columns=[stat('現在の営業状態',status.state,'state')];
+ if(status.dispatch)columns.push(stat('依頼元アプリ',status.dispatchSource,'dispatch'));
+ else if(status.waiting)columns.push(stat('待機',status.from,'wait'));
+ else if(status.state==='実車中'||status.state==='降車・精算'){
+  columns.push(stat('支払い方法',status.payment,'payment'),stat('メーター金額',status.meter,'meter'));
+ }
+ const route=status.dispatch
+  ?`<div class="preview-duty-route"><div><small>お迎え場所</small><strong>${safeText(status.from)}</strong></div></div>`
+  :`<div class="preview-duty-route"><div><small>乗車地</small><strong>${safeText(status.from)}</strong></div><span>➜</span><div><small>降車地</small><strong>${safeText(status.to)}</strong></div></div>`;
  return `<section class="preview-duty-summary" aria-label="現在の営業情報">
-   <div class="preview-duty-stats"><div class="preview-duty-stat"><small>現在の営業状態</small><strong class="preview-duty-state">${safeText(dutyUiState(shift))}</strong></div><div class="preview-duty-stat"><small>出庫から</small><strong class="preview-duty-time" data-preview-duty-elapsed>${elapsed}</strong></div><div class="preview-duty-stat"><small>本日の売上</small><strong data-preview-duty-revenue>¥${total.toLocaleString('ja-JP')}</strong></div></div>
-   <div class="preview-duty-route"><div><small>乗車地</small><strong data-preview-duty-from>${safeText(from)}</strong></div><span>➜</span><div><small>降車地</small><strong data-preview-duty-to>${safeText(to)}</strong></div></div></section>`;
+  <div class="preview-duty-stats">${columns.join('')}</div>
+  ${route}</section>`;
 }
 function renderGuidedHeading(shift){
  const d=shift.draft;
@@ -2075,12 +2099,8 @@ function syncFloatingDutySummary(){
  const left=Math.max(0,bounds.left),right=Math.min(window.innerWidth,bounds.right);
  mirror.style.left=left+'px';
  mirror.style.width=Math.max(0,right-left)+'px';
- // Copy presentation only. The source remains the sole live data view.
- for(const field of ['.preview-duty-state','[data-preview-duty-elapsed]',
-  '[data-preview-duty-revenue]','[data-preview-duty-from]','[data-preview-duty-to]']){
-  const src=original.querySelector(field),dest=mirror.querySelector(field);
-  if(src&&dest&&src.textContent!==dest.textContent)dest.textContent=src.textContent;
- }
+ // Mirror the complete status layout: dispatch, wait, and ride use different fields.
+ if(mirror.innerHTML!==original.innerHTML)mirror.innerHTML=original.innerHTML;
 }
 window.addEventListener('scroll',syncFloatingDutySummary,{passive:true});
 window.addEventListener('resize',syncFloatingDutySummary,{passive:true});
@@ -2088,22 +2108,17 @@ function updateElapsedTimer(){
  const active=getShift(), now=new Date(), w=active?.waiting;
  const display=appEl.querySelector('[data-wait-elapsed]');
  if(display&&w&&!active?.draft)display.textContent=elapsedWaitingText(w);
- // Refresh the pinned summary without redrawing a partially edited fare form.
- if(active&&tab==='drive'&&appEl.querySelector('.preview-duty-summary')){
-  const summary=appEl.querySelector('.preview-duty-summary'),draft=active.draft,raw=draft?.raw||{};
-  const mins=Math.max(0,Math.floor((now.getTime()-Date.parse(active.startedIso||''))/60000));
-  const elapsed=Number.isFinite(mins)?String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'):'--:--';
-  const current={
-   '[data-preview-duty-elapsed]':elapsed,
-   '.preview-duty-state':dutyUiState(active),
-   '[data-preview-duty-revenue]':money(totals(active.records,active.settings,active.date).meter),
-   '[data-preview-duty-from]':raw.AL||draft?.meta?.waitPlace||active.waiting?.place||'未記録',
-   '[data-preview-duty-to]':raw.AM||'未記録'
-  };
-  for(const [selector,value] of Object.entries(current)){
-   const el=summary.querySelector(selector);if(!el)continue;
-   const text=String(value);
-   if(el.textContent!==text)el.textContent=text;
+ // Refresh only the compact status panel, never the live fare inputs.
+ if(active&&tab==='drive'){
+  const summary=appEl.querySelector('#main-content .preview-duty-summary');
+  if(summary){
+   const refreshed=renderDutyStatus(active);
+   // Use text updates when the state and structure are unchanged, avoiding
+   // unnecessary layout shifts while the driver is entering a fare.
+   const template=document.createElement('template');
+   template.innerHTML=refreshed;
+   const next=template.content.firstElementChild;
+   if(next&&summary.innerHTML!==next.innerHTML)summary.innerHTML=next.innerHTML;
   }
  }
  if(typeof syncFloatingDutySummary==='function')syncFloatingDutySummary();
