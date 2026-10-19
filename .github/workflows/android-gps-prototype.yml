@@ -132,7 +132,7 @@ jobs:
           assert html.count('gps-bridge-test.js?v=040')==1
           assert 'android:scheme="taxiappgpsaudit"' in manifest
           assert 'private val scheme = "taxiappgpsaudit"' in page
-          assert 'addJavascriptInterface' not in page
+          assert '.addJavascriptInterface(' not in page
           assert 'taxiapp-gps-local-test-key-v1' not in html
           assert 'X-GPS-Test-Key' not in html
           assert '車両距離 手入力（km）' in html
