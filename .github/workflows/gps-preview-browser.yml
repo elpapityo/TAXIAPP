@@ -1,0 +1,44 @@
+name: TAXIAPP GPS preview isolated Chrome smoke
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'gps-preview/v0358/**'
+      - 'tests/gps_preview_browser_e2e.py'
+      - '.github/workflows/gps-preview-browser.yml'
+  push:
+    branches:
+      - feat/gps-distance-private-preview-20261019
+    paths:
+      - 'gps-preview/v0358/**'
+      - 'tests/gps_preview_browser_e2e.py'
+      - '.github/workflows/gps-preview-browser.yml'
+permissions:
+  contents: read
+jobs:
+  chrome-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Selenium
+        run: python -m pip install --disable-pip-version-check 'selenium>=4.25,<5'
+      - name: Serve current repo with same-origin preview and production sentinels
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/taxiapp-preview-http.log 2>&1 &
+          echo $! > /tmp/taxiapp-preview-http.pid
+          python3 - <<'PY'
+          import urllib.request,time
+          for attempt in range(25):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8765/gps-preview/v0358/',timeout=3)
+                  break
+              except Exception:
+                  time.sleep(1)
+          else: raise SystemExit('Local preview server did not start')
+          PY
+      - name: Exercise preview in real Chrome and ensure production records stay intact
+        run: python3 tests/gps_preview_browser_e2e.py
