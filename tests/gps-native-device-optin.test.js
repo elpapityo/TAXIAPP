@@ -1,0 +1,25 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const html=fs.readFileSync('index.html','utf8');
+const start=html.indexOf("const NATIVE_DIARY_GPS_PREF=");
+const end=html.indexOf("function field(",start);
+assert.ok(start>0&&end>start);
+const store=new Map(),model={prefs:{driver:'driver-one'}};
+const ctx={model,window:{TAXIAPP_EXTERNAL_GPS:{}},localStorage:{
+ getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v))}};
+vm.createContext(ctx);vm.runInContext(html.slice(start,end),ctx);
+const enabled=()=>vm.runInContext('nativeDiaryGpsEnabled()',ctx);
+assert.equal(enabled(),false,'original browser tracking is default');
+store.set('taxiapp-device-native-gps-v130','on');
+assert.equal(enabled(),true,'user explicitly opts in');
+assert.equal(model.prefs.nativeDiaryGps,undefined,'device preference never enters synced profile');
+ctx.window.TAXIAPP_EXTERNAL_GPS=null;
+assert.equal(enabled(),false,'no Android bridge means no native GPS');
+ctx.window.TAXIAPP_EXTERNAL_GPS={};ctx.localStorage.getItem=()=>{throw Error('blocked');};
+assert.equal(enabled(),false,'storage unavailable preserves browser GPS');
+assert.match(html,/const nativeGpsLinked=nativeDiaryGpsEnabled\(\)/);
+assert.match(html,/if\(!nativeGpsLinked&&gpsOptIn&&gpsTripUI\)gpsTripUI\.start\(newRecord\)/);
+assert.match(html,/!nativeDiaryGpsEnabled\(\)\)gpsTripUI\?\.fillLocationDistance/);
+assert.match(html,/if\(action==='gpsShiftRebase'&&nativeDiaryGpsEnabled\(\)\)/);
+for(const k of ['gpsWaitOdo','gpsShiftEndOdo','gpsTripFill'])assert.ok(html.includes(k));
+console.log('Native GPS opt-in and device isolation checks passed.');
