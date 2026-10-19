@@ -2,7 +2,7 @@ name: GPS v1.2.2 Simulator Buttons Android to Chrome E2E
 on:
   push:
     branches:
-      - fix/gps-simulator-buttons-v122-20261019
+      - feat/gps-simulator-100kmh-v122-20261019
     paths:
       - 'tests/gps_simulator_v122_e2e.py'
       - '.github/workflows/gps-simulator-v122-e2e.yml'
