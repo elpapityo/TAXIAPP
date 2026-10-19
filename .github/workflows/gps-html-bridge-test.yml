@@ -62,11 +62,19 @@ jobs:
           from pathlib import Path
           html=Path('index.html').read_text()
           ui=Path('gps-trip-ui.js').read_text()
-          assert '<script src="./gps-native-bridge.js?v=5"></script>' in html
+          assert '<script src="./gps-diary-bridge.js?v=20261020-1"></script>' in html
           assert "if(!shift?.draft||shift.draft.editId)" in html
           assert "active.draft?.editId" in html
-          assert "window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue)" in html
+          assert "window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue,data.runId)" in html
           assert "String(active.draft.raw[id]??'')!==originalField" in html
           assert 'if(root.TAXIAPP_EXTERNAL_GPS)return false;' in ui
+          from pathlib import Path
+          bridge=Path('gps-diary-bridge.js').read_text()
+          assert 'if(state.simulated===true)' in bridge
+          assert 'if(x.simulated===true)' in bridge
+          assert 'allowSimulation' not in bridge
+          assert "const DB_NAME='taxiapp-store-v1'" in html
+          assert "accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create" in html
+          assert "canSync:()=>canEditNow()" in html
           print('HTML guard checks PASS')
           PY
