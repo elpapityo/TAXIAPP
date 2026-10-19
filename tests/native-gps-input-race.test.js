@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const start=html.indexOf(" if(action==='gpsTripFill'&&window.TAXIAPP_EXTERNAL_GPS");
+const start=html.indexOf(" if(action==='gpsTripFill'&&nativeDiaryGpsEnabled()){");
 const end=html.indexOf(" if(action==='gpsTripFill'){",start);
 assert.ok(start>0&&end>start);
 const handler=html.slice(start,end);
@@ -9,22 +9,22 @@ async function scenario(change,enabled=true){
  let finish,editable=true,saves=0,refreshes=0;
  const shift={id:'shift-1',draft:{id:'ride-1',raw:{F:'260'},meta:{}}};
  const context={distanceEnabled:()=>enabled,action:'gpsTripFill',id:'F',shift,getShift:()=>shift,
-  canEditNow:()=>editable,localStorage:{},Date,fetch:()=>{throw Error('fetch should be mocked by GPS bridge');},
+  canEditNow:()=>editable,nativeDiaryGpsEnabled:()=>true,localStorage:{},Date,fetch:()=>{throw Error('fetch should be mocked by GPS bridge');},
   window:{TAXIAPP_EXTERNAL_GPS:{readKey:()=>true,read:()=>new Promise(r=>finish=r),
-   baseline:()=>({gps:100,value:260}),calculated:(km,b)=>b.value+km-b.gps}},
+   baseline:()=>({gps:100,value:260,runId:'run-a'}),calculated:(km,b,id)=>{if(id!==b.runId)throw Error('unexpected GPS run');return b.value+km-b.gps}}},
   appEl:{querySelector:()=>null},saveLater:()=>saves++,toast:()=>{},
   refreshDraftGpsFields:()=>refreshes++,updateElapsedTimer:()=>{},
   render:()=>{throw Error('GPS response must not rebuild an input form');}};
  vm.runInNewContext('(function(){'+handler+'})()',context);
  change?.(shift,()=>editable=false);
  if(!enabled)return {shift,saves,refreshes};
- finish({tripKm:105});
+ finish({tripKm:105,runId:'run-a'});
  await new Promise(resolve=>setImmediate(resolve));
  return {shift,saves,refreshes};
 }
 (async()=>{
  const ok=await scenario(s=>s.draft.raw.K='3200');
- assert.equal(ok.shift.draft.raw.F,'265.000');
+ assert.equal(ok.shift.draft.raw.F,'265.0');
  assert.equal(ok.shift.draft.raw.K,'3200');
  assert.equal(ok.saves,1);assert.equal(ok.refreshes,1);
  const off=await scenario(null,false);

@@ -2940,7 +2940,7 @@ function fillCurrentTime(col){
   else if(d.kind==='ride')gpsTripUI?.fillDistance(s,d,gpsDistanceField,'time:'+col);
  }
  if(col==='M'&&d.kind==='ride'){
-  d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();gpsTripUI?.alight(s,d);requestDropLocation(s,d);
+  d.status='alighted';d.meta??={};d.meta.alightIso=now.toISOString();if(!nativeDiaryGpsEnabled()&&nativeAutoDistanceEnabled())gpsTripUI?.alight(s,d);requestDropLocation(s,d);
  }
  saveLater();render();toast((RAW_COLUMNS.find(x=>x[0]===col)?.[1]||'時刻')+'に現在時刻を入力しました');
 }

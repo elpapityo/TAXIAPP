@@ -51,7 +51,7 @@ assert.equal(malformed.unknownDistances,1);
 assert.equal(malformed.sectionKm,0);
 // Integration: retain six bottom nav items and entry buttons on history and operations.
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-assert.match(html,/highway-report\.js\?v=0\.3\.36/);
+assert.match(html,/highway-report\.js\?v=20261020-1/);
 assert.match(html,/function renderHighwayReport\(\)/);
 assert.match(html,/tab==='highway'\?renderHighwayReport\(\)/);
 assert.match(html,/id="highwayShiftSelect"/);
