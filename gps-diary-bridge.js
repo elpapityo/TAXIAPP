@@ -59,12 +59,12 @@
  async function getJson(path,fetcher){
    const control=new AbortController(),timer=setTimeout(()=>control.abort(),4700);
    try{
-     const response=await fetcher(ENDPOINT+path,{cache:'no-store',signal:control.signal});
+     const response=await fetcher(ENDPOINT+path,{cache:'no-store',signal:control.signal,targetAddressSpace:'loopback'});
      if(!response.ok)throw Error('GPS通信 HTTP '+response.status);
      return await response.json();
    }catch(e){
      if(e instanceof TypeError||e?.name==='AbortError')
-       throw Error('Android日報GPSと通信できません。GPSアプリを開始し、Chromeのローカルネットワーク許可を確認してください');
+       throw Error('Android日報GPSと通信できません。GPSアプリを開始し、Chromeでこの日報サイトの「ループバックネットワーク（ローカルネットワーク）」への接続を許可してください。拒否済みならサイト設定から許可を変更してください');
      throw e;
    }finally{clearTimeout(timer);}
  }
