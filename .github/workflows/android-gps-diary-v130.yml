@@ -51,7 +51,7 @@ jobs:
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -s "$APK"
           "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.distancelabv130'"
-          "$AAPT" dump badging "$APK" | grep -F "versionName='1.3.0-buttons-fixed'"
+          "$AAPT" dump badging "$APK" | grep -F "versionName='1.3.0-diary-integration'"
           grep -F 'android:label="GPS距離ラボ v1.3.0 模擬テスト"' android-prototype/app/src/main/AndroidManifest.xml
           "$AAPT" dump permissions "$APK" | grep -F "android.permission.INTERNET"
           python3 - <<'PY'
@@ -114,7 +114,7 @@ jobs:
           else
             gh release create "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "GPS距離ラボ v1.3.0 模擬テスト.0 — 日報距離欄GPS連携検証用" \
+              --title "GPS距離ラボ v1.3.0 — 日報距離欄GPS連携検証用" \
               --notes "出庫・待機・乗車・降車・高速・入庫各距離欄と、実GPSの端末内HTTPをGitHub Pagesから連携する専用テスト版。模擬走行は本番日報で拒否。外部Chrome・HTTP CORS/LNAを検証するためのAPK。実運用のGPS精度は未検証。" \
               --prerelease
           fi
