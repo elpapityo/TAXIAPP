@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const source=fs.readFileSync('index.html','utf8');
+const start=source.indexOf('async function getGps('),end=source.indexOf('function requestDropLocation(',start);
+assert.ok(start>0&&end>start);
+const gps=source.slice(start,end);
+assert.doesNotMatch(gps,/target\.raw\[addressKey\]=\x60\$\{gps\.lat\.toFixed\(6\)\},\$\{gps\.lng\.toFixed\(6\)\}\x60/,'coordinates must not be stored as human readable address');
+assert.match(gps,/target\.raw\[locationKey\]=\x60\$\{gps\.lat\.toFixed\(6\)\},\$\{gps\.lng\.toFixed\(6\)\}\x60/);
+assert.match(gps,/latest\.raw\[addressKey\]=address/);
+assert.match(gps,/住所は手入力できます/);
+assert.match(source,/<title>TAXIAPP v\d+\.\d+\.\d+/);
+console.log('GPS keeps coordinates separate from displayed address');
