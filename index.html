@@ -2875,7 +2875,7 @@ function handleAction(action,id){
  if(action==='gpsBreakPlace'){if(shift?.breakActive)getBreakPlaceGps(shift.id,shift.breakActive.id);return;}
  if(action==='endBreak'){
   if(!shift?.breakActive)return;
-  endBreak(shift,new Date());save();render();toast('休憩を終了しました');return;
+  endBreak(shift,new Date());breakPageOpen=true;save();render();toast('休憩を終了しました');return;
  }
  if(action==='cancelWaiting'){
   if(!shift?.waiting||shift.draft)return;
