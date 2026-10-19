@@ -169,8 +169,9 @@ class MainActivity : Activity() {
                     Toast.LENGTH_LONG).show()
             } else startGps(simulation=true)
         }
-        addSim(simButton, 10)
-        addSim(label("模擬速度は画面上部にも表示します。模擬0km/hで開始して画面の0km登録後、20/40/60/100km/hへ変更できます。模擬テストに位置情報の許可は不要です。",12f,0xFFFFD68A.toInt()),9)
+        // Show speed buttons first when the test panel is expanded. On narrow
+        // phones the previous help text and start button pushed all speeds
+        // beneath the visible screen immediately after opening the panel.
         for (pair in listOf(listOf(0,20),listOf(40,60),listOf(100))) {
             val line=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
             for (speed in pair) {
@@ -198,6 +199,8 @@ class MainActivity : Activity() {
             }
             addSim(line,7)
         }
+        addSim(simButton, 10)
+        addSim(label("模擬速度は画面上部にも表示します。模擬0km/hで開始して画面の0km登録後、20/40/60/100km/hへ変更できます。模擬テストに位置情報の許可は不要です。",12f,0xFFFFD68A.toInt()),9)
         add(simulationPanel, 7)
         stopButton = button("■ GPS測定を停止", 0xFF1A3749.toInt(), Color.WHITE)
         stopButton.setOnClickListener {
