@@ -342,7 +342,7 @@ class MainActivity : Activity() {
             age > 15 -> "⚠ GPSの有効受信が " + age + " 秒前"
             else -> "● GPS計測中 ／ 有効GPS " + age + " 秒前"
         } + "\n" +
-            (if(displayedKm === null) "表示0km基準：未設定" else "表示0km基準：設定済み") +
+            (if(displayedKm == null) "表示0km基準：未設定" else "表示0km基準：設定済み") +
             " ／ 欠測 " + s.gapCount + " 回" +
             (if(s.unresolvedGap) " ／ ⚠ 車両トリップとの補正推奨" else "")
         simulationToggle.text = (if(simulationExpanded) "▼ " else "▶ ") +
