@@ -104,7 +104,7 @@ try:
           el.value='on';el.dispatchEvent(new Event('change',{bubbles:true}));""")
     js("document.querySelector('details[data-gps-settings]').open=true")
     wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,"[data-native-gps-baseline-panel]")))
-    assert "GPS基準は未登録" in driver.find_element(By.CSS_SELECTOR,"[data-native-gps-baseline-status]").text
+    assert "GPS基準は未登録" in js("return document.querySelector('[data-native-gps-baseline-status]').textContent")
     assert not driver.find_elements(By.CSS_SELECTOR,".gps-trip-panel"),"legacy GPS panel shown while Android selected"
     # Browser-only smoke: stub the Android GPS HTTP result. Actual APK/Chrome
     # integration has a separate real-emulator test.
@@ -122,7 +122,7 @@ try:
     assert abs(js("""return window.TAXIAPP_EXTERNAL_GPS.calculated(
        10.154,window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,arguments[0]),
        'v131-native-manual-rebase-ci-test')""",duty_id)-0.5)<0.0001
-    assert "GPS基準を登録しました" in driver.find_element(By.CSS_SELECTOR,"[data-native-gps-baseline-status]").text
+    assert "GPS基準を登録しました" in js("return document.querySelector('[data-native-gps-baseline-status]').textContent")
     assert db('taxiapp-store-v1','taxiapp')['activeId']=='PRODUCTION_SENTINEL'
     # One click, three readings. This smoke uses explicit mocks only for GPS/position;
     # native Android -> Chrome is separately tested on the actual emulator APK.
