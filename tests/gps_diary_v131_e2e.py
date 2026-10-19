@@ -136,7 +136,7 @@ try:
     adb("forward", "tcp:48768", "tcp:48768")
 
     identity = wait_http("api/identity",
-        lambda x: x.get("webVersion") == "1.3.0" and
+        lambda x: x.get("webVersion") == "1.3.1" and
                   x.get("packageId") == APP, timeout=45)
     note("Real native localhost HTTP identity verified", identity=identity)
     assert identity.get("marker") == "GPS_DISTANCE_LAB_DIARY_V1_3_1_100"
