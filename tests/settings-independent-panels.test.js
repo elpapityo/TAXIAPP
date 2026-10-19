@@ -7,9 +7,8 @@ const b=html.indexOf('function download(',a);
 assert.ok(a>0 && b>a,'settings renderer must exist');
 const settings=html.slice(a,b);
 const groups=[
- ['data-ride-field-settings','営業入力項目の表示設定'],
+ ['data-business-field-settings','営業画面の表示項目'],
  ['data-drive-status-settings','営業情報の表示'],
- ['data-cruising-summary-settings','空車・流し時の上部表示項目'],
  ['data-text-size-settings','文字の大きさ'],
  ['data-button-size-settings','ボタンの大きさ'],
  ['data-help-settings','説明文の表示'],
@@ -27,6 +26,23 @@ for(const [attr,title] of groups){
  indexes.push(i);
 }
 assert.deepEqual(indexes,[...indexes].sort((x,y)=>x-y),'menu order should be predictable');
+const start=settings.indexOf('<details class="details settings-advanced" data-business-field-settings>');
+const finish=settings.indexOf('<details class="details settings-advanced" data-drive-status-settings>',start);
+assert.ok(start>=0&&finish>start);
+const grouped=settings.slice(start,finish);
+assert.match(grouped,/<summary>営業画面の表示項目<\/summary>/);
+for(const [name,title] of [
+ ['data-ride-field-settings','営業入力項目の表示設定'],
+ ['data-cruising-summary-settings','空車・流し時の上部表示項目']
+]){
+ const nested='<details class="details" '+name+'>';
+ assert.equal(grouped.split(nested).length,2,'nested menu must appear once: '+name);
+ assert.ok(grouped.slice(grouped.indexOf(nested),grouped.indexOf(nested)+140)
+  .includes('<summary>'+title+'</summary>'));
+ assert.doesNotMatch(settings,new RegExp('details class="details settings-advanced" '+name));
+}
+assert.ok(grouped.indexOf('data-ride-field-settings')<grouped.indexOf('data-cruising-summary-settings'));
+
 assert.ok(settings.includes('${renderRideFieldSettings()}'),'ride option data path preserved');
 assert.ok(settings.includes('${renderCruisingSummarySettings()}'),'status list option data path preserved');
 for(const option of ['driveStatusDisplay','text','buttons','help','contrast','theme']){
@@ -37,8 +53,8 @@ assert.doesNotMatch(html,/cruisingButtonsLayout|cruising-action-stack/);
 assert.match(html,/class="action-grid cruising-action-grid cruising-action-compact"/,
  'cruising actions must always use the 2-column grid');
 assert.match(html,/\.cruising-action-grid\.cruising-action-compact\{display:grid!important;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-assert.match(html,/querySelectorAll\('details\.settings-advanced,details\[data-gps-settings\],details\[data-address-settings\]'\)/,
+assert.match(html,/querySelectorAll\('details\.settings-advanced,details\[data-ride-field-settings\],details\[data-cruising-summary-settings\],details\[data-gps-settings\],details\[data-address-settings\]'\)/,
  'settings disclosure state must be preserved across renders');
 assert.match(html,/const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';/,
  'existing duty IndexedDB stays unchanged');
-console.log('PASS settings: 8 independent foldable categories; obsolete button layout removed; cruising fixed 2x2; persistence guards');
+console.log('PASS settings: grouped nested field panels, separate other settings; cruising fixed 2x2; persistence guards');
