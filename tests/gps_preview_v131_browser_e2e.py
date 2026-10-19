@@ -166,6 +166,33 @@ try:
        document.querySelector('[data-action=gpsShiftRebase]').click();""")
     wait.until(lambda d: abs(json.loads(js("return localStorage.getItem('taxiapp-preview-v0359-native-gps-baseline:'+arguments[0])",duty_id))['value']-4.2)<0.001)
     js("document.querySelector('[data-tab=drive]').click()")
+    # Reproduce 860px mirrored smartphone with desktop sidebar, compact phone,
+    # and manually selected half-screen layout.
+    for viewport, mode in [(860,'full'),(430,'phone'),(860,'half')]:
+        driver.set_window_size(viewport,1050)
+        js("document.documentElement.dataset.uiScreenMode=arguments[0]",mode)
+        measure=js("""const input=document.querySelector('[data-col=F]'),
+             wrap=input.closest('.km-step-control'),field=input.closest('.field'),
+             grid=field.closest('.form-grid'),
+             minus=wrap.querySelector('[data-km-step="-1"]'),
+             plus=wrap.querySelector('[data-km-step="1"]'),
+             gps=field.querySelector('.gps-fill-button'),
+             canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+          ctx.font=getComputedStyle(input).font;
+          return {
+           inputWidth:input.getBoundingClientRect().width,
+           textWidth:ctx.measureText('12345.6').width,
+           fieldWidth:field.getBoundingClientRect().width,
+           gridWidth:grid.getBoundingClientRect().width,
+           order:input.getBoundingClientRect().right<=minus.getBoundingClientRect().left&&
+            minus.getBoundingClientRect().right<=plus.getBoundingClientRect().left&&
+            (!gps||plus.getBoundingClientRect().right<=gps.getBoundingClientRect().left)
+          };""")
+        assert measure['fieldWidth']>=measure['gridWidth']*.89,(viewport,mode,measure)
+        assert measure['inputWidth']>=measure['textWidth']+20,(viewport,mode,measure)
+        assert measure['order'],(viewport,mode,measure)
+    driver.set_window_size(1200,1600)
+    js("document.documentElement.dataset.uiScreenMode='full'")
     js("""window.TAXIAPP_EXTERNAL_GPS.read=async()=>({
        tripKm:10.154,runId:'v131-native-manual-rebase-ci-test',
        capturedAt:Date.now(),unresolvedGap:false,gapCount:0});""")
