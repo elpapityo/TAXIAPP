@@ -259,23 +259,80 @@ try:
     wait_until(lambda: not driver.find_element(By.ID, "session-warning").get_attribute("hidden"),
                "Browser did not reject previous Android runId", timeout=10)
     assert len(driver.window_handles) == 1
-    # HTTPS diary origin -> Android localhost: real cross-origin private-network
-    # GET must be readable from the user's actual Pages origin; no CORS bypass.
+    # Test the ACTUAL GitHub Pages HTTPS origin -> native Android loopback.
+    # Chrome 145+ requires an explicit loopback-network permission. The CDP
+    # grant models the user's conscious site-specific approval in this
+    # AUTOMATED TEST only. The real user must approve Chrome's prompt.
     driver.get("https://elpapityo.github.io/TAXIAPP/")
-    response = driver.execute_async_script("""
+    assert "elpapityo.github.io" in driver.current_url
+    first = driver.execute_async_script("""
       const finish=arguments[arguments.length-1];
-      fetch('http://127.0.0.1:48767/api/status',{cache:'no-store'})
+      fetch('http://127.0.0.1:48767/api/status',{
+          cache:'no-store',targetAddressSpace:'loopback'})
         .then(async r=>finish({ok:r.ok,status:r.status,data:await r.json()}))
         .catch(e=>finish({error:String(e)}));
     """)
-    note("Remote HTTPS GitHub Pages fetched Android GPS via CORS", response=response)
+    note("HTTPS origin loopback request before browser permission", response=first)
+    # Browser permission in automated Chrome, equivalent to accepting an
+    # explicit permission prompt: do NOT disable CORS or web security.
+    permission_types = ("loopbackNetwork","localNetworkAccess","localNetwork")
+    granted = None
+    failures = []
+    for permission in permission_types:
+        try:
+            driver.execute_cdp_cmd("Browser.grantPermissions", {
+                "origin":"https://elpapityo.github.io",
+                "permissions":[permission]})
+            granted = permission
+            break
+        except Exception as e:
+            failures.append(permission + ":" + str(e)[:280])
+    assert granted is not None, (
+        "Chrome CDP could not grant loopback-network permission: " + repr(failures))
+    note("Explicit Chrome loopback site permission granted for E2E", permission=granted)
+    response = driver.execute_async_script("""
+      const finish=arguments[arguments.length-1];
+      fetch('http://127.0.0.1:48767/api/status',{
+          cache:'no-store',targetAddressSpace:'loopback'})
+        .then(async r=>finish({ok:r.ok,status:r.status,data:await r.json()}))
+        .catch(e=>finish({error:String(e)}));
+    """)
+    note("GitHub Pages HTTPS fetched native Android API with explicit browser consent",
+         response=response)
     assert response.get("ok") is True, (
-        "GitHub Pages HTTPS -> Android loopback blocked by Chrome policy/CORS/LNA: "
-        + repr(response))
+        "GitHub Pages HTTPS -> Android loopback blocked despite explicit "
+        "Chrome site permission and CORS headers: " + repr(response))
     assert response["data"]["running"] is True
     assert response["data"]["simulated"] is True
-    # The *production diary module* must REJECT this synthetic data.
-    # Using a simulation source to populate actual fare records is forbidden.
+
+    # Load the checked-out integration module on the real HTTPS diary origin,
+    # not a local page. Allow synthetic distance ONLY inside this E2E check;
+    # actual diary reads omit the option and MUST reject simulated GPS.
+    native_bridge = pathlib.Path("gps-diary-bridge.js").read_text()
+    driver.execute_script(native_bridge)
+    rejected = driver.execute_async_script("""
+      const done=arguments[arguments.length-1];
+      window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId:'e2e-protected'})
+        .then(x=>done({unexpectedResult:x}))
+        .catch(e=>done({message:String(e.message||e)}));
+    """)
+    note("Live diary bridge rejects synthetic GPS", result=rejected)
+    assert "模擬GPS" in rejected.get("message",""), (
+        "Actual diary bridge failed to reject synthetic Android location")
+
+    result = driver.execute_async_script("""
+      const done=arguments[arguments.length-1];
+      window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{
+          shiftId:'isolated-ci-test-only',allowSimulation:true})
+        .then(x=>done({ok:true,tripKm:x.tripKm,runId:x.runId,simulated:x.simulated}))
+        .catch(e=>done({error:String(e.message||e)}));
+    """)
+    note("Live diary module reads Android GPS on GitHub Pages after explicit consent",
+         result=result)
+    assert result.get("ok") is True and result.get("simulated") is True
+    assert abs(result["tripKm"] - http("api/status")["tripKm"]) < 0.015
+    assert len(driver.window_handles) == 1, "Native read opened more browser tabs"
+
     note("PASS complete: v1.3 diary-enabled simulator APK -> internal fake driving -> Android local HTTP -> external Chrome nonzero distance -> manual correction -> second growing distance -> restart warning, 1 tab",
          native_distance_km=before["tripKm"], browser_first_km=first_gps,
          browser_second_km=second_gps, corrected_second_km=expected)
