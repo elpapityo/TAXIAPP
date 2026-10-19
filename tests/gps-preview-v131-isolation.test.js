@@ -35,6 +35,17 @@ assert.match(bridge,/taxiapp-preview-v0359-native-gps-gaps/);
 assert.doesNotMatch(bridge,/taxiapp-native-diary-gps-baseline-v131/);
 assert.match(bridge,/previewSimulationAllowed\(storage\)/);
 assert.match(preview,/data-preview-simulator/);
+assert.match(preview,/data-native-auto-distance/);
+assert.match(preview,/距離の自動取得（Android GPS）/);
+assert.match(preview,/const NATIVE_AUTO_DISTANCE_PREF='taxiapp-preview-v0359-auto-distance-v131'/);
+assert.match(preview,/function nativeAutoDistanceEnabled\(\)/);
+assert.match(preview,/function fillNativeDistanceSilently\(shift,record,col,waiting=false\)/);
+assert.match(preview,/if\(!nativeAutoDistanceEnabled\(\)\|\|!canEditNow\(\)/);
+assert.match(preview,/String\(waiting\?target.odometer/);
+assert.match(preview,/\)\.catch\(\(\)=>false\)\.finally\(/);
+assert.doesNotMatch(preview,/gpsBundleButton|captureGpsBundle|src="\.\/gps-bundle\.js/);
+assert.match(preview,/外部GPS：/); // explicit GPS requests still report errors if clicked by user
+
 assert.match(preview,/data-native-gps-baseline-panel/);
 assert.match(preview,/data-native-gps-baseline-status/);
 assert.match(preview,/function renderNativeGpsBaselinePanel\(shift\)/);
