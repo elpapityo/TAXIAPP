@@ -36,7 +36,7 @@ assert.doesNotMatch(bridge,/taxiapp-native-diary-gps-baseline-v131/);
 assert.match(bridge,/previewSimulationAllowed\(storage\)/);
 assert.match(preview,/data-preview-simulator/);
 assert.ok(bridge.includes('http://127.0.0.1:48768/'));
-assert.match(bridge,/EXPECTED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100'/);
+assert.match(bridge,/LEGACY_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100'/);
 assert.ok(bridge.includes("EXPECTED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv131'"));
 assert.match(bridge,/correctIdentity\(state\)/);
 assert.match(bridge,/correctIdentity\(x\)/);
