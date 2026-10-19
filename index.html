@@ -1402,8 +1402,8 @@ function field(key,raw,opts={}){
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
  if(KM_KEYS.has(key))control=kmControl(control);
  const gpsSourceName=nativeDiaryGpsEnabled()?'Android GPS距離ラボ v1.4.0／旧v1.3.1':'従来のブラウザGPS';
- const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&nativeAutoDistanceEnabled()&&(gpsTripUI?.active(getShift())||nativeDiaryGpsEnabled())
-  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}に${gpsSourceName}の距離を入力" title="${gpsSourceName}からGPS距離を入力">⌖</button>`:'';
+ const gpsButton=['F','L','S','V','AB','AE'].includes(key)&&(gpsTripUI?.active(getShift())||nativeDiaryGpsEnabled())
+  ?`<button type="button" class="btn inline-field-icon gps-fill-button" data-action="gpsTripFill" data-id="${key}" aria-label="${safeText(label)}に${gpsSourceName}の距離を入力" title="${gpsSourceName}からGPS距離を入力">⌖ GPS取得</button>`:'';
  const labelText=`<span class="field-label">${safeText(label)}${required}${opts.hint?`<span class="field-sub">${safeText(opts.hint)}</span>`:''}</span>`;
  if(gpsButton)return `<div class="field">${labelText}<div class="inline-distance-field">${control}${gpsButton}</div></div>`;
  return `<label class="field">${labelText}${control}</label>`;}
