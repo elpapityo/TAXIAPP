@@ -2542,6 +2542,7 @@ function handleAction(action,id){
    if(current?.id!==shiftId||current.endedAt||String(input?.value??'').trim()!==value)return;
    window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
    if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+   current.externalGpsManualPending=false;
    current.externalGpsSnapshot={tripKm:trip,rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
    saveLater();const baselineStatus=appEl.querySelector('[data-native-gps-baseline-status]');if(baselineStatus)baselineStatus.textContent='GPS基準を登録しました。新しいGPS増分を車両トリップ '+value+'km から加算します。';toast('現在の車両トリップ '+value+'km をGPS計測の基準に登録しました。');
   }).catch(e=>toast('GPS基準を変更できません：'+e.message,true));
@@ -2879,17 +2880,19 @@ function fillCurrentTime(col){
 // Preserve the actual driver-entered vehicle-trip checkpoint, then rebase native
 // GPS for following segments without ever changing the manually entered field.
 function rebaseNativeTripAfterManual(shift,value,stillCurrent){
- if(!nativeDiaryGpsEnabled()||number(value)===null||number(value)<0)return;
+ if(!nativeAutoDistanceEnabled()||number(value)===null||number(value)<0)return;
  const shiftId=shift.id;
+ shift.externalGpsManualPending=true;saveLater();
  window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{allowUnresolvedGap:true,shiftId}).then(data=>{
   const active=getShift();
   if(!canEditNow()||!nativeDiaryGpsEnabled()||!active||active.id!==shiftId||
      active.endedAt||active.endedIso||!stillCurrent(active))return;
   window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,value,data.runId);
   if(data.unresolvedGap)window.TAXIAPP_EXTERNAL_GPS.acknowledgeGap(localStorage,shiftId,data.gapCount);
+  active.externalGpsManualPending=false;
   active.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:new Date().toISOString()};
-  saveLater();toast('手入力の車両トリップ '+value+'km をGPS基準に反映しました。');
- }).catch(err=>toast('手入力距離は保存しましたが、GPS基準の補正はできません：'+err.message,true));
+  saveLater();
+ }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
  if(target.matches?.('[data-native-auto-distance]')){
@@ -2951,7 +2954,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   if(target.value.trim()!==''&&(n===null||n<0)){if(e.type==='change')toast('走行距離は0以上で入力してください',true);return;}
   const key=target.dataset.shiftOdo==='start'?'startingOdo':target.dataset.shiftOdo==='end'?'endingOdo':null;
   if(key){s[key]=target.value.trim();if(key==='endingOdo'&&e.type==='change'&&target.value.trim()){
-   if(nativeDiaryGpsEnabled()){
+   if(nativeAutoDistanceEnabled()){
     const edited=target.value.trim();
     rebaseNativeTripAfterManual(s,edited,a=>String(a.endingOdo).trim()===edited);
    }else gpsTripUI?.correct(s,target.value,'入庫距離の手動修正');
@@ -2969,7 +2972,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
     else {target.value=name;refreshWaitView(s.waiting.id);}
    }
   }else{s.waiting[key]=target.value;if(key==='odometer'&&e.type==='change'&&target.value.trim()){
-   if(nativeDiaryGpsEnabled()){
+   if(nativeAutoDistanceEnabled()){
     const edited=target.value.trim(),waitId=s.waiting.id;
     rebaseNativeTripAfterManual(s,edited,a=>a.waiting?.id===waitId&&String(a.waiting.odometer).trim()===edited&&!a.draft);
    }else gpsTripUI?.correct(s,target.value,'待機距離の手動修正');
