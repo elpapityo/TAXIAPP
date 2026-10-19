@@ -402,7 +402,7 @@ html[data-ui-screen-mode="pc"] main{max-width:1400px;margin-inline:auto}
 .duty-status-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:12px 15px;margin:8px 0 14px;border:2px solid var(--line);border-radius:13px;background:var(--panel,#eef4fa);color:var(--text,#243850)}
 .duty-status-strip strong{font-size:1.15em}.duty-status-strip span{font-size:.92em}
 /* ui-preview.html inspired business view: retain original storage and action handlers */
-#main-content:has(.preview-duty-summary){width:100%;max-width:none}
+html:not([data-ui-drive-layout="legacy"]) #main-content:has(.preview-duty-summary){width:100%;max-width:none}
 .drive-layout-choice{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:6px 8px;margin-bottom:10px;border:1px solid var(--line);border-radius:14px}
 .drive-layout-choice .btn{min-height:42px;padding:7px 12px}
 .preview-duty-summary{border:1px solid #41627c;background:#14283d;padding:12px;border-radius:17px;margin:0 0 10px;color:#f4faff}
@@ -443,16 +443,16 @@ html[data-ui-theme="night"] .card{box-shadow:0 10px 32px #020b182b}
 @media(min-width:1051px){html[data-ui-screen-mode="full"] .content-layout,html[data-ui-screen-mode="pc"] .content-layout{grid-template-columns:235px minmax(0,1fr)}}
 /* Match UI LAB desktop canvas: original navigation stays usable, but the diary fills the page. */
 @media(min-width:1051px){
- #app:has(.preview-duty-summary) .content-layout{display:block}
- #app:has(.preview-duty-summary) .sidebar{position:static;margin:0 0 10px}
- #app:has(.preview-duty-summary) .sidebar .nav{display:flex;gap:6px;padding:5px;background:#132436;border-radius:15px}
- #app:has(.preview-duty-summary) .sidebar .nav button{width:auto;flex:1;justify-content:center;min-height:42px;padding:8px;gap:5px}
- #app:has(.preview-duty-summary) .sidebar .nav .nav-label{font-size:12px}
- #app:has(.preview-duty-summary) .sidebar-note{display:none}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .content-layout{display:block}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar{position:static;margin:0 0 10px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar .nav{display:flex;gap:6px;padding:5px;background:#132436;border-radius:15px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar .nav button{width:auto;flex:1;justify-content:center;min-height:42px;padding:8px;gap:5px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar .nav .nav-label{font-size:12px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar-note{display:none}
 }
-#app:has(.preview-duty-summary) .layout{max-width:1450px}
-#app:has(.preview-duty-summary) .preview-compact{box-shadow:0 15px 50px #020b1845}
-#app:has(.preview-duty-summary) .preview-duty-summary{box-shadow:0 8px 25px #020b1829}
+html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .layout{max-width:1450px}
+html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .preview-compact{box-shadow:0 15px 50px #020b1845}
+html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .preview-duty-summary{box-shadow:0 8px 25px #020b1829}
 /* Compact UI LAB screen matches the reference's information hierarchy. */
 .preview-compact{background:#132436;border:1px solid #36516a;border-radius:18px;padding:12px;color:#f5faff}
 .preview-quick-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:11px}
@@ -1306,12 +1306,12 @@ function renderPreviewCompact(shift){
 function renderDrive(shift){const active=getShift();if(!active){return `${renderDriveLayoutChooser()}${titleBlock('乗務入力','DAILY OPERATIONS','出庫を記録すると、乗務データの入力を開始できます。')}<section class="card hero"><h2 class="hero-heading">現在、乗務中ではありません</h2><button class="btn primary big" type="button" data-tab="shift">🚕 出庫・入庫メニューへ</button></section>${shift?`${metrics(shift)}<div class="card"><h3 class="h2">前回の乗務</h3><p class="meta">${friendlyDate(shift.date)}　${shortTime(shift.startedAt)} ～ ${shortTime(shift.endedAt)}</p><button class="btn" data-tab="history">履歴を確認する</button></div>`:''}`;}
 const t=totals(active.records,active.settings,active.date);
  const mode=displayPrefs().driveLayout;
- const summary=mode==='legacy'?'':renderDutyStatus(active);
+ const summary=renderDutyStatus(active);
  const stage=mode==='guided'?renderGuidedHeading(active):'';
  const title=mode==='legacy'?titleBlock('乗務入力','DAILY OPERATIONS',`${friendlyDate(active.date)}　出庫 ${shortTime(active.startedAt)}`):'';
  const content=mode==='compact'?renderPreviewCompact(active):active.draft?renderDraft(active):renderNewAction(active);
  const rest=mode==='compact'||mode==='guided'?'<details class="details compact-secondary"><summary>▤ 日報集計・直近の営業記録</summary><div class="inner">'+metrics(active)+renderRecent(active)+'</div></details>':metrics(active)+renderRecent(active);
- return `${renderDriveLayoutChooser()}${title}${summary}${stage}${mode==='legacy'?paymentElapsedPanel(active):''}${content}${active.draft?'':rest}`;}
+ return `${renderDriveLayoutChooser()}${summary}${title}${stage}${mode==='legacy'?paymentElapsedPanel(active):''}${content}${active.draft?'':rest}`;}
 
 function renderNewAction(shift){const count=shift.records.length,waiting=shift.waiting;
  const places=waitingPlaces();
