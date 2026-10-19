@@ -420,6 +420,27 @@ html[data-ui-drive-layout="compact"] .hero .action-grid button:nth-child(2){min-
 html[data-ui-drive-layout="compact"] .hero{padding:13px}
 html[data-ui-drive-layout="detail"] .hero{padding:22px}
 @media(max-width:650px){.preview-duty-stats{gap:5px}.preview-duty-stat{padding:8px 7px}.preview-duty-stat strong{font-size:clamp(17px,5vw,24px)}.drive-layout-choice{justify-content:stretch;gap:3px}.drive-layout-choice>strong{display:none}.drive-layout-choice .btn{flex:1;min-width:0;padding:5px 2px;font-size:12px}}
+
+/* UI LAB design baseline; only presentation changes, no data/store rewrites. */
+html[data-ui-theme="night"]{--sheet:#132436;--line:#36516a;--muted:#b6c7d8;--blue:#66c4ff;--dark:#f5faff;color:#f5faff;background:#07121e}
+html[data-ui-theme="night"] body{background:#07121e;color:#f5faff}
+html[data-ui-theme="night"] .card,html[data-ui-theme="night"] .details,html[data-ui-theme="night"] .sidebar{background:#132436;border-color:#36516a;border-radius:17px}
+html[data-ui-theme="night"] .hero{background:#193048;border-color:#3e5a75}
+html[data-ui-theme="night"] .topbar{background:linear-gradient(110deg,#142c44,#122135);border:1px solid #36516a;border-radius:17px;padding:9px 14px}
+html[data-ui-theme="night"] .control{background:#091b2c;color:#f5faff;border:1.5px solid #62809b;border-radius:12px;min-height:52px}
+html[data-ui-theme="night"] .control::placeholder{color:#a1b6ca}
+html[data-ui-theme="night"] .btn.primary{background:#1482d5;border-color:#1482d5;color:white}
+html[data-ui-theme="night"] .btn.teal{background:#087b5e;border-color:#087b5e;color:white}
+html[data-ui-theme="night"] .field-label{color:#c3d3e4}
+html[data-ui-theme="night"] .preview-duty-summary{background:#132436}
+html[data-ui-theme="night"] .preview-duty-stat{background:#203850;border-color:#45647e}
+html[data-ui-theme="night"] .preview-duty-route{background:#203750;border-color:#47657d}
+html[data-ui-theme="night"] .drive-layout-choice{background:#13263a;border-color:#36516a}
+html[data-ui-theme="night"] .drive-layout-choice .btn{background:transparent;border-color:transparent}
+html[data-ui-theme="night"] .drive-layout-choice .btn.active{background:#1680c7;border-color:#1680c7;color:#fff}
+html[data-ui-theme="night"] .hero .btn.big{border-radius:14px}
+html[data-ui-theme="night"] .card{box-shadow:0 10px 32px #020b182b}
+@media(min-width:1051px){html[data-ui-screen-mode="full"] .content-layout,html[data-ui-screen-mode="pc"] .content-layout{grid-template-columns:235px minmax(0,1fr)}}
 </style>
 </head>
 <body>
