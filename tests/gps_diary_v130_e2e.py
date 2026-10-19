@@ -68,8 +68,10 @@ def tap_native_button(fragment):
                         return
         except ET.ParseError:
             pass
+        # ScrollView hides speed buttons below the visible Android viewport.
+        adb("shell","input","swipe","500","1350","500","500","400",check=False)
         time.sleep(2)
-    raise AssertionError(f"Could not locate native button: {fragment}")
+    raise AssertionError(f"Could not locate native button after scrolling: {fragment}")
 
 def http(path, timeout=5):
     req = urllib.request.Request(BASE + path, headers={"Cache-Control": "no-store"})
@@ -259,6 +261,16 @@ try:
     wait_until(lambda: not driver.find_element(By.ID, "session-warning").get_attribute("hidden"),
                "Browser did not reject previous Android runId", timeout=10)
     assert len(driver.window_handles) == 1
+    # Verify the HTTP server's strict origin authorization before Chrome LNA.
+    request = urllib.request.Request(BASE + "api/status",
+       headers={"Origin":"https://elpapityo.github.io",
+                "Access-Control-Request-Private-Network":"true",
+                "Access-Control-Request-Method":"GET"},method="OPTIONS")
+    with urllib.request.urlopen(request,timeout=10) as preflight:
+        assert preflight.status == 204, ("LNA preflight rejected",preflight.status)
+        assert preflight.info().get("Access-Control-Allow-Origin") == "https://elpapityo.github.io"
+        assert preflight.info().get("Access-Control-Allow-Private-Network") == "true"
+        note("Native CORS/LNA preflight confirmed",headers=dict(preflight.info()))
     # Test the ACTUAL GitHub Pages HTTPS origin -> native Android loopback.
     # Chrome 145+ requires an explicit loopback-network permission. The CDP
     # grant models the user's conscious site-specific approval in this
@@ -297,6 +309,15 @@ try:
         .then(async r=>finish({ok:r.ok,status:r.status,data:await r.json()}))
         .catch(e=>finish({error:String(e)}));
     """)
+    if not response.get("ok"):
+        # Keep policy failures fatal, but log the reason instead of masking them.
+        try:
+            note("Chrome LNA failure diagnostics",
+                user_agent=driver.execute_script("return navigator.userAgent"),
+                browser_logs=driver.get_log("browser")[-15:],
+                android_status=http("api/status"))
+        except Exception as diag:
+            note("Chrome diagnostic unavailable",reason=str(diag))
     note("GitHub Pages HTTPS fetched native Android API with explicit browser consent",
          response=response)
     assert response.get("ok") is True, (
