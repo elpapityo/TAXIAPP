@@ -148,7 +148,7 @@ try:
        el.value='4.2';el.dispatchEvent(new Event('change',{bubbles:true}));""")
     assert js("return window.__distanceCalls")==0
     assert "GPS" not in driver.find_element(By.ID,'notice').text
-    assert db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['F']=='4.2'
+    wait.until(lambda d: db('taxiapp-gps-preview-v0359-store','taxiapp-gps-preview-v0359')['shifts'][0]['draft']['raw']['F']=='4.2')
     # Enable auto, explicitly rebase after OFF/manual checkpoint, then advance GPS +0.5km.
     js("document.querySelector('[data-tab=settings]').click()")
     js("document.querySelector('details[data-gps-settings]').open=true")
