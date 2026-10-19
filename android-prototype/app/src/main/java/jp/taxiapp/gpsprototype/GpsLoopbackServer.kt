@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
-        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_EXTERNAL_V1_0"
+        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_EXTERNAL_V1_1"
         const val PORT = 48764
         const val URL = "http://127.0.0.1:48764/"
     }
@@ -84,7 +84,7 @@ class GpsLoopbackServer(private val context: Context) {
                     route=="/api/identity"->reply(s,200,"application/json; charset=utf-8",
                         JSONObject().put("marker",IDENTITY_MARKER)
                             .put("packageId",context.packageName)
-                            .put("webVersion","1.0.0")
+                            .put("webVersion","1.1.0")
                             .toString())
                     route=="/api/status"->reply(s,200,"application/json; charset=utf-8",status())
                     route.startsWith("/api/capture?")->{
@@ -118,6 +118,8 @@ class GpsLoopbackServer(private val context: Context) {
         val age=if(last<=0L)null else(System.currentTimeMillis()-last).coerceAtLeast(0L)
         return JSONObject()
             .put("running",s.running)
+            .put("runId",GpsStore.currentRunId(context))
+            .put("tripKm",s.tripKm)
             .put("ageMs",age?:JSONObject.NULL)
             .put("accuracyMeters",s.lastAccuracyMeters?:JSONObject.NULL)
             .put("gaps",s.gapCount)
@@ -153,6 +155,7 @@ class GpsLoopbackServer(private val context: Context) {
             .put("nonce",nonce)
             .put("target",target)
             .put("tripKm",s.tripKm)
+            .put("runId",GpsStore.currentRunId(context))
             .put("capturedAt",now)
             .put("gpsAgeMs",age)
             .put("running",true)

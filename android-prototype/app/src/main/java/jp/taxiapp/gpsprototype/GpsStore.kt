@@ -77,6 +77,16 @@ object GpsStore {
         prefs(context).edit().remove("lastValidGpsFixAt").apply()
     }
 
+    /** Identifies one Android GPS measurement run so a previous browser 0km
+     * baseline cannot silently be used with a restarted native odometer. */
+    fun startNewRun(context: Context) {
+        prefs(context).edit()
+            .putString("currentRunId", java.util.UUID.randomUUID().toString())
+            .commit()
+    }
+    fun currentRunId(context: Context): String =
+        prefs(context).getString("currentRunId","") ?: ""
+
     fun lastValidGpsFixAt(context: Context) =
         prefs(context).getLong("lastValidGpsFixAt", 0L)
 

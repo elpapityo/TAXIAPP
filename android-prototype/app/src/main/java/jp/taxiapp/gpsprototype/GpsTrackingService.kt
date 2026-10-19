@@ -282,6 +282,7 @@ class GpsTrackingService : Service() {
                 if (!listening) {
                     GpsStore.setBrowserConnectionIssue(this,"準備中")
                     GpsStore.clearValidFix(this)
+                    GpsStore.startNewRun(this)
                     engine.start()
                     // Must start while activity is visible and permissions already granted.
                     if (Build.VERSION.SDK_INT >= 29) {
