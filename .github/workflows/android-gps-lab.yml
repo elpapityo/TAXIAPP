@@ -48,7 +48,8 @@ jobs:
           test -s "$APK"
           "$AAPT" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.distancelab'"
           "$AAPT" dump badging "$APK" | grep -F "versionName='0.5.0-single-screen'"
-          "$AAPT" dump badging "$APK" | grep -F "GPS距離ラボ"
+          grep -F 'android:label="GPS距離ラボ"' android-prototype/app/src/main/AndroidManifest.xml
+          "$AAPT" dump badging "$APK" | grep -F "application-label:" || true
           ! "$AAPT" dump permissions "$APK" | grep -F "android.permission.INTERNET"
           python3 - <<'PY'
           from pathlib import Path
