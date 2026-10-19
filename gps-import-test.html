@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TAXIAPP GPS距離・住所・時刻テスト</title>
+<title>TAXIAPP 距離管理テスト（キー不要）</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <style>
 :root{color-scheme:dark;font-family:system-ui,"Noto Sans JP",sans-serif;background:#061522;color:#f1f8ff}
@@ -17,6 +17,12 @@ input[readonly]{background:#213d54;color:#b8f3fc;font-weight:800}
 button{border:1px solid #9ad7ff;color:#fff;background:#157dbf;border-radius:9px;min-height:48px;font-weight:850;padding:7px 12px;font-size:15px;cursor:pointer}
 button.secondary{background:#294c64}select{font:inherit;background:#19394e;color:#fff;padding:8px;border-radius:8px;border:1px solid #7b9fb9}button:active{filter:brightness(1.3)}
 button[data-gps]{padding:5px 3px;font-size:14px}
+.auditLeg{border-bottom:1px solid #547b98;padding:12px 2px}.auditLeg:last-child{border-bottom:0}
+.auditGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}.auditGrid>*{min-width:0}
+.auditValue{background:#0b283b;border-radius:8px;padding:8px;min-height:46px;font-size:15px}
+.auditDiff{font-size:13px;margin-top:7px;color:#c7e7f7;overflow-wrap:anywhere}
+.auditSummary{font-weight:700;padding:10px;background:#18384c;border-radius:8px;margin:12px 0}
+
 .infoRow{margin-top:8px;border-radius:8px;background:#0c2b41;padding:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;font-size:13px}
 .infoRow .address{overflow-wrap:anywhere}
 .infoRow .time{white-space:nowrap;color:#c0e9ff}
@@ -31,12 +37,17 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 .footer{color:#adc6d8;font-size:12px}
 @media(max-width:350px){.row{padding:6px}.columns{grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:4px}input{font-size:17px;padding:5px}button[data-gps]{font-size:13px}.infoRow{grid-template-columns:1fr}}
 </style></head><body><main>
-<header><h1>🚕 GPS距離・住所・時間 テスト</h1>
-<div id="openAppNotice" class="notice"><strong>⚠ ChromeからGPS取得するとタブが増える場合があります。</strong> タブを増やさず測定するには、次のボタンからGPSアプリ内の専用テスト画面を開き、その画面でGPSを押してください。<a href="taxiappgpsv036://web" style="display:block;background:#176d82;color:#fff;text-align:center;text-decoration:none;border:1px solid #addfff;border-radius:9px;padding:12px;font-weight:bold;margin-top:8px;">GPSアプリ内でテストを開く（タブ増加防止）</a></div>
-<div class="hint">スタート→1→2→3…の順にGPSを押してください。各行のGPS取得時に距離・住所・時刻をまとめて表示します。ChromeではGPS測定アプリが距離を取得して結果を返します。アプリ内Webでは同じ画面へ反映します。<br><strong>例：1を20kmに修正→2は20km＋1から2までのGPS増加距離</strong>で計算します。</div></header>
+<header><h1>🚕 距離管理テスト（キー不要）</h1>
+<div id="openAppNotice" class="notice"><strong>⚠ ChromeからGPS取得するとタブが増える場合があります。</strong> タブを増やさず測定するには、次のボタンからGPSアプリ内の専用テスト画面を開き、その画面でGPSを押してください。<a href="taxiappgpsaudit://web" style="display:block;background:#176d82;color:#fff;text-align:center;text-decoration:none;border:1px solid #addfff;border-radius:9px;padding:12px;font-weight:bold;margin-top:8px;">GPSアプリ内でテストを開く（タブ増加防止）</a></div>
+<div class="hint">スタート行でGPS基準を取得すると、その地点を画面上の<strong>0.000km</strong>にします。スタート→1→2→3…の順にGPSを押すと、スタートからのGPS累計と各GPSボタン間の区間距離を表示します。車両トリップを手入力すると、その値を次回からの加算基準にします。</div></header>
 <div class="panel"><div id="rows" aria-label="GPS距離テスト表"></div><button class="add" id="add" type="button">＋ 次の測定行を追加</button>
-<p class="hint">左：入力・補正距離（空欄なら自動計算）／中央：GPS取得／右：計算後の距離。GPSアプリは累計値を返します。途中の行を補正した場合、それ以降の結果も計算し直します。</p>
+<p class="hint">左：必要な時だけ車両メーターの累計を手入力／中央：GPS／右：補正距離。<strong>次の補正距離＝前の補正距離＋次のGPS区間距離</strong>。各行で手入力した値を新しい基準にして再計算します。</p>
 <div class="buttons"><button class="secondary" type="button" id="reset">テストを初期化</button><button class="secondary" type="button" id="clipboard">コピー結果を使う</button></div></div>
+<div class="panel" id="auditPanel"><h2>GPSと車両トリップの区間比較</h2>
+<p class="hint">上の各行に入力した車両メーター累計から、直前の行との差を区間距離として比較します。<strong>前後両方の地点に車両の実測値がある区間のみ</strong>比較します。追加の入力は必要ありません。</p>
+<div id="auditRows"></div><p id="auditSummary" class="auditSummary">GPSと車両トリップを照合する区間を入力してください。</p>
+<button class="secondary" id="auditCsv" type="button">区間比較をCSV保存</button>
+<p class="hint">400m不足などの原因調査用です。日報へは反映しません。CSVは端末への保存だけでクラウドへ送信しません。</p></div>
 <div class="panel"><h2>取得状況</h2><div id="status" role="status" aria-live="polite" class="notice">最初にスタート行のGPSを取得してください。</div><div id="quality" aria-live="polite"></div>
 <details><summary>旧GPSアプリの「計測結果をコピー」を貼り付ける</summary>
 <p class="hint">Android GPS試験アプリの「計測結果をコピー」を押して下に貼り付けると、同じ計算を試せます。旧版では住所は取得できません。表示時刻はコピー結果を読み取った時刻です。</p>
@@ -44,13 +55,28 @@ textarea{background:#0b2335;border:1px solid #739bb2;color:#fff;width:100%;min-h
 <button class="secondary" type="button" id="readPaste">コピーしたGPS累計を選択中の行へ取り込む</button>
 </details></div>
 <div class="footer">これは独立したテストページです。乗務日報・料金計算・RAW・Google同期は一切変更しません。GPS位置座標はブラウザへ渡しません。安全のため必ず停車中に操作してください。</div>
-</main><script src="gps-bridge-test.js?v=036"></script><script src="gps-test-rows.js?v=036"></script><script>
+</main><script src="gps-bridge-test.js?v=040"></script><script src="gps-test-rows.js?v=037"></script><script src="gps-segment-audit.js?v=1"></script><script>
 'use strict';
-const B=window.TaxiGpsBridge, R=window.GpsTestRows;
+const B=window.TaxiGpsBridge, R=window.GpsTestRows, A=window.GpsSegmentAudit;
 const $=id=>document.getElementById(id),
  PENDING_KEY='taxiapp-gps-pending', STATE_KEY='taxiapp-gps-test-state',
  HANDOFF_KEY='taxiapp-gps-test-handoff-only', HANDOFF_MS=120000;
 let state=R.fresh(), pasteTarget='start';
+function renderAudit(){
+ const rows=A.compareFromCumulative(R.derive(state));
+ $('auditRows').innerHTML=rows.map(r=>'<div class="auditLeg"><strong>区間 '+r.number+'</strong><div class="auditGrid">'+
+  '<div><div class="hint">GPS区間</div><div class="auditValue">'+fmt(r.gpsKm)+'</div></div>'+
+  '<div><div class="hint">車両の実測区間</div><div class="auditValue">'+fmt(r.vehicleKm)+'</div></div></div>'+
+  '<div class="auditDiff">'+(r.error?escaped(r.error):r.differenceMeters===null?'比較不可：前後の車両累計値を入力してください':'車両 − GPS：'+(r.differenceMeters>0?'+':'')+r.differenceMeters+' m'+
+  (r.differencePercent===null?'':'（'+r.differencePercent.toFixed(2)+'%）')+
+  (r.differenceMeters>0?' ※GPSが不足':r.differenceMeters<0?' ※GPSが過大':' 一致'))+'</div></div>').join('');
+ const compared=rows.filter(x=>x.differenceMeters!==null);
+ if(!compared.length){$('auditSummary').textContent='まだ比較できる区間はありません。前後の車両累計値を入力してください。';return;}
+ const gps=compared.reduce((sum,x)=>sum+x.gpsKm,0),car=compared.reduce((sum,x)=>sum+x.vehicleKm,0);
+ const diff=Math.round((car-gps)*1000);
+ $('auditSummary').textContent='比較 '+compared.length+'区間 ／ GPS '+gps.toFixed(3)+' km ／ 車両 '+car.toFixed(3)+' km ／ 差 '+(diff>0?'+':'')+diff+' m';
+}
+
 function status(message,bad=false){$('status').textContent=message;$('status').className='notice'+(bad?' bad':'');}
 function fmt(v){return v===null||v===undefined?'—':Number(v).toFixed(3)+' km';}
 function time(at){if(!at)return '未取得';try{return new Date(at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch{return '未取得';}}
@@ -69,39 +95,42 @@ function readHandoff(){
  }catch{return null;}
 }
 function clearHandoff(){try{localStorage.removeItem(HANDOFF_KEY);}catch{}}
-function restore(){try{const saved=sessionStorage.getItem(STATE_KEY);if(saved)state=R.clone(JSON.parse(saved));}catch{state=R.fresh();}}
+function restore(){try{const saved=sessionStorage.getItem(STATE_KEY);if(saved)state=R.setStartKm(R.clone(JSON.parse(saved)),0);}catch{state=R.fresh();}}
 function render(){
  const result=R.derive(state);
  let markup='<div class="row"><h2>スタート距離</h2><div class="columns">'+
- '<label>入力距離（km）<input data-start type="number" min="0" step="0.001" inputmode="decimal" value="'+escaped(state.startKm)+'"></label>'+
+ '<label>スタート距離（km）<input readonly value="0.000"></label>'+
  '<button type="button" data-gps="start">GPS</button>'+
- '<label>GPS累計（km）<input readonly value="'+(state.startGpsKm===null?'':state.startGpsKm.toFixed(3))+'" placeholder="未取得"></label></div>'+
+ '<label>GPS累計（0基準）<input readonly value="'+(state.startGpsKm===null?'':'0.000')+'" placeholder="未取得"></label></div>'+
  '<div class="infoRow"><span class="address">📍 '+escaped(state.startPlace||'住所未取得')+'</span><span class="time">🕒 '+escaped(time(state.startAt))+'</span></div></div>';
  $('pasteTarget').innerHTML='<option value="start">スタート</option>'+result.rows.map((r,i)=>'<option value="'+i+'">'+(i+1)+' 行目</option>').join('');
  $('pasteTarget').value=pasteTarget;
  for(let i=0;i<result.rows.length;i++){
   const row=result.rows[i];
   markup+='<div class="row"><h2>'+row.number+'</h2><div class="columns">'+
-  '<label>入力・補正（km）<input data-manual="'+i+'" type="number" min="0" step="0.001" inputmode="decimal" value="'+escaped(state.rows[i].manualKm)+'" placeholder="未補正"></label>'+
+  '<label>車両距離 手入力（km）<input data-manual="'+i+'" type="number" min="0" step="0.001" inputmode="decimal" value="'+escaped(state.rows[i].manualKm)+'" placeholder="必要時のみ"></label>'+
   '<button type="button" data-gps="'+i+'">GPS</button>'+
-  '<label>結果（km）<input readonly value="'+(row.finalKm===null?'':row.finalKm.toFixed(3))+'" placeholder="未取得"></label></div>'+
+  '<label>補正距離（km）<input readonly value="'+(row.finalKm===null?'':row.finalKm.toFixed(3))+'" placeholder="未取得"></label></div>'+
   '<div class="infoRow"><span class="address">📍 '+escaped(row.place||'住所未取得')+'</span><span class="time">🕒 '+escaped(time(row.at))+'</span></div>'+
-  (row.gpsKm!==null?'<div class="detail">GPS累計 '+fmt(row.gpsKm)+' ／ 今回増加 '+fmt(row.deltaKm)+'</div>':'')+
+  (row.gpsKm!==null?'<div class="detail">スタートからGPS累計 '+fmt(row.gpsFromStartKm)+' ／ 前回GPSからの区間 '+fmt(row.deltaKm)+'</div>':'')+
+  (row.measuredKm!==null?'<div class="detail">自動計算：前回基準 '+fmt(row.baseBeforeKm)+' ＋ 区間 '+fmt(row.deltaKm)+' ＝ '+fmt(row.measuredKm)+
+  (row.manualKm!==null?' → 手入力で '+fmt(row.manualKm)+' に補正':'')+'</div>':'')+
   (row.error?'<div class="detail error">⚠ '+escaped(row.error)+'</div>':'')+'</div>';
  }
  $('rows').innerHTML=markup;
+ renderAudit();
 }
 function applySnapshot(target,data){
  try{
   const details={place:data.place||'住所未取得',at:data.locationAt||data.capturedAt||Date.now()};
   state=target==='start'
-   ?R.startGps(state,data.tripKm,false,details)
+   ?R.startGps(R.setStartKm(state,0),data.tripKm,false,details)
    :R.captureRow(state,Number(target),data.tripKm,details);
   persist();render();
   const warning=data.warnings.length?'　⚠ '+data.warnings.join('／'):'';
   status((target==='start'?'スタート':(Number(target)+1)+'行目')+'にGPS値・住所・時刻を取得しました。'+warning);
   $('quality').textContent='取得元：'+(data.source==='android'?'GPSアプリ連携':'コピー')+
-   '／欠測 '+data.gapCount+'回／GPS累計 '+fmt(data.tripKm);
+   '／欠測 '+data.gapCount+'回／取得したアプリ内部累計 '+fmt(data.tripKm);
  }catch(e){status(e.message,true);}
 }
 function readNativeReturn(){
@@ -120,7 +149,7 @@ function readNativeReturn(){
   if(!pending&&useFallback)pending=handoff.pending;
   if(!pending)throw Error('元の取得操作が見つかりません。GPSボタンからやり直してください');
   const data=B.validateResponse(copied,pending);
-  if(useFallback){state=R.clone(handoff.state);persist();}
+  if(useFallback){state=R.setStartKm(R.clone(handoff.state),0);persist();}
   else restore();
   applySnapshot(pending.target,data);
  }catch(e){status('GPS受け取り失敗：'+e.message,true);}
@@ -154,14 +183,21 @@ $('rows').addEventListener('click',event=>{
 });
 $('rows').addEventListener('change',event=>{
  try{
-  if(event.target.matches('[data-start]'))state=R.setStartKm(state,event.target.value);
-  else if(event.target.matches('[data-manual]'))state=R.setManualKm(state,Number(event.target.dataset.manual),event.target.value);
+  if(event.target.matches('[data-manual]'))state=R.setManualKm(state,Number(event.target.dataset.manual),event.target.value);
   else return;
   persist();render();
  }catch(e){status(e.message,true);render();}
 });
 $('add').addEventListener('click',()=>{try{state=R.appendRow(state);persist();render();}catch(e){status(e.message,true);}});
 $('reset').addEventListener('click',()=>{if(confirm('GPSテストの距離・住所・時刻を初期化しますか？')){state=R.fresh();pasteTarget='start';sessionStorage.removeItem(STATE_KEY);sessionStorage.removeItem(PENDING_KEY);clearHandoff();render();status('テストを初期化しました。');}});
+$('auditCsv').addEventListener('click',()=>{
+ try{const report=A.csv(A.compareFromCumulative(R.derive(state)));
+  const blob=new Blob(['\ufeff',report],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download='gps_distance_audit_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  status('区間比較のCSVを端末に保存しました。');
+ }catch(e){status(e.message,true);}
+});
 $('clipboard').addEventListener('click',()=>{$('pasted').focus();status('コピー結果を貼り付け、取得先の行を選択してください。');});
 $('readPaste').addEventListener('click',fromPaste);
 // Chrome may restore the same tab and change only the URL fragment.
