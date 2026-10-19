@@ -15,6 +15,14 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - name: Enable Linux KVM acceleration (emulator boots substantially faster)
+        run: |
+          if test -e /dev/kvm; then
+            sudo chmod 666 /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo "No /dev/kvm on this runner"
+          fi
       - name: Install Chrome WebDriver dependencies
         run: |
           python3 -m venv .venv
