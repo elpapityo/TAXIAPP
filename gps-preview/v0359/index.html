@@ -1033,7 +1033,7 @@ function setDeviceMode(next,previous='',detail=''){
  if(next!=='writer'){
   try{gpsTripUI?.clearWatch();}catch(e){console.warn('gps-watch-cleanup',e);}
  }else if(prior==='viewer'||prior==='pending'){
-  if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+  if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
   scheduleGoogleSync();
  }
 }
@@ -1349,6 +1349,19 @@ function previewSimulatedGpsEnabled(){try{return localStorage.getItem(PREVIEW_SI
 function nativeDiaryGpsEnabled(){
  try{return Boolean(window.TAXIAPP_EXTERNAL_GPS)&&localStorage.getItem(NATIVE_DIARY_GPS_PREF)==='on';}
  catch{return false;}
+}
+function renderNativeGpsBaselinePanel(shift){
+ if(!shift||shift.endedAt||shift.endedIso)return '';
+ const base=window.TAXIAPP_EXTERNAL_GPS?.baseline(localStorage,shift.id);
+ const status=base?'GPS基準は登録済みです。GPS計測を再起動した場合や車両トリップの値が違う場合だけ、現在の実測値で再設定してください。':'GPS基準は未登録です。途中からAndroid GPSを選択した場合、最初の距離を推定せず現在の車両トリップ実測値から計測を開始します。';
+ return `<section class="card" data-native-gps-baseline-panel>
+  <h2 class="h2">Android GPS距離の基準登録</h2>
+  <p class="helper" data-native-gps-baseline-status>${safeText(status)}</p>
+  <label class="field"><span class="field-label">現在の車両トリップ実測値（km）</span>
+  <input class="control" id="gpsShiftRebaseValue" data-number-kind="distance" type="text" inputmode="decimal" placeholder="例：0"></label>
+  <div class="actions"><button class="btn primary" type="button" data-action="gpsShiftRebase">⌖ 現在の値でGPS基準を登録・補正</button></div>
+  <p class="footnote">100km/h模擬走行中は速度を0km/hにしてから登録してください。以前の未計測距離は自動補完しません。実車の場合は必ず車両トリップの現在値を入力してください。</p>
+ </section>`;
 }
 function field(key,raw,opts={}){
  // OFF means do not manage this distance: hide the entire input and GPS button.
@@ -2100,7 +2113,7 @@ function renderSettings(shift){const active=getShift();return `${titleBlock('設
  </select></label>
  <label class="field"><input type="checkbox" data-preview-simulator ${previewSimulatedGpsEnabled()?'checked':''}> 模擬GPSの距離入力を許可する（この試験版の中だけ）</label>
  <p class="caption-note">模擬GPSが有効でも本番の記録やクラウドには送信しません。実GPS精度の確認は別に必要です。</p>
- <p class="caption-note">試験版のAndroidアプリを起動して、Chromeのローカルネットワーク接続を許可した場合のみ使用してください。この端末だけの設定です。PC等には同期しません。切替前の手入力・車両トリップやGoogle保存データは変更しません。出庫中に切り替えた場合は車両トリップ実測値からGPS基準を再登録してください。</p></section><section class="card"><h2 class="h2">出庫時GPS試験計測</h2><label class="field"><span class="field-label">出庫時のGPS自動開始</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>'}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="footnote">IndexedDB: taxiapp-gps-preview-v0359-store / state / taxiapp-gps-preview-v0359、代替: localStorage の taxiapp-gps-preview-v0359-local-v1。保存先はURLとブラウザ環境に依存します。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
+ <p class="caption-note">試験版のAndroidアプリを起動して、Chromeのローカルネットワーク接続を許可した場合のみ使用してください。この端末だけの設定です。PC等には同期しません。切替前の手入力・車両トリップやGoogle保存データは変更しません。出庫中に切り替えた場合は車両トリップ実測値からGPS基準を再登録してください。</p></section>${active&&nativeDiaryGpsEnabled()?renderNativeGpsBaselinePanel(active):''}<section class="card"><h2 class="h2">出庫時GPS試験計測</h2><label class="field"><span class="field-label">出庫時のブラウザGPS自動開始（Android GPS選択時は無効）</span><select class="control" data-pref-gps-start><option value="on" ${model.prefs.gpsTripAtStart!=='off'?'selected':''}>有効（出庫すると自動開始）</option><option value="off" ${model.prefs.gpsTripAtStart==='off'?'selected':''}>無効（設定画面で手動開始）</option></select></label><p class="helper">GPS距離の計測は画面を切り替えても継続します。画面消灯やGPS権限不足による欠測は補正が必要です。</p></section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}<section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…'}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="footnote">IndexedDB: taxiapp-gps-preview-v0359-store / state / taxiapp-gps-preview-v0359、代替: localStorage の taxiapp-gps-preview-v0359-local-v1。保存先はURLとブラウザ環境に依存します。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
 function download(textData,file,type){const blob=new Blob([textData],{type}),link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download=file;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 let gpsPermissionText='';
 function setGpsPermissionStatus(message){gpsPermissionText=String(message);const el=appEl.querySelector('[data-gps-permission-status]');if(el)el.textContent=gpsPermissionText;}
@@ -2324,7 +2337,7 @@ function updateElapsedTimer(){
   if(heading&&heading.textContent!==label)heading.textContent=label;
   if(card)card.setAttribute('aria-label',label+'の経過時間');
  }
- gpsTripUI?.tick();
+ if(!nativeDiaryGpsEnabled())gpsTripUI?.tick();
  const nowEl=appEl.querySelector('[data-live-now]');if(nowEl)nowEl.textContent=shortTime(stamp(now));
  if(active&&appEl.querySelector('[data-live-elapsed]')){
   const v=liveBusinessNumbers(active,now);
@@ -2442,7 +2455,7 @@ function handleAction(action,id){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();
- if(action==='gpsTripStart'){if(shift)gpsTripUI?.start(shift);return;}
+ if(action==='gpsTripStart'){if(nativeDiaryGpsEnabled()){toast('Android GPSを使用中です。GPS距離ラボから測定してください。');return;}if(shift)gpsTripUI?.start(shift);return;}
  if(action==='gpsTripStop'){if(shift)gpsTripUI?.stop(shift);return;}
  if(action==='gpsTripCorrect'){
   if(!shift||!gpsTripUI?.active(shift))return;
@@ -2838,6 +2851,8 @@ function handleInput(e){const target=e.target;const s=getShift();
   const choice=target.value;
   if(choice!=='on'&&choice!=='off')return;
   try{localStorage.setItem(NATIVE_DIARY_GPS_PREF,choice);}catch{toast('この端末のGPS連携設定を保存できません',true);return;}
+  if(choice==='on'&&s?.gpsTrip?.enabled)gpsTripUI?.stop(s,true);
+  else if(choice==='on')gpsTripUI?.clearWatch();
   render();toast(choice==='on'?(s?'Android GPSに変更しました。出庫中のため「出庫・入庫」→「GPS基準の再設定」で車両トリップ実測値を登録してください。':'Android GPS距離の取得を有効にしました。出庫時のGPS基準を確認してください。'):'従来のブラウザGPS方式に戻しました。');return;
  }
  if(target.dataset.cruisingSummaryField){
@@ -3196,7 +3211,7 @@ async function deleteWholeShift(shiftId){
   model=previous;
   try{
    await save(true);
-   if(getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+   if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
   }catch(restoreError){
    toast('削除・復元とも失敗しました。事前のJSONバックアップを確認してください：'+String(restoreError.message||restoreError),true);
    return;
@@ -3245,7 +3260,7 @@ window.addEventListener('online',()=>{
   if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();
   else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
  });
-document.addEventListener('visibilitychange',()=>{gpsTripUI?.hidden();});
+document.addEventListener('visibilitychange',()=>{if(!nativeDiaryGpsEnabled())gpsTripUI?.hidden();});
 // No periodic duty polling. Writer sends when changed; viewer pulls on login or button.
 
 })().catch(function (err) {
