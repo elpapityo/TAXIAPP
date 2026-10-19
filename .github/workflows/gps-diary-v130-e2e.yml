@@ -49,7 +49,7 @@ jobs:
           emulator-boot-timeout: 700
           disable-animations: true
           script: |
-            .venv/bin/python tests/gps_simulator_v130_e2e.py
+            .venv/bin/python tests/gps_diary_v130_e2e.py
       - name: Upload browser and GPS evidence
         if: always()
         uses: actions/upload-artifact@v4
