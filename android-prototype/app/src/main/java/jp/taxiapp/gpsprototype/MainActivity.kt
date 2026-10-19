@@ -78,6 +78,7 @@ class MainActivity : Activity() {
         }
         button(root, "▶ GPS測定を開始") { startTracking() }
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
+        button(root, "↻ GPS受信を再接続（距離は保持）") { command(GpsTrackingService.ACTION_RECONNECT) }
         button(root, "🌐 GPSテストWebを開く") {
             // Opens a single in-app WebView; the Web GPS button is handled
             // without launching Chrome or creating a browser tab.
