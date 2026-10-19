@@ -40,7 +40,7 @@ const ctx={
  paymentElapsedPanel:()=>'<div>経過時間</div>',
  totals:()=>({}),
  metrics:()=>'<section class="metrics">集計</section>',
- renderDutyStatus:()=>'<div class="duty-status-strip">現在：空車</div>',
+ renderDutyStatus:()=>'<section class="preview-duty-summary">現在：空車</section>',
  renderRecent:()=>'<section>直近</section>',
  friendlyDate:()=> '2026-10-18',
  shortTime:()=> '09:00',
@@ -59,11 +59,16 @@ assert.match(markup,/data-ui-value="legacy" type="button" aria-pressed="true"/);
 current={records:[],settings:{},date:'2026-10-18',startedAt:'09:00',vehicle:'車123',draft:null};
 markup=vm.runInContext('renderDrive(null)',ctx);
 assert.match(markup,/従来ヘッダー/);
+assert.match(markup,/preview-duty-summary/,'legacy includes the common live status panel');
+assert.equal((markup.match(/preview-duty-summary/g)||[]).length,1,'legacy panel must not be duplicated');
+assert.ok(markup.indexOf('preview-duty-summary')<markup.indexOf('従来ヘッダー'),'pinned legacy overview should be at top of the ride view');
+assert.match(markup,/経過時間/,'legacy-specific elapsed clock must stay intact');
 assert.match(markup,/集計/);
 assert.match(markup,/data-action=beginRide/);
 mode='compact';
 markup=vm.runInContext('renderDrive(null)',ctx);
 assert.doesNotMatch(markup,/従来ヘッダー/);
+assert.match(markup,/preview-duty-summary/,'new input modes retain the common overview');
 assert.match(markup,/data-action=beginRide/);
 assert.match(markup,/compact-secondary/);
 assert.match(markup,/日報集計・直近の営業記録/);
@@ -74,5 +79,12 @@ assert.match(markup,/data-action=saveDraft/);
 assert.doesNotMatch(markup,/compact-secondary/);
 mode='legacy';
 markup=vm.runInContext('renderDrive(null)',ctx);
+assert.match(markup,/preview-duty-summary/,'legacy ongoing rides also display the overview');
 assert.match(markup,/data-action=saveDraft/);
+assert.match(source,/html:not\(\[data-ui-drive-layout="legacy"\]\) #app:has\(\.preview-duty-summary\) \.content-layout\{display:block\}/,
+ 'UI LAB full-width desktop override must not affect the legacy layout');
+assert.match(source,/html\[data-ui-sticky-duty-summary="on"\] \.preview-duty-summary\{\s*position:sticky;top:0/,
+ 'shared sticky ON setting must apply to the legacy panel too');
+assert.match(source,/html\[data-ui-sticky-duty-summary="off"\] \.preview-duty-summary\{position:static\}/,
+ 'shared sticky OFF setting must apply to the legacy panel too');
 console.log('Connected duty layout smoke tests passed: default legacy, compact opt-in, standby/ride/dispatch and draft UI use original actions.');
