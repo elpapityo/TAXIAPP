@@ -57,6 +57,19 @@ object GpsStore {
         prefs(context).edit().putLong("lastGpsCallbackAt", System.currentTimeMillis()).apply()
     }
 
+    /** Last accepted accurate GPS fix, never an invalid jump or stale callback. */
+    fun noteValidFix(context: Context) {
+        prefs(context).edit().putLong("lastValidGpsFixAt", System.currentTimeMillis()).apply()
+    }
+
+    /** A new service start requires a fresh fix, never the previous journey. */
+    fun clearValidFix(context: Context) {
+        prefs(context).edit().remove("lastValidGpsFixAt").apply()
+    }
+
+    fun lastValidGpsFixAt(context: Context) =
+        prefs(context).getLong("lastValidGpsFixAt", 0L)
+
     fun lastGpsCallbackAt(context: Context) =
         prefs(context).getLong("lastGpsCallbackAt", 0L)
 

@@ -61,6 +61,9 @@ class GpsTrackingService : Service() {
         )
         GpsStore.noteGpsCallback(this)
         val result = engine.ingest(sample, SystemClock.elapsedRealtime())
+        if (result.status in setOf("距離加算", "基準点取得", "停止中", "小移動・保留")) {
+            GpsStore.noteValidFix(this)
+        }
         GpsStore.save(this, engine.snapshot())
         updateNotification()
         return result.status in setOf("距離加算", "基準点取得", "停止中", "小移動・保留")
@@ -197,6 +200,7 @@ class GpsTrackingService : Service() {
                     return START_NOT_STICKY
                 }
                 if (!listening) {
+                    GpsStore.clearValidFix(this)
                     engine.start()
                     // Must start while activity is visible and permissions already granted.
                     if (Build.VERSION.SDK_INT >= 29) {

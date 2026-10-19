@@ -2,161 +2,156 @@ package jp.taxiapp.gpsprototype
 
 import android.Manifest
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
-import org.json.JSONObject
 import java.util.Locale
 
-/**
- * GPS Distance Lab: one local WebView; no navigation to Chrome per measurement.
- * All web UI content is bundled inside the APK (not a remote web site).
- */
+/** Dedicated GPS monitor. Correction input lives only on the separate Web screen. */
 class MainActivity : Activity() {
-    private lateinit var web: WebView
-    private val ui = Handler(Looper.getMainLooper())
-    private val permissionRequest = 734
-    private val nativeOrigin = "https://appassets.androidplatform.net/distance-console.html"
+    private val handler = Handler(Looper.getMainLooper())
+    private val requestLocation = 734
+    private lateinit var distance: TextView
+    private lateinit var status: TextView
+    private lateinit var startButton: Button
+    private lateinit var stopButton: Button
+    private var refresh: Runnable? = null
+
+    private fun rounded(fill: Int, border: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(fill)
+            cornerRadius = 14f * resources.displayMetrics.density
+            setStroke(resources.displayMetrics.density.toInt().coerceAtLeast(1), border)
+        }
+    private fun label(s: String, size: Float, c: Int = Color.WHITE): TextView =
+        TextView(this).apply {
+            text = s
+            textSize = size
+            setTextColor(c)
+            setPadding(10, 11, 10, 11)
+        }
+    private fun button(s: String, fill: Int, fg: Int): Button =
+        Button(this).apply {
+            text = s
+            isAllCaps = false
+            textSize = 16f
+            setTextColor(fg)
+            setTypeface(null, Typeface.BOLD)
+            background = rounded(fill, 0xFF48677A.toInt())
+            minimumHeight = (56 * resources.displayMetrics.density).toInt()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        web = WebView(this).apply {
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.allowFileAccess = false
-            settings.allowContentAccess = false
-            settings.javaScriptCanOpenWindowsAutomatically = false
-            settings.setSupportMultipleWindows(false)
-            settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            webViewClient = object : WebViewClient() {
-                // The only page allowed is the bundled application document.
-                // No external web page, app link, or Chrome tab is opened by GPS capture.
-                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = true
-            }
-            addJavascriptInterface(DistanceBridge(), "DistanceNative")
+        val dp = resources.displayMetrics.density
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(0xFF090F1B.toInt())
+            setPadding((18*dp).toInt(), (17*dp).toInt(), (18*dp).toInt(), (35*dp).toInt())
         }
-        setContentView(web, ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        val document = assets.open("distance-console.html").bufferedReader(Charsets.UTF_8).use { it.readText() }
-        web.loadDataWithBaseURL(nativeOrigin, document, "text/html", "UTF-8", null)
+        fun add(v: android.view.View, topDp: Int) {
+            root.addView(v, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin=(topDp*dp).toInt()
+            })
+        }
+        add(label("GPS DISTANCE LAB · NATIVE SENSOR", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS距離ラボ\n計測専用", 29f), 3)
+        add(label("この画面はGPS計測と受信状態の確認だけです。0kmの記録・区間距離・手入力補正は別のWeb画面で操作します。", 13f, 0xFFAFC6D3.toInt()), 8)
+        val meter = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(0xFF152A3F.toInt(), 0xFF3C6478.toInt())
+            setPadding((13*dp).toInt(), (14*dp).toInt(), (13*dp).toInt(), (14*dp).toInt())
+        }
+        meter.addView(label("GPS内部累計（Webの0km補正前）", 12f, 0xFFC1D9E5.toInt()))
+        distance = label("0.000 km", 35f, 0xFF63EAD2.toInt())
+        distance.setTypeface(null, Typeface.BOLD)
+        meter.addView(distance)
+        status = label("GPS受信状態を確認しています", 14f)
+        meter.addView(status)
+        add(meter, 17)
+        startButton = button("▶ GPS測定を開始", 0xFF63EAD2.toInt(), 0xFF091827.toInt())
+        startButton.setOnClickListener { startGps() }
+        add(startButton, 15)
+        stopButton = button("■ GPS測定を停止", 0xFF1A3749.toInt(), Color.WHITE)
+        stopButton.setOnClickListener {
+            startService(Intent(this, GpsTrackingService::class.java).setAction(GpsTrackingService.ACTION_STOP))
+            handler.postDelayed({ updateStatus() }, 500)
+        }
+        add(stopButton, 10)
+        val openWeb = button("↗ 距離テストWeb画面を開く（アプリ内）", 0xFF88C6FF.toInt(), 0xFF0A1A2D.toInt())
+        openWeb.setOnClickListener { startActivity(Intent(this, GpsTestWebActivity::class.java)) }
+        add(openWeb, 23)
+        add(label("操作：① GPS測定開始 → ② 有効GPSの受信確認 → ③ Web画面で0km記録。\n\nGPSを取得してもChromeのタブは増えません。", 13f, 0xFFAFC6D3.toInt()), 12)
+        val scroll=ScrollView(this)
+        scroll.addView(root)
+        setContentView(scroll)
+        updateStatus()
     }
 
-    inner class DistanceBridge {
-        @JavascriptInterface fun startTracking() {
-            runOnUiThread { startLocation() }
-        }
-        @JavascriptInterface fun stopTracking() {
-            runOnUiThread {
-                startService(Intent(this@MainActivity, GpsTrackingService::class.java)
-                    .setAction(GpsTrackingService.ACTION_STOP))
-            }
-        }
-        @JavascriptInterface fun getStatus(): String {
-            val state = GpsStore.load(this@MainActivity)
-            val last = GpsStore.lastGpsCallbackAt(this@MainActivity)
-            val elapsed = if (last <= 0L) -1L else (System.currentTimeMillis() - last).coerceAtLeast(0L)
-            return JSONObject()
-                .put("running", state.running)
-                .put("ageMs", if (elapsed >= 0) elapsed else JSONObject.NULL)
-                .put("gaps", state.gapCount)
-                .put("unresolvedGap", state.unresolvedGap)
-                .toString()
-        }
-        @JavascriptInterface fun requestCapture(nonce: String, target: String) {
-            if (!Regex("^[0-9a-f]{32}$").matches(nonce) ||
-                !(target == "start" || Regex("^(0|[1-9][0-9]?)$").matches(target) &&
-                    target.toInt() < 60)) return
-            ui.post { capture(nonce, target) }
-        }
-    }
-
-    private fun startLocation() {
+    private fun startGps() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ), permissionRequest)
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION), requestLocation)
             return
         }
         try {
-            startForegroundService(
-                Intent(this, GpsTrackingService::class.java).setAction(GpsTrackingService.ACTION_START)
-            )
+            startForegroundService(Intent(this, GpsTrackingService::class.java).setAction(GpsTrackingService.ACTION_START))
+            handler.postDelayed({ updateStatus() }, 500)
         } catch (e: RuntimeException) {
-            Toast.makeText(this, "GPSを開始できません：位置情報と端末の設定を確認してください", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "GPSを開始できません。正確な位置情報の許可をご確認ください。", Toast.LENGTH_LONG).show()
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == permissionRequest) {
+    override fun onRequestPermissionsResult(code: Int, permissions: Array<out String>,
+        results: IntArray) {
+        super.onRequestPermissionsResult(code, permissions, results)
+        if (code == requestLocation) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-                startLocation()
+                startGps()
             else Toast.makeText(this, "正確な位置情報の許可が必要です", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun dispatch(js: String) {
-        if (::web.isInitialized) web.evaluateJavascript(js, null)
+    private fun updateStatus() {
+        if (!::distance.isInitialized) return
+        val s = GpsStore.load(this)
+        val fixAt = GpsStore.lastValidGpsFixAt(this)
+        val age = if (fixAt <= 0L) -1L else (System.currentTimeMillis() - fixAt).coerceAtLeast(0L)/1000L
+        distance.text = String.format(Locale.JAPAN, "%.3f km", s.tripKm)
+        status.text = when {
+            !s.running -> "■ 停止中：GPS開始ボタンを押してください"
+            age < 0 -> "● GPS測位待ち：屋外で受信してください"
+            age > 15 -> "⚠ GPSの有効受信が " + age + " 秒前"
+            else -> "● GPS計測中 ／ 有効GPS " + age + " 秒前"
+        } + "\n欠測 " + s.gapCount + " 回" +
+            (if(s.unresolvedGap) " ／ ⚠ 車両トリップとの補正推奨" else "")
+        startButton.text = if(s.running) "↻ GPS測定を確認・再開" else "▶ GPS測定を開始"
+        stopButton.isEnabled = s.running
     }
 
-    private fun reportError(nonce: String, message: String) {
-        dispatch("window.DistanceLab&&window.DistanceLab.onNativeError(" +
-            JSONObject.quote(nonce) + "," + JSONObject.quote(message) + ");")
+    override fun onStart() {
+        super.onStart()
+        refresh=object: Runnable {
+            override fun run() {
+                updateStatus()
+                handler.postDelayed(this,1600L)
+            }
+        }.also { handler.post(it) }
     }
-
-    private fun capture(nonce: String, target: String) {
-        val state = GpsStore.load(this)
-        val last = GpsStore.lastGpsCallbackAt(this)
-        val now = System.currentTimeMillis()
-        val age = if (last <= 0L) Long.MAX_VALUE else (now - last).coerceAtLeast(0L)
-        if (!state.running) { reportError(nonce, "GPS計測が停止しています"); return }
-        if (last <= 0L || age > 30000L) { reportError(nonce, "GPS受信が古い、または未測位です"); return }
-        if (state.unresolvedGap) { reportError(nonce, "未解決のGPS欠測があります。車両トリップを確認してください"); return }
-        val accuracy = state.lastAccuracyMeters
-        if (accuracy == null || accuracy > 45.0) {
-            reportError(nonce, "GPSの測位精度が不足しています")
-            return
-        }
-        val snapshot = JSONObject()
-            .put("format", "GPS_DISTANCE_LAB_V1")
-            .put("nonce", nonce)
-            .put("target", target)
-            .put("tripKm", state.tripKm)
-            .put("capturedAt", now)
-            .put("gpsAgeMs", age)
-            .put("running", true)
-            .put("unresolvedGap", false)
-        dispatch("window.DistanceLab&&window.DistanceLab.onNativeSnapshot(" +
-            JSONObject.quote(snapshot.toString()) + ");")
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        AlertDialog.Builder(this).setTitle("距離管理テストを閉じますか？")
-            .setMessage("画面を閉じてもGPSを計測中なら通知から継続状態を確認できます。測定停止は画面の停止ボタンを使用してください。")
-            .setNegativeButton("戻る", null)
-            .setPositiveButton("閉じる") { _, _ -> finish() }
-            .show()
-    }
-
-    override fun onDestroy() {
-        if (::web.isInitialized) {
-            web.removeJavascriptInterface("DistanceNative")
-            web.destroy()
-        }
-        super.onDestroy()
+    override fun onStop() {
+        refresh?.let { handler.removeCallbacks(it) }
+        refresh=null
+        super.onStop()
     }
 }
