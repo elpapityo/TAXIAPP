@@ -63,7 +63,7 @@ class MainActivity : Activity() {
             })
         }
 
-        root.addView(text("🚕 GPS距離テスト v0.3.10", 23f))
+        root.addView(text("🚕 GPS距離テスト v0.3.11", 23f))
         root.addView(text("ブラウザから距離を取得するためのGPS計測アプリ", 14f))
         stats = text("GPS累計 0.000 km", 30f, Color.rgb(10, 84, 139))
         root.addView(stats)
@@ -76,6 +76,7 @@ class MainActivity : Activity() {
             clipboard.setPrimaryClip(ClipData.newPlainText("TAXIAPP GPS試験キー", key))
             Toast.makeText(this, "試験キーをコピーしました", Toast.LENGTH_SHORT).show()
         }
+        button(root, "📒 日報をアプリ内で開く") { startActivity(Intent(this, TaxiDiaryActivity::class.java)) }
         button(root, "▶ GPS測定を開始") { startTracking() }
         button(root, "■ GPS測定を停止") { command(GpsTrackingService.ACTION_STOP) }
         button(root, "↻ GPS受信を再接続（距離は保持）") { command(GpsTrackingService.ACTION_RECONNECT) }
