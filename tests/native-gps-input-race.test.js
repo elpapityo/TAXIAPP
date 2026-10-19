@@ -9,7 +9,7 @@ async function scenario(change){
  let finish,editable=true,saves=0,refreshes=0;
  const shift={id:'shift-1',draft:{id:'ride-1',raw:{F:'260'},meta:{}}};
  const context={action:'gpsTripFill',id:'F',shift,getShift:()=>shift,
-  canEditNow:()=>editable,localStorage:{},Date,
+  canEditNow:()=>editable,localStorage:{},Date,fetch:()=>{throw Error('fetch should be mocked by GPS bridge');},
   window:{TAXIAPP_EXTERNAL_GPS:{readKey:()=>true,read:()=>new Promise(r=>finish=r),
    baseline:()=>({gps:100,value:260}),calculated:(km,b)=>b.value+km-b.gps}},
   appEl:{querySelector:()=>null},saveLater:()=>saves++,toast:()=>{},
