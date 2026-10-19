@@ -12,7 +12,7 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="GPS距離ラボ v1.3.2 UI検証"
+        android:label="GPS距離ラボ"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false"
         android:usesCleartextTraffic="true">
@@ -25,7 +25,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="taxiappgpsdiaryv131" android:host="open"/>
+                <data android:scheme="taxiappgpsdiaryv140" android:host="open"/>
             </intent-filter>
         </activity>
         <service

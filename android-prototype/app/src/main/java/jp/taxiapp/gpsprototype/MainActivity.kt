@@ -85,7 +85,7 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.3.1 · 実GPS／模擬テスト", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS DISTANCE LAB · v1.4.0 · 実GPS／模擬走行", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n日報距離連携テスト", 29f), 3)
         add(label("通常は実GPS測定を使用します。模擬走行は下の折り畳み欄から操作してください。日報の距離基準・手入力補正はHTML側で別に管理します。", 13f, 0xFFC1D9E5.toInt()), 8)
         meterPanel = LinearLayout(this).apply {
@@ -234,7 +234,7 @@ class MainActivity : Activity() {
             }
         }
         addDetail(openWeb, 8)
-        addDetail(label("これは単体検証用です。普段の日報入力は公開済みのGPS統合試験ページから行えます。\n\n模擬GPSは本番の日報に使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 10)
+        addDetail(label("距離の計測はAndroidで行い、日報入力は外部ChromeのTAXIAPPで行えます。\n\n模擬GPSは本番の日報に使用しないでください。", 13f, 0xFFAFC6D3.toInt()), 10)
         add(detailPanel, 4)
         val scroll=ScrollView(this)
         scroll.addView(root)
@@ -263,7 +263,7 @@ class MainActivity : Activity() {
                     val result=JSONObject(reply)
                     verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
                         result.optString("packageId")==applicationContext.packageName &&
-                        result.optString("webVersion")=="1.3.1"
+                        result.optString("webVersion")=="1.4.0"
                     if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
                 }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
             }catch(e:Exception){
