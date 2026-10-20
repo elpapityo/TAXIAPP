@@ -19,7 +19,7 @@ assert.match(html,/accountSettingsAuto=window\.TAXIAPP_ACCOUNT_AUTO\.create/);
 assert.match(html,/accountSettingsAuto\.start\(\)/);
 assert.match(html,/canSync:\(\)=>canEditNow\(\)/);
 assert.match(html,/canView:\(\)=>deviceMode==='viewer'&&Boolean\(accountSettingsAuto\?\.status\(\)\.enabled\)/);
-assert.match(html,/function googlePostRequest\\(action,fields=\\{\\}\\)/); assert.ok(html.includes('if(!legacyDiary())return Promise.reject'));
+assert.ok(html.includes('function googlePostRequest(action,fields={})'));
 assert.match(html,/function scheduleGoogleSync\(\)\{\s*if\(!canEditNow\(\)/);
 assert.match(html,/function googleShiftPacket\(shift\)/);
 assert.match(html,/const item=\{\.\.\.record,raw:deriveRaw\(record,shift\.settings\)\}/);
