@@ -1310,6 +1310,7 @@ const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScop
 const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
+let pendingMemberRecovery=null,memberRecoveryBusy=false;
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
 function setDeviceMode(next,previous='',detail=''){
@@ -1321,7 +1322,7 @@ function setDeviceMode(next,previous='',detail=''){
   save(true).catch(e=>console.warn('save-before-viewer',e));
  }
  if(next==='writer'&&prior!=='writer'){writerLoadGate=true;writerLoadError='Googleの乗務を取得中…';writerLoadEpoch++;}
- if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;}
+ if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;pendingMemberRecovery=null;}
  if(prior==='viewer'&&next!=='viewer'&&viewerLocalModel){
   model=viewerLocalModel;viewerLocalModel=null;
   viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
@@ -1353,7 +1354,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -1586,6 +1587,7 @@ async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
+ pendingMemberRecovery=null;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
@@ -1611,6 +1613,18 @@ async function switchAccountScope(scope){
 }
 async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
+function renderMemberRecoveryPanel(){
+ const p=pendingMemberRecovery;
+ if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+    !p||p.uid!==accountScope.uid||p.epoch!==writerLoadEpoch)return '';
+ return '<section class="card" role="alert" style="margin:10px 0;border:2px solid #aa650d">'+
+  '<h2 class="h2">未同期の日報を保護しています</h2>'+
+  '<p>クラウドにない乗務：'+p.missingIds.length+'件／同じIDで内容が異なる乗務：'+p.conflictCount+'件。自動上書きは停止中です。</p>'+
+  '<p class="helper">最初に端末のJSONバックアップを保存してください。クラウドへ追加できるのは、同じIDが存在しない乗務だけです。内容が異なる同一IDの乗務は手動照合が必要です。</p>'+
+  '<div class="actions"><button class="btn" type="button" data-action="downloadLocalRecovery">⇩ 端末の日報をJSON保存</button>'+
+  (p.conflictCount?'':'<button class="btn primary" type="button" data-action="uploadLocalRecovery" '+(memberRecoveryBusy?'disabled':'')+'>＋ 未登録の乗務を本人のクラウドへ追加</button>')+
+  '</div></section>';
+}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
@@ -1657,7 +1671,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}${renderMemberRecoveryPanel()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -2617,8 +2631,15 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     const unconfirmed=(previous.shifts||[]).filter(local=>
      !remoteById.has(local.id)||
      JSON.stringify(local)!==JSON.stringify(remoteById.get(local.id)));
-    if(unconfirmed.length)
-     throw Error('端末にクラウドと未照合の乗務が'+unconfirmed.length+'件あります。記録を保護するため受信を停止しました。');
+    if(unconfirmed.length){
+     const missing=unconfirmed.filter(local=>!remoteById.has(local.id));
+     pendingMemberRecovery={uid:accountScope.uid,epoch,
+      snapshot:JSON.stringify(previous.shifts),missingIds:missing.map(x=>x.id),
+      conflictCount:unconfirmed.length-missing.length};
+     render();
+     throw Error('未同期の乗務が'+missing.length+'件、同一IDで内容が異なる乗務が'+(unconfirmed.length-missing.length)+'件あります。下の保護メニューで確認してください。');
+    }
+    pendingMemberRecovery=null;
    }
    const storageKey=scopedStorageKey();
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
@@ -3224,6 +3245,15 @@ function handleAction(action,id){
   draft.raw.P=(items.some(x=>x.mode==='実')?'実':'')+(items.some(x=>x.mode==='空')?'空':'');
   saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
  }
+  if(action==='downloadLocalRecovery'){
+   if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+      pendingMemberRecovery?.uid!==accountScope.uid)return;
+   const backup={...deepCopy(model),exportedAt:new Date().toISOString()};
+   download(JSON.stringify(backup,null,2),'TAXIAPP_未同期日報_'+dateStamp(new Date())+'.json','application/json;charset=utf-8');
+   toast('端末内の日報をJSONとして書き出しました。端末のダウンロード一覧で保存を確認してください。');
+   return;
+  }
+  if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
    return;
