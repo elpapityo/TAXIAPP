@@ -8,7 +8,6 @@ assert.ok(a>0 && b>a,'settings renderer must exist');
 const settings=html.slice(a,b);
 const groups=[
  ['data-business-field-settings','営業画面の表示項目'],
- ['data-drive-status-settings','営業情報の表示'],
  ['data-appearance-settings','画面表示のカスタマイズ']
 ];
 const indexes=[];
@@ -23,13 +22,14 @@ for(const [attr,title] of groups){
 }
 assert.deepEqual(indexes,[...indexes].sort((x,y)=>x-y),'menu order should be predictable');
 const start=settings.indexOf('<details class="details settings-advanced" data-business-field-settings>');
-const finish=settings.indexOf('<details class="details settings-advanced" data-drive-status-settings>',start);
+const finish=settings.indexOf('<details class="details settings-advanced" data-appearance-settings>',start);
 assert.ok(start>=0&&finish>start);
 const grouped=settings.slice(start,finish);
 assert.match(grouped,/<summary>営業画面の表示項目<\/summary>/);
 for(const [name,title] of [
- ['data-ride-field-settings','営業入力項目の表示設定'],
- ['data-cruising-summary-settings','空車・流し時の上部表示項目']
+ ['data-ride-field-settings','日報入力項目の表示設定'],
+ ['data-cruising-summary-settings','空車・流し時の上部表示項目'],
+ ['data-drive-status-settings','営業情報の表示']
 ]){
  const nested='<details class="details" '+name+'>';
  assert.equal(grouped.split(nested).length,2,'nested menu must appear once: '+name);
@@ -38,6 +38,13 @@ for(const [name,title] of [
  assert.doesNotMatch(settings,new RegExp('details class="details settings-advanced" '+name));
 }
 assert.ok(grouped.indexOf('data-ride-field-settings')<grouped.indexOf('data-cruising-summary-settings'));
+assert.ok(grouped.indexOf('data-cruising-summary-settings')<grouped.indexOf('data-drive-status-settings'));
+assert.doesNotMatch(settings,/<details class="details settings-advanced" data-drive-status-settings>/,
+ 'status menu should not remain as a separate top-level setting');
+assert.match(html,/data-open-ride-fields/,'visible input-settings shortcut is available in diary page');
+assert.match(html,/const parent=appEl\.querySelector\('\[data-business-field-settings\]'\)/);
+assert.match(html,/const child=parent\?\.querySelector\('\[data-ride-field-settings\]'\)/);
+
 
 const appearanceStart=settings.indexOf('<details class="details settings-advanced" data-appearance-settings>');
 const appearanceEnd=settings.indexOf('<details class="details settings-advanced"><summary>入力・キーボード設定</summary>',appearanceStart);
@@ -76,8 +83,8 @@ assert.doesNotMatch(html,/cruisingButtonsLayout|cruising-action-stack/);
 assert.match(html,/class="action-grid cruising-action-grid cruising-action-compact"/,
  'cruising actions must always use the 2-column grid');
 assert.match(html,/\.cruising-action-grid\.cruising-action-compact\{display:grid!important;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-assert.match(html,/querySelectorAll\('details\.settings-advanced,details\[data-ride-field-settings\],details\[data-cruising-summary-settings\],details\[data-text-size-settings\],details\[data-button-size-settings\],details\[data-help-settings\],details\[data-theme-settings\],details\[data-ui-preview-settings\],details\[data-driver-profile-settings\],details\[data-vehicle-profile-settings\],details\[data-cancel-settings\],details\[data-fee-settings\],details\[data-duty-plan-settings\],details\[data-gps-settings\],details\[data-address-settings\]'\)/,
+assert.match(html,/querySelectorAll\('details\.settings-advanced,details\[data-ride-field-settings\],details\[data-cruising-summary-settings\],details\[data-drive-status-settings\],details\[data-text-size-settings\],details\[data-button-size-settings\],details\[data-help-settings\],details\[data-theme-settings\],details\[data-ui-preview-settings\],details\[data-driver-profile-settings\],details\[data-vehicle-profile-settings\],details\[data-cancel-settings\],details\[data-fee-settings\],details\[data-duty-plan-settings\],details\[data-gps-settings\],details\[data-address-settings\]'\)/,
  'settings disclosure state must be preserved across renders');
 assert.match(html,/const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';/,
  'existing duty IndexedDB stays unchanged');
-console.log('PASS settings: both nested groups, 5 independently collapsible appearance controls, saved UI choices retained');
+console.log('PASS settings: nested diary/summary/status and appearance menus; diary page quick link and state retention');
