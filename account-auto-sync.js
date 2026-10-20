@@ -183,7 +183,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    clearTimeout(timer);
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
    deferredWhileEditing=false;localSignature=null;
-   if(!next){deviceSession?.clear();deps.onDeviceMode?.('viewer','','ログインすると操作できます');}
+   if(!next){deviceSession?.clear();await deps.onUserScope?.(null);deps.onDeviceMode?.('viewer','','ログインすると操作できます');}
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
    status('Googleアカウントを確認しています…');
@@ -196,17 +196,13 @@ root.TAXIAPP_ACCOUNT_AUTO={
     const admin=adminSnap.exists()&&adminSnap.data()?.enabled===true;
     const active=userSnap.exists()&&userSnap.data()?.status==='active';
     if(!admin&&!active){status('利用登録が確認できません：Googleログインだけでは操作権を取得できません');deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;}
-    // A shared browser must not send the previous driver's preferences to
-    // a different Firebase account. Full account-switch isolation comes later.
-    const bound=localStorage.getItem('taxiapp-bound-account-uid-v1');
-    if(bound&&bound!==uid){
-     status('別のGoogleアカウントです。端末データ保護のため自動同期を停止しました');
-     return;
-    }
-    try{localStorage.setItem('taxiapp-bound-account-uid-v1',uid);}catch{
-     status('アカウント識別を保存できません。安全のため同期を停止しました');
-     return;
-    }
+    // The account's duty namespace MUST be selected before either settings
+    // reconciliation or editor-session confirmation can access local records.
+    await deps.onUserScope?.({
+     uid,admin,active,
+     firebase:{f:fire,db,auth,session:deviceSession}
+    });
+    if(auth.currentUser?.uid!==uid)return;
     enabled=true;
     baseline=readBase();
     localSignature=api.signature(currentPrefs());
@@ -215,7 +211,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     viewerLogin=false;explicitWriterLogin=false;
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
-   }catch(e){status('アカウントの確認に失敗：'+String(e.code||e.message||e));deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');}
+   }catch(e){await deps.onUserScope?.(null);status('アカウントの確認に失敗：'+String(e.code||e.message||e));deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');}
   }
   async function start(){
    if(booted)return;booted=true;
