@@ -838,6 +838,20 @@ html .cruising-action-grid.cruising-action-compact,html[data-ui-screen-mode] .cr
 .account-top .account-state span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .account-top button{font-size:11px;padding:4px 8px;min-height:27px;border-radius:6px}
 @media(max-width:650px){.account-top{margin:2px 4px 0;padding:2px 6px;min-height:29px;gap:5px}.account-top #accountStatus{display:none}.account-top .account-state span{font-size:10px}.account-top button{font-size:10px;padding:3px 6px;min-height:25px}}
+
+/* Mobile header: brand + duty pill on row one; compact sync on row two. */
+@media(max-width:650px){
+ .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;padding:9px 11px;margin-bottom:10px}
+ .topbar .brand{grid-column:1;grid-row:1;min-width:0;gap:7px}
+ .topbar .brand-icon{width:32px;height:32px;min-width:32px;border-radius:9px;font-size:18px}
+ .topbar .brand-name{font-size:17px;letter-spacing:0}
+ .topbar .brand-tag{font-size:10px;letter-spacing:0}
+ .topbar .viewer-header-right{display:contents}
+ .topbar .status-pill{grid-column:2;grid-row:1;justify-self:end;padding:4px 7px;font-size:10px;white-space:nowrap}
+ .topbar .viewer-sync-controls{grid-column:1/-1;grid-row:2;min-width:0;display:flex;align-items:center;flex-wrap:nowrap;gap:6px}
+ .topbar .viewer-sync-controls .btn{flex:none;min-height:28px!important;padding:4px 8px!important;font-size:11px!important;border-radius:7px}
+ .topbar .viewer-sync-time{flex:1;min-width:0;max-height:2.5em;overflow:hidden;font-size:10px;line-height:1.25}
+}
 </style>
 </head>
 <body>
