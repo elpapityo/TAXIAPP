@@ -1290,6 +1290,12 @@ function validateDraft(draft){let errs=[];if(!draft)errs.push('入力データ�
  return errs;
 }
 function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
+// Firestore can return map keys in a different order; compare actual values.
+function canonicalDutyJson(value){
+ return JSON.stringify(value,(_key,entry)=>
+  entry&&typeof entry==='object'&&!Array.isArray(entry)
+   ?Object.fromEntries(Object.keys(entry).sort().map(key=>[key,entry[key]])):entry);
+}
 
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
@@ -2630,7 +2636,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     const remoteById=new Map(shifts.map(shift=>[shift.id,shift]));
     const unconfirmed=(previous.shifts||[]).filter(local=>
      !remoteById.has(local.id)||
-     JSON.stringify(local)!==JSON.stringify(remoteById.get(local.id)));
+     canonicalDutyJson(local)!==canonicalDutyJson(remoteById.get(local.id)));
     if(unconfirmed.length){
      const missing=unconfirmed.filter(local=>!remoteById.has(local.id));
      pendingMemberRecovery={uid:accountScope.uid,epoch,
@@ -2719,6 +2725,72 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  render:render,toast,escape:safeText,download,dateStamp
 });
 
+// Explicit, owner-only recovery of shifts that DO NOT exist in the cloud.
+// Never auto-upload while acquiring a login session; the operator must choose.
+async function uploadMemberRecovery(){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
+    !writerLoadGate||pending.uid!==accountScope.uid||
+    pending.epoch!==writerLoadEpoch)return;
+ if(pending.conflictCount){
+  toast('同一IDで内容が異なる乗務があります。JSONバックアップを保存し、内容の確認が必要です。',true);return;
+ }
+ if(!pending.missingIds.length)return;
+ if(!confirm('クラウドにない'+pending.missingIds.length+'件の乗務を、この利用者専用の領域に追加します。\\n既存のクラウド記録は上書きしません。操作前に端末のJSONバックアップを保存し、ダウンロードを確認しましたか？'))return;
+ memberRecoveryBusy=true;render();
+ const uid=accountScope.uid,epoch=writerLoadEpoch,original=deepCopy(model);
+ const expected=JSON.stringify(original.shifts);
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     accountScope.uid!==uid||writerLoadEpoch!==epoch||
+     pendingMemberRecovery!==pending||JSON.stringify(model.shifts)!==expected)
+   throw Error('操作端末または日報が変更されました。追加を停止しました');
+ };
+ try{
+  check();
+  // Preserve the entire pre-recovery model under a separate UID-scoped key.
+  // A failed backup/readback always stops before the first cloud write.
+  const recoveryKey='taxiapp-account-recovery-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,original,recoveryKey);
+  else localStorage.setItem(recoveryKey,JSON.stringify(original));
+  const copy=db?await idbGet(db,recoveryKey):
+   JSON.parse(localStorage.getItem(recoveryKey)||'null');
+  if(JSON.stringify(copy)!==JSON.stringify(original))
+   throw Error('復旧用の保護コピーを正しく保存できませんでした');
+  check();
+  // Detect newly created cloud records without a broad cloud read. CAS=0
+  // prevents overwriting even when a second device races this request.
+  const listed=await accountDiary.request('syncList',{shiftIds:pending.missingIds});
+  check();
+  if(!Array.isArray(listed?.shifts))throw Error('クラウド乗務の照合に失敗しました');
+  const found=new Map(listed.shifts.map(row=>[row.id,row]));
+  for(const id of pending.missingIds){
+   check();
+   const local=original.shifts.find(row=>row.id===id);
+   if(!local)throw Error('復旧対象の乗務が見つかりません');
+   if(found.has(id)){
+    const existing=await accountDiary.request('syncGet',{shiftId:id});
+    check();
+    if(canonicalDutyJson(existing?.shift)!==canonicalDutyJson(local))
+     throw Error('別端末に同じ乗務IDの異なる内容があります。自動上書きを停止しました：'+id);
+   }else{
+    await accountDiary.request('syncPut',{baseRevision:0,
+     payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:local})});
+    check();
+    const verified=await accountDiary.request('syncGet',{shiftId:id});
+    check();
+    if(canonicalDutyJson(verified?.shift)!==canonicalDutyJson(local))
+     throw Error('追加した乗務の読み戻しが一致しません：'+id);
+   }
+  }
+  check();
+  toast('未登録の乗務を確認しました。クラウドの全件照合をやり直します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('安全な復旧を保留しました。端末の日報は保持されています：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
 function renderSheetTargetSettings(){
  if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
