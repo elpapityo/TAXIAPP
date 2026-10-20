@@ -1569,7 +1569,7 @@ async function switchAccountScope(scope){
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
- accountDiary.bind(scope?{uid:scope.uid}:null,scope?.firebase||{});
+ accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
  accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
  let stored=null;
