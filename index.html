@@ -1798,6 +1798,7 @@ function renderDutyStatus(shift){
  const route=status.dispatch
   ?(allowFrom?`<div class="preview-duty-route">${location('from','お迎え場所',status.from)}</div>`:'')
   :(allowFrom||allowTo?`<div class="preview-duty-route">${allowFrom?location('from','乗車地',status.from):''}${allowFrom&&allowTo?'<span>➜</span>':''}${allowTo?location('to','降車地',status.to):''}</div>`:'');
+ if(!columns.length&&!route)return ''; // Do not show an empty frame when all optional cells are hidden.
  return `<section class="preview-duty-summary" aria-label="現在の営業情報">
   ${columns.length?`<div class="preview-duty-stats">${columns.join('')}</div>`:''}
   ${route}</section>`;
