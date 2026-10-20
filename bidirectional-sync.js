@@ -197,7 +197,11 @@ function create(deps){
   for(const [id,entry] of viewerCache){
    saved[id]={revision:entry.revision,hash:remoteHash(entry.shift)};
   }
-  return setSaved(saved);
+  if(!setSaved(saved))return false;
+  // The operator now holds the authoritative cloud snapshot: prior
+  // local-conflict warnings and errors no longer apply.
+  conflict={};lastError='';lastSyncAt=viewerLastSyncAt;
+  return true;
  }
  async function resolve(id,preferLocal,onBackup){
   if(busy||!conflict[id]||typeof onBackup!=='function')return false;
