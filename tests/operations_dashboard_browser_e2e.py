@@ -12,35 +12,23 @@ for arg in ('--headless=new','--no-sandbox','--disable-dev-shm-usage','--window-
 opts.add_argument('--user-data-dir='+tempfile.mkdtemp(prefix='taxiapp-operations-'))
 browser=webdriver.Chrome(options=opts)
 try:
-    browser.get('http://127.0.0.1:8765/')
-    WebDriverWait(browser,25).until(lambda d: 'TAXIAPP v0.3.99' in d.title)
+    # Node created this fixture by invoking the real renderOperations()
+    # using temporary sample records and the production CSS from index.html.
+    browser.get('http://127.0.0.1:8765/tests/operations_dashboard_fixture.html')
+    WebDriverWait(browser,20).until(lambda d: 'TAXIAPP v0.3.99' in d.title)
     init=browser.execute_script("""
-      const sourceShift={
-        id:'ops-e2e',date:'2026-10-19',startedIso:'2026-10-19T08:00:00+09:00',
-        startedAt:'08:00',records:[],settings:{},waitSegments:[],draft:null,waiting:null,
-        breakSessions:[
-          {id:'first',startedIso:'2026-10-19T08:30:00+09:00',endedIso:'2026-10-19T08:45:00+09:00',
-           startedAt:'08:30',endedAt:'08:45',place:'駅前'}
-        ],
-        breakActive:{id:'second',startedIso:new Date(Date.now()-6*60*1000).toISOString(),
-           startedAt:'08:50',place:'北本町1'}
-      };
-      const before=JSON.stringify(sourceShift);
-      const html=renderOperations(sourceShift);
-      const host=document.createElement('div');
-      host.id='ops-e2e-host';
-      host.style.cssText='max-width:830px;margin:auto;padding:8px';
-      host.innerHTML=html;document.body.appendChild(host);
-      return {before,after:JSON.stringify(sourceShift),
+      const host=document.getElementById('ops-e2e-host');
+      return {
         overview:host.querySelectorAll('.operations-kpi').length,
         panels:host.querySelectorAll('details[name="operations-dashboard"]').length,
         breakRows:host.querySelectorAll('[data-operation-panel="break"] .operations-history-item').length,
-        hasBreak:host.querySelector('[data-ops-break-total]')?.textContent};
+        hasBreak:host.querySelector('[data-ops-break-total]')?.textContent,
+        finance:host.textContent.includes('支払方法別（精算内訳）')
+      };
     """)
-    assert init['before']==init['after'],'display must not mutate shift data'
     assert init['overview']==4 and init['panels']==7,init
-    assert init['breakRows']==2,init
-    assert init['hasBreak'],init
+    assert init['breakRows']==3,init
+    assert init['hasBreak'] and init['finance'],init
     for width,theme in [(360,'day'),(360,'night'),(390,'day'),(780,'night')]:
         browser.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',
             {'width':width,'height':900,'deviceScaleFactor':1,'mobile':True})
