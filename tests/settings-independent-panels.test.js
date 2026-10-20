@@ -76,7 +76,7 @@ assert.doesNotMatch(html,/cruisingButtonsLayout|cruising-action-stack/);
 assert.match(html,/class="action-grid cruising-action-grid cruising-action-compact"/,
  'cruising actions must always use the 2-column grid');
 assert.match(html,/\.cruising-action-grid\.cruising-action-compact\{display:grid!important;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-assert.match(html,/querySelectorAll\('details\.settings-advanced,details\[data-ride-field-settings\],details\[data-cruising-summary-settings\],details\[data-text-size-settings\],details\[data-button-size-settings\],details\[data-help-settings\],details\[data-theme-settings\],details\[data-ui-preview-settings\],details\[data-gps-settings\],details\[data-address-settings\]'\)/,
+assert.match(html,/querySelectorAll\('details\.settings-advanced,details\[data-ride-field-settings\],details\[data-cruising-summary-settings\],details\[data-text-size-settings\],details\[data-button-size-settings\],details\[data-help-settings\],details\[data-theme-settings\],details\[data-ui-preview-settings\],details\[data-driver-profile-settings\],details\[data-vehicle-profile-settings\],details\[data-cancel-settings\],details\[data-fee-settings\],details\[data-duty-plan-settings\],details\[data-gps-settings\],details\[data-address-settings\]'\)/,
  'settings disclosure state must be preserved across renders');
 assert.match(html,/const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';/,
  'existing duty IndexedDB stays unchanged');

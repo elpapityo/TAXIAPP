@@ -12,7 +12,7 @@ opts.add_argument('--user-data-dir='+tempfile.mkdtemp(prefix='taxiapp-break-ui-'
 browser=webdriver.Chrome(options=opts)
 try:
     browser.get('http://127.0.0.1:8765/')
-    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.97' in d.title)
+    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.98' in d.title)
     browser.execute_script("""
       const host=document.createElement('div');
       host.id='test-break-layout-host';
@@ -174,5 +174,43 @@ try:
     assert state['themeChoices']==2,state
     assert state['rideChoices']>0 and state['cruisingChoices']>0,state
     print('PASS Chrome: cruising fixed 2x2; 2 field choices and 5 appearance panels grouped/independent')
+    # Registration screen has one parent with independently folding driver, vehicle,
+    # cancellation and duty-plan settings. Fees only appear for a selected shift.
+    driver_group=browser.execute_script("""
+      const parent=document.querySelector('details.settings-advanced[data-driver-registration]');
+      if(!parent)return {missing:true};
+      const keys=['data-driver-profile-settings','data-vehicle-profile-settings',
+        'data-cancel-settings','data-fee-settings','data-duty-plan-settings'];
+      const children=keys.map(k=>parent.querySelector('details['+k+']'));
+      const known=children.filter(x=>!!x);
+      const initiallyClosed=!parent.open&&known.every(x=>!x.open);
+      const unique=keys.every(k=>document.querySelectorAll('details['+k+']').length<=1);
+      const standalone=document.querySelectorAll(
+        'details.settings-advanced[data-duty-plan-settings]').length;
+      parent.open=true;
+      children[0].open=true;
+      const firstIndependent=children[0].open && !children[1].open && !children[2].open &&
+        !children[4].open;
+      children[1].open=true;children[0].open=false;
+      const secondIndependent=!children[0].open && children[1].open && !children[2].open;
+      const prefKeys=['company','driver','driverNo','vehicle'];
+      const values=prefKeys.map(k=>parent.querySelectorAll('[data-pref="'+k+'"]').length);
+      const dutyKeys=['type','hours','distanceKm'];
+      const dutyValues=dutyKeys.map(k=>parent.querySelectorAll('[data-duty-plan="'+k+'"]').length);
+      return {initiallyClosed,unique,standalone,firstIndependent,secondIndependent,
+        exists:children.map(x=>!!x),values,dutyValues,
+        cancelMode:parent.querySelectorAll('[data-cancel-meter-mode]').length,
+        feesVisible:children[3]!==null};
+    """)
+    assert not driver_group.get('missing'),driver_group
+    assert driver_group['initiallyClosed'],driver_group
+    assert driver_group['unique'] and driver_group['standalone']==0,driver_group
+    assert driver_group['exists']==[True,True,True,False,True],driver_group
+    assert driver_group['firstIndependent'] and driver_group['secondIndependent'],driver_group
+    assert driver_group['values']==[1,1,1,1],driver_group
+    assert driver_group['dutyValues']==[1,1,1],driver_group
+    assert driver_group['cancelMode']==1,driver_group
+    print('PASS Chrome: driver registration, vehicle, cancel and duty plan fold independently; all original inputs kept')
+
 finally:
     browser.quit()
