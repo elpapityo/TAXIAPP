@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const css=html.match(/<style>([\s\S]*?)<\/style>/)?.[1]||'';
-assert.match(html,/<title>TAXIAPP v0\.3\.105 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.106 — 乗務日報<\/title>/);
 const action=html.slice(html.indexOf("if(action==='beginBreak')"),html.indexOf("if(action==='breakBoard'"));
 assert.match(action,/const now=new Date\(\);shift\.breakActive=\{id:'break-'\+now\.getTime\(\),startedAt:stamp\(now\),startedIso:now\.toISOString\(\),place:''\}/,
   'break starts with local clock and an ISO timestamp');
