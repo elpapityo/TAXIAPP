@@ -13,7 +13,7 @@ const end=html.indexOf('function titleBlock(',start);
 assert.ok(start>0&&end>start,'settings rerender preservation code missing');
 const code=html.slice(start,end);
 const settingsHTML=html.slice(html.indexOf('function renderSettings(shift)'),html.indexOf('function download(',html.indexOf('function renderSettings(shift)')));
-const panelCount=(settingsHTML.match(/<details class="details settings-advanced"/g)||[]).length + 9; // 2 field, 5 appearance and GPS/address child folds
+const panelCount=(settingsHTML.match(/<details class="details settings-advanced"/g)||[]).length + 14; // 2 field, 5 appearance, 5 driver/vehicle and 2 GPS/address child folds (fee is conditional)
 assert.ok(panelCount>=10,'all independent Settings sections should be represented in the stand-in');
 const windowMock={
  location:{protocol:'https:'},scrollX:0,scrollY:0,
@@ -23,7 +23,7 @@ let panels=[];
 const appEl={
  querySelector(selector){return null;},
  querySelectorAll(selector){
-  if(selector==='details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-gps-settings],details[data-address-settings]')return panels;
+  if(selector==='details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-driver-profile-settings],details[data-vehicle-profile-settings],details[data-cancel-settings],details[data-fee-settings],details[data-duty-plan-settings],details[data-gps-settings],details[data-address-settings]')return panels;
   if(selector==='[data-operation-panel]')return [];
   return [];
  },
