@@ -51,10 +51,24 @@ function create(){
  async function request(action,fields={}){
   const c=checked();
   if(action==='syncList'){
-   // Server read, not stale Firestore offline cache.
-   const snapshot=await c.f.getDocsFromServer(collectionRef(c));
+   // Event sync: fetch only the touched duty. Login and manual sync still
+   // enumerate all of this user's own shifts.
+   const ids=fields.shiftIds;
+   let docs;
+   if(Array.isArray(ids)){
+    if(ids.length>60)throw Error('一度に照合する乗務が多すぎます');
+    const unique=[...new Set(ids.map(String))];
+    docs=await Promise.all(unique.map(async id=>{
+     const row=await c.f.getDocFromServer(docRef(c,id));
+     return row.exists()?{id,data:()=>row.data()}:null;
+    }));
+    docs=docs.filter(Boolean);
+   }else{
+    const snapshot=await c.f.getDocsFromServer(collectionRef(c));
+    docs=snapshot.docs;
+   }
    ownerCheck(c);
-   return {shifts:snapshot.docs.map(row=>{
+   return {shifts:docs.map(row=>{
     const data=row.data(),id=row.id,revision=Number(data?.revision);
     if(!ID.test(id)||!Number.isSafeInteger(revision)||revision<1)
      throw Error('保存されている乗務一覧が不正です');
