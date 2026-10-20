@@ -3,6 +3,7 @@
 'use strict';
 root.TAXIAPP_SYNC_UI=function(d){
  let timer=null,viewerTimer=null,viewerBusy=false;
+ let viewerFeedback='',viewerFingerprint=null;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
@@ -12,6 +13,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  const viewEnabled=()=>d.prefs().syncMode==='on'&&d.configured()&&Boolean(d.canView?.());
  function message(){
   if(viewEnabled()){
+   if(viewerFeedback)return viewerFeedback;
    const v=engine.viewerStatus();
    return v.lastError?'閲覧受信エラー：'+v.lastError:
     v.lastSyncAt?'閲覧データ最終照合 '+new Date(v.lastSyncAt).toLocaleString('ja-JP'):'閲覧データの受信待ち';
@@ -31,6 +33,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   const ok=await engine.run();
   if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
   d.setStatus(message());
+  d.render?.();
   if(manual)d.toast(message(),!ok);
   refreshPanel();
   return ok;
@@ -40,27 +43,37 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(!enabled()||timer!==null)return;
   timer=setTimeout(async()=>{
    timer=null;
-   if(document.visibilityState==='visible')await run(false);
+   await run(false);
   },1500);
  }
  async function viewNow(manual=false){
   if(!viewEnabled()||viewerBusy)return false;
   viewerBusy=true;
+  viewerFeedback='取得中…';d.render?.();
   try{
    const shifts=await engine.readOnly();
    if(!viewEnabled())return false;
    if(shifts===null){
+    viewerFeedback='取得失敗：'+engine.viewerStatus().lastError;
+    d.render?.();
     d.onViewerStatus?.(message(),true);
     if(manual)d.toast(message(),true);
     return false;
    }
+   const fingerprint=JSON.stringify(shifts);
+   const changed=viewerFingerprint!==null&&viewerFingerprint!==fingerprint;
+   viewerFingerprint=fingerprint;
    await d.onViewerSnapshot?.(shifts);
+   viewerFeedback=changed?'更新完了：'+shifts.length+'乗務を確認':'最新の状態です（'+shifts.length+'乗務）';
+   d.render?.();
    d.onViewerStatus?.(message(),false);
    if(manual)d.toast(message());
    refreshPanel();
    return true;
   }catch(error){
-   if(viewEnabled())d.onViewerStatus?.('閲覧データの反映エラー：'+String(error?.message||error),true);
+   viewerFeedback='取得失敗：'+String(error?.message||error);
+   d.render?.();
+   if(viewEnabled())d.onViewerStatus?.(message(),true);
    return false;
   }finally{viewerBusy=false;}
  }
@@ -70,7 +83,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  }
  function cancelViewer(){
   if(viewerTimer!==null)clearTimeout(viewerTimer);
-  viewerTimer=null;
+  viewerTimer=null;viewerFeedback='';viewerFingerprint=null;
  }
  async function resolve(id,localWins){
   if(!enabled())return;
