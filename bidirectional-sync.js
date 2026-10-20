@@ -50,7 +50,7 @@ function create(deps){
   const scopedRequest=async(action,fields)=>{
    if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
-   const result=await scopedRequest(action,fields);
+   const result=await request(action,fields);
    if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
    return result;
@@ -173,7 +173,7 @@ function create(deps){
   const scopedRequest=async(action,fields)=>{
    if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
-   const result=await scopedRequest(action,fields);
+   const result=await request(action,fields);
    if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
    return result;
@@ -234,7 +234,7 @@ function create(deps){
   const scopedRequest=async(action,fields)=>{
    if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
-   const result=await scopedRequest(action,fields);
+   const result=await request(action,fields);
    if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
    return result;
