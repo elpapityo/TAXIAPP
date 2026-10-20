@@ -14,7 +14,7 @@ browser=webdriver.Chrome(options=options)
 try:
     browser.get('http://127.0.0.1:8765/')
     wait=WebDriverWait(browser,30)
-    wait.until(lambda d: 'TAXIAPP v0.3.100' in d.title)
+    wait.until(lambda d: 'TAXIAPP v0.3.101' in d.title)
     wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'#app [data-tab="settings"]')))
     browser.execute_script("document.querySelector('[data-tab=settings]').click()")
     wait.until(lambda d: d.find_elements(By.CSS_SELECTOR,'[data-ride-field-settings] [data-ride-field]'))
