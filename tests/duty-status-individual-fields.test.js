@@ -89,5 +89,5 @@ assert.match(source,/if\(target\.dataset\.driveStatusField\)/);
 assert.match(source,/model\.prefs\.driveStatusFields\[key\]=target\.checked/);
 assert.match(source,/data-cruising-summary-field\],\[data-drive-status-field\]/);
 assert.match(source,/if\(!columns\.length&&!route\)return '';/);
-assert.match(source,/<title>TAXIAPP v0\.3\.110 — 乗務日報<\/title>/);
+assert.match(source,/<title>TAXIAPP v0\.3\.111 — 乗務日報<\/title>/);
 console.log('PASS 512 combinations × ride duty status cells, master ON/OFF, dispatch, waiting and cruising separation; old data untouched');
