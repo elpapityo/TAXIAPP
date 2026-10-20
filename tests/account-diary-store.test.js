@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 require('../account-diary-store.js');
 const factory=globalThis.TAXIAPP_ACCOUNT_DIARY;
 const shifts=new Map(),accounts=new Map();
+let beforeTransactionRead=null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const keys=c=>[...shifts].filter(([key])=>key.startsWith(c.uid+'/'));
 const fire={
@@ -21,6 +22,7 @@ const fire={
   const puts=[];
   const tx={
    async get(ref){
+    if(beforeTransactionRead){const hook=beforeTransactionRead;beforeTransactionRead=null;hook();}
     const row=shifts.get(ref.uid+'/'+ref.id);
     return {exists:()=>Boolean(row),data:()=>clone(row)};
    },
@@ -54,6 +56,11 @@ const id='shift-1234-abc',shift={id,records:[],settings:{},startedAt:'10:00'};
  await assert.rejects(()=>A.request('syncPut',{baseRevision:0,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift})}),/SYNC_CONFLICT/);
  assert.equal((await A.request('syncPut',{baseRevision:1,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:{...shift,startedAt:'12:00'}})})).revision,2);
  assert.equal((await B.request('syncGet',{shiftId:id})).shift.startedAt,'11:00','updates must be isolated');
+ // A session switch during the async transaction read must prevent any write.
+ beforeTransactionRead=()=>A.bind(null);
+ await assert.rejects(()=>A.request('syncPut',{baseRevision:2,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:{...shift,startedAt:'13:00'}})}),/ログイン利用者が変更/);
+ assert.equal(shifts.get('user-A/'+id).revision,2,'stale transaction must not write');
+ A.bind({uid:'user-A'},{f:fire,db:{},auth:authA,session:fakeSession,admin:false});
  authA.currentUser={uid:'user-B'};
  await assert.rejects(()=>A.request('syncList'),/ログイン/);
  authA.currentUser={uid:'user-A'};

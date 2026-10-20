@@ -79,7 +79,7 @@ function create(){
    const id=String(fields.shiftId||'');
    const snapshot=await c.f.getDocFromServer(docRef(c,id));
    ownerCheck(c);
-   if(!snapshot.exists())throw Error('指定された乗務がGoogle側にありません');
+   if(!snapshot.exists())throw Error('指定された乗務がクラウドにありません');
    const row=snapshot.data(),revision=Number(row.revision);
    return {id,revision,shift:validate(row.shift,id)};
   }
@@ -95,6 +95,8 @@ function create(){
    const ref=docRef(c,id);
    const result=await c.f.runTransaction(c.db,async tx=>{
     const existing=await tx.get(ref);
+    // The account may have changed while the server read was pending.
+    ownerCheck(c);
     const revision=existing.exists()?Number(existing.data().revision):0;
     if(revision!==baseRevision)throw Error('SYNC_CONFLICT:'+revision);
     // The Firestore rules additionally validate the active server session.
