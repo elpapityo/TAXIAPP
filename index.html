@@ -1274,13 +1274,14 @@ let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
 function setDeviceMode(next,previous='',detail=''){
  const prior=deviceMode;
- if(next==='writer'&&prior!=='writer'){writerLoadGate=true;writerLoadError='Googleの乗務を取得中…';writerLoadEpoch++;}
- if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;}
  if(prior==='writer'&&next!=='writer'&&persistTimer){
   clearTimeout(persistTimer);persistTimer=0;
-  // Preserve the unfinished local shift before losing editing rights.
+  // Start the final save while this session still has write permission.
+  // Gating edits first would turn save(true) into a silent no-op.
   save(true).catch(e=>console.warn('save-before-viewer',e));
  }
+ if(next==='writer'&&prior!=='writer'){writerLoadGate=true;writerLoadError='Googleの乗務を取得中…';writerLoadEpoch++;}
+ if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;}
  if(prior==='viewer'&&next!=='viewer'&&viewerLocalModel){
   model=viewerLocalModel;viewerLocalModel=null;
   viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
