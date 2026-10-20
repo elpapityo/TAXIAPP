@@ -33,7 +33,8 @@ root.TAXIAPP_SYNC_UI=function(d){
   const ok=await engine.run();
   if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
   d.setStatus(message());
-  d.render?.();
+  // Do not destroy expanded Settings panels or current input focus.
+  if(!d.isSettings?.())d.render?.();
   if(manual)d.toast(message(),!ok);
   refreshPanel();
   return ok;
