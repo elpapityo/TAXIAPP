@@ -1547,6 +1547,7 @@ function header(){
  return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}</div></header>`;
 }
 let pendingRender=false, renderAfterKeypad=false;
+let focusDispatchSourceAfterRender=false;
 let saveTouchPress=null,saveRenderPending=false,saveTouchTimeout=null,skipSaveClick=null;
 
 function render(){
@@ -1609,6 +1610,16 @@ function renderNow(){
  // Intentional menu changes start at the top of the new screen instead.
  if(scrollPosition){window.scrollTo(scrollPosition.x,scrollPosition.y);requestAnimationFrame(()=>{if(tab==='settings')window.scrollTo(scrollPosition.x,scrollPosition.y);});}
  else if(!sameTab)window.scrollTo(0,0);
+ if(tab==='drive'&&focusDispatchSourceAfterRender){
+  focusDispatchSourceAfterRender=false;
+  requestAnimationFrame(()=>{
+   const group=appEl.querySelector('#main-content [data-dispatch-source]');
+   if(!group)return;
+   // Leave room for the fixed current-duty summary on narrow screens.
+   const offset=Math.min(280,Math.round(window.innerHeight*0.34));
+   window.scrollTo(0,Math.max(0,group.getBoundingClientRect().top+window.scrollY-offset));
+  });
+ }
  if(tab==='settings'&&rideSettingsJumpRequested){
   rideSettingsJumpRequested=false;
   const parent=appEl.querySelector('[data-business-field-settings]');
@@ -1861,7 +1872,7 @@ function renderNewAction(shift){const count=shift.records.length,waiting=shift.w
  return `<section class="card hero"><div class="eyebrow">次の記録 / № ${count+1}</div><h2 class="hero-heading" data-mobility>${waiting?'現在：待機中':'現在：空車・流し'}</h2>${waitInfo}<div class="action-grid cruising-action-grid cruising-action-compact" style="margin-top:12px"><button class="btn primary big" data-action="beginRide" ${count>=MAX_RECORDS?'disabled':''}>🚕 乗車</button><button class="btn teal big" data-action="beginDispatch" ${count>=MAX_RECORDS?'disabled':''}>📲 アプリ迎車</button>${!waiting?`<button class="btn big" data-action="beginWait">🅿 待機開始</button><button class="btn big" data-action="openBreakPage">☕ 休憩</button>`:''}<button class="btn cruising-history-btn" data-tab="history">▤ 営業履歴</button></div><p class="footnote">待機中の場所・距離は入力した時点で自動保存します。待機中に乗車すると乗車情報に引き継ぎ、必要なら修正できます。流し中のボタン操作は不要です。</p>${count>=MAX_RECORDS?'<div class="warn">60件に達しました。</div>':''}</section>`;
 }
 function renderDraft(shift){const d=shift.draft,r=d.raw,editing=Boolean(d.editId);const heading=d.kind==='dispatch'?'迎車中 / お迎え先の確認':d.kind==='ride'?(d.status==='alighted'?'降車・精算入力':'実車中 / 乗車情報'):d.kind==='empty'?'空車高速の記録':'迎車キャンセルの記録';return `<section class="card hero"><div class="section-heading"><div><div class="eyebrow">${editing?'営業履歴の修正':`営業№ ${r.A}`}</div><h2 class="hero-heading">${heading}</h2></div><span class="pill ${d.kind==='empty'?'mint':d.kind==='cancel'||d.kind==='dispatch'?'amber':''}">${d.kind==='ride'?(d.status==='alighted'?'精算待ち':'実車中'):prettyTag(d)}</span></div>${d.kind==='dispatch'?renderDispatchForm(shift,d):d.kind==='ride'?renderRideForm(shift,d):d.kind==='empty'?renderEmptyForm(shift,d):renderCancelForm(shift,d)}${d.kind==='ride'?'':`<div class="actions"><button class="btn red" data-action="discardDraft">${d.kind==='dispatch'?'迎車入力を取り消す（営業記録なし）':'入力を取り消す'}</button></div>`}</section>`;}
-function renderDispatchForm(shift,d){const r=d.raw;return `<div class="field-label" style="margin-bottom:8px">配車元</div>${selector('E',DISPATCH_TYPES,r.E,true)}<div class="dispatch-received">${field('C',r,{label:'迎車受信時刻（変更可）'})}</div><div class="dispatch-arrival"><div class="dispatch-address-action">${locationField('AL',r,'お迎え場所・住所','gpsPickup')}</div>${field('F',r,{label:'迎車先到着時の走行距離（km）'})}</div>${rideFieldDataShown('dispatchNote',d.meta?.dispatchNote)?`<label class="field" style="margin-top:12px"><span class="field-label">依頼メモ（任意）</span><input class="control" data-meta="dispatchNote" value="${safeText(d.meta?.dispatchNote||'')}" placeholder="待ち合わせ場所・目印など"></label>`:''}<div class="warn">迎車中にキャンセルになった場合は「迎車キャンセル」を押してください。待機記録は消しません。</div><div class="action-grid"><button class="btn primary big" data-action="boardDispatch">🚕 お客様が乗車</button><button class="btn red big" data-action="cancelDispatch">× 迎車キャンセル</button></div>${renderAllFields(d)}`;}
+function renderDispatchForm(shift,d){const r=d.raw;return `<div data-dispatch-source><div class="field-label" style="margin-bottom:8px">配車元</div>${selector('E',DISPATCH_TYPES,r.E,true)}</div><div class="dispatch-received">${field('C',r,{label:'迎車受信時刻（変更可）'})}</div><div class="dispatch-arrival"><div class="dispatch-address-action">${locationField('AL',r,'お迎え場所・住所','gpsPickup')}</div>${field('F',r,{label:'迎車先到着時の走行距離（km）'})}</div>${rideFieldDataShown('dispatchNote',d.meta?.dispatchNote)?`<label class="field" style="margin-top:12px"><span class="field-label">依頼メモ（任意）</span><input class="control" data-meta="dispatchNote" value="${safeText(d.meta?.dispatchNote||'')}" placeholder="待ち合わせ場所・目印など"></label>`:''}<div class="warn">迎車中にキャンセルになった場合は「迎車キャンセル」を押してください。待機記録は消しません。</div><div class="action-grid"><button class="btn primary big" data-action="boardDispatch">🚕 お客様が乗車</button><button class="btn red big" data-action="cancelDispatch">× 迎車キャンセル</button></div>${renderAllFields(d)}`;}
 function amountDiscount(r){return (r.O==='シ'||r.O==='高')&&(number(r.AR)===null||number(r.AR)===0)?calculatedDiscount(r):amount(r.AR);}
 function passengerChoice(col,value,label){return `<div class="passenger-control"><div class="field-label">${label}人数（タップで選択）</div>${selector(col,[['0','0'],['1','1'],['2','2'],['3','3'],['4','4'],['5','5']],String(value??''),false)}<div class="caption-note">6人以上の場合は下の「すべての入力項目」から変更できます。</div></div>`;}
 
@@ -3263,7 +3274,7 @@ function handleAction(action,id){
  }
  if(action==='beginDispatch'){
   if(!shift||shift.draft)return;
-  try{shift.draft=makeDispatch(shift,new Date(),'G');save();render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
+  try{shift.draft=makeDispatch(shift,new Date(),'G');save();focusDispatchSourceAfterRender=true;render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='waitNew'){if(shift?.waiting){shift.waiting.place='';shift.waiting.placeId='';shift.waiting.placeSource='manual';saveLater();render();}return;}
  if(action==='gpsWait'){if(shift?.waiting)getWaitGps(shift,shift.waiting);return;}
