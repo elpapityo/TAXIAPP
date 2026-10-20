@@ -75,7 +75,6 @@ context.accountScope={uid:'admin-B'};
 assert.equal(panel(),'','wrong UID state must not list another account');
 assert.equal(preview(),null);
 assert.equal(context.model.shifts.length,5);
-assert.match(html,/data-action='adminCutoverExport'/);
 assert.match(html,/data-action="adminCutoverExport"/);
 assert.match(html,/data-admin-cutover-choice/);
 console.log('Admin cutover selection UI passed: five-to-two selection, UID split, no cloud write, no migration');
