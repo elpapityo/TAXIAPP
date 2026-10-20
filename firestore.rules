@@ -60,6 +60,38 @@ service cloud.firestore {
     request.resource.data.writerSessionId is string &&
     request.resource.data.updatedAt == request.time;
   }
+  // Every ordinary driver's original duty is strictly private to their UID.
+  // An administrator cannot list or read another driver's private duties.
+  // Create/update requires the current server-confirmed editing session.
+  function validPrivateDuty(uid,shiftId) {
+   return ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+     'format','revision','shift','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.keys().hasAll([
+     'format','revision','shift','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.format == 'TAXIAPP_PRIVATE_SHIFT_V1' &&
+    request.resource.data.revision is int &&
+    request.resource.data.revision > 0 &&
+    request.resource.data.shift is map &&
+    request.resource.data.shift.id == shiftId &&
+    request.resource.data.shift.records is list &&
+    request.resource.data.shift.records.size() <= 60 &&
+    request.resource.data.shift.settings is map &&
+    request.resource.data.writerSessionId is string &&
+    request.resource.data.updatedAt == request.time &&
+    isCurrentEditor(uid);
+  }
+  match /privateDuties/{uid}/shifts/{shiftId} {
+   allow get, list: if ownerEnabled(uid);
+   allow create: if validPrivateDuty(uid,shiftId) &&
+     request.resource.data.revision == 1;
+   allow update: if validPrivateDuty(uid,shiftId) &&
+     resource.data.revision is int &&
+     request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if false;
+  }
   // Protected user records, Drive file references and future features
   // remain CLOSED until data-owner rules and backend are separately tested.
   match /{document=**} { allow read, write: if false; }
