@@ -52,6 +52,18 @@ const ctx={
 vm.createContext(ctx);vm.runInContext(realBreak+script,ctx);
 function render(){return vm.runInContext('renderOperations(shift)',ctx)}
 const first=render();
+if(process.env.TAXIAPP_OPS_FIXTURE==='1'){
+ const styles=html.match(/<style>([\s\S]*?)<\/style>/)?.[1];
+ assert.ok(styles,'production CSS missing');
+ // Browser fixture is generated from the real production renderer and its exact CSS.
+ // A synthetic shift is used; no production user record is loaded or overwritten.
+ const htmlFixture='<!doctype html><html lang="ja" data-ui-theme="day"><head><meta charset="utf-8">'
+  +'<meta name="viewport" content="width=device-width,initial-scale=1">'
+  +'<title>TAXIAPP v0.3.99 operations test</title><style>'+styles+'</style></head>'
+  +'<body><div id="ops-e2e-host" class="layout">'+first+'</div></body></html>';
+ fs.writeFileSync('tests/operations_dashboard_fixture.html',htmlFixture);
+}
+
 assert.match(first,/aria-label="主要な営業情報"/);
 const tiles=first.match(/class="operations-kpi"/g)||[];
 assert.equal(tiles.length,4,'2x2 overview has exactly four metrics');
