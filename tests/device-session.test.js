@@ -56,6 +56,12 @@ function client(storage,viewer=false){
 const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r));};
 (async()=>{
  const a=client(new Map()),b=client(new Map()),c=client(new Map());
+ // Restoring a Google login without a stored editor session must not
+ // silently take over the driver's device before an explicit login/takeover.
+ const passive=client(new Map());
+ await passive.obj.begin(user,{viewer:false,claimOnLogin:false});await flush();
+ assert.equal(passive.mode(),'viewer');
+ assert.equal(writeCount,0,'restored login without a session must not evict the editor');
  await a.obj.begin(user);await flush();
  assert.equal(a.mode(),'writer','first login must become editor');
  assert.equal(writeCount,1);
