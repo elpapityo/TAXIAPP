@@ -2534,7 +2534,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   if(shifts.length){
    const previous=deepCopy(model);
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
-   next.activeId=next.shifts.find(x=>!x.endedAt)?.id||null;
+   // Match the viewer selection rule: do not arbitrarily select one of
+   // multiple unfinished duties, which can display a stale zero-sale duty.
+   const open=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
+   next.activeId=open.length===1?open[0].id:null;
    // A last-resort local recovery copy. It is never uploaded or counted.
    try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1',JSON.stringify(previous));}catch{}
    if(db)await idbPut(db,next);
