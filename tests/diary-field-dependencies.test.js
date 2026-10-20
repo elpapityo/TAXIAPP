@@ -18,7 +18,7 @@ const escape=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;');
 const context={
  model,console,
  window:{TAXIAPP_HIGHWAY_SECTIONS:highway},
- number:numeric,money:n=>'¥'+Number(n).toFixed(0),kmOne:x=>String(x??''),
+ number:numeric,amount:x=>numeric(x)??0,money:n=>'¥'+Number(n).toFixed(0),kmOne:x=>String(x??''),
  safeText:escape,shortTime:s=>String(s||'').slice(0,5),
  feeSettings:()=>({uberSurcharge:100}),updateDiscountForDraft(){},applyUberDisplayedDefault:()=>false,
  saveLater(){throw Error('Rendering only must never save')},
