@@ -125,7 +125,7 @@ const cloud=syncWindow.TAXIAPP_SYNC_UI({
  await cloud.run(false); // automatic refresh
  await cloud.run(true); // manual sync
  assert.equal(fullRedraws,0,'sync must never rebuild Settings');
- assert.match(node.status.textContent,/最終照合/);
+ assert.match(node.status.textContent,/同期完了/);
  assert.match(cloud.panel(),/data-sync-conflicts/);
  console.log('Background-sync settings regression passed: neither automatic nor manual sync redraws Settings.');
 })().catch(err=>{console.error(err);process.exitCode=1;});
