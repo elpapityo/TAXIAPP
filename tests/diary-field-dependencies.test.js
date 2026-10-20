@@ -132,8 +132,8 @@ assert.equal(JSON.stringify(invalid),original,'validation must not clear hidden 
 invalid.meta.highwaySections[0].fee='-1';
 assert.ok(vm.runInContext('validateDraft(draft)',context).some(x=>x.includes('料金')),
  'bad toll fee must not slip through merely because distance is hidden');
-assert.match(html,/data-ride-distance-setting="\\$\\{key\\}"/);
-assert.match(html,/event\\.target\\.matches\\('\\[data-distance-setting\\],\\[data-ride-distance-setting\\]'\\)/);
-assert.match(html,/dataset\\.distanceSetting\\|\\|event\\.target\\.dataset\\.rideDistanceSetting/);
-assert.match(html,/data-ride-field.*render\\(\\)/s);
+assert.ok(html.includes('data-ride-distance-setting="${key}"'));
+assert.ok(html.includes("event.target.matches('[data-distance-setting],[data-ride-distance-setting]')"));
+assert.ok(html.includes('event.target.dataset.distanceSetting||event.target.dataset.rideDistanceSetting'));
+assert.ok(html.includes('model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;'));
 console.log('PASS 2,048 diary visibility combinations × ride/dispatch/cancel/empty, required fields, shared distance, hidden save validation, unchanged raw data');
