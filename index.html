@@ -377,6 +377,40 @@ html[data-ui-theme="night"] .keypad-value{background:#162c41;color:#fff}
 .operations-fold>.inner>.metrics{margin:8px 0 14px;}
 html[data-ui-theme="night"] .operations-fold>summary{background:#243a54;color:#edf5ff;}
 
+
+/* Compact operations dashboard: day/night legible, main metrics 2x2 on phones. */
+.operations-overview{margin:6px 0 12px}
+.operations-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.operations-kpi{min-width:0;border:1px solid #a7c2dc;border-radius:12px;background:#edf5fd;
+ padding:11px 10px;display:flex;flex-direction:column;justify-content:space-between;gap:3px}
+.operations-kpi small{color:#315779;font-weight:700;font-size:calc(12px * var(--ui-font))}
+.operations-kpi strong{color:#142f49;font-size:clamp(17px,3.3vw,23px);line-height:1.2;overflow-wrap:anywhere;
+ font-variant-numeric:tabular-nums}
+.operations-fold{margin-bottom:8px}
+.operations-fold>summary{padding:12px 13px;font-size:calc(15px * var(--ui-font))}
+.operations-fold>.inner{padding:8px}
+.operations-fold>.inner>.card{padding:12px;margin-bottom:8px}
+.operations-section>.statline{padding:7px 0;gap:8px}
+.operations-section .statline>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.operations-section .statline>b{flex:0 1 auto;text-align:right;overflow-wrap:anywhere}
+.operations-section h2{margin-bottom:8px}
+.operations-history-list{display:grid;gap:6px;margin-top:8px}
+.operations-history-item{border:1px solid #c0d3e6;border-radius:9px;padding:9px;background:#f6faff;min-width:0}
+.operations-history-heading{display:flex;justify-content:space-between;align-items:baseline;gap:9px;flex-wrap:wrap}
+.operations-history-heading>b{font-variant-numeric:tabular-nums}
+html[data-ui-theme="night"] .operations-kpi{background:#263d56;border-color:#6886a2}
+html[data-ui-theme="night"] .operations-kpi small{color:#c3d7eb}
+html[data-ui-theme="night"] .operations-kpi strong{color:#f5faff;-webkit-text-fill-color:#f5faff}
+html[data-ui-theme="night"] .operations-history-item{background:#23394f;border-color:#6886a2;color:#f5faff}
+@media screen and (max-width:700px){
+ .operations-kpis{gap:6px}
+ .operations-kpi{padding:9px 8px;min-height:70px}
+ .operations-fold>summary{padding:11px 11px}
+ .operations-fold>.inner{padding:7px}
+ .operations-fold>.inner>.card{padding:10px;margin-bottom:7px}
+ .operations-history-item{padding:8px}
+}
+
 /* v0.3.10 add-on screens, keeping the existing one-meter input layout. */
 .last-payment-clock{border-color:#b9d6ec;background:#f3f9ff;padding:14px 18px;}
 .last-payment-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
@@ -2779,6 +2813,20 @@ function updateElapsedTimer(){
   const v=liveBusinessNumbers(active,now);
   const assign=(selector,value)=>{const e=appEl.querySelector(selector);if(e)e.textContent=value;};
   assign('[data-live-elapsed]',durationHms(v.elapsed));assign('[data-live-ride]',durationHms(v.liveDuration));assign('[data-live-payment]',durationJapanese(elapsedSinceLastPayment(active,now)));assign('[data-live-wait]',durationHms(v.waitDuration));assign('[data-live-unclassified]',durationHms(v.unclassified));assign('[data-live-pace]',money(v.pace));
+  if((tab==='live'||tab==='summary')&&selectedShift()?.id===active.id){
+   const set=(selector,value)=>appEl.querySelectorAll(selector).forEach(node=>node.textContent=value);
+   const breakSecs=opsBreakSeconds(active,now);
+   const remainingOther=v.unclassified===null?null:Math.max(0,v.unclassified-breakSecs);
+   set('[data-ops-elapsed]',durationHms(v.elapsed));
+   set('[data-ops-break-total]',opsBreakText(active,now));
+   set('[data-ops-break-detail-total]',opsBreakText(active,now));
+   set('[data-ops-time-break]',durationHms(breakSecs));
+   set('[data-ops-other]',durationHms(remainingOther));
+   if(active.breakActive){
+    set('[data-ops-break-active]',breakElapsedText(active.breakActive,now));
+    set('[data-ops-break-active-list]',breakElapsedText(active.breakActive,now));
+   }
+  }
   assign('[data-live-forecast]',v.referenceEstimate===null?'—':money(v.referenceEstimate));
   assign('[data-live-remaining]',v.referenceEstimate===null?'—':money(Math.max(0,v.referenceEstimate-v.t.meter)));
  }
