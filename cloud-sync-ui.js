@@ -5,6 +5,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  let timer=null,viewerTimer=null,viewerBusy=false;
  let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
  let archiveRows=[],archiveDetail=null,archiveError='',archiving=false;
+ let writerBootstrapBusy=false;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
@@ -24,6 +25,26 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(s.lastError)return '同期エラー：'+s.lastError;
   if(s.conflicts.length)return s.conflicts.length+'乗務で競合。両方の記録を保持しています。';
   return s.lastSyncAt?'最終照合 '+new Date(s.lastSyncAt).toLocaleString('ja-JP'):'未同期';
+ }
+ async function bootstrapWriter(){
+  if(writerBootstrapBusy||!d.writerBootstrapAllowed?.())return false;
+  writerBootstrapBusy=true;
+  try{
+   if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
+   d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
+   const shifts=await engine.readOnly();
+   if(shifts===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
+   if(!d.writerBootstrapAllowed?.())return false;
+   if(!await d.onWriterSnapshot(shifts))return false;
+   if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
+   writerFeedback='Googleから'+shifts.length+'乗務を取得・保存しました';
+   d.onWriterBootstrapReady?.();
+   d.setStatus(writerFeedback);return true;
+  }catch(error){
+   writerFeedback='操作待機：'+String(error?.message||error);
+   d.onWriterBootstrapStatus?.(writerFeedback);
+   d.setStatus(writerFeedback);return false;
+  }finally{writerBootstrapBusy=false;}
  }
  async function run(manual=false){
   if(viewEnabled())return viewNow(manual);
@@ -227,6 +248,6 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives};
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter};
 };
 })(typeof window!=='undefined'?window:globalThis);
