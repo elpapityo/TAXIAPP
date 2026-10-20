@@ -1610,7 +1610,7 @@ function renderNow(){
  // Intentional menu changes start at the top of the new screen instead.
  if(scrollPosition){window.scrollTo(scrollPosition.x,scrollPosition.y);requestAnimationFrame(()=>{if(tab==='settings')window.scrollTo(scrollPosition.x,scrollPosition.y);});}
  else if(!sameTab)window.scrollTo(0,0);
- if(tab==='drive'&&focusDispatchSourceAfterRender){
+ if(tab==='drive'&&typeof focusDispatchSourceAfterRender!=='undefined'&&focusDispatchSourceAfterRender){
   focusDispatchSourceAfterRender=false;
   requestAnimationFrame(()=>{
    const group=appEl.querySelector('#main-content [data-dispatch-source]');
