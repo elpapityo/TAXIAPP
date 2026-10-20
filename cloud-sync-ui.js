@@ -192,7 +192,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(text)text.textContent=message();
   const holder=d.root.querySelector('[data-sync-conflicts]');
   if(!holder)return;
-  const signature=JSON.stringify(status().conflicts);
+  const signature=JSON.stringify([status().conflicts,archiveRows,archiveDetail,archiveError]);
   if(holder.dataset.syncSignature===signature)return;
   if(holder.querySelector('input:focus,textarea:focus,select:focus'))return;
   holder.innerHTML=conflictMarkup(status())+vaultMarkup();
