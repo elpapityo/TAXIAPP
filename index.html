@@ -1569,9 +1569,12 @@ async function switchAccountScope(scope){
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
+ syncUI.resetAccount();
  accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
  accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
+ // Blank the previous account immediately, before any async IndexedDB read.
+ model=emptyAccountModel();render();
  let stored=null;
  if(scope){
   try{stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');}
