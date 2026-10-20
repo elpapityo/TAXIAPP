@@ -18,6 +18,8 @@ function harness(member=true){
   model:{version:1,shifts:[clone(original)],activeId:original.id,prefs:{}},
   accountScope:{uid:'user-A'},memberDiary:()=>member,
   deepCopy:clone,Date,Math,JSON,
+  canonicalDutyJson:x=>JSON.stringify(x,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v),
+  pendingMemberRecovery:null,memberRecoveryBusy:false,
   localStorage:null,scopedStorageKey:()=>member?'taxiapp-account-state-v1-user-A':'taxiapp-v1',
   db:{},writes:[],disk:new Map(),backups:new Map(),backupFailure:false,
   render:()=>{},keypadActive:false,appEl:{querySelector:()=>null}
