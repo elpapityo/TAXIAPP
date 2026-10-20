@@ -1360,7 +1360,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -2797,8 +2797,137 @@ async function uploadMemberRecovery(){
   toast('安全な復旧を保留しました。端末の日報は保持されています：'+String(error?.message||error),true);
  }finally{memberRecoveryBusy=false;render();}
 }
+// Per-duty, permission-only conflict resolution. Back up BOTH originals first.
+async function resolveMemberConflict(id,useLocal){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
+    !writerLoadGate||pending.uid!==accountScope.uid||
+    pending.epoch!==writerLoadEpoch||!(pending.conflictIds||[]).includes(id))return;
+ const uid=accountScope.uid,epoch=writerLoadEpoch,scopeGeneration=accountScopeGeneration;
+ const before=deepCopy(model),source=JSON.stringify(before.shifts);
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     accountScope.uid!==uid||writerLoadEpoch!==epoch||
+     accountScopeGeneration!==scopeGeneration||pendingMemberRecovery!==pending||
+     JSON.stringify(model.shifts)!==source)
+   throw Error('操作権または乗務内容が変更されたため上書きを中止しました');
+ };
+ const local=before.shifts.find(x=>x.id===id);
+ if(!local)return;
+ memberRecoveryBusy=true;render();
+ try{
+  const remote=await accountDiary.request('syncGet',{shiftId:id});
+  check();
+  if(remote?.id!==id||remote?.shift?.id!==id||
+     !Number.isSafeInteger(remote.revision)||remote.revision<1)
+   throw Error('クラウド版の確認ができません');
+  if(canonicalDutyJson(local)===canonicalDutyJson(remote.shift)){
+   toast('両方の内容が一致しています。最新の乗務一覧を再取得します。');
+   await syncUI.bootstrapWriter();return;
+  }
+  const amount=x=>{try{return money(totals(x.records||[],x.settings||{},x.date||'').meter);}
+   catch{return '確認不可';}};
+  const compare=x=>'日付 '+String(x.date||'不明')+
+   ' ／ 営業 '+(x.records||[]).length+'件 ／ メーター売上 '+amount(x);
+  const first=useLocal?'端末版':'クラウド版';
+  const target=useLocal?'クラウド版':'端末版';
+  const message='【乗務ごとの上書き許可】\\n乗務ID：'+id+
+   '\\n端末版：'+compare(local)+
+   '\\nクラウド版：'+compare(remote.shift)+
+   '\\n\\n'+first+'を採用し、'+target+'を置き換えます。'+
+   '\\n両方の原本を端末内に別途退避し、保存を検証してから実施します。'+
+   '\\n他の乗務は変更しません。\\n本当にこの1乗務だけを上書きしますか？';
+  if(!confirm(message))return;
+  check();
+  const archive={format:'TAXIAPP_CONFLICT_BACKUP_V1',uid,shiftId:id,
+   createdAt:new Date().toISOString(),revision:remote.revision,
+   local:deepCopy(local),cloud:deepCopy(remote.shift)};
+  const archiveKey='taxiapp-account-conflict-copy-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,archive,archiveKey);
+  else localStorage.setItem(archiveKey,JSON.stringify(archive));
+  const copy=db?await idbGet(db,archiveKey):
+   JSON.parse(localStorage.getItem(archiveKey)||'null');
+  if(canonicalDutyJson(copy)!==canonicalDutyJson(archive))
+   throw Error('両版の復旧コピーを保存できなかったため停止しました');
+  // A discoverable, per-UID index allows later downloading either original.
+  const indexKey='taxiapp-account-conflict-index-v1-'+uid;
+  const index=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(index)||index.some(x=>typeof x!=='string'))
+   throw Error('復旧コピーの管理情報が不正です');
+  index.push(archiveKey);
+  localStorage.setItem(indexKey,JSON.stringify(index));
+  if(localStorage.getItem(indexKey)!==JSON.stringify(index))
+   throw Error('復旧コピーの管理情報を確認できません');
+  check();
+  // Re-read server revision immediately before choosing which side wins.
+  const latest=await accountDiary.request('syncGet',{shiftId:id});
+  check();
+  if(latest.revision!==remote.revision||
+     canonicalDutyJson(latest.shift)!==canonicalDutyJson(remote.shift))
+   throw Error('比較後にクラウド版が更新されたため、再確認が必要です');
+  if(useLocal){
+   const saved=await accountDiary.request('syncPut',{baseRevision:remote.revision,
+    payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:local})});
+   check();
+   if(saved?.id!==id||saved.revision!==remote.revision+1)
+    throw Error('クラウドへの上書きが確認できませんでした');
+   const verified=await accountDiary.request('syncGet',{shiftId:id});
+   check();
+   if(canonicalDutyJson(verified.shift)!==canonicalDutyJson(local))
+    throw Error('クラウドへの反映確認が一致しません');
+  }else{
+   const next=deepCopy(before),position=next.shifts.findIndex(x=>x.id===id);
+   if(position<0)throw Error('端末側の乗務が見つかりません');
+   next.shifts[position]=deepCopy(latest.shift);
+   const active=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
+   next.activeId=active.length===1?active[0].id:null;
+   const storageKey=scopedStorageKey();
+   check();
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):
+    JSON.parse(localStorage.getItem(storageKey)||'null');
+   if(canonicalDutyJson(stored)!==canonicalDutyJson(next))
+    throw Error('端末への上書きが確認できません。復旧コピーを保護してください');
+   check();
+   model=next;
+  }
+  toast('指定した乗務の採用を確認しました。残る競合を再照合します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('上書きを停止しました。両方の原本は保護対象です：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
+async function downloadMemberConflictArchive(key){
+ if(!memberDiary()||!accountScope.uid||typeof key!=='string')return;
+ const indexKey='taxiapp-account-conflict-index-v1-'+accountScope.uid;
+ try{
+  const keys=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(keys)||!keys.includes(key))throw Error('この利用者の保管履歴にありません');
+  const archive=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  if(archive?.format!=='TAXIAPP_CONFLICT_BACKUP_V1'||archive.uid!==accountScope.uid)
+   throw Error('現在の利用者の復旧コピーではありません');
+  download(JSON.stringify(archive,null,2),
+   'TAXIAPP_競合原本_'+dateStamp(new Date())+'_'+archive.shiftId+'.json',
+   'application/json;charset=utf-8');
+  toast('競合した両版の原本をJSONで書き出しました。保存先を確認してください。');
+ }catch(error){toast('復旧コピーの取り出しに失敗：'+String(error?.message||error),true);}
+}
+function renderMemberConflictArchives(){
+ if(!memberDiary())return '';
+ try{
+  const keys=JSON.parse(localStorage.getItem('taxiapp-account-conflict-index-v1-'+accountScope.uid)||'[]');
+  if(!Array.isArray(keys)||!keys.length)return '';
+  return '<section class="card"><h2 class="h2">競合時の保護コピー</h2>'+
+   '<p class="helper">上書き前に退避した端末版・クラウド版の原本です。双方の版を含むJSONを保存できます。</p>'+
+   '<div class="actions">'+keys.slice(-20).reverse().map(key=>
+    '<button class="btn" type="button" data-action="downloadMemberConflictArchive" data-id="'+safeText(key)+'">⇩ 保護コピー '+safeText(key.split('-').slice(-2).join('-'))+'</button>'
+   ).join('')+'</div></section>';
+ }catch{return '<p class="warn">復旧コピーの管理情報を確認できません。</p>';}
+}
 function renderSheetTargetSettings(){
- if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>'+renderMemberConflictArchives();
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
@@ -3332,6 +3461,7 @@ function handleAction(action,id){
    return;
   }
   if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
+  if(action==='downloadMemberConflictArchive'){void downloadMemberConflictArchive(id);return;}
   if(action==='takeLocalConflict'||action==='takeCloudConflict'){
    void resolveMemberConflict(id,action==='takeLocalConflict');return;
   }
