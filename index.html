@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・GPS統合正式版">
-<title>TAXIAPP v0.3.98 — 乗務日報</title>
+<title>TAXIAPP v0.3.99 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1273,7 +1273,7 @@ for(const eventName of ['click','pointerdown','input','change','keydown','submit
  document.addEventListener(eventName,blockViewerEdit,true);
 let historyDate='',historyShiftId='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 // The combined business-status screen remembers which sections the driver opened.
-let operationPanelOpen={live:true,summary:false};
+let operationPanelOpen={}; // One open at a time, native named accordion.
 
 function safeText(s){return String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 const UI_DEFAULTS={text:'large',buttons:'large',contrast:'high',theme:'day',help:'hide',driveLayout:'legacy',screenMode:'full',orientationMode:'portrait',stickyDutySummary:'on',driveStatusDisplay:'on'};
@@ -1950,13 +1950,143 @@ function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyM
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
 ${shift.gpsTrip?gpsDistanceSummary(shift):''}${dailyReferenceDetails(shift,dailyReferenceFor(shift))}<div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み'}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div>
 ${shift.records.length?`<section class="card history-detail-section"><h2 class="h2">営業明細（タップして確認）</h2><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</section>`:''}`}`;}
-// One navigation item contains two independent collapsible reports.
-// Business status is expanded initially; daily summary is collapsed initially.
+// Seven-purpose operations dashboard. Presentation only: no stored record mutations.
+function opsBreakSeconds(shift,now=new Date()){
+ return (shift?.breakSessions||[]).reduce((sum,x)=>sum+breakSeconds(x,now),0)
+  +(shift?.breakActive?breakSeconds(shift.breakActive,now):0);
+}
+function opsBreakText(shift,now=new Date()){return breakClockText(Math.floor(opsBreakSeconds(shift,now)/60));}
+function opsRow(label,value){return '<div class="statline"><span>'+label+'</span><b>'+value+'</b></div>';}
+function opsCard(title,body){return '<section class="card operations-section"><h2 class="h2">'+title+'</h2>'+body+'</section>';}
+function opsBreakPanel(shift,now=new Date()){
+ const entries=(shift.breakSessions||[]).map((x,i)=>({...x,_index:i+1,_active:false}));
+ if(shift.breakActive)entries.push({...shift.breakActive,_index:entries.length+1,_active:true});
+ let rows=opsRow('今回の休憩時間',shift.breakActive?'<span data-ops-break-active>'+breakElapsedText(shift.breakActive,now)+'</span>':'—')
+  +opsRow('今回乗務の休憩合計','<span data-ops-break-detail-total>'+opsBreakText(shift,now)+'</span>')
+  +opsRow('終了した休憩',(shift.breakSessions?.length||0)+'件');
+ if(shift.breakActive)rows+='<p class="panel-strip">☕ 現在休憩中です。経過時間を合計に含めています。</p>';
+ rows+='<h3 class="subsection">休憩ごとの履歴</h3>'
+  +(entries.length?'<div class="operations-history-list">'+entries.map(x=>
+   '<div class="operations-history-item"><div class="operations-history-heading"><strong>休憩 '+x._index+(x._active?'（休憩中）':'')+'</strong><span>'
+   +safeText(shortTime(x.startedAt))+' ～ '+(x._active?'休憩中':safeText(shortTime(x.endedAt)))+'</span></div>'
+   +'<div class="operations-history-heading"><span>'+safeText(x.place||'場所未記録')+'</span><b>'
+   +(x._active?'<span data-ops-break-active-list>'+breakElapsedText(x,now)+'</span>':breakElapsedText(x))
+   +'</b></div></div>').join('')+'</div>':'<p class="subtle">休憩記録はありません。</p>')
+  +'<p class="footnote">終了済みと進行中の休憩を合算。保存済みの時刻・場所には変更を加えません。</p>';
+ return opsCard('休憩時間・休憩履歴',rows);
+}
+function opsTimePanel(shift,now=new Date()){
+ const v=liveBusinessNumbers(shift,now),breaks=opsBreakSeconds(shift,now);
+ // The old "unclassified" number contained breaks; subtract breaks for display only.
+ const other=v.unclassified===null?null:Math.max(0,v.unclassified-breaks);
+ return opsCard('勤務時間の内訳',
+  opsRow('出庫時刻',safeText(shortTime(shift.startedAt)))
+  +opsRow('出庫からの経過時間','<span data-live-elapsed>'+durationHms(v.elapsed)+'</span>')
+  +opsRow('前回の降車から','<span data-live-payment>'+durationJapanese(elapsedSinceLastPayment(shift,now))+'</span>')
+  +opsRow('実車時間（記録分・進行中含む）','<span data-live-ride>'+durationHms(v.liveDuration)+'</span>')
+  +opsRow('待機時間（記録分）','<span data-live-wait>'+durationHms(v.waitDuration)+'</span>')
+  +opsRow('休憩時間（別掲）','<span data-ops-time-break>'+durationHms(breaks)+'</span>')
+  +opsRow('空車・迎車等の残時間（参考）','<span data-ops-other>'+durationHms(other)+'</span>')
+  +'<p class="footnote">残時間は従来の未分類時間から休憩を控除した参考値です。過去の待機・休憩が重なる記録では正確な時間配分を保証しません。</p>')
+  +dailyReferenceStrip(shift);
+}
+function opsSalesPanel(shift,now=new Date()){
+ const v=liveBusinessNumbers(shift,now),check=meterCheckValues(v.t),avg=v.t.rides?v.t.meter/v.t.rides:0;
+ return opsCard('売上の実績',
+  opsRow('確定メーター売上',money(v.t.meter))
+  +opsRow('メーター照合用累計',money(check.total))
+  +opsRow('営業回数',v.t.rides+'件')
+  +opsRow('1回あたり平均',money(avg))
+  +opsRow('時間あたり売上','<span data-live-pace>'+money(v.pace)+'</span>')
+  +'<p class="footnote">メーター照合用累計はキャンセル '+check.cancelCount+'件の補正 '+money(check.reference)+' を含みますが、売上対象外です。</p>'
+  +'<details class="details"><summary>帰庫予定時刻による売上参考試算</summary><div class="inner">'
+  +'<label class="field"><span class="field-label">帰庫予定時刻（任意）</span><input class="control" type="time" step="60" data-plan-end value="'+safeText(shift.plannedEndAt||'')+'"></label>'
+  +opsRow('今後の参考売上','<span data-live-remaining>—</span>')
+  +opsRow('一日売上の参考試算','<span data-live-forecast>—</span>')
+  +'<p class="footnote">実績30分以上・営業1件以上・帰庫予定が未来の場合のみ。需要、休憩や運賃変化は考慮しません。</p></div></details>');
+}
+function opsSettlementPanel(shift){
+ const t=totals(shift.records,shift.settings,shift.date),check=meterCheckValues(t,shift);
+ const cashRows=[['メーター売上（割引前）',t.meter],['照合用：キャンセル迎車料（売上対象外）',check.reference],
+  ['照合用：メーター累計',check.total],['決済内訳（GO手数料含む・Uber配車手数料控除後）',t.paymentAllocated],
+  ['障がい者割引',t.discount],['差額（0円なら一致）',t.reconciliationDifference],['現金納金額',t.cashRemittance],
+  ['GO手数料（納金対象）',t.goFee],['ETC納金額',t.etcRemittance],['総入金額（現金＋ETC）',t.totalRemittance]];
+ const mainRows=[['実車営業',t.rides+'件'],['キャンセル',t.cancels+'件'],['空車分の高速利用',t.emptyHighways+'件'],
+  ['メーター売上',money(t.meter)],['現金受取（実車分）',money(t.cashReceived)],
+  ['現金納金対象（GO含む／Uber除外）',money(t.cashRemittance)],['Uber配車料（会社納金不要）',money(t.uberSurcharge)],
+  ['キャンセル（売上計上なし）',money(t.cancellation)],['実車高速（客負担）',money(t.realToll)],
+  ['実車高速を含む明細金額',money(t.printedDetail)]];
+ const fees=[['GO手数料（降車完了分）',t.goFee],['Uber配車料（納金不要）',t.uberSurcharge],
+  ['空車高速 → 雑損',t.emptyToll],['割引（既知ルールのみ）',t.discount],
+  ['ETC記録額（実＋空）',t.realToll+t.emptyToll]];
+ const moneyRows=arr=>arr.map(([name,n])=>opsRow(name,money(n))).join('');
+ return metrics(shift)
+  +opsCard('売上・納金照合',moneyRows(cashRows)+'<p class="'+(t.reconciliationDifference===0?'panel-strip':'warn')+'">'
+   +(t.reconciliationDifference===0?'売上と決済内訳・割引が一致しています。':'精算差額があります。内容を確認してください。')+'</p>')
+  +opsCard('営業・入金',mainRows.map(([name,value])=>opsRow(name,value)).join(''))
+  +opsCard('手数料・控除',moneyRows(fees)
+   +'<p class="footnote">Uberの運営側料率は未確認で自動計算しません。ETC・キャンセル・複合金種は別途確認が必要です。</p>')
+  +opsCard('支払方法別（精算内訳）',Object.entries(t.paymentTotals).map(([name,value])=>
+   opsRow(safeText(LABELS[name]||name),money(value))).join('')||'<p class="subtle">精算済みのデータがありません。</p>');
+}
+function opsDistancePanel(shift){
+ return (gpsDistanceSummary(shift)||opsCard('GPS走行距離','<p class="subtle">GPS記録はありません。</p>'))
+  +dailyReferenceDetails(shift,dailyReferenceFor(shift));
+}
+function opsHistoryPanel(shift){
+ const events=liveBusinessRows(shift).slice(-40).map(e=>'<div class="operations-history-item">'
+  +'<div class="operations-history-heading"><span>'+safeText(e.time)+'　'+safeText(e.kind)+'</span>'
+  +'<b>'+safeText(e.detail)+'</b></div></div>').join('');
+ const waits=(shift.waitSegments||[]).slice(-5).reverse().map(w=>
+  opsRow(safeText(shortTime(w.startedAt))+'　'+safeText(w.place||'場所未記録'),
+   safeText(w.odometer!==''&&w.odometer!==undefined?w.odometer+' km':'距離未記録'))).join('');
+ return opsCard('営業の時系列',events?'<div class="operations-history-list">'+events+'</div>':'<p class="subtle">まだ履歴はありません。</p>')
+  +opsCard('待機履歴',opsRow('待機開始〜次の営業操作の累計（流し時間を含む可能性）',waitMinutes(shift)+'分')
+  +opsRow('終了した待機区間',(shift.waitSegments?.length||0)+'件')
+  +(waits||'<p class="subtle">待機記録はありません。</p>')
+  +'<p class="footnote">待機から流しに移った場合、流し時間を含む可能性があります。</p>');
+}
+function opsHighwayPanel(shift){
+ const report=window.TAXIAPP_HIGHWAY_REPORT?.collect(shift,r=>deriveRaw(r,shift.settings));
+ if(!report)return opsCard('高速道路利用の明細','<p class="subtle">高速道路の集計を取得できませんでした。</p>');
+ const km=x=>x===null||x===undefined?'未記録':Number(x).toLocaleString('ja-JP',{maximumFractionDigits:3})+' km';
+ const entries=report.entries.map(e=>'<div class="operations-history-item"><strong>日報 №'+safeText(e.no)+'　'
+  +(e.mode==='実'?'実車':'空車')+'高速</strong>'
+  +opsRow(safeText(e.entryIC||'入口未記録')+' → '+safeText(e.exitIC||'出口未記録'),
+    km(e.sectionKm)+' ／ 免除 '+km(e.exemptKm))
+  +opsRow('高速料金',money(e.chargeYen))
+  +(e.distanceMissing?'<p class="warn">区間距離未確定</p>':'')+'</div>').join('');
+ return opsCard('高速道路利用の明細',opsRow('高速利用',report.count+'区間（実車 '+report.real.count+'／空車 '+report.empty.count+'）')
+  +opsRow('区間距離合計',km(report.sectionKm))+opsRow('免除距離合計（75％）',km(report.exemptKm))
+  +opsRow('高速料金合計',money(report.chargeYen))
+  +(report.unknownDistances?'<p class="warn">区間距離未確定 '+report.unknownDistances+'件。距離合計は判明分のみです。</p>':'')
+  +(entries?'<div class="operations-history-list">'+entries+'</div>':'<p class="subtle">利用履歴はありません。</p>')
+  +'<div class="actions"><button type="button" class="btn teal" data-tab="highway">高速道路利用一覧（全詳細）</button></div>');
+}
 function renderOperations(shift){
- const part=(key,title,body)=>`<details class="details operations-fold" data-operation-panel="${key}" ${operationPanelOpen[key]?'open':''}><summary>${title}</summary><div class="inner">${body}</div></details>`;
- return `${titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。')}<div class="actions"><button type="button" class="btn teal" data-tab="highway">🛣 高速道路利用一覧（明細・合計）</button></div>
- ${part('live','営業状況',renderLiveStatus(shift,true))}
- ${part('summary','日報集計',renderSummary(shift,true))}`;
+ const head=titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。');
+ if(!shift)return head+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
+ const now=new Date(),v=liveBusinessNumbers(shift,now),t=v.t;
+ const tile=(label,value,attr='')=>'<div class="operations-kpi"><small>'+label+'</small><strong '+attr+'>'+value+'</strong></div>';
+ const overview='<section class="operations-overview" aria-label="主要な営業情報"><div class="operations-kpis">'
+  +tile('メーター売上',money(t.meter))+tile('営業回数',t.rides+'件')
+  +tile('乗務経過',durationHms(v.elapsed),'data-ops-elapsed')
+  +tile('休憩合計',opsBreakText(shift,now),'data-ops-break-total')+'</div></section>';
+ const warn=t.reconciliationDifference!==0?'<p class="warn">売上と決済内訳に差額があります。「日報集計・精算」で確認してください。</p>':'';
+ const sections=[
+  ['time','勤務時間・営業状況',opsTimePanel(shift,now)],
+  ['break','休憩時間・休憩履歴',opsBreakPanel(shift,now)],
+  ['sales','売上・営業実績',opsSalesPanel(shift,now)],
+  ['settlement','日報集計・精算',opsSettlementPanel(shift)],
+  ['gps','GPS・走行距離',opsDistancePanel(shift)],
+  ['history','営業時系列・待機履歴',opsHistoryPanel(shift)],
+  ['highway','高速道路利用明細',opsHighwayPanel(shift)]
+ ];
+ const selected=sections.find(([key])=>operationPanelOpen[key])?.[0]||'';
+ const panels=sections.map(([key,title,body])=>
+  '<details name="operations-dashboard" class="details operations-fold" data-operation-panel="'+key+'" '
+  +(key===selected?'open':'')+'><summary>'+title+'</summary><div class="inner">'+body+'</div></details>').join('');
+ return head+overview+warn+panels;
 }
 function renderLiveStatus(shift,embedded=false){if(!shift)return `${embedded?'':titleBlock('営業状況','LIVE DASHBOARD','出庫後に現在の営業状況を表示します。')}<div class="card">現在の乗務がありません。過去の乗務は営業履歴から確認してください。</div>`;
  const v=liveBusinessNumbers(shift),elapsed=v.elapsed,avg=v.t.rides?v.t.meter/v.t.rides:0,check=meterCheckValues(v.t);
