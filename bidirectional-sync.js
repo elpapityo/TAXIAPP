@@ -20,7 +20,7 @@ function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
   getEndpoint,toast,localStorage:storage}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
- let viewerBusy=false,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
+ let viewerBusy=false,viewerPromise=null,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
  const localKey=()=>KEY_PREFIX+digest(String(getEndpoint()||''));
  function getSaved(){
   try{
@@ -149,7 +149,10 @@ function create(deps){
  // A viewer NEVER changes the local IndexedDB or server. Cloud data lives only
  // in an isolated in-memory snapshot; incomplete requests retain the prior view.
  async function readOnly(){
-  if(viewerBusy)return null;
+  // Login can promote viewer to writer while a cloud read is in progress.
+  // Reuse the same verified result; returning null here locks the writer out.
+  if(viewerPromise)return viewerPromise;
+  const job=(async()=>{
   const endpoint=String(getEndpoint()||'');
   if(!endpoint){viewerLastError='Google接続先が設定されていません';return null;}
   viewerBusy=true;
@@ -180,6 +183,10 @@ function create(deps){
    viewerLastError=String(error?.message||error);
    return null;
   }finally{viewerBusy=false;}
+  })();
+  viewerPromise=job;
+  try{return await job;}
+  finally{if(viewerPromise===job)viewerPromise=null;}
  }
  function viewerStatus(){return {lastError:viewerLastError,lastSyncAt:viewerLastSyncAt};}
  // Only after cloud originals have been durably saved locally, establish
@@ -190,7 +197,11 @@ function create(deps){
   for(const [id,entry] of viewerCache){
    saved[id]={revision:entry.revision,hash:remoteHash(entry.shift)};
   }
-  return setSaved(saved);
+  if(!setSaved(saved))return false;
+  // The operator now holds the authoritative cloud snapshot: prior
+  // local-conflict warnings and errors no longer apply.
+  conflict={};lastError='';lastSyncAt=viewerLastSyncAt;
+  return true;
  }
  async function resolve(id,preferLocal,onBackup){
   if(busy||!conflict[id]||typeof onBackup!=='function')return false;

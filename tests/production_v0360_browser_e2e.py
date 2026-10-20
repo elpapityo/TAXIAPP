@@ -25,7 +25,7 @@ try:
     wait.until(lambda _: 'TAXIAPP v0.3.' in driver.title)
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,"#app [data-tab='settings']")))
     assert driver.find_elements(By.ID,'accountSignIn')
-    assert driver.find_elements(By.ID,'accountViewSignIn')
+    assert not driver.find_elements(By.ID,'accountViewSignIn'), 'viewer-only login must remain removed'
     assert driver.find_elements(By.ID,'accountTakeOver')
     assert not driver.find_elements(By.CSS_SELECTOR,'.gps-preview-ribbon')
     sentinel={'version':1,'activeId':None,'prefs':{'driver':'元からのデータ','vehicle':'登録済み'},

@@ -23,8 +23,6 @@ root.TAXIAPP_ACCOUNT_AUTO={
   function controls(){
    const signIn=$('accountSignIn'),signOut=$('accountSignOut');
    if(signIn)signIn.hidden=!!user;
-   const viewLogin=$('accountViewSignIn');
-   if(viewLogin)viewLogin.hidden=!!user;
    if(signOut)signOut.hidden=!user;
    if(signOut)signOut.disabled=!user;
    const takeOver=$('accountTakeOver');
@@ -213,7 +211,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     baseline=readBase();
     localSignature=api.signature(currentPrefs());
     status('ログイン済み：操作端末を確認しています');
-    await deviceSession.begin(next,{viewer:!explicitWriterLogin});
+    await deviceSession.begin(next,{viewer:false,claimOnLogin:explicitWriterLogin});
     viewerLogin=false;explicitWriterLogin=false;
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
@@ -231,14 +229,6 @@ root.TAXIAPP_ACCOUNT_AUTO={
      await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
      if(deviceSession?.state()==='viewer')await deviceSession.claim();
     }catch(e){status('ログイン失敗：'+String(e.code||e.message||e));}
-   });
-   $('accountViewSignIn')?.addEventListener('click',async()=>{
-    if(!auth)return;
-    viewerLogin=true;explicitWriterLogin=false;
-    try{
-     await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
-     deviceSession?.viewOnly();
-    }catch(e){status('閲覧ログイン失敗：'+String(e.code||e.message||e));}
    });
    $('accountTakeOver')?.addEventListener('click',()=>{
     explicitWriterLogin=true;

@@ -198,5 +198,13 @@ const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r))
  assert.equal(recovery.canWrite(),true);
  assert.equal(deniedWriteCount,1);
  assert.equal(reconnections,3,'no periodic reader/poller needed');
+ // Restored authentication without explicit user action cannot take over
+ // another device, even when the Google account remains signed in.
+ const beforePassiveWrites=writeCount;
+ const passive=client(new Map());
+ await passive.obj.begin(user,{viewer:false,claimOnLogin:false});await flush();
+ assert.equal(passive.mode(),'viewer');
+ assert.equal(writeCount,beforePassiveWrites,
+  'restored login without a stored session must not evict the editor');
  console.log('Device sessions passed: single editor, no legacy bypass, denied watcher and takeover safety.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
