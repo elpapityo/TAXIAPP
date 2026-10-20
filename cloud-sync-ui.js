@@ -3,7 +3,7 @@
 'use strict';
 root.TAXIAPP_SYNC_UI=function(d){
  let timer=null,viewerTimer=null,viewerBusy=false;
- let viewerFeedback='',viewerFingerprint=null;
+ let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
@@ -19,6 +19,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     v.lastSyncAt?'閲覧データ最終照合 '+new Date(v.lastSyncAt).toLocaleString('ja-JP'):'閲覧データの受信待ち';
   }
   const s=status();
+  if(writerFeedback)return writerFeedback;
   if(s.lastError)return '同期エラー：'+s.lastError;
   if(s.conflicts.length)return s.conflicts.length+'乗務で競合。両方の記録を保持しています。';
   return s.lastSyncAt?'最終照合 '+new Date(s.lastSyncAt).toLocaleString('ja-JP'):'未同期';
@@ -26,11 +27,18 @@ root.TAXIAPP_SYNC_UI=function(d){
  async function run(manual=false){
   if(viewEnabled())return viewNow(manual);
   if(!enabled()){
-   if(manual)d.toast('Google接続情報と双方向同期の設定を確認してください',true);
+   writerFeedback='同期停止：Google接続情報または双方向同期設定を確認してください';
+   d.setStatus(writerFeedback);if(!d.isSettings?.())d.render?.();
+   if(manual)d.toast(writerFeedback,true);
    return false;
   }
+  if(status().busy)return false;
+  writerFeedback='Googleから照合中…';
+  d.setStatus(writerFeedback);if(!d.isSettings?.())d.render?.();
   const before=status().lastSyncAt;
   const ok=await engine.run();
+  writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
+   '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
   if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
   d.setStatus(message());
   // Do not destroy expanded Settings panels or current input focus.
