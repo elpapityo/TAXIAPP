@@ -1989,7 +1989,7 @@ function opsBreakSeconds(shift,now=new Date()){
  return (shift?.breakSessions||[]).reduce((sum,x)=>sum+breakSeconds(x,now),0)
   +(shift?.breakActive?breakSeconds(shift.breakActive,now):0);
 }
-function opsBreakText(shift,now=new Date()){return breakClockText(Math.floor(opsBreakSeconds(shift,now)/60));}
+function opsBreakText(shift,now=new Date()){return breakClockText(totalBreakMinutes(shift,now));} // Match existing break-management total (per-session whole minutes).
 function opsRow(label,value){return '<div class="statline"><span>'+label+'</span><b>'+value+'</b></div>';}
 function opsCard(title,body){return '<section class="card operations-section"><h2 class="h2">'+title+'</h2>'+body+'</section>';}
 function opsBreakPanel(shift,now=new Date()){
