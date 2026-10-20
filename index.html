@@ -1285,6 +1285,7 @@ window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
 let accountScope={kind:'pending',uid:''};
+let accountScopeGeneration=0;
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
@@ -1564,6 +1565,7 @@ function idbGet(db,key=KEY){return new Promise((resolve,reject)=>{const tx=db.tr
 function idbPut(db,state,key=KEY){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(state,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}
 async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('DB起動の待機時間超過')),2500))]);const m=await idbGet(db);storageStatus='IndexedDB';if(m&&m.version===1&&Array.isArray(m.shifts))model=m;}catch(e){console.warn('IndexedDB unavailable',e);db=null;try{const m=JSON.parse(localStorage.getItem('taxiapp-v1'));storageStatus='localStorage（代替保存）';if(m?.version===1&&Array.isArray(m.shifts))model=m;}catch{storageStatus='保存できない環境';}}}
 async function switchAccountScope(scope){
+ const generation=++accountScopeGeneration;
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
@@ -1580,6 +1582,7 @@ async function switchAccountScope(scope){
   try{stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');}
   catch(e){throw Error('アカウント専用データを安全に読み込めません：'+String(e?.message||e));}
  }
+ if(generation!==accountScopeGeneration)return;
  model=stored?.version===1&&Array.isArray(stored.shifts)?stored:emptyAccountModel();
  if(memberDiary()){
   model.prefs??={};
