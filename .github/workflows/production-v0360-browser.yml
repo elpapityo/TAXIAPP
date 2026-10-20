@@ -52,3 +52,7 @@ jobs:
         run: python3 tests/production_v0360_browser_e2e.py
       - name: Verify break layout and clock colors for day/night and device modes
         run: python3 tests/break_layout_browser_e2e.py
+      - name: Render operations fixture from production HTML and sample shift
+        run: TAXIAPP_OPS_FIXTURE=1 node tests/operations-seven-panels.test.js
+      - name: Verify seven-panel operations dashboard and ongoing rest time
+        run: python3 tests/operations_dashboard_browser_e2e.py
