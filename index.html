@@ -1360,7 +1360,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -1626,10 +1626,15 @@ function renderMemberRecoveryPanel(){
  return '<section class="card" role="alert" style="margin:10px 0;border:2px solid #aa650d">'+
   '<h2 class="h2">未同期の日報を保護しています</h2>'+
   '<p>クラウドにない乗務：'+p.missingIds.length+'件／同じIDで内容が異なる乗務：'+p.conflictCount+'件。自動上書きは停止中です。</p>'+
-  '<p class="helper">最初に端末のJSONバックアップを保存してください。クラウドへ追加できるのは、同じIDが存在しない乗務だけです。内容が異なる同一IDの乗務は手動照合が必要です。</p>'+
+  '<p class="helper">最初に端末のJSONバックアップを保存してください。同一IDで内容が異なる場合は、どちらを採用するか個別に選択し、双方の原本を保護してから反映します。選択しなければ変更しません。</p>'+
   '<div class="actions"><button class="btn" type="button" data-action="downloadLocalRecovery">⇩ 端末の日報をJSON保存</button>'+
   (p.conflictCount?'':'<button class="btn primary" type="button" data-action="uploadLocalRecovery" '+(memberRecoveryBusy?'disabled':'')+'>＋ 未登録の乗務を本人のクラウドへ追加</button>')+
-  '</div></section>';
+  '</div>'+
+  (p.conflictIds||[]).map(id=>'<div class="card" style="margin-top:8px">'+
+   '<strong>競合ID：'+safeText(id)+'</strong><p class="helper">採用前に両版の件数・売上・差分を確認します。</p>'+
+   '<div class="actions"><button class="btn" type="button" data-action="takeLocalConflict" data-id="'+safeText(id)+'" '+(memberRecoveryBusy?'disabled':'')+'>端末版を採用（クラウド更新）</button>'+
+   '<button class="btn" type="button" data-action="takeCloudConflict" data-id="'+safeText(id)+'" '+(memberRecoveryBusy?'disabled':'')+'>クラウド版を採用（端末更新）</button></div></div>').join('')+
+  '</section>';
 }
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
@@ -2641,6 +2646,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
      const missing=unconfirmed.filter(local=>!remoteById.has(local.id));
      pendingMemberRecovery={uid:accountScope.uid,epoch,
       snapshot:JSON.stringify(previous.shifts),missingIds:missing.map(x=>x.id),
+      conflictIds:unconfirmed.filter(local=>remoteById.has(local.id)).map(x=>x.id),
       conflictCount:unconfirmed.length-missing.length};
      render();
      throw Error('未同期の乗務が'+missing.length+'件、同一IDで内容が異なる乗務が'+(unconfirmed.length-missing.length)+'件あります。下の保護メニューで確認してください。');
@@ -3326,6 +3332,9 @@ function handleAction(action,id){
    return;
   }
   if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
+  if(action==='takeLocalConflict'||action==='takeCloudConflict'){
+   void resolveMemberConflict(id,action==='takeLocalConflict');return;
+  }
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
    return;
