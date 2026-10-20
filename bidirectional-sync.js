@@ -57,7 +57,7 @@ function create(deps){
   };
   busy=true;lastError='';
   try{
-   const listing=await scopedRequest('syncList',{});
+   const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
