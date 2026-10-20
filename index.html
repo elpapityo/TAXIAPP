@@ -3947,6 +3947,7 @@ appEl.addEventListener('click',event=>{
   input.value=next;input.dispatchEvent(new Event('input',{bubbles:true}));
   input.dispatchEvent(new Event('change',{bubbles:true}));return;
  }
+ const archive=event.target.closest('[data-sync-archive]');if(archive){if(archive.dataset.syncArchive==='list')syncUI.loadArchives(true);else syncUI.archiveAction(archive.dataset.syncArchive,archive.dataset.id);return;}
  const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;rideSettingsJumpRequested=tabButton.hasAttribute('data-open-ride-fields');tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
