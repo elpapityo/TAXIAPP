@@ -211,7 +211,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     baseline=readBase();
     localSignature=api.signature(currentPrefs());
     status('ログイン済み：操作端末を確認しています');
-    await deviceSession.begin(next,{viewer:!explicitWriterLogin});
+    await deviceSession.begin(next,{viewer:false,claimOnLogin:explicitWriterLogin});
     viewerLogin=false;explicitWriterLogin=false;
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
