@@ -59,7 +59,7 @@ if(process.env.TAXIAPP_OPS_FIXTURE==='1'){
  // A synthetic shift is used; no production user record is loaded or overwritten.
  const htmlFixture='<!doctype html><html lang="ja" data-ui-theme="day"><head><meta charset="utf-8">'
   +'<meta name="viewport" content="width=device-width,initial-scale=1">'
-  +'<title>TAXIAPP v0.3.102 operations test</title><style>'+styles+'</style></head>'
+  +'<title>TAXIAPP v0.3.103 operations test</title><style>'+styles+'</style></head>'
   +'<body><div id="ops-e2e-host" class="layout">'+first+'</div></body></html>';
  fs.writeFileSync('tests/operations_dashboard_fixture.html',htmlFixture);
 }
