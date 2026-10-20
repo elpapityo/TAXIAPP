@@ -908,6 +908,7 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 <script src="./device-session.js?v=20261017-13"></script>
 <script src="./account-auto-sync.js?v=20261020-1"></script>
 <script src="./account-diary-store.js?v=20261020-1"></script>
+<script src="./admin-firestore-cutover.js?v=20261021-1"></script>
 <script>
 (async function () {
   'use strict';
@@ -1304,6 +1305,8 @@ let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
 let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
+// Preview-only selection. Never persists or sends duty originals.
+let adminCutoverSelectionUid="",adminCutoverSelected=new Set();
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
@@ -1584,6 +1587,8 @@ function idbPut(db,state,key=KEY){return new Promise((resolve,reject)=>{const tx
 async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('DB起動の待機時間超過')),2500))]);const m=await idbGet(db);storageStatus='IndexedDB';if(m&&m.version===1&&Array.isArray(m.shifts))model=m;}catch(e){console.warn('IndexedDB unavailable',e);db=null;try{const m=JSON.parse(localStorage.getItem('taxiapp-v1'));storageStatus='localStorage（代替保存）';if(m?.version===1&&Array.isArray(m.shifts))model=m;}catch{storageStatus='保存できない環境';}}}
 async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
+ adminCutoverSelectionUid='';
+ adminCutoverSelected=new Set();
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
@@ -2749,7 +2754,7 @@ function renderDataManagement(){
    <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">この乗務を削除</button>
   </article>`;
  }).join('');
- return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
+ return `${renderAdminCutoverSelectionPanel()}<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
    <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
    <p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
@@ -2759,6 +2764,95 @@ function renderDataManagement(){
   </section>`;
 }
 
+// Preflight never calls accountDiary.request, googlePostRequest, save or sync.
+// The cloud-side comparison is a separate future step.
+function adminCutoverLocalPreview(){
+ if(!legacyDiary()||!accountScope.uid||adminCutoverSelectionUid!==accountScope.uid)
+  return null;
+ return window.TAXIAPP_ADMIN_CUTOVER.previewLocal({
+  uid:accountScope.uid,legacyShifts:model.shifts,
+  selectedIds:[...adminCutoverSelected]
+ });
+}
+function adminCutoverSummaryHtml(){
+ try{
+  const result=adminCutoverLocalPreview();
+  if(!result)return '<p class="helper">管理者本人としてログイン後に利用できます。</p>';
+  const selected=result.entries.length;
+  const warnings=result.entries.filter(x=>x.timeIssue||x.overlapsSelected.length||x.overlapsExcluded.length);
+  const rows=result.entries.map(x=>{
+   const parts=[];
+   if(x.timeIssue)parts.push(safeText(x.timeIssue));
+   if(x.overlapsSelected.length)parts.push('選択した別日報と乗務時間が重複：'+x.overlapsSelected.length+'件');
+   if(x.overlapsExcluded.length)parts.push('選択しなかった別日報と乗務時間が重複：'+x.overlapsExcluded.length+'件');
+   return '<li>'+safeText(x.date)+' 出庫 '+safeText(x.startedAt||'不明')+
+     '／'+x.recordCount+'営業'+(parts.length?' <strong class="warn">'+parts.join('／')+'</strong>':'')+'</li>';
+  }).join('');
+  return '<p role="status">選択：<strong>'+selected+'件</strong>／端末内：'+result.sourceCount+
+   '件／対象外：'+result.excludedCount+'件／要確認：'+warnings.length+'件</p>'+
+   (selected?'<ul>'+rows+'</ul>':'<p class="helper">移行する日報をチェックしてください。初期状態では1件も選択していません。</p>')+
+   '<p class="warn">Firebase側とGoogleシート側の原本はまだ照合していません。'+
+   'ここで選択しても移行・削除・同期は実行されません。</p>';
+ }catch(error){return '<p role="alert" class="warn">候補の確認を停止しました：'+
+  safeText(String(error?.message||error))+'</p>';}
+}
+function renderAdminCutoverSelectionPanel(){
+ if(!legacyDiary()||!accountScope.uid)return '';
+ const selected=adminCutoverSelectionUid===accountScope.uid?adminCutoverSelected:new Set();
+ const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ const rows=shifts.map(shift=>{
+  const total=totals(shift.records||[],shift.settings||{},shift.date||'');
+  return '<label class="duty-management-item" style="display:flex;align-items:flex-start;gap:12px">'+
+   '<input type="checkbox" data-admin-cutover-choice="'+safeText(shift.id)+'" '+
+   (selected.has(shift.id)?'checked ':'')+
+   'aria-label="移行候補に選ぶ '+safeText(shift.date||'日付不明')+'" style="width:24px;height:24px;flex-shrink:0">'+
+   '<span class="duty-management-info"><strong>'+safeText(shift.date||'日付不明')+'</strong>'+
+   '<span>出庫 '+safeText(shortTime(shift.startedAt)||'不明')+
+   ' ～ 入庫 '+safeText(shift.endedAt?shortTime(shift.endedAt):'未入庫')+'</span>'+
+   '<span>営業 '+(shift.records||[]).length+'件／メーター売上 '+money(total.meter)+'</span>'+
+   '<span class="helper">乗務ID：'+safeText(shift.id)+'</span></span></label>';
+ }).join('');
+ return '<section class="card" data-admin-cutover-panel>'+
+  '<h2 class="h2">Firebase移行前の日報選択（確認用）</h2>'+
+  '<p class="helper">まず端末内で確認できる日報だけを一覧にします。'+
+  '必要な日報を1件ずつ選んでください。Googleシート内の別の原本やFirebaseの記録は、まだ取得していません。</p>'+
+  (rows||'<p class="empty-state">この端末内に日報がありません。Googleシートの保存原本も未照合です。</p>')+
+  '<div data-admin-cutover-summary>'+adminCutoverSummaryHtml()+'</div>'+
+  '<div class="actions"><button class="btn" type="button" data-action="adminCutoverClear">選択を解除</button>'+
+  '<button class="btn primary" type="button" data-action="adminCutoverExport" '+
+  (!selected.size?'disabled':'')+'>⇩ 選択結果をJSONで保存（データ移行なし）</button></div>'+
+  '<p class="footnote">このJSONは「移行候補の選択メモ」であり日報のバックアップではありません。'+
+  '元の日報、売上、Googleシート、Firebaseには一切変更しません。</p></section>';
+}
+function updateAdminCutoverPreview(){
+ const holder=appEl.querySelector('[data-admin-cutover-summary]');
+ if(holder)holder.innerHTML=adminCutoverSummaryHtml();
+ const button=appEl.querySelector('[data-action="adminCutoverExport"]');
+ if(button)button.disabled=adminCutoverSelected.size===0;
+}
+function handleAdminCutoverChoice(id,selected){
+ if(!legacyDiary()||!accountScope.uid||!canEditNow())return;
+ if(!model.shifts.some(s=>s.id===id))return;
+ if(adminCutoverSelectionUid!==accountScope.uid){
+  adminCutoverSelectionUid=accountScope.uid;adminCutoverSelected=new Set();
+ }
+ if(selected)adminCutoverSelected.add(id);
+ else adminCutoverSelected.delete(id);
+ updateAdminCutoverPreview();
+}
+function exportAdminCutoverSelection(){
+ if(!legacyDiary()||!accountScope.uid||!canEditNow()||
+    adminCutoverSelectionUid!==accountScope.uid||!adminCutoverSelected.size)return;
+ try{
+  const preview=adminCutoverLocalPreview();
+  if(!preview||!preview.selectedCount)throw Error('移行候補を選択してください');
+  const memo={...preview,exportedAt:new Date().toISOString(),
+   note:'移行候補の選択メモです。日報のバックアップや移行承認ではありません。'};
+  download(JSON.stringify(memo,null,2),'TAXIAPP_Firebase移行候補_'+dateStamp(new Date())+'.json',
+   'application/json;charset=utf-8');
+  toast('移行候補の選択メモをダウンロードしました。実データの移行や削除はしていません。');
+ }catch(error){toast('移行候補の確認に失敗：'+String(error?.message||error),true);}
+}
 function renderDeviceManagementPanel(){
  return '<section class="card"><h2 class="h2">PCから別端末への一括移行</h2>'+
   '<p class="helper">営業データ、乗務設定、待機場所、Googleスプレッドシートの接続URLと接続キーを暗号化してまとめて移します。Googleログインや位置情報の許可は移行されません。</p>'+
@@ -3295,6 +3389,15 @@ function handleAction(action,id){
   saveLater();render();toast('現在のGPSトリップ '+km+'km を入力しました。');
   return;
  }
+ if(action==='adminCutoverClear'){
+   if(legacyDiary()&&canEditNow()){
+    adminCutoverSelectionUid=accountScope.uid;adminCutoverSelected=new Set();
+    appEl.querySelectorAll('[data-admin-cutover-choice]').forEach(x=>x.checked=false);
+    updateAdminCutoverPreview();
+   }
+   return;
+ }
+ if(action==='adminCutoverExport'){exportAdminCutoverSelection();return;}
  if(action==='exportDevice'){exportDevice();return;}
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
@@ -4080,7 +4183,11 @@ appEl.addEventListener('click',event=>{
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
-appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
+appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{
+ if(event.target.matches('[data-admin-cutover-choice]')){
+  handleAdminCutoverChoice(event.target.dataset.adminCutoverChoice,event.target.checked);return;
+ }
+ if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
  if(event.target.matches('[data-ride-field]')){const key=event.target.dataset.rideField;if(!RIDE_FIELD_PREFS.some(([name])=>name===key))return;model.prefs.rideFieldVisibility??={};model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-mode]')){model.prefs.cancelMeterMode=event.target.value==='reset'?'reset':'retain';saveLater();render();return;}
