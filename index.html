@@ -2610,16 +2610,39 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   }
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
+   // An ordinary driver's unpublished local records are not authoritative
+   // cloud data. Never discard or silently adopt them during first login.
+   if(memberDiary()){
+    const remoteById=new Map(shifts.map(shift=>[shift.id,shift]));
+    const unconfirmed=(previous.shifts||[]).filter(local=>
+     !remoteById.has(local.id)||
+     JSON.stringify(local)!==JSON.stringify(remoteById.get(local.id)));
+    if(unconfirmed.length)
+     throw Error('端末にクラウドと未照合の乗務が'+unconfirmed.length+'件あります。記録を保護するため受信を停止しました。');
+   }
+   const storageKey=scopedStorageKey();
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
    // multiple unfinished duties, which can display a stale zero-sale duty.
    const open=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
    next.activeId=open.length===1?open[0].id:null;
-   // A last-resort local recovery copy. It is never uploaded or counted.
-   try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy'),JSON.stringify(previous));}catch{}
-   if(db)await idbPut(db,next,scopedStorageKey());
-   else localStorage.setItem(scopedStorageKey(),JSON.stringify(next));
-   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+   // Never replace local records unless a separate recovery copy is durable.
+   // Preserve an existing recovery copy instead of overwriting it.
+   const recoveryBase='taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy');
+   const original=JSON.stringify(previous);
+   try{
+    const oldCopy=localStorage.getItem(recoveryBase);
+    const recoveryKey=oldCopy===null||oldCopy===original?recoveryBase:
+     recoveryBase+'-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+    localStorage.setItem(recoveryKey,original);
+    if(localStorage.getItem(recoveryKey)!==original)throw Error('保存内容が一致しません');
+   }catch(error){
+    throw Error('復旧コピーを保存できないため、クラウド受信による上書きを停止しました：'+String(error?.message||error));
+   }
+   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
    if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
    model=next;
@@ -2661,7 +2684,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
   try{
    await save(true);
-   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
    const savedShift=stored?.shifts?.find(x=>x.id===id);
    const expectedShift=model.shifts.find(x=>x.id===id);
    if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
