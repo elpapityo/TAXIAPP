@@ -15,7 +15,7 @@ try:
     # Node created this fixture by invoking the real renderOperations()
     # using temporary sample records and the production CSS from index.html.
     browser.get('http://127.0.0.1:8765/tests/operations_dashboard_fixture.html')
-    WebDriverWait(browser,20).until(lambda d: 'TAXIAPP v0.3.102' in d.title)
+    WebDriverWait(browser,20).until(lambda d: 'TAXIAPP v0.3.103' in d.title)
     init=browser.execute_script("""
       const host=document.getElementById('ops-e2e-host');
       return {

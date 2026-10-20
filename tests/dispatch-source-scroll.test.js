@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const source=fs.readFileSync('index.html','utf8');
+assert.match(source,/let focusDispatchSourceAfterRender=false;/);
+assert.match(source,/data-dispatch-source/);
+assert.match(source,/shift\.draft=makeDispatch\(shift,new Date\(\),'G'\);save\(\);focusDispatchSourceAfterRender=true;render\(\);/);
+assert.match(source,/if\(tab==='drive'&&typeof focusDispatchSourceAfterRender!=='undefined'&&focusDispatchSourceAfterRender\)/);
+assert.match(source,/appEl\.querySelector\('#main-content \[data-dispatch-source\]'\)/);
+assert.match(source,/window\.scrollTo\(0,Math\.max\(0,group\.getBoundingClientRect\(\)\.top\+window\.scrollY-offset\)\);/);
+assert.match(source,/const offset=Math\.min\(280,Math\.round\(window\.innerHeight\*0\.34\)\);/);
+console.log('PASS dispatch start requests visible dispatch-source controls without modifying saved data');

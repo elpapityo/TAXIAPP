@@ -12,7 +12,7 @@ opts.add_argument('--user-data-dir='+tempfile.mkdtemp(prefix='taxiapp-break-ui-'
 browser=webdriver.Chrome(options=opts)
 try:
     browser.get('http://127.0.0.1:8765/')
-    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.102' in d.title)
+    WebDriverWait(browser,30).until(lambda d: 'TAXIAPP v0.3.103' in d.title)
     browser.execute_script("""
       const host=document.createElement('div');
       host.id='test-break-layout-host';
