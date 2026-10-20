@@ -56,3 +56,5 @@ jobs:
         run: TAXIAPP_OPS_FIXTURE=1 node tests/operations-seven-panels.test.js
       - name: Verify seven-panel operations dashboard and ongoing rest time
         run: python3 tests/operations_dashboard_browser_e2e.py
+      - name: Verify configurable diary fields and shared distance settings
+        run: python3 tests/diary_field_settings_browser_e2e.py
