@@ -28,7 +28,7 @@ const context={
  paymentBreakdown:()=>({items:[{type:'現'}]}),
  renderPaymentSplit:()=>'<div class="payment-split">金種照合</div>',
  renderAllFields:()=>'<div data-compat-raw>補足項目</div>',
- userFields:(keys,raw)=>'<div>'+keys.map(k=>'<input data-col="'+k+'" value="'+escape(raw[k]||'')+'">').join('')+'</div>',
+ userFields:(keys,raw)=>'<div>'+keys.filter(k=>context.distanceEnabled(k)).map(k=>'<input data-col="'+k+'" value="'+escape(raw[k]||'')+'">').join('')+'</div>',
  locationField:(key)=>'<input data-col="'+key+'">',
  passengerChoice:(key)=>'<input data-col="'+key+'">',
  selector:(key)=>'<select data-col="'+key+'"></select>',
