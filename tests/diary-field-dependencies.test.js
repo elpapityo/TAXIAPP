@@ -52,7 +52,7 @@ for(const must of ['received','passengers','dropAddress','highway','discount','c
 function call(name,shift,d){context.shift=shift;context.d=d;return vm.runInContext(name+'(shift,d)',context)}
 const shift={settings:{},date:'2026-10-20'};
 const raw={C:'08:00',E:'乗',G:'08:12',AL:'駅',K:'1300',M:'08:21',N:'現',
- F:'100.1',L:'102.3',AM:'',I:'1',J:'0',P:'',O:'',AR:'',AO:''};
+ F:'100.1',L:'103.3',AM:'',I:'1',J:'0',P:'',O:'',AR:'',AO:''};
 const draft={raw,meta:{highwaySections:[]},kind:'ride',status:'draft'};
 const before=JSON.stringify(draft);
 let simulations=0;
