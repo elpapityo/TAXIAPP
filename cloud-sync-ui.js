@@ -150,10 +150,19 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(kind==='open'){
     archiveDetail=await d.request('conflictGet',{archiveId:id});
     if(!archiveDetail?.shift)throw Error('競合保管を取得できません');
+   }else if(kind==='compare'){
+    const base=String(id).replace(/-(?:local|remote)$/,'');
+    const local=await d.request('conflictGet',{archiveId:base+'-local'});
+    const remote=await d.request('conflictGet',{archiveId:base+'-remote'});
+    if(!local?.shift||!remote?.shift||local.shift.id!==remote.shift.id)
+     throw Error('比較対象の両版が揃っていません');
+    archiveDetail={compare:[local,remote]};
    }else if(kind==='trash'||kind==='restore'){
     if(!root.confirm(kind==='trash'?'このコピーをゴミ箱へ移しますか？元の乗務は変更しません。':'コピーをゴミ箱から復元しますか？'))return;
     await d.request(kind==='trash'?'conflictTrash':'conflictRestore',{archiveId:id});
     await loadArchives(false);archiveDetail=null;
+   }else if(kind==='keep'){
+    d.toast('このコピーをGoogleの競合保管庫に保持します。正式な売上には加算されません。');
    }else if(kind==='close'){archiveDetail=null;}
    refreshPanel();
   }catch(error){archiveError=String(error?.message||error);d.toast(archiveError,true);refreshPanel();}
@@ -162,20 +171,28 @@ root.TAXIAPP_SYNC_UI=function(d){
   const escape=d.escape;
   const rows=archiveRows.map(a=>'<div class="card"><strong>'+escape(a.shiftId)+' / '+(a.kind==='local'?'PC版':'Google版')+'</strong>'+
    '<p class="helper">保管日時 '+escape(a.savedAt)+' / '+(a.trashed?'ゴミ箱':'隔離保管')+'</p>'+
-   '<button class="btn" type="button" data-sync-archive="open" data-id="'+escape(a.archiveId)+'">内容を確認</button> '+
-   '<button class="btn" type="button" data-sync-archive="'+(a.trashed?'restore':'trash')+'" data-id="'+escape(a.archiveId)+'">'+(a.trashed?'復元':'ゴミ箱へ移動')+'</button></div>').join('');
-  const a=archiveDetail,shift=a?.shift;
-  const raw=shift?'<section class="card"><strong>保管内容：'+escape(a.shiftId)+' '+(a.kind==='local'?'PC版':'Google版')+'</strong>'+
-   '<p class="helper">営業記録 '+(shift.records?.length||0)+'件 / 乗務日 '+escape(shift.date||'')+' / 出庫 '+escape(shift.startedAt||'')+'</p>'+
-   '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto">'+escape(JSON.stringify(shift,null,2))+'</pre>'+
-   '<button class="btn" type="button" data-sync-archive="close">閉じる</button></section>':'';
+   '<div class="actions"><button class="btn" type="button" data-sync-archive="compare" data-id="'+escape(a.archiveId)+'">両版を比較</button>'+
+   '<button class="btn" type="button" data-sync-archive="open" data-id="'+escape(a.archiveId)+'">原本を確認</button>'+
+   (!a.trashed?'<button class="btn" type="button" data-sync-archive="keep" data-id="'+escape(a.archiveId)+'">この版を保持</button>':'')+
+   '<button class="btn" type="button" data-sync-archive="'+(a.trashed?'restore':'trash')+'" data-id="'+escape(a.archiveId)+'">'+(a.trashed?'復元':'ゴミ箱へ移動')+'</button></div></div>').join('');
+  const show=a=>{
+   const sh=a.shift;
+   return '<section class="card" style="min-width:0"><strong>'+(a.kind==='local'?'PC版':'Google版')+'</strong>'+
+    '<p class="helper">乗務日 '+escape(sh.date||'')+' / 出庫 '+escape(sh.startedAt||'')+
+    ' / 営業記録 '+(sh.records?.length||0)+'件</p>'+
+    '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto">'+escape(JSON.stringify(sh,null,2))+'</pre></section>';
+  };
+  const detail=archiveDetail;
+  const raw=detail?.compare?'<div class="card"><h3 class="subsection">PC版とGoogle版を比較（どちらも正式売上には加算しません）</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px">'+detail.compare.map(show).join('')+
+    '</div><button class="btn" data-sync-archive="close">閉じる</button></div>':
+    detail?.shift?show(detail)+'<button class="btn" data-sync-archive="close">閉じる</button>':'';
   return '<h3 class="subsection">Google競合保管庫（売上に加算しません）</h3>'+
    '<p class="helper">元の乗務は変更せずPC版・Google版を別々に保管します。ゴミ箱へ移したコピーも復元できます。</p>'+
    '<div class="actions"><button type="button" class="btn" data-sync-archive="list">保管一覧を取得</button></div>'+
    (archiveError?'<p class="warn">'+escape(archiveError)+'</p>':'')+
    raw+(rows||'<p class="helper">一覧を取得してください。</p>');
  }
-
  function conflictMarkup(s){
   const conflicts=s.conflicts.map(c=>'<div class="card"><strong>競合乗務 '+d.escape(c.id)+'</strong>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
