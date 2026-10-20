@@ -536,17 +536,18 @@ function applySelectedPrintShift() {
  * Deletion means reversible trash; originals are never modified.
  */
 var TAXIAPP_CONFLICT_VAULT='TAXIAPP_競合保管庫';
+var TAXIAPP_VAULT_CHUNK=35000;
 function conflictVaultSheet_(){
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var sheet=ss.getSheetByName(TAXIAPP_CONFLICT_VAULT);
  if(!sheet){sheet=ss.insertSheet(TAXIAPP_CONFLICT_VAULT);
-  sheet.getRange(1,1,1,7).setValues([['保管ID','元乗務ID','版','保管日時','状態','JSON原本','参照版']]);
+  sheet.getRange(1,1,1,9).setValues([['保管ID','元乗務ID','版','保管日時','状態','分割JSON','参照版','分割番号','分割総数']]);
   sheet.hideSheet();
  }
  return sheet;
 }
 function conflictVaultRows_(sheet){
- return sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,7).getValues():[];
+ return sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,9).getValues():[];
 }
 function conflictVaultSave_(raw){
  if(!raw||raw.length>1200000)throw Error('競合データのサイズが不正です');
@@ -561,33 +562,51 @@ function conflictVaultSave_(raw){
  var digest=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,raw);
  var hash=digest.map(function(b){return ('0'+((b+256)%256).toString(16)).slice(-2);}).join('').slice(0,20);
  var base=id+'-'+hash,now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
- var saved=[];
+ var saved=[],newRows=[];
  ['local','remote'].forEach(function(kind){
   var archiveId=base+'-'+kind;
   var existing=rows.some(function(r){return String(r[0])===archiveId;});
-  if(!existing)sheet.appendRow([archiveId,id,kind,now,'保管中',JSON.stringify(data[kind]),String(data.remoteRevision||'')]);
+  if(!existing){
+   var body=JSON.stringify(data[kind]),total=Math.ceil(body.length/TAXIAPP_VAULT_CHUNK);
+   for(var part=0;part<total;part++)
+    newRows.push([archiveId,id,kind,now,'保管中',body.slice(part*TAXIAPP_VAULT_CHUNK,(part+1)*TAXIAPP_VAULT_CHUNK),String(data.remoteRevision||''),part+1,total]);
+  }
   saved.push(archiveId);
  });
- return {archiveIds:saved,existing:rows.some(function(r){return String(r[0])===saved[0];})};
+ if(newRows.length){
+  var first=sheet.getLastRow()+1;
+  if(sheet.getMaxRows()<first+newRows.length-1)sheet.insertRowsAfter(sheet.getMaxRows(),first+newRows.length-1-sheet.getMaxRows());
+  sheet.getRange(first,1,newRows.length,9).setValues(newRows);
+ }
+ return {archiveIds:saved};
 }
 function conflictVaultList_(){
- var sheet=conflictVaultSheet_();
- return {archives:conflictVaultRows_(sheet).map(function(row){
+ var seen={},sheet=conflictVaultSheet_();
+ return {archives:conflictVaultRows_(sheet).filter(function(row){
+  var id=String(row[0]);if(seen[id])return false;seen[id]=true;return true;
+ }).map(function(row){
   return {archiveId:String(row[0]),shiftId:String(row[1]),kind:String(row[2]),
    savedAt:String(row[3]),trashed:String(row[4])==='ゴミ箱',revision:String(row[6]||'')};
  })};
 }
 function conflictVaultGet_(archiveId){
  var sheet=conflictVaultSheet_();
- var row=conflictVaultRows_(sheet).find(function(r){return String(r[0])===archiveId;});
- if(!row)throw Error('競合保管データがありません');
- return {archiveId:archiveId,shiftId:String(row[1]),kind:String(row[2]),
-  trashed:String(row[4])==='ゴミ箱',shift:JSON.parse(String(row[5]))};
+ var rows=conflictVaultRows_(sheet).filter(function(r){return String(r[0])===archiveId;});
+ if(!rows.length)throw Error('競合保管データがありません');
+ rows.sort(function(a,b){return Number(a[7])-Number(b[7]);});
+ var total=Number(rows[0][8]);
+ if(!Number.isInteger(total)||rows.length!==total||
+    rows.some(function(row,i){return Number(row[7])!==i+1||Number(row[8])!==total;}))
+  throw Error('競合保管データが一部欠けています。元データは変更していません');
+ return {archiveId:archiveId,shiftId:String(rows[0][1]),kind:String(rows[0][2]),
+  trashed:String(rows[0][4])==='ゴミ箱',
+  shift:JSON.parse(rows.map(function(row){return String(row[5]);}).join(''))};
 }
 function conflictVaultSetTrash_(archiveId,trash){
- var sheet=conflictVaultSheet_(),rows=conflictVaultRows_(sheet);
- var i=rows.findIndex(function(r){return String(r[0])===archiveId;});
- if(i<0)throw Error('対象の競合保管データがありません');
- sheet.getRange(i+2,5).setValue(trash?'ゴミ箱':'保管中');
+ var sheet=conflictVaultSheet_(),rows=conflictVaultRows_(sheet),found=false;
+ rows.forEach(function(row,i){
+  if(String(row[0])===archiveId){sheet.getRange(i+2,5).setValue(trash?'ゴミ箱':'保管中');found=true;}
+ });
+ if(!found)throw Error('対象の競合保管データがありません');
  return {archiveId:archiveId,trashed:trash};
 }
