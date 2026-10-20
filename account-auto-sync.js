@@ -183,7 +183,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
    clearTimeout(timer);
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
    deferredWhileEditing=false;localSignature=null;
-   if(!next){deviceSession?.clear();await deps.onUserScope?.(null);deps.onDeviceMode?.('viewer','','ログインすると操作できます');}
+   deviceSession?.clear();
+   // Clear the previous account even if the next login is denied or inactive.
+   await deps.onUserScope?.(null);
+   if(!next)deps.onDeviceMode?.('viewer','','ログインすると操作できます');
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
    status('Googleアカウントを確認しています…');
