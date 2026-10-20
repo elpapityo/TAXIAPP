@@ -1567,6 +1567,8 @@ async function switchAccountScope(scope){
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
+ viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
+ syncUI.cancelViewer();
  accountDiary.bind(scope?{uid:scope.uid}:null,scope?.firebase||{});
  accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
@@ -1585,7 +1587,7 @@ async function switchAccountScope(scope){
 }
 async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
-function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
+function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
  const state=deviceMode==='pending'?'△ 操作権を確認中（入力停止）':
@@ -2496,6 +2498,7 @@ function googlePostRequest(action,fields={}){
 function googlePostShift(packet){return googlePostRequest('sync',{payload:JSON.stringify(packet)}).then(x=>x.message);}
 async function googleSendShift(shift,manual=false){
  if(!canEditNow())return false;
+ if(memberDiary())return syncUI.run(manual);
  if(sheetTargetPrefs().syncMode==='on'){return syncUI.run(manual);}
  if(!shift){if(manual)toast('送信する乗務データがありません',true);return false;}
  if(!googleIsConfigured()){if(manual)toast('先にWebアプリURLと接続キーを設定してください',true);return false;}
@@ -2530,6 +2533,7 @@ function scheduleGoogleSync(){
  },3000);
 }
 async function googleSendAllShifts(){
+ if(memberDiary())return syncUI.run(true);
  if(sheetTargetPrefs().syncMode==='on'){await syncUI.run(true);return;}
  if(!googleIsConfigured()){toast('Googleの接続設定を完了してください',true);return;}
  const shifts=[...(model.shifts||[])];
@@ -2580,7 +2584,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     throw Error('Googleの乗務データが不正です');
    ids.add(shift.id);
   }
-  if(shifts.length){
+  if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
@@ -2648,7 +2652,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
 });
 
 function renderSheetTargetSettings(){
- if(memberDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
