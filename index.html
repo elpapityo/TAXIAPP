@@ -1297,14 +1297,15 @@ function setDeviceMode(next,previous='',detail=''){
  if(prior!==next&&(next==='viewer'||prior==='viewer'))render();
  document.body.classList.toggle('taxi-viewer',!canEditNow());
  const status=document.getElementById('deviceSessionStatus');
- if(status)status.textContent=(next==='writer'?'操作可能':next==='viewer'?'閲覧専用':
+ if(status)status.textContent=(next==='writer'&&writerLoadGate?'操作権確認済み・Google読込待ち':next==='writer'?'操作可能':next==='viewer'?'閲覧専用':
   next==='pending'?'操作権を確認中':'操作停止')+(detail?'：'+detail:'');
  const takeOver=document.getElementById('accountTakeOver');
  if(takeOver)takeOver.hidden=next!=='viewer'||!!document.getElementById('accountSignOut')?.hidden||!accountSettingsAuto?.status().enabled;
  if(next!=='writer'){
   try{gpsTripUI?.clearWatch();}catch(e){console.warn('gps-watch-cleanup',e);}
- }else if(prior==='viewer'||prior==='pending'){
-  if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
+ }else if(next==='writer'&&prior!=='writer'){
+  // Every newly granted writer session must fetch cloud data before editing,
+  // including transitions from states other than viewer/pending.
   syncUI.bootstrapWriter();
  }
 }
@@ -1319,7 +1320,7 @@ function blockViewerEdit(event){
  event.preventDefault();event.stopImmediatePropagation();
  if(event.type==='click'&&Date.now()-deviceNoticeAt>3500){
   deviceNoticeAt=Date.now();
-  toast(deviceMode==='viewer'?'閲覧専用です。編集するには操作権の取得が必要です。':'操作権を確認できないため編集できません。',true);
+  toast(deviceMode==='viewer'?'閲覧専用です。編集するには操作権の取得が必要です。':deviceMode==='writer'?'Googleの読み込み完了まで操作できません。再試行で読み込みを行ってください。':'操作権を確認できないため編集できません。',true);
  }
 }
 for(const eventName of ['click','pointerdown','input','change','keydown','submit'])
