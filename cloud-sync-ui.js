@@ -65,12 +65,13 @@ root.TAXIAPP_SYNC_UI=function(d){
  async function bootstrapWriter(){
   if(writerBootstrapBusy||!d.writerBootstrapAllowed?.())return false;
   writerBootstrapBusy=true;
+  const accountEndpoint=d.endpoint();
   try{
    if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
    const shifts=await engine.readOnly();
    if(shifts===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
-   if(!d.writerBootstrapAllowed?.())return false;
+   if(!d.writerBootstrapAllowed?.()||d.endpoint()!==accountEndpoint)return false;
    if(!await d.onWriterSnapshot(shifts))return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
