@@ -175,7 +175,7 @@ root.TAXIAPP_DEVICE_SESSION={
     set('viewer','操作権の監視を開始できません：'+String(error.code||error.message||error));
    }
   }
-  async function begin(user,{viewer=false}={}){
+  async function begin(user,{viewer=false,claimOnLogin=true}={}){
    if(!user){clear();return;}
    if(currentUid===user.uid&&unsubscribe){
     if(viewer)viewOnly();
@@ -186,7 +186,7 @@ root.TAXIAPP_DEVICE_SESSION={
    const oldId=readStored();
    sessionId=oldId;
    viewerRequested=Boolean(viewer);
-   claimedOnce=Boolean(oldId);
+   claimedOnce=Boolean(oldId)||!claimOnLogin;
    set('pending','操作権を確認しています…');
    subscribe();
   }
