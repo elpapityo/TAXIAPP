@@ -118,7 +118,7 @@ try:
     # Separate Settings menus can be opened individually or together.
     browser.execute_script("document.querySelector('[data-tab=settings]').click()")
     topLevel=[
-      'data-business-field-settings','data-drive-status-settings','data-appearance-settings'
+      'data-business-field-settings','data-appearance-settings'
     ]
     WebDriverWait(browser,12).until(
         lambda d: d.execute_script(
@@ -130,13 +130,14 @@ try:
       const parent=panels[0];
       const childA=parent.querySelector('details[data-ride-field-settings]');
       const childB=parent.querySelector('details[data-cruising-summary-settings]');
-      const appearance=panels[2];
+      const childC=parent.querySelector('details[data-drive-status-settings]');
+      const appearance=panels[1];
       const appearanceKeys=['data-text-size-settings','data-button-size-settings',
         'data-help-settings','data-theme-settings','data-ui-preview-settings'];
       const appearanceChildren=appearanceKeys.map(k=>appearance.querySelector('details['+k+']'));
       const allPresent=appearanceChildren.every(x=>!!x);
       const initiallyClosed=panels.every(x=>!x.open)&&!!childA&&!childA.open&&
-        !!childB&&!childB.open&&allPresent&&appearanceChildren.every(x=>!x.open);
+        !!childB&&!childB.open&&!!childC&&!childC.open&&allPresent&&appearanceChildren.every(x=>!x.open);
       const noSeparateMenus=document.querySelectorAll(
         'details.settings-advanced[data-text-size-settings],'+
         'details.settings-advanced[data-button-size-settings],'+
@@ -144,11 +145,14 @@ try:
         'details.settings-advanced[data-theme-settings],'+
         'details.settings-advanced[data-ui-preview-settings],'+
         'details.settings-advanced[data-ride-field-settings],'+
-        'details.settings-advanced[data-cruising-summary-settings]').length===0;
+        'details.settings-advanced[data-cruising-summary-settings],'+
+        'details.settings-advanced[data-drive-status-settings]').length===0;
       parent.open=true;childA.open=true;
-      const independentlyOpen=parent.open&&childA.open&&!childB.open&&!panels[1].open;
+      const independentlyOpen=parent.open&&childA.open&&!childB.open&&!childC.open&&!panels[1].open;
       childB.open=true;childA.open=false;
-      const secondIndependent=parent.open&&!childA.open&&childB.open;
+      const secondIndependent=parent.open&&!childA.open&&childB.open&&!childC.open;
+      childC.open=true;childB.open=false;
+      const thirdIndependent=parent.open&&!childA.open&&!childB.open&&childC.open;
       appearance.open=true;appearanceChildren[0].open=true;
       const appearanceIndependent=appearance.open&&appearanceChildren[0].open&&
         appearanceChildren.slice(1).every(x=>!x.open);
@@ -156,7 +160,7 @@ try:
       const appearanceSecond=appearance.open&&!appearanceChildren[0].open&&appearanceChildren[1].open;
       const appearanceOptions=appearanceKeys.map((k,i)=>appearanceChildren[i].querySelectorAll(
         '[data-ui-key], [data-action=resetUi]')).map(nodes=>nodes.length);
-      return {initiallyClosed,noSeparateMenus,independentlyOpen,secondIndependent,
+      return {initiallyClosed,noSeparateMenus,independentlyOpen,secondIndependent,thirdIndependent,
         appearanceIndependent,appearanceSecond,appearanceOptions,allPresent,
         obsolete:document.querySelectorAll('[data-ui-key=cruisingButtonsLayout]').length,
         themeChoices:appearanceChildren[3].querySelectorAll('[data-ui-key=theme]').length,
@@ -167,13 +171,13 @@ try:
     assert state['initiallyClosed'],state
     assert state['noSeparateMenus'],state
     assert state['allPresent'],state
-    assert state['independentlyOpen'] and state['secondIndependent'],state
+    assert state['independentlyOpen'] and state['secondIndependent'] and state['thirdIndependent'],state
     assert state['appearanceIndependent'] and state['appearanceSecond'],state
     assert len(state['appearanceOptions'])==5 and all(x>0 for x in state['appearanceOptions']),state
     assert state['obsolete']==0,state
     assert state['themeChoices']==2,state
     assert state['rideChoices']>0 and state['cruisingChoices']>0,state
-    print('PASS Chrome: cruising fixed 2x2; 2 field choices and 5 appearance panels grouped/independent')
+    print('PASS Chrome: cruising fixed 2x2; 3 independent display menus and 5 appearance menus')
     # Registration screen has one parent with independently folding driver, vehicle,
     # cancellation and duty-plan settings. Fees only appear for a selected shift.
     driver_group=browser.execute_script("""
