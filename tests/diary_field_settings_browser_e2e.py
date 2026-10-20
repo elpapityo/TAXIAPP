@@ -14,7 +14,7 @@ browser=webdriver.Chrome(options=options)
 try:
     browser.get('http://127.0.0.1:8765/')
     wait=WebDriverWait(browser,30)
-    wait.until(lambda d: 'TAXIAPP v0.3.112' in d.title)
+    wait.until(lambda d: 'TAXIAPP v0.3.114' in d.title)
     wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'#app [data-open-ride-fields]')))
     shortcut=browser.execute_script("""
       const button=document.querySelector('[data-open-ride-fields]');
