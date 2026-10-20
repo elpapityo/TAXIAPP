@@ -42,7 +42,10 @@ try:
           if(!el)return false;
           el.checked=arguments[1];
           el.dispatchEvent(new Event('change',{bubbles:true}));
-          return true;
+          return {requested:arguments[0],checked:el.checked,
+            mirrored:document.querySelector('[data-distance-setting="'+arguments[0]+'"]')?.value,
+            mode:document.querySelector('.status-pill')?.textContent,
+            present:document.querySelectorAll('[data-distance-setting="'+arguments[0]+'"]').length};
         """,key,checked)
     def set_old(key,value):
         return browser.execute_script("""
@@ -61,7 +64,9 @@ try:
             childOpen:document.querySelector('[data-ride-field-settings]')?.open};
         """,key)
     for field in ('highwayDistance','pickupDropDistance'):
-        assert set_check(field,False),field
+        immediate=set_check(field,False)
+        print('Distance toggle immediate:',field,immediate,'post:',state_for(field),flush=True)
+        assert immediate and immediate.get('mirrored')=='off',(field,immediate)
         wait.until(lambda _: state_for(field)['old']=='off')
         assert state_for(field)=={'checked':False,'old':'off','parentOpen':True,'childOpen':True},field
         assert set_old(field,'on'),field
