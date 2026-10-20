@@ -182,6 +182,16 @@ function create(deps){
   }finally{viewerBusy=false;}
  }
  function viewerStatus(){return {lastError:viewerLastError,lastSyncAt:viewerLastSyncAt};}
+ // Only after cloud originals have been durably saved locally, establish
+ // their server revisions as the new synchronization baseline.
+ function adoptViewerBaseline(){
+  if(!viewerLastSyncAt||viewerEndpoint!==String(getEndpoint()||''))return false;
+  const saved=getSaved();
+  for(const [id,entry] of viewerCache){
+   saved[id]={revision:entry.revision,hash:remoteHash(entry.shift)};
+  }
+  return setSaved(saved);
+ }
  async function resolve(id,preferLocal,onBackup){
   if(busy||!conflict[id]||typeof onBackup!=='function')return false;
   busy=true;
@@ -219,7 +229,7 @@ function create(deps){
   }catch(e){lastError=String(e?.message||e);return false;}
   finally{busy=false;}
  }
- return {run,readOnly,viewerStatus,resolve,status,isConflict,digest};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
