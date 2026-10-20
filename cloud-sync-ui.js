@@ -133,6 +133,15 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(queuedDutyIds.size&&ok)queueSync(250);
   }
  }
+ function resetAccount(){
+  if(timer!==null)clearTimeout(timer);
+  if(viewerTimer!==null)clearTimeout(viewerTimer);
+  timer=null;viewerTimer=null;
+  observedDutyStates=null;queuedDutyIds.clear();
+  writerFeedback='';viewerFeedback='';viewerFingerprint=null;
+  archiveRows=[];archiveDetail=null;archiveError='';
+  engine.resetAccount();
+ }
  function schedule(retry=false){
   if(viewEnabled()){viewSchedule();return;}
   if(!enabled())return;
@@ -317,6 +326,6 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter};
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount};
 };
 })(typeof window!=='undefined'?window:globalThis);
