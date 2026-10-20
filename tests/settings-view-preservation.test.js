@@ -8,7 +8,7 @@ const vm=require('node:vm');
 // This guards against regressions where a saved choice closes sections
 // or jumps the user back to the beginning of the settings screen.
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const start=html.indexOf('let settingsOpenState=null,lastRenderedTab=null;');
+const start=html.indexOf('let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false;');
 const end=html.indexOf('function titleBlock(',start);
 assert.ok(start>0&&end>start,'settings rerender preservation code missing');
 const code=html.slice(start,end);
@@ -23,7 +23,7 @@ let panels=[];
 const appEl={
  querySelector(selector){return null;},
  querySelectorAll(selector){
-  if(selector==='details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-driver-profile-settings],details[data-vehicle-profile-settings],details[data-cancel-settings],details[data-fee-settings],details[data-duty-plan-settings],details[data-gps-settings],details[data-address-settings]')return panels;
+  if(selector==='details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-drive-status-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-driver-profile-settings],details[data-vehicle-profile-settings],details[data-cancel-settings],details[data-fee-settings],details[data-duty-plan-settings],details[data-gps-settings],details[data-address-settings]')return panels;
   if(selector==='[data-operation-panel]')return [];
   return [];
  },
