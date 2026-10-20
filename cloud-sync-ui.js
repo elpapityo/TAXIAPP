@@ -4,6 +4,7 @@
 root.TAXIAPP_SYNC_UI=function(d){
  let timer=null,viewerTimer=null,viewerBusy=false;
  let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
+ let archiveRows=[],archiveDetail=null,archiveError='',archiving=false;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
@@ -37,6 +38,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   d.setStatus(writerFeedback);if(!d.isSettings?.())d.render?.();
   const before=status().lastSyncAt;
   const ok=await engine.run();
+  if(status().conflicts.length)await saveConflictCopies();
   writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
    '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
   if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
@@ -109,6 +111,71 @@ root.TAXIAPP_SYNC_UI=function(d){
   d.setStatus(message());refreshPanel();
   d.toast(ok?'競合を解決しました。暗号化バックアップを保管してください。':status().lastError||'競合はそのまま保留しました',!ok);
  }
+
+ async function saveConflictCopies(){
+  if(!enabled()||archiving||!status().conflicts.length)return;
+  archiving=true;
+  try{
+   for(const conflict of status().conflicts){
+    if(!enabled())return;
+    const local=d.getModel()?.shifts?.find(s=>s.id===conflict.id);
+    if(!local)continue;
+    const remote=await d.request('syncGet',{shiftId:conflict.id});
+    if(!remote?.shift||remote.shift.id!==conflict.id)throw Error('競合のGoogle版を受信できません');
+    const saved=await d.request('conflictSave',{payload:JSON.stringify({
+     id:conflict.id,local,remote:remote.shift,remoteRevision:remote.revision
+    })});
+    if(!Array.isArray(saved?.archiveIds)||saved.archiveIds.length!==2)
+     throw Error('Google上の競合保管を確認できません');
+   }
+   await loadArchives(false);
+  }catch(error){
+   archiveError='競合保管失敗：'+String(error?.message||error);
+   d.setStatus(archiveError);
+  }finally{archiving=false;}
+ }
+ async function loadArchives(manual=true){
+  if(!enabled())return;
+  try{
+   const result=await d.request('conflictList',{});
+   if(!Array.isArray(result?.archives))throw Error('競合保管一覧の形式が不正です');
+   archiveRows=result.archives;archiveError='';
+  }catch(error){archiveError='競合保管一覧を取得できません：'+String(error?.message||error);}
+  refreshPanel();
+  if(manual&&archiveError)d.toast(archiveError,true);
+ }
+ async function archiveAction(kind,id){
+  if(!enabled())return;
+  try{
+   if(kind==='open'){
+    archiveDetail=await d.request('conflictGet',{archiveId:id});
+    if(!archiveDetail?.shift)throw Error('競合保管を取得できません');
+   }else if(kind==='trash'||kind==='restore'){
+    if(!root.confirm(kind==='trash'?'このコピーをゴミ箱へ移しますか？元の乗務は変更しません。':'コピーをゴミ箱から復元しますか？'))return;
+    await d.request(kind==='trash'?'conflictTrash':'conflictRestore',{archiveId:id});
+    await loadArchives(false);archiveDetail=null;
+   }else if(kind==='close'){archiveDetail=null;}
+   refreshPanel();
+  }catch(error){archiveError=String(error?.message||error);d.toast(archiveError,true);refreshPanel();}
+ }
+ function vaultMarkup(){
+  const escape=d.escape;
+  const rows=archiveRows.map(a=>'<div class="card"><strong>'+escape(a.shiftId)+' / '+(a.kind==='local'?'PC版':'Google版')+'</strong>'+
+   '<p class="helper">保管日時 '+escape(a.savedAt)+' / '+(a.trashed?'ゴミ箱':'隔離保管')+'</p>'+
+   '<button class="btn" type="button" data-sync-archive="open" data-id="'+escape(a.archiveId)+'">内容を確認</button> '+
+   '<button class="btn" type="button" data-sync-archive="'+(a.trashed?'restore':'trash')+'" data-id="'+escape(a.archiveId)+'">'+(a.trashed?'復元':'ゴミ箱へ移動')+'</button></div>').join('');
+  const a=archiveDetail,shift=a?.shift;
+  const raw=shift?'<section class="card"><strong>保管内容：'+escape(a.shiftId)+' '+(a.kind==='local'?'PC版':'Google版')+'</strong>'+
+   '<p class="helper">営業記録 '+(shift.records?.length||0)+'件 / 乗務日 '+escape(shift.date||'')+' / 出庫 '+escape(shift.startedAt||'')+'</p>'+
+   '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto">'+escape(JSON.stringify(shift,null,2))+'</pre>'+
+   '<button class="btn" type="button" data-sync-archive="close">閉じる</button></section>':'';
+  return '<h3 class="subsection">Google競合保管庫（売上に加算しません）</h3>'+
+   '<p class="helper">元の乗務は変更せずPC版・Google版を別々に保管します。ゴミ箱へ移したコピーも復元できます。</p>'+
+   '<div class="actions"><button type="button" class="btn" data-sync-archive="list">保管一覧を取得</button></div>'+
+   (archiveError?'<p class="warn">'+escape(archiveError)+'</p>':'')+
+   raw+(rows||'<p class="helper">一覧を取得してください。</p>');
+ }
+
  function conflictMarkup(s){
   const conflicts=s.conflicts.map(c=>'<div class="card"><strong>競合乗務 '+d.escape(c.id)+'</strong>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
@@ -128,7 +195,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   const signature=JSON.stringify(status().conflicts);
   if(holder.dataset.syncSignature===signature)return;
   if(holder.querySelector('input:focus,textarea:focus,select:focus'))return;
-  holder.innerHTML=conflictMarkup(status());
+  holder.innerHTML=conflictMarkup(status())+vaultMarkup();
   holder.dataset.syncSignature=signature;
  }
  function panel(){
@@ -140,9 +207,9 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<option value="on" '+(on?'selected':'')+'>双方向同期（Google受信API更新後）</option></select></label>'+
    '<div class="actions"><button class="btn primary" type="button" data-action="bidirectionalSyncNow">↕ 今すぐ照合</button></div>'+
    '<p class="caption-note" data-sync-status>'+d.escape(message())+'</p>'+
-   '<div data-sync-conflicts>'+conflictMarkup(s)+'</div>'+
+   '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message};
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives};
 };
 })(typeof window!=='undefined'?window:globalThis);
