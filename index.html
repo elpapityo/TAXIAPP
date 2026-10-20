@@ -2798,7 +2798,7 @@ function adminCutoverSummaryHtml(){
   safeText(String(error?.message||error))+'</p>';}
 }
 function renderAdminCutoverSelectionPanel(){
- if(!legacyDiary()||!accountScope.uid)return '';
+ if(!legacyDiary()||!accountScope.uid||adminCutoverSelectionUid!==accountScope.uid)return '';
  const selected=adminCutoverSelectionUid===accountScope.uid?adminCutoverSelected:new Set();
  const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  const rows=shifts.map(shift=>{
