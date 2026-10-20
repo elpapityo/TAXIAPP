@@ -27,7 +27,7 @@ const altered={...a,records:[{kind:'ride'}]};
 assert.equal(p.plan(input([a],[altered],[a.id])).entries[0].action,'conflict');
 assert.equal(p.plan(input([a],[duty('shift-999-a','2026-10-20T13:00:00+09:00','2026-10-20T17:00:00+09:00')],[a.id])).entries[0].action,'overlap');
 assert.equal(p.plan(input([a,duty('shift-777-a','2026-10-20T15:00:00+09:00','2026-10-20T19:00:00+09:00')],[],[a.id,'shift-777-a'])).requiresReview,true);
-assert.equal(p.overlaps(p.interval(a),p.interval(duty('shift-111-a','2026-10-20T16:00:00+09:00','2026-10-20T17:00:00+09:00')),false,'touching boundary is not overlap');
+assert.equal(p.overlaps(p.interval(a),p.interval(duty('shift-111-a','2026-10-20T16:00:00+09:00','2026-10-20T17:00:00+09:00'))),false,'touching boundary is not overlap');
 const overnight=duty('shift-888-a','2026-10-20T23:00:00+09:00','2026-10-21T05:00:00+09:00');
 assert.equal(p.overlaps(p.interval(overnight),p.interval(duty('shift-889-a','2026-10-21T02:00:00+09:00','2026-10-21T04:00:00+09:00'))),true);
 assert.equal(p.interval(duty('shift-222-a',null,null,{startedIso:'',endedIso:'',endedAt:''})).reason,'未入庫の乗務です');
