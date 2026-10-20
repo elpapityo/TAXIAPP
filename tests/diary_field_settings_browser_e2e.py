@@ -14,7 +14,7 @@ browser=webdriver.Chrome(options=options)
 try:
     browser.get('http://127.0.0.1:8765/')
     wait=WebDriverWait(browser,30)
-    wait.until(lambda d: 'TAXIAPP v0.3.101' in d.title)
+    wait.until(lambda d: 'TAXIAPP v0.3.102' in d.title)
     wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'#app [data-open-ride-fields]')))
     shortcut=browser.execute_script("""
       const button=document.querySelector('[data-open-ride-fields]');
@@ -72,6 +72,30 @@ try:
       return !!summary && !summary.open && 
         document.querySelectorAll('details.settings-advanced[data-drive-status-settings]').length===0;
     """),'drive status must be nested as previously requested'
+    status_fields=browser.execute_script("""
+      const parent=document.querySelector('[data-business-field-settings]');
+      const menu=parent?.querySelector('[data-drive-status-settings]');
+      if(!menu)return {missing:true};
+      menu.open=true;
+      const all=[...menu.querySelectorAll('[data-drive-status-field]')];
+      return {nested:!!menu.closest('[data-business-field-settings]'),
+        keys:all.map(x=>x.dataset.driveStatusField),
+        checked:all.map(x=>x.checked),
+        master:menu.querySelectorAll('[data-ui-key="driveStatusDisplay"]').length,
+        underDiary:document.querySelectorAll('[data-ride-field-settings] [data-drive-status-field]').length,
+        outside:document.querySelectorAll(':not([data-drive-status-settings]) > [data-drive-status-field]').length,
+        text:menu.innerText};
+    """)
+    assert not status_fields.get('missing'),status_fields
+    assert status_fields['nested'],status_fields
+    assert status_fields['keys']==[
+       'state','dispatchSource','waiting','dispatchType','payment','meter','highway','from','to'
+    ],status_fields
+    assert status_fields['checked']==[True]*9,status_fields
+    assert status_fields['master']==2,status_fields
+    assert status_fields['underDiary']==0,status_fields
+    assert '配車区分' in status_fields['text'] and '降車地' in status_fields['text'],status_fields
+    print('PASS Chrome: upper ride status now has nine independent checkbox controls inside the requested settings menu')
     print('PASS Chrome: nine optional controls, two shared distance settings,'
           ' fixed inputs and safely read-only client layout')
 finally:
