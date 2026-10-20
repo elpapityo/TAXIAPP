@@ -13,7 +13,7 @@ const municipalities=JSON.parse(fs.readFileSync('municipalities.json','utf8'));
 assert.equal(municipalities['28207'],'兵庫県伊丹市');
 assert.match(html,/const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';/);
 assert.match(html,/localStorage\.getItem\('taxiapp-v1'\)/);
-assert.match(html,/localStorage\\.setItem\\(key,JSON\\.stringify\\(data\\)\\)/);
+assert.ok(html.includes('localStorage.setItem(key,JSON.stringify(data))'));
 assert.match(html,/deviceMode='pending'/);
 assert.match(html,/accountSettingsAuto=window\.TAXIAPP_ACCOUNT_AUTO\.create/);
 assert.match(html,/accountSettingsAuto\.start\(\)/);
