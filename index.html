@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・GPS統合正式版">
-<title>TAXIAPP v0.3.112 — 乗務日報</title>
+<title>TAXIAPP v0.3.113 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1290,6 +1290,12 @@ function validateDraft(draft){let errs=[];if(!draft)errs.push('入力データ�
  return errs;
 }
 function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
+// Firestore can return map keys in a different order; compare actual values.
+function canonicalDutyJson(value){
+ return JSON.stringify(value,(_key,entry)=>
+  entry&&typeof entry==='object'&&!Array.isArray(entry)
+   ?Object.fromEntries(Object.keys(entry).sort().map(key=>[key,entry[key]])):entry);
+}
 
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
@@ -1310,6 +1316,7 @@ const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScop
 const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
+let pendingMemberRecovery=null,memberRecoveryBusy=false;
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
 function setDeviceMode(next,previous='',detail=''){
@@ -1321,7 +1328,7 @@ function setDeviceMode(next,previous='',detail=''){
   save(true).catch(e=>console.warn('save-before-viewer',e));
  }
  if(next==='writer'&&prior!=='writer'){writerLoadGate=true;writerLoadError='Googleの乗務を取得中…';writerLoadEpoch++;}
- if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;}
+ if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;pendingMemberRecovery=null;}
  if(prior==='viewer'&&next!=='viewer'&&viewerLocalModel){
   model=viewerLocalModel;viewerLocalModel=null;
   viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
@@ -1353,7 +1360,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -1586,6 +1593,7 @@ async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
+ pendingMemberRecovery=null;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
@@ -1611,6 +1619,23 @@ async function switchAccountScope(scope){
 }
 async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
+function renderMemberRecoveryPanel(){
+ const p=pendingMemberRecovery;
+ if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+    !p||p.uid!==accountScope.uid||p.epoch!==writerLoadEpoch)return '';
+ return '<section class="card" role="alert" style="margin:10px 0;border:2px solid #aa650d">'+
+  '<h2 class="h2">未同期の日報を保護しています</h2>'+
+  '<p>クラウドにない乗務：'+p.missingIds.length+'件／同じIDで内容が異なる乗務：'+p.conflictCount+'件。自動上書きは停止中です。</p>'+
+  '<p class="helper">最初に端末のJSONバックアップを保存してください。同一IDで内容が異なる場合は、どちらを採用するか個別に選択し、双方の原本を保護してから反映します。選択しなければ変更しません。</p>'+
+  '<div class="actions"><button class="btn" type="button" data-action="downloadLocalRecovery">⇩ 端末の日報をJSON保存</button>'+
+  (p.conflictCount?'':'<button class="btn primary" type="button" data-action="uploadLocalRecovery" '+(memberRecoveryBusy?'disabled':'')+'>＋ 未登録の乗務を本人のクラウドへ追加</button>')+
+  '</div>'+
+  (p.conflictIds||[]).map(id=>'<div class="card" style="margin-top:8px">'+
+   '<strong>競合ID：'+safeText(id)+'</strong><p class="helper">採用前に両版の件数・売上・差分を確認します。</p>'+
+   '<div class="actions"><button class="btn" type="button" data-action="takeLocalConflict" data-id="'+safeText(id)+'" '+(memberRecoveryBusy?'disabled':'')+'>端末版を採用（クラウド更新）</button>'+
+   '<button class="btn" type="button" data-action="takeCloudConflict" data-id="'+safeText(id)+'" '+(memberRecoveryBusy?'disabled':'')+'>クラウド版を採用（端末更新）</button></div></div>').join('')+
+  '</section>';
+}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
@@ -1657,7 +1682,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}${renderMemberRecoveryPanel()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -2610,16 +2635,47 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   }
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
+   // An ordinary driver's unpublished local records are not authoritative
+   // cloud data. Never discard or silently adopt them during first login.
+   if(memberDiary()){
+    const remoteById=new Map(shifts.map(shift=>[shift.id,shift]));
+    const unconfirmed=(previous.shifts||[]).filter(local=>
+     !remoteById.has(local.id)||
+     canonicalDutyJson(local)!==canonicalDutyJson(remoteById.get(local.id)));
+    if(unconfirmed.length){
+     const missing=unconfirmed.filter(local=>!remoteById.has(local.id));
+     pendingMemberRecovery={uid:accountScope.uid,epoch,
+      snapshot:JSON.stringify(previous.shifts),missingIds:missing.map(x=>x.id),
+      conflictIds:unconfirmed.filter(local=>remoteById.has(local.id)).map(x=>x.id),
+      conflictCount:unconfirmed.length-missing.length};
+     render();
+     throw Error('未同期の乗務が'+missing.length+'件、同一IDで内容が異なる乗務が'+(unconfirmed.length-missing.length)+'件あります。下の保護メニューで確認してください。');
+    }
+    pendingMemberRecovery=null;
+   }
+   const storageKey=scopedStorageKey();
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
    // multiple unfinished duties, which can display a stale zero-sale duty.
    const open=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
    next.activeId=open.length===1?open[0].id:null;
-   // A last-resort local recovery copy. It is never uploaded or counted.
-   try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy'),JSON.stringify(previous));}catch{}
-   if(db)await idbPut(db,next,scopedStorageKey());
-   else localStorage.setItem(scopedStorageKey(),JSON.stringify(next));
-   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+   // Never replace local records unless a separate recovery copy is durable.
+   // Preserve an existing recovery copy instead of overwriting it.
+   const recoveryBase='taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy');
+   const original=JSON.stringify(previous);
+   try{
+    const oldCopy=localStorage.getItem(recoveryBase);
+    const recoveryKey=oldCopy===null||oldCopy===original?recoveryBase:
+     recoveryBase+'-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+    localStorage.setItem(recoveryKey,original);
+    if(localStorage.getItem(recoveryKey)!==original)throw Error('保存内容が一致しません');
+   }catch(error){
+    throw Error('復旧コピーを保存できないため、クラウド受信による上書きを停止しました：'+String(error?.message||error));
+   }
+   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
    if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
    model=next;
@@ -2661,7 +2717,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
   try{
    await save(true);
-   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
    const savedShift=stored?.shifts?.find(x=>x.id===id);
    const expectedShift=model.shifts.find(x=>x.id===id);
    if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
@@ -2675,8 +2731,203 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  render:render,toast,escape:safeText,download,dateStamp
 });
 
+// Explicit, owner-only recovery of shifts that DO NOT exist in the cloud.
+// Never auto-upload while acquiring a login session; the operator must choose.
+async function uploadMemberRecovery(){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
+    !writerLoadGate||pending.uid!==accountScope.uid||
+    pending.epoch!==writerLoadEpoch)return;
+ if(pending.conflictCount){
+  toast('同一IDで内容が異なる乗務があります。JSONバックアップを保存し、内容の確認が必要です。',true);return;
+ }
+ if(!pending.missingIds.length)return;
+ if(!confirm('クラウドにない'+pending.missingIds.length+'件の乗務を、この利用者専用の領域に追加します。\\n既存のクラウド記録は上書きしません。操作前に端末のJSONバックアップを保存し、ダウンロードを確認しましたか？'))return;
+ memberRecoveryBusy=true;render();
+ const uid=accountScope.uid,epoch=writerLoadEpoch,original=deepCopy(model);
+ const expected=JSON.stringify(original.shifts);
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     accountScope.uid!==uid||writerLoadEpoch!==epoch||
+     pendingMemberRecovery!==pending||JSON.stringify(model.shifts)!==expected)
+   throw Error('操作端末または日報が変更されました。追加を停止しました');
+ };
+ try{
+  check();
+  // Preserve the entire pre-recovery model under a separate UID-scoped key.
+  // A failed backup/readback always stops before the first cloud write.
+  const recoveryKey='taxiapp-account-recovery-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,original,recoveryKey);
+  else localStorage.setItem(recoveryKey,JSON.stringify(original));
+  const copy=db?await idbGet(db,recoveryKey):
+   JSON.parse(localStorage.getItem(recoveryKey)||'null');
+  if(JSON.stringify(copy)!==JSON.stringify(original))
+   throw Error('復旧用の保護コピーを正しく保存できませんでした');
+  check();
+  // Detect newly created cloud records without a broad cloud read. CAS=0
+  // prevents overwriting even when a second device races this request.
+  const listed=await accountDiary.request('syncList',{shiftIds:pending.missingIds});
+  check();
+  if(!Array.isArray(listed?.shifts))throw Error('クラウド乗務の照合に失敗しました');
+  const found=new Map(listed.shifts.map(row=>[row.id,row]));
+  for(const id of pending.missingIds){
+   check();
+   const local=original.shifts.find(row=>row.id===id);
+   if(!local)throw Error('復旧対象の乗務が見つかりません');
+   if(found.has(id)){
+    const existing=await accountDiary.request('syncGet',{shiftId:id});
+    check();
+    if(canonicalDutyJson(existing?.shift)!==canonicalDutyJson(local))
+     throw Error('別端末に同じ乗務IDの異なる内容があります。自動上書きを停止しました：'+id);
+   }else{
+    await accountDiary.request('syncPut',{baseRevision:0,
+     payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:local})});
+    check();
+    const verified=await accountDiary.request('syncGet',{shiftId:id});
+    check();
+    if(canonicalDutyJson(verified?.shift)!==canonicalDutyJson(local))
+     throw Error('追加した乗務の読み戻しが一致しません：'+id);
+   }
+  }
+  check();
+  toast('未登録の乗務を確認しました。クラウドの全件照合をやり直します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('安全な復旧を保留しました。端末の日報は保持されています：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
+// Per-duty, permission-only conflict resolution. Back up BOTH originals first.
+async function resolveMemberConflict(id,useLocal){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
+    !writerLoadGate||pending.uid!==accountScope.uid||
+    pending.epoch!==writerLoadEpoch||!(pending.conflictIds||[]).includes(id))return;
+ const uid=accountScope.uid,epoch=writerLoadEpoch,scopeGeneration=accountScopeGeneration;
+ const before=deepCopy(model),source=JSON.stringify(before.shifts);
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     accountScope.uid!==uid||writerLoadEpoch!==epoch||
+     accountScopeGeneration!==scopeGeneration||pendingMemberRecovery!==pending||
+     JSON.stringify(model.shifts)!==source)
+   throw Error('操作権または乗務内容が変更されたため上書きを中止しました');
+ };
+ const local=before.shifts.find(x=>x.id===id);
+ if(!local)return;
+ memberRecoveryBusy=true;render();
+ try{
+  const remote=await accountDiary.request('syncGet',{shiftId:id});
+  check();
+  if(remote?.id!==id||remote?.shift?.id!==id||
+     !Number.isSafeInteger(remote.revision)||remote.revision<1)
+   throw Error('クラウド版の確認ができません');
+  if(canonicalDutyJson(local)===canonicalDutyJson(remote.shift)){
+   toast('両方の内容が一致しています。最新の乗務一覧を再取得します。');
+   await syncUI.bootstrapWriter();return;
+  }
+  const amount=x=>{try{return money(totals(x.records||[],x.settings||{},x.date||'').meter);}
+   catch{return '確認不可';}};
+  const compare=x=>'日付 '+String(x.date||'不明')+
+   ' ／ 営業 '+(x.records||[]).length+'件 ／ メーター売上 '+amount(x);
+  const first=useLocal?'端末版':'クラウド版';
+  const target=useLocal?'クラウド版':'端末版';
+  const message='【乗務ごとの上書き許可】\\n乗務ID：'+id+
+   '\\n端末版：'+compare(local)+
+   '\\nクラウド版：'+compare(remote.shift)+
+   '\\n\\n'+first+'を採用し、'+target+'を置き換えます。'+
+   '\\n両方の原本を端末内に別途退避し、保存を検証してから実施します。'+
+   '\\n他の乗務は変更しません。\\n本当にこの1乗務だけを上書きしますか？';
+  if(!confirm(message))return;
+  check();
+  const archive={format:'TAXIAPP_CONFLICT_BACKUP_V1',uid,shiftId:id,
+   createdAt:new Date().toISOString(),revision:remote.revision,
+   local:deepCopy(local),cloud:deepCopy(remote.shift)};
+  const archiveKey='taxiapp-account-conflict-copy-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,archive,archiveKey);
+  else localStorage.setItem(archiveKey,JSON.stringify(archive));
+  const copy=db?await idbGet(db,archiveKey):
+   JSON.parse(localStorage.getItem(archiveKey)||'null');
+  if(canonicalDutyJson(copy)!==canonicalDutyJson(archive))
+   throw Error('両版の復旧コピーを保存できなかったため停止しました');
+  // A discoverable, per-UID index allows later downloading either original.
+  const indexKey='taxiapp-account-conflict-index-v1-'+uid;
+  const index=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(index)||index.some(x=>typeof x!=='string'))
+   throw Error('復旧コピーの管理情報が不正です');
+  index.push(archiveKey);
+  localStorage.setItem(indexKey,JSON.stringify(index));
+  if(localStorage.getItem(indexKey)!==JSON.stringify(index))
+   throw Error('復旧コピーの管理情報を確認できません');
+  check();
+  // Re-read server revision immediately before choosing which side wins.
+  const latest=await accountDiary.request('syncGet',{shiftId:id});
+  check();
+  if(latest.revision!==remote.revision||
+     canonicalDutyJson(latest.shift)!==canonicalDutyJson(remote.shift))
+   throw Error('比較後にクラウド版が更新されたため、再確認が必要です');
+  if(useLocal){
+   const saved=await accountDiary.request('syncPut',{baseRevision:remote.revision,
+    payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:local})});
+   check();
+   if(saved?.id!==id||saved.revision!==remote.revision+1)
+    throw Error('クラウドへの上書きが確認できませんでした');
+   const verified=await accountDiary.request('syncGet',{shiftId:id});
+   check();
+   if(canonicalDutyJson(verified.shift)!==canonicalDutyJson(local))
+    throw Error('クラウドへの反映確認が一致しません');
+  }else{
+   const next=deepCopy(before),position=next.shifts.findIndex(x=>x.id===id);
+   if(position<0)throw Error('端末側の乗務が見つかりません');
+   next.shifts[position]=deepCopy(latest.shift);
+   const active=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
+   next.activeId=active.length===1?active[0].id:null;
+   const storageKey=scopedStorageKey();
+   check();
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):
+    JSON.parse(localStorage.getItem(storageKey)||'null');
+   if(canonicalDutyJson(stored)!==canonicalDutyJson(next))
+    throw Error('端末への上書きが確認できません。復旧コピーを保護してください');
+   check();
+   model=next;
+  }
+  toast('指定した乗務の採用を確認しました。残る競合を再照合します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('上書きを停止しました。両方の原本は保護対象です：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
+async function downloadMemberConflictArchive(key){
+ if(!memberDiary()||!accountScope.uid||typeof key!=='string')return;
+ const indexKey='taxiapp-account-conflict-index-v1-'+accountScope.uid;
+ try{
+  const keys=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(keys)||!keys.includes(key))throw Error('この利用者の保管履歴にありません');
+  const archive=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  if(archive?.format!=='TAXIAPP_CONFLICT_BACKUP_V1'||archive.uid!==accountScope.uid)
+   throw Error('現在の利用者の復旧コピーではありません');
+  download(JSON.stringify(archive,null,2),
+   'TAXIAPP_競合原本_'+dateStamp(new Date())+'_'+archive.shiftId+'.json',
+   'application/json;charset=utf-8');
+  toast('競合した両版の原本をJSONで書き出しました。保存先を確認してください。');
+ }catch(error){toast('復旧コピーの取り出しに失敗：'+String(error?.message||error),true);}
+}
+function renderMemberConflictArchives(){
+ if(!memberDiary())return '';
+ try{
+  const keys=JSON.parse(localStorage.getItem('taxiapp-account-conflict-index-v1-'+accountScope.uid)||'[]');
+  if(!Array.isArray(keys)||!keys.length)return '';
+  return '<section class="card"><h2 class="h2">競合時の保護コピー</h2>'+
+   '<p class="helper">上書き前に退避した端末版・クラウド版の原本です。双方の版を含むJSONを保存できます。</p>'+
+   '<div class="actions">'+keys.slice(-20).reverse().map(key=>
+    '<button class="btn" type="button" data-action="downloadMemberConflictArchive" data-id="'+safeText(key)+'">⇩ 保護コピー '+safeText(key.split('-').slice(-2).join('-'))+'</button>'
+   ).join('')+'</div></section>';
+ }catch{return '<p class="warn">復旧コピーの管理情報を確認できません。</p>';}
+}
 function renderSheetTargetSettings(){
- if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>'+renderMemberConflictArchives();
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
@@ -3201,6 +3452,19 @@ function handleAction(action,id){
   draft.raw.P=(items.some(x=>x.mode==='実')?'実':'')+(items.some(x=>x.mode==='空')?'空':'');
   saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
  }
+  if(action==='downloadLocalRecovery'){
+   if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+      pendingMemberRecovery?.uid!==accountScope.uid)return;
+   const backup={...deepCopy(model),exportedAt:new Date().toISOString()};
+   download(JSON.stringify(backup,null,2),'TAXIAPP_未同期日報_'+dateStamp(new Date())+'.json','application/json;charset=utf-8');
+   toast('端末内の日報をJSONとして書き出しました。端末のダウンロード一覧で保存を確認してください。');
+   return;
+  }
+  if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
+  if(action==='downloadMemberConflictArchive'){void downloadMemberConflictArchive(id);return;}
+  if(action==='takeLocalConflict'||action==='takeCloudConflict'){
+   void resolveMemberConflict(id,action==='takeLocalConflict');return;
+  }
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
    return;

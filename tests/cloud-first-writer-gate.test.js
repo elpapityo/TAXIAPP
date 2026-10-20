@@ -7,7 +7,11 @@ assert.match(html,/function canEditNow\(\)\{return deviceMode==='writer'&&!write
 assert.match(html,/syncUI\.bootstrapWriter\(\)/);
 assert.match(html,/writerBootstrapAllowed:/);
 assert.match(html,/onWriterSnapshot:async shifts=>/);
-assert.ok(html.includes('await idbPut(db,next,scopedStorageKey())'));
+assert.ok(html.includes('const storageKey=scopedStorageKey()'));
+assert.ok(html.includes('await idbPut(db,next,storageKey)'));
+assert.ok(html.includes('await idbGet(db,storageKey)'));
+assert.match(html,/const unconfirmed=\(previous\.shifts\|\|\[\]\)\.filter/);
+assert.match(html,/復旧コピーを保存できないため/);
 assert.match(html,/JSON\.stringify\(stored\.shifts\)!==JSON\.stringify\(next\.shifts\)/);
 assert.match(html,/writerLoadGate=false;writerLoadError=''/);
 assert.match(adapter,/async function bootstrapWriter\(\)/);
