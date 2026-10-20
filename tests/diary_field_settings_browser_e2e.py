@@ -14,9 +14,20 @@ browser=webdriver.Chrome(options=options)
 try:
     browser.get('http://127.0.0.1:8765/')
     wait=WebDriverWait(browser,30)
-    wait.until(lambda d: 'TAXIAPP v0.3.100' in d.title)
-    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'#app [data-tab="settings"]')))
-    browser.execute_script("document.querySelector('[data-tab=settings]').click()")
+    wait.until(lambda d: 'TAXIAPP v0.3.101' in d.title)
+    wait.until(lambda d: bool(d.find_elements(By.CSS_SELECTOR,'#app [data-open-ride-fields]')))
+    shortcut=browser.execute_script("""
+      const button=document.querySelector('[data-open-ride-fields]');
+      return {title:document.title,text:button?.textContent,
+              fromDrive:!!button?.closest('.preview-screen-head')};
+    """)
+    assert shortcut['fromDrive'] and '入力項目を選ぶ' in shortcut['text'],shortcut
+    browser.execute_script("document.querySelector('[data-open-ride-fields]').click()")
+    wait.until(lambda d: d.execute_script("""
+      const parent=document.querySelector('details[data-business-field-settings]'),
+        child=parent?.querySelector('details[data-ride-field-settings]');
+      return !!parent?.open && !!child?.open;
+    """))
     wait.until(lambda d: d.find_elements(By.CSS_SELECTOR,'[data-ride-field-settings] [data-ride-field]'))
     state=browser.execute_script("""
       const p=document.querySelector('[data-business-field-settings]');
@@ -55,6 +66,12 @@ try:
     assert layout['consistency'] and layout['existing']==9,layout
     # No authenticated writing session is configured in CI.
     assert '閲覧' in layout['readonly'] or '確認中' in layout['readonly'],layout
+    assert browser.execute_script("""
+      const parent=document.querySelector('[data-business-field-settings]');
+      const summary=parent?.querySelector('[data-drive-status-settings]');
+      return !!summary && !summary.open && 
+        document.querySelectorAll('details.settings-advanced[data-drive-status-settings]').length===0;
+    """),'drive status must be nested as previously requested'
     print('PASS Chrome: nine optional controls, two shared distance settings,'
           ' fixed inputs and safely read-only client layout')
 finally:
