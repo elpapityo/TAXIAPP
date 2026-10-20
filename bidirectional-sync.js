@@ -20,6 +20,7 @@ function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
   getEndpoint,toast,localStorage:storage}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
+ let scopeEpoch=0;
  let viewerBusy=false,viewerPromise=null,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
  const localKey=()=>KEY_PREFIX+digest(String(getEndpoint()||''));
  function getSaved(){
@@ -45,9 +46,18 @@ function create(deps){
   const selected=Array.isArray(onlyIds)?new Set(onlyIds):null;
   if(busy)return false;
   if(!getEndpoint())return false;
+  const epoch=scopeEpoch,endpoint=String(getEndpoint()||'');
+  const scopedRequest=async(action,fields)=>{
+   if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
+    throw Error('ログインまたは保存先が変わったため同期を停止しました');
+   const result=await request(action,fields);
+   if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
+    throw Error('ログインまたは保存先が変わったため同期を停止しました');
+   return result;
+  };
   busy=true;lastError='';
   try{
-   const listing=await request('syncList',{});
+   const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
@@ -58,7 +68,7 @@ function create(deps){
    for(const remote of listing.shifts){
     if(selected&&!selected.has(remote.id))continue;
     if(present.has(remote.id))continue;
-    const received=await request('syncGet',{shiftId:remote.id});
+    const received=await scopedRequest('syncGet',{shiftId:remote.id});
     if(!received?.shift||received.id!==remote.id)throw Error('クラウドから乗務を読み戻せません');
     const local=getModel()?.shifts?.find(s=>s.id===remote.id);
     if(local){nextConflict[remote.id]={id:remote.id,reason:'受信中に同じIDの記録が追加されました',localRevision:0,remoteRevision:remote.revision};continue;}
@@ -82,7 +92,7 @@ function create(deps){
       nextConflict[id]={id,reason:'クラウドに以前の記録が見つかりません',localRevision:base.revision,remoteRevision:0};
       continue;
      }
-     const sent=await request('syncPut',{baseRevision:0,payload:JSON.stringify(getPacket(current))});
+     const sent=await scopedRequest('syncPut',{baseRevision:0,payload:JSON.stringify(getPacket(current))});
      if(!sent||sent.id!==id||sent.revision!==1)throw Error('新規送信の応答が不正です');
      const savedHash=currentHash;
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:savedHash}}))throw Error(lastError);
@@ -92,7 +102,7 @@ function create(deps){
     if(!base){
      // A migrated device without a known common ancestor cannot decide
      // which distinct record is newer. Only identical content can be linked.
-     const got=await request('syncGet',{shiftId:id});
+     const got=await scopedRequest('syncGet',{shiftId:id});
      if(!got?.shift||got.id!==id)throw Error('既存乗務を照合できません');
      if(remoteHash(got.shift)!==currentHash){
       nextConflict[id]={id,reason:'初回照合：端末とクラウドの内容が異なります',localRevision:null,remoteRevision:got.revision};
@@ -113,7 +123,7 @@ function create(deps){
      continue;
     }
     if(remoteChanged){
-     const got=await request('syncGet',{shiftId:id});
+     const got=await scopedRequest('syncGet',{shiftId:id});
      if(!got?.shift||got.id!==id)throw Error('クラウドから乗務を読み込めません');
      const latest=getModel()?.shifts?.find(s=>s.id===id);
      if(!latest||localHash(latest)!==currentHash){
@@ -132,7 +142,7 @@ function create(deps){
     if(localChanged){
      const payload=getPacket(current);
      const sentHash=currentHash;
-     const sent=await request('syncPut',{baseRevision:base.revision,payload:JSON.stringify(payload)});
+     const sent=await scopedRequest('syncPut',{baseRevision:base.revision,payload:JSON.stringify(payload)});
      if(!sent||sent.id!==id||sent.revision!==base.revision+1)
       throw Error('送信の更新番号を確認できません');
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:sentHash}}))throw Error(lastError);
@@ -159,10 +169,19 @@ function create(deps){
   if(viewerPromise)return viewerPromise;
   const job=(async()=>{
   const endpoint=String(getEndpoint()||'');
+  const epoch=scopeEpoch;
+  const scopedRequest=async(action,fields)=>{
+   if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
+    throw Error('ログインまたは保存先が変わったため同期を停止しました');
+   const result=await request(action,fields);
+   if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
+    throw Error('ログインまたは保存先が変わったため同期を停止しました');
+   return result;
+  };
   if(!endpoint){viewerLastError='Google接続先が設定されていません';return null;}
   viewerBusy=true;
   try{
-   const listing=await request('syncList',{});
+   const listing=await scopedRequest('syncList',{});
    if(!Array.isArray(listing?.shifts))throw Error('Googleから乗務一覧を取得できません');
    const previous=viewerEndpoint===endpoint?viewerCache:new Map();
    const updated=new Map();
@@ -173,7 +192,7 @@ function create(deps){
      throw Error('Googleの乗務一覧が不正です');
     let entry=previous.get(id);
     if(!entry||entry.revision!==revision){
-     const result=await request('syncGet',{shiftId:id});
+     const result=await scopedRequest('syncGet',{shiftId:id});
      if(!result?.shift||result.id!==id||result.shift.id!==id||
         Number(result.revision)!==revision||!Array.isArray(result.shift.records)||
         !result.shift.settings)
@@ -211,9 +230,18 @@ function create(deps){
  async function resolve(id,preferLocal,onBackup){
   if(busy||!conflict[id]||typeof onBackup!=='function')return false;
   busy=true;
+  const epoch=scopeEpoch,endpoint=String(getEndpoint()||'');
+  const scopedRequest=async(action,fields)=>{
+   if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
+    throw Error('ログインまたは保存先が変わったため同期を停止しました');
+   const result=await request(action,fields);
+   if(epoch!==scopeEpoch||String(getEndpoint()||'')!==endpoint)
+    throw Error('ログインまたは保存先が変わったため同期を停止しました');
+   return result;
+  };
   try{
    const local=getModel()?.shifts?.find(s=>s.id===id);
-   const remote=await request('syncGet',{shiftId:id});
+   const remote=await scopedRequest('syncGet',{shiftId:id});
    if(!local||!remote?.shift||remote.id!==id)throw Error('競合した乗務データを取得できません');
    const before=localHash(local);
    // A password-encrypted, user-verified backup of BOTH versions is required
@@ -224,13 +252,13 @@ function create(deps){
    const saved=getSaved();
    if(preferLocal){
     const packet=getPacket(local);
-    const ack=await request('syncPut',{baseRevision:remote.revision,payload:JSON.stringify(packet)});
+    const ack=await scopedRequest('syncPut',{baseRevision:remote.revision,payload:JSON.stringify(packet)});
     if(!ack||ack.revision!==remote.revision+1||ack.id!==id)
      throw Error('クラウドの更新を確認できません');
     if(!setSaved({...saved,[id]:{revision:ack.revision,hash:before}}))throw Error(lastError);
    }else{
     // Prevent accepting a superseded cloud snapshot.
-    const listing=await request('syncList',{});
+    const listing=await scopedRequest('syncList',{});
     if(!listing.shifts?.some(x=>x.id===id&&x.revision===remote.revision))
      throw Error('バックアップ中にクラウドが更新されました。再確認してください');
     const latest=getModel()?.shifts?.find(s=>s.id===id);
@@ -245,7 +273,13 @@ function create(deps){
   }catch(e){lastError=String(e?.message||e);return false;}
   finally{busy=false;}
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest};
+ function resetAccount(){
+  scopeEpoch++;
+  busy=false;viewerBusy=false;viewerPromise=null;
+  conflict={};lastError='';lastSyncAt=0;
+  viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
+ }
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);

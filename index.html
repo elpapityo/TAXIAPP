@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・GPS統合正式版">
-<title>TAXIAPP v0.3.110 — 乗務日報</title>
+<title>TAXIAPP v0.3.111 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -888,7 +888,8 @@ html .cruising-action-grid.cruising-action-compact,html[data-ui-screen-mode] .cr
 <script src="./login-core.js?v=20261017-2"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
-<script src="./account-auto-sync.js?v=20261017-13"></script>
+<script src="./account-auto-sync.js?v=20261020-1"></script>
+<script src="./account-diary-store.js?v=20261020-1"></script>
 <script>
 (async function () {
   'use strict';
@@ -1282,6 +1283,13 @@ let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicl
 const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDistance!=='off':['S','V','AB','AE','X','Y','AJ','AK'].includes(field)?model.prefs.highwayDistance!=='off':true;
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
+const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
+let accountScope={kind:'pending',uid:''};
+let accountScopeGeneration=0;
+const memberDiary=()=>accountScope.kind==='member';
+const legacyDiary=()=>accountScope.kind==='legacy';
+const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
+const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
 // Only a verified server-side editor session can modify duty data.
@@ -1553,12 +1561,39 @@ function upgradeWaitingHistory(){let changed=false;for(const shift of model.shif
 function prettyTag(r){return r.kind==='dispatch'?'迎車中':r.kind==='empty'?'空車高速':r.kind==='cancel'?'キャンセル':(r.raw.E==='G'?'GO':r.raw.E==='D'?'DiDi':r.raw.E==='U'?'Uber':'乗込み');}
 function toast(text,error=false){noticeEl.textContent=text;noticeEl.style.background=error?'#8e3737':'#1a3855';noticeEl.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>noticeEl.classList.remove('visible'),3200);}
 function openDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>req.result.createObjectStore(STORE);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-function idbGet(db){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly'),req=tx.objectStore(STORE).get(KEY);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-function idbPut(db,state){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(state,KEY);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}
+function idbGet(db,key=KEY){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly'),req=tx.objectStore(STORE).get(key);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+function idbPut(db,state,key=KEY){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(state,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}
 async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('DB起動の待機時間超過')),2500))]);const m=await idbGet(db);storageStatus='IndexedDB';if(m&&m.version===1&&Array.isArray(m.shifts))model=m;}catch(e){console.warn('IndexedDB unavailable',e);db=null;try{const m=JSON.parse(localStorage.getItem('taxiapp-v1'));storageStatus='localStorage（代替保存）';if(m?.version===1&&Array.isArray(m.shifts))model=m;}catch{storageStatus='保存できない環境';}}}
-async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model);try{if(db){await idbPut(db,data);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem('taxiapp-v1',JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem('taxiapp-v1',JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
+async function switchAccountScope(scope){
+ const generation=++accountScopeGeneration;
+ // Do not migrate a legacy owner's records to another user.
+ writerLoadGate=true;
+ if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
+ viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
+ syncUI.cancelViewer();
+ syncUI.resetAccount();
+ accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
+ accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
+ const key=scopedStorageKey();
+ // Blank the previous account immediately, before any async IndexedDB read.
+ model=emptyAccountModel();render();
+ let stored=null;
+ if(scope){
+  try{stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');}
+  catch(e){throw Error('アカウント専用データを安全に読み込めません：'+String(e?.message||e));}
+ }
+ if(generation!==accountScopeGeneration)return;
+ model=stored?.version===1&&Array.isArray(stored.shifts)?stored:emptyAccountModel();
+ if(memberDiary()){
+  model.prefs??={};
+  delete model.prefs.sheetTarget;
+ }
+ if(tab==='print'&&!legacyDiary())tab='drive';
+ render();
+}
+async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
-function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
+function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
  const state=deviceMode==='pending'?'△ 操作権を確認中（入力停止）':
@@ -2364,7 +2399,10 @@ const SHEET_TARGET_DEFAULTS={
  spreadsheetUrl:'https://docs.google.com/spreadsheets/d/1tBoPSm_hni7VE_TcP3n0gvGXexX9G4KSKUD3xPJZNS4/edit',webAppUrl:'',
  fileBaseName:'TAXIAPP',fileNamePattern:'{name}_{date}_{type}'
 };
-function sheetTargetPrefs(){return {...SHEET_TARGET_DEFAULTS,...(model.prefs?.sheetTarget||{})};}
+function sheetTargetPrefs(){
+ if(!legacyDiary())return {...SHEET_TARGET_DEFAULTS,spreadsheetUrl:'',webAppUrl:'',syncMode:'off',mode:'off',printMode:'off'};
+ return {...SHEET_TARGET_DEFAULTS,...(model.prefs?.sheetTarget||{})};
+}
 function validSheetUrl(s){
  try{const u=new URL(String(s||''));return u.protocol==='https:'&&u.hostname==='docs.google.com'&&/^\/spreadsheets\/d\/[a-zA-Z0-9_-]{15,}(\/|$)/.test(u.pathname)?u.href:'';}catch{return '';}
 }
@@ -2395,7 +2433,7 @@ function googleWebAppUrl(value){
     /^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname)?url.href:'';
  }catch{return '';}
 }
-function googleIsConfigured(){return Boolean(googleWebAppUrl(sheetTargetPrefs().webAppUrl)&&googleWriteKey().length>=24);}
+function googleIsConfigured(){return legacyDiary()&&Boolean(googleWebAppUrl(sheetTargetPrefs().webAppUrl)&&googleWriteKey().length>=24);}
 function setGoogleStatus(message){
  cloudStatus=String(message);
  const el=appEl.querySelector('[data-cloud-status]');
@@ -2418,6 +2456,7 @@ function googleShiftPacket(shift){
 // The receiver returns an HTML acknowledgement via postMessage; opaque fetch success
 // is NEVER treated as evidence that records reached Google Sheets.
 function googlePostRequest(action,fields={}){
+ if(!legacyDiary())return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
  if(!canEditNow()&&!['syncList','syncGet'].includes(action))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
  const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
  if(!endpoint||key.length<24)return Promise.reject(Error('WebアプリURLと接続キーを設定してください'));
@@ -2465,6 +2504,7 @@ function googlePostRequest(action,fields={}){
 function googlePostShift(packet){return googlePostRequest('sync',{payload:JSON.stringify(packet)}).then(x=>x.message);}
 async function googleSendShift(shift,manual=false){
  if(!canEditNow())return false;
+ if(memberDiary())return syncUI.run(manual);
  if(sheetTargetPrefs().syncMode==='on'){return syncUI.run(manual);}
  if(!shift){if(manual)toast('送信する乗務データがありません',true);return false;}
  if(!googleIsConfigured()){if(manual)toast('先にWebアプリURLと接続キーを設定してください',true);return false;}
@@ -2487,6 +2527,7 @@ async function googleSendShift(shift,manual=false){
 }
 function scheduleGoogleSync(){
  if(!canEditNow())return;
+ if(memberDiary()){syncUI.schedule();return;}
  if(sheetTargetPrefs().syncMode==='on'){syncUI.schedule();return;}
  if(sheetTargetPrefs().mode!=='auto'||!googleIsConfigured())return;
  clearTimeout(cloudTimer);
@@ -2498,6 +2539,7 @@ function scheduleGoogleSync(){
  },3000);
 }
 async function googleSendAllShifts(){
+ if(memberDiary())return syncUI.run(true);
  if(sheetTargetPrefs().syncMode==='on'){await syncUI.run(true);return;}
  if(!googleIsConfigured()){toast('Googleの接続設定を完了してください',true);return;}
  const shifts=[...(model.shifts||[])];
@@ -2522,10 +2564,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
 
  canView:()=>deviceMode==='viewer'&&Boolean(accountSettingsAuto?.status().enabled),
  getModel:()=>model,
- getPacket:googleShiftPacket,
- endpoint:()=>googleWebAppUrl(sheetTargetPrefs().webAppUrl),
- configured:googleIsConfigured,
- prefs:sheetTargetPrefs,
+ getPacket:shift=>memberDiary()?{kind:'TAXIAPP_SHIFT_V1',shift:deepCopy(shift)}:googleShiftPacket(shift),
+ endpoint:()=>memberDiary()?accountDiary.endpoint():googleWebAppUrl(sheetTargetPrefs().webAppUrl),
+ configured:()=>memberDiary()?accountDiary.ready():googleIsConfigured(),
+ prefs:()=>memberDiary()?{syncMode:'on'}:sheetTargetPrefs(),
  onViewerSnapshot:async shifts=>{
   if(deviceMode!=='viewer'||!viewerLocalModel)return;
   const projected=window.TAXIAPP_SHIFT_MIRROR.viewerProjection(viewerLocalModel,shifts);
@@ -2548,7 +2590,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     throw Error('Googleの乗務データが不正です');
    ids.add(shift.id);
   }
-  if(shifts.length){
+  if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
@@ -2556,10 +2598,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
    const open=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
    next.activeId=open.length===1?open[0].id:null;
    // A last-resort local recovery copy. It is never uploaded or counted.
-   try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1',JSON.stringify(previous));}catch{}
-   if(db)await idbPut(db,next);
-   else localStorage.setItem('taxiapp-v1',JSON.stringify(next));
-   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy'),JSON.stringify(previous));}catch{}
+   if(db)await idbPut(db,next,scopedStorageKey());
+   else localStorage.setItem(scopedStorageKey(),JSON.stringify(next));
+   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
    if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
    model=next;
@@ -2581,6 +2623,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   if(nextId!==model.activeId){model.activeId=nextId;await save(true);render();}
  },
  request:async(action,fields)=>{
+  if(memberDiary())return accountDiary.request(action,fields);
   const result=await googlePostRequest(action,fields);
   return result.data;
  },
@@ -2615,6 +2658,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
 });
 
 function renderSheetTargetSettings(){
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
@@ -4033,12 +4077,15 @@ if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
 if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-hwy-index],[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-drive-status-field],[data-duty-plan]')){handleInput(event);}});
 window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
-await load();if(upgradeWaitingHistory())await save();render();
+await load();
+// Never display personal records before identifying the signed-in account.
+model=emptyAccountModel();render();
  // No GPS watch or duty mutation until Firebase confirms the editing session.
 // Google account settings follow the signed-in person automatically.
 // Existing Google Apps Script duty sync stays unchanged.
 accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
  getModel:()=>model,
+ onUserScope:switchAccountScope,
  onDeviceMode:setDeviceMode,
  isEditing:()=>Boolean(appEl.contains(document.activeElement)&&
   document.activeElement.matches('input:not([readonly]),textarea,select')),
@@ -4054,11 +4101,11 @@ appEl.addEventListener('focusout',()=>{
  accountSettingsAuto?.localSaved();
  accountSettingsAuto?.editingEnded();
 });
-if(sheetTargetPrefs().syncMode==='on')syncUI.schedule();else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
+// Do not sync an unidentified account.
 window.addEventListener('online',()=>{
   // Retry unsent edits when connectivity returns, but do not auto-refresh viewers.
   if(!canEditNow())return;
-  if(sheetTargetPrefs().syncMode==='on')syncUI.schedule(true);
+  if(memberDiary()||sheetTargetPrefs().syncMode==='on')syncUI.schedule(true);
   else if(sheetTargetPrefs().mode==='auto')scheduleGoogleSync();
  });
 document.addEventListener('visibilitychange',()=>{if(!nativeDiaryGpsEnabled())gpsTripUI?.hidden();});

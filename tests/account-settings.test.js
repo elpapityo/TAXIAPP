@@ -118,7 +118,7 @@ new vm.Script(auto);
 assert.match(auto,/onAuthStateChanged/);
 assert.match(auto,/getDocFromServer/);
 assert.match(auto,/runTransaction/);
-assert.match(auto,/taxiapp-bound-account-uid-v1/,"reject syncing a different account on a shared device");
+assert.match(auto,/onUserScope/,"scope must be selected before editing privileges");
 assert.match(auto,/settings?\.merge|api\.merge/);
 assert.match(html,/id="accountStatus"|Google/);
 console.log('Account settings migration passed: name, waiting places, inputs, display, fares, credentials and shift preservation.');
