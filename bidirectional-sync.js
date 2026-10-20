@@ -41,7 +41,8 @@ function create(deps){
  function markConflict(id,reason,localRevision,remoteRevision){
   conflict[id]={id,reason,localRevision,remoteRevision};
  }
- async function run(){
+ async function run(onlyIds=null){
+  const selected=Array.isArray(onlyIds)?new Set(onlyIds):null;
   if(busy)return false;
   if(!getEndpoint())return false;
   busy=true;lastError='';
@@ -51,10 +52,11 @@ function create(deps){
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
    const present=new Map(shifts.map(s=>[s.id,s]));
-   const nextConflict={};
+   const nextConflict=selected?Object.fromEntries(Object.entries(conflict).filter(([id])=>!selected.has(id))):{};
    // Pull cloud-only shifts first. Do not silently create an editing session
    // if the phone has its own active duty.
    for(const remote of listing.shifts){
+    if(selected&&!selected.has(remote.id))continue;
     if(present.has(remote.id))continue;
     const received=await request('syncGet',{shiftId:remote.id});
     if(!received?.shift||received.id!==remote.id)throw Error('クラウドから乗務を読み戻せません');
@@ -68,7 +70,10 @@ function create(deps){
     await replaceRemoteShift(remote.id,clone,false);
    }
    for(const original of shifts){
-    const id=original.id,remote=cloud.get(id),base=saved[id];
+    const id=original.id;
+    if(selected&&!selected.has(id))continue;
+    delete nextConflict[id];
+    const remote=cloud.get(id),base=saved[id];
     let current=getModel()?.shifts?.find(s=>s.id===id);
     if(!current)continue;
     const currentHash=localHash(current);
