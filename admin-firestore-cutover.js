@@ -104,5 +104,36 @@ function plan({uid,cloudUid,legacyShifts,cloudShifts,selectedIds}={}){
   migrationAuthorized:false
  };
 }
-root.TAXIAPP_ADMIN_CUTOVER=Object.freeze({plan,interval,overlaps});
+// Device-only preview: the cloud has NOT been fetched or compared.
+// Never present local-only candidates as approved or safe to upload.
+function previewLocal({uid,legacyShifts,selectedIds}={}){
+ if(typeof uid!=='string'||!uid.trim())throw Error('管理者本人のUIDを確認できません');
+ const legacy=readRows(legacyShifts,'端末内の日報');
+ if(!Array.isArray(selectedIds)||new Set(selectedIds).size!==selectedIds.length)
+  throw Error('日報を重複なく選択してください');
+ for(const id of selectedIds){
+  if(!legacy.has(id))throw Error('端末内に選択した日報がありません');
+ }
+ const chosen=new Set(selectedIds);
+ const entries=selectedIds.map(id=>{
+  const duty=legacy.get(id),span=interval(duty);
+  const intersect=[...legacy.values()].filter(other=>other.id!==id&&overlaps(span,interval(other)));
+  return {
+   id,date:String(duty.date||''),startedAt:String(duty.startedAt||''),
+   endedAt:String(duty.endedAt||''),recordCount:duty.records.length,
+   timeIssue:span.reason||'',
+   overlapsSelected:intersect.filter(x=>chosen.has(x.id)).map(x=>x.id),
+   overlapsExcluded:intersect.filter(x=>!chosen.has(x.id)).map(x=>x.id)
+  };
+ });
+ return {
+  format:'TAXIAPP_ADMIN_SELECTION_PREVIEW_V1',
+  uid,source:'current-device-only',cloudVerified:false,
+  selectedCount:entries.length,sourceCount:legacy.size,
+  excludedCount:legacy.size-entries.length,entries,
+  requiresReview:entries.some(x=>x.timeIssue||x.overlapsSelected.length||x.overlapsExcluded.length),
+  migrationAuthorized:false
+ };
+}
+root.TAXIAPP_ADMIN_CUTOVER=Object.freeze({plan,previewLocal,interval,overlaps});
 })(typeof window!=='undefined'?window:globalThis);
