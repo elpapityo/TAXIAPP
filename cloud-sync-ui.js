@@ -11,7 +11,7 @@ function moneyState(record){
   moneyFields.map(key=>raw[key]??''),
   meta.uberReservation??'',meta.uberTip??'',meta.uberAppDisplayed??'',
   split.manualAmount??'',
-  (meta.highwaySections||[]).map(section=>section?.fee??'')
+  (meta.highwaySections||[]).map(section=>section?.fee??'').filter(fee=>String(fee)!=='')
  ];
 }
 function recordState(record){
@@ -120,6 +120,11 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(manual)d.toast(message(),!ok);
    refreshPanel();
    return ok;
+  }catch(error){
+   writerFeedback='同期失敗：'+String(error?.message||error);
+   d.setStatus(writerFeedback);
+   if(manual)d.toast(writerFeedback,true);
+   return false;
   }finally{
    writerRunBusy=false;
    if(!ok)batch.forEach(id=>queuedDutyIds.add(id));
@@ -128,7 +133,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(queuedDutyIds.size&&ok)queueSync(250);
   }
  }
- function schedule(){
+ function schedule(retry=false){
   if(viewEnabled()){viewSchedule();return;}
   if(!enabled())return;
   const current=dutyStates(d.getModel());
@@ -140,7 +145,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    }
   }
   observedDutyStates=current;
-  if(changed||queuedDutyIds.size)queueSync(250);
+  if(changed||(retry&&queuedDutyIds.size))queueSync(250);
  }
  async function viewNow(manual=false){
   if(!viewEnabled()||viewerBusy)return false;
