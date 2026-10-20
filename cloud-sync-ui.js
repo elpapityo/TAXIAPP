@@ -1,8 +1,44 @@
 /* TAXIAPP v2 cloud-sync UI adapter. Opt-in, per-duty CAS, encrypted conflict backup. */
 (function(root){
 'use strict';
+// Event-based sync policy. Non-financial text, passenger counts, GPS samples
+// and payment-method selections never cause a Google duty upload on their own.
+// The next operational/fare trigger sends the complete latest duty snapshot.
+const moneyFields=['K','W','AF','AG','AH','AI','AN','AO','AQ','AR'];
+function moneyState(record){
+ const raw=record?.raw||{},meta=record?.meta||{},split=meta.splitPayment||{};
+ return [
+  moneyFields.map(key=>raw[key]??''),
+  meta.uberReservation??'',meta.uberTip??'',meta.uberAppDisplayed??'',
+  split.manualAmount??'',
+  (meta.highwaySections||[]).map(section=>section?.fee??'').filter(fee=>String(fee)!=='')
+ ];
+}
+function recordState(record){
+ if(!record)return null;
+ const raw=record.raw||{},meta=record.meta||{};
+ return [record.id||'',record.kind||'',record.status||'',
+  raw.E??'',raw.G??'',raw.M??'',meta.settledIso||'',
+  meta.cancelAt||'',moneyState(record)];
+}
+function dutyState(shift){
+ return JSON.stringify([
+  shift?.startedIso||shift?.startedAt||'',shift?.endedIso||shift?.endedAt||'',
+  shift?.waiting?.id||'',shift?.waiting?.startedIso||'',
+  (shift?.waitSegments||[]).map(x=>[x.id||'',x.startedIso||'',x.endedIso||'']),
+  shift?.breakActive?.id||'',shift?.breakActive?.startedIso||'',
+  (shift?.breakSessions||[]).map(x=>[x.id||'',x.endedIso||'']),
+  recordState(shift?.draft),
+  (shift?.records||[]).map(recordState)
+ ]);
+}
+function dutyStates(model){
+ return new Map((model?.shifts||[]).map(shift=>[String(shift.id),dutyState(shift)]));
+}
+root.TAXIAPP_SYNC_EVENT_POLICY=Object.freeze({dutyState,dutyStates});
 root.TAXIAPP_SYNC_UI=function(d){
  let timer=null,viewerTimer=null,viewerBusy=false;
+ let observedDutyStates=null,queuedDutyIds=new Set(),writerRunBusy=false;
  let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
  let archiveRows=[],archiveDetail=null,archiveError='',archiving=false;
  let writerBootstrapBusy=false;
@@ -37,6 +73,8 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(!d.writerBootstrapAllowed?.())return false;
    if(!await d.onWriterSnapshot(shifts))return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
+   observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
+   if(timer!==null){clearTimeout(timer);timer=null;}
    writerFeedback='Googleから'+shifts.length+'乗務を取得・保存しました';
    d.onWriterBootstrapReady?.();
    d.setStatus(writerFeedback);return true;
@@ -46,37 +84,68 @@ root.TAXIAPP_SYNC_UI=function(d){
    d.setStatus(writerFeedback);return false;
   }finally{writerBootstrapBusy=false;}
  }
+ function queueSync(delay=250){
+  if(timer!==null||!enabled()||writerRunBusy)return;
+  timer=setTimeout(()=>{timer=null;void run(false);},delay);
+ }
  async function run(manual=false){
   if(viewEnabled())return viewNow(manual);
   if(!enabled()){
-   writerFeedback='同期停止：Google接続情報または双方向同期設定を確認してください';
-   d.setStatus(writerFeedback);if(!d.isSettings?.())d.render?.();
-   if(manual)d.toast(writerFeedback,true);
+   if(manual){
+    writerFeedback='同期停止：Google接続情報または双方向同期設定を確認してください';
+    d.setStatus(writerFeedback);d.toast(writerFeedback,true);
+   }
    return false;
   }
-  if(status().busy)return false;
-  writerFeedback='Googleから照合中…';
-  d.setStatus(writerFeedback);if(!d.isSettings?.())d.render?.();
+  if(writerRunBusy||status().busy)return false;
+  if(!manual&&!queuedDutyIds.size)return true;
+  const batch=[...queuedDutyIds];
+  queuedDutyIds.clear();
+  writerRunBusy=true;
+  writerFeedback='Googleと照合中…';
+  d.setStatus(writerFeedback);
   const before=status().lastSyncAt;
-  const ok=await engine.run();
-  if(status().conflicts.length)await saveConflictCopies();
-  writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
-   '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
-  if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
-  d.setStatus(message());
-  // Do not destroy expanded Settings panels or current input focus.
-  if(!d.isSettings?.())d.render?.();
-  if(manual)d.toast(message(),!ok);
-  refreshPanel();
-  return ok;
+  let ok=false;
+  try{
+   // A manual verification checks every duty; normal operations touch only
+   // duties that had status, break or fare changes since the last sync.
+   ok=await engine.run(manual?undefined:batch);
+   if(status().conflicts.length)await saveConflictCopies();
+   writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
+    '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
+   if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
+   d.setStatus(message());
+   // A background confirmation must never dismiss a driver's active input.
+   if(!d.isSettings?.()&&!d.isEditing?.())d.render?.();
+   if(manual)d.toast(message(),!ok);
+   refreshPanel();
+   return ok;
+  }catch(error){
+   writerFeedback='同期失敗：'+String(error?.message||error);
+   d.setStatus(writerFeedback);
+   if(manual)d.toast(writerFeedback,true);
+   return false;
+  }finally{
+   writerRunBusy=false;
+   if(!ok)batch.forEach(id=>queuedDutyIds.add(id));
+   // Changes saved during the network round trip must be sent afterwards.
+   // A failed batch waits for another meaningful edit, reconnect or retry.
+   if(queuedDutyIds.size&&ok)queueSync(250);
+  }
  }
- function schedule(){
+ function schedule(retry=false){
   if(viewEnabled()){viewSchedule();return;}
-  if(!enabled()||timer!==null)return;
-  timer=setTimeout(async()=>{
-   timer=null;
-   await run(false);
-  },1500);
+  if(!enabled())return;
+  const current=dutyStates(d.getModel());
+  if(!observedDutyStates){observedDutyStates=current;return;}
+  let changed=false;
+  for(const [id,fingerprint] of current){
+   if(observedDutyStates.get(id)!==fingerprint){
+    queuedDutyIds.add(id);changed=true;
+   }
+  }
+  observedDutyStates=current;
+  if(changed||(retry&&queuedDutyIds.size))queueSync(250);
  }
  async function viewNow(manual=false){
   if(!viewEnabled()||viewerBusy)return false;
