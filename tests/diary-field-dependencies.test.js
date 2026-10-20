@@ -136,4 +136,37 @@ assert.ok(html.includes('data-ride-distance-setting="${key}"'));
 assert.ok(html.includes("event.target.matches('[data-distance-setting],[data-ride-distance-setting]')"));
 assert.ok(html.includes('event.target.dataset.distanceSetting||event.target.dataset.rideDistanceSetting'));
 assert.ok(html.includes('model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;'));
+// Execute the exact source change handler as a writer, with simulated DOM controls.
+// The production read-only browser blocks edits by design; never bypass that guard.
+const handlerStart=html.indexOf("if(event.target.matches('[data-distance-setting],[data-ride-distance-setting]'))");
+const handlerEnd=html.indexOf("if(event.target.matches('[data-pref-gps-start]'))",handlerStart);
+assert.ok(handlerStart>0&&handlerEnd>handlerStart);
+const handlerCode=html.slice(handlerStart,handlerEnd);
+const legacy={dataset:{distanceSetting:'highwayDistance'},value:'on',
+ matches:selector=>selector==='[data-distance-setting],[data-ride-distance-setting]'};
+const modern={dataset:{rideDistanceSetting:'highwayDistance'},checked:false,
+ matches:selector=>selector==='[data-distance-setting],[data-ride-distance-setting]'||selector==='[data-ride-distance-setting]'};
+const testModel={prefs:{highwayDistance:'on'},shifts:[{id:'unchanged',records:[{raw:{W:900,S:'100',V:'110'}}]}]};
+const originalSales=JSON.stringify(testModel.shifts);
+let saves=0,renders=0,notices=0;
+const settingsContext={event:{target:modern},model:testModel,
+ appEl:{querySelectorAll:selector=>selector==='[data-distance-setting]'?[legacy]:
+  selector==='[data-ride-distance-setting]'?[modern]:[]},
+ saveLater:()=>{saves++;},render:()=>{renders++;},toast:()=>{notices++;}};
+vm.createContext(settingsContext);
+const runSetting=()=>vm.runInContext('(function(){'+handlerCode+'})()',settingsContext);
+runSetting();
+assert.equal(testModel.prefs.highwayDistance,'off');
+assert.equal(legacy.value,'off','original GPS/highway settings must mirror new checkbox immediately');
+assert.equal(modern.checked,false);
+legacy.value='on';settingsContext.event.target=legacy;
+runSetting();
+assert.equal(testModel.prefs.highwayDistance,'on');
+assert.equal(modern.checked,true,'new diary checkbox must mirror original dropdown immediately');
+assert.equal(saves,2);
+assert.equal(renders,2);
+assert.equal(notices,2);
+assert.equal(JSON.stringify(testModel.shifts),originalSales,'switching distance settings must not touch saved records');
+assert.match(html,/document\.addEventListener\(eventName,blockViewerEdit,true\)/,
+ 'one-writer / read-only security guard must be preserved');
 console.log('PASS 2,048 diary visibility combinations × ride/dispatch/cancel/empty, required fields, shared distance, hidden save validation, unchanged raw data');
