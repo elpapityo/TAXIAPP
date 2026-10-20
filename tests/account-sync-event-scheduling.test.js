@@ -13,7 +13,7 @@ assert.doesNotMatch(auto,/schedule\(2500\)/);
 assert.match(auto,/next==='writer'\&\&next!==previous/);
 assert.match(auto,/function editingEnded\(\)/);
 assert.match(main,/accountSettingsAuto\?\.editingEnded\(\)/);
-assert.match(main,/account-auto-sync\.js\?v=20261017-13/);
+assert.ok(html.includes('account-auto-sync.js?v=20261020-1'));
 function between(a,b){
  const start=auto.indexOf(a);
  assert.ok(start>=0,'missing '+a);
