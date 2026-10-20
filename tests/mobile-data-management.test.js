@@ -41,6 +41,7 @@ const model={version:1,activeId:'shift-open',prefs:{driver:'他の設定は保�
 const before=JSON.stringify(model);
 const ctx={
  model,Array,String,
+ legacyDiary:()=>false, // administrator migration preview is absent in the ordinary-user fixture
  titleBlock:(title)=>'<h1>'+title+'</h1>',
  shortTime:(s)=>String(s||'').slice(0,5),
  safeText:s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;')
