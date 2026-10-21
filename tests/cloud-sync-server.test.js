@@ -79,6 +79,29 @@ assert.equal(context.syncRevisionV2_(ss,legacy.shift.id).revision,3);
 assert.equal(context.syncRevisionV2_(ss,legacy.shift.id).managed,true);
 context.doPost(param);
 assert.equal(context.syncRevisionV2_(ss,legacy.shift.id).revision,3,'legacy must not overwrite managed v2');
+
+const archived=JSON.stringify(nativeGet(id));
+const trash=context.syncSetTrashV2_(id,2,true);
+assert.equal(trash.revision,3);
+assert.equal(trash.deleted,true);
+assert.equal(context.syncRevisionV2_(ss,id).managed,true);
+assert.equal(context.syncListV2_().shifts.find(x=>x.id===id).deleted,true);
+assert.equal(JSON.stringify(nativeGet(id)),archived,'Google日報原本を消さずに論理削除する');
+assert.throws(()=>context.syncGetV2_(id),/ゴミ箱/);
+assert.throws(()=>context.syncPutV2_(payload,'3'),/削除済み/);
+assert.throws(()=>context.syncSetTrashV2_(id,2,false),/SYNC_CONFLICT:3/);
+const restore=context.syncSetTrashV2_(id,3,false);
+assert.equal(restore.deleted,false);
+assert.equal(restore.revision,4);
+assert.equal(context.syncGetV2_(id).shift.id,id);
+const trashPost=context.doPost({parameter:{
+ key:'x'.repeat(64),action:'syncTrash',shiftId:id,baseRevision:'4',
+ nonce:'trash-test',origin:'https://elpapityo.github.io'}});
+assert.match(trashPost.html,/"ok":true/);
+assert.equal(context.syncRevisionV2_(ss,id).revision,5);
+assert.equal(context.syncRevisionV2_(ss,id).deleted,true);
+assert.equal(JSON.stringify(nativeGet(id)),archived);
+console.log('Google日報クラウド：ゴミ箱と復元をCASで処理し、原本・印刷データは保持');
 assert.match(src,/TAXIAPP_ANDROID_ORIGIN\s*=\s*'https:\/\/appassets\.androidplatform\.net'/);
 assert.match(src,/if\(version\.managed\)throw Error/);
 assert.match(src,/if\(current\.revision!==base\)/);
