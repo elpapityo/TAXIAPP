@@ -1385,8 +1385,21 @@ async function afterTrashChange({uid,shiftId,action}){
    trashAccountCheck(uid,generation);
    if(JSON.stringify(stored)!==JSON.stringify(next))
     throw Error('端末の削除後状態を保存確認できません。保護コピーから確認してください');
-   if(JSON.stringify(model)!==JSON.stringify(current))
-    throw Error('端末で編集中の変更を検知しました。原本を上書きしません');
+   if(JSON.stringify(model)!==JSON.stringify(current)){
+    // A local/GPS edit can occur while IndexedDB is writing. Never leave
+    // the already-written filtered snapshot as the next-login source when
+    // the live model contains newer, unsynced records. Restore that live
+    // model to the same account key before returning a conflict.
+    const latest=deepCopy(model);
+    if(db)await idbPut(db,latest,key);
+    else localStorage.setItem(key,JSON.stringify(latest));
+    const recovered=db?await idbGet(db,key):
+     JSON.parse(localStorage.getItem(key)||'null');
+    trashAccountCheck(uid,generation);
+    if(JSON.stringify(recovered)!==JSON.stringify(latest))
+     throw Error('端末の新しい記録を保存確認できません。保護コピーから復旧してください');
+    throw Error('端末で編集中の変更を検知しました。新しい端末原本を再保存し、削除済みの日報は再照合します');
+   }
    model=next;
   }
  }
