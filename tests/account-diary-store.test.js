@@ -45,6 +45,7 @@ const id='shift-1234-abc',shift={id,records:[],settings:{},startedAt:'10:00'};
  assert.deepEqual(await A.request('syncList'),{shifts:[]});
  const sent=await A.request('syncPut',{baseRevision:0,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift})});
  assert.equal(sent.revision,1);
+ assert.equal(sent.confirmed,true,'Firestoreは保存後にサーバー原本を読み戻して確認する');
  assert.equal((await A.request('syncList')).shifts.length,1);
  assert.equal((await A.request('syncList',{shiftIds:[id]})).shifts.length,1);
  assert.deepEqual((await B.request('syncList',{shiftIds:[id]})).shifts,[]);
