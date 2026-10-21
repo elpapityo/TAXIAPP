@@ -85,16 +85,19 @@ function create(deps){
   const cloud=new Map(incoming.map(shift=>[shift.id,shift]));
   if(cloud.size!==incoming.length)throw Error('クラウドの乗務IDが重複しています');
   const saved=getSaved(),local=[...(getModel()?.shifts||[])];
-  const pendingIds=[],localIds=new Set();
+  const pendingIds=[],heldIds=[],localIds=new Set();
   for(const shift of local){
    if(!shift||!validId(shift.id)||localIds.has(shift.id))
     throw Error('端末の日報IDが不正です。受信せず保持します');
    localIds.add(shift.id);
    const remote=cloud.get(shift.id),base=saved[shift.id];
    if(!remote){
-    if(base?.revision>0)
-     throw Error('以前同期した乗務 '+shift.id+
-      ' がクラウドで見つかりません。端末原本を保持して確認を待ちます');
+    if(base?.revision>0){
+     // Deleted/absent server originals are NOT new uploads. Keep the local
+     // restored duty accessible and require explicit cloud reconciliation.
+     heldIds.push(shift.id);
+     continue;
+    }
     pendingIds.push(shift.id);
     continue;
    }
@@ -104,7 +107,7 @@ function create(deps){
      ' に未同期の変更があります。クラウド受信で上書きせず停止しました');
   }
   const extra=local.filter(shift=>!cloud.has(shift.id));
-  return {shifts:[...incoming,...extra],pendingIds};
+  return {shifts:[...incoming,...extra],pendingIds,heldIds};
  }
  function assertSafeWriterSnapshot(incoming){
   planSafeWriterSnapshot(incoming);return true;
