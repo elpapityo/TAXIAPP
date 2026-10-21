@@ -89,6 +89,27 @@ assert.equal(interrupted.book['TAXIAPP_印刷データ'].values[3][7],'合成乗
 interrupted.book['TAXIAPP_印刷データ'].failWrites(false);
 assert.equal(runPublish(interrupted).state,'reprint-source-updated-needs-paper-review');
 
+// Multi-sheet update: if payments fail AFTER printed details changed,
+ // all touched sources must return to exactly the prior version.
+const multiple=setup(),modified=clone(multiple.updatedShift);
+modified.records[0].raw.N='QR'; // changes both printed payment display and split-payment labels
+const v5=projectTrustedPacket({
+ packet:{kind:'TAXIAPP_SHIFT_V1',shift:modified,summary:multiple.sums},
+ sourceRevision:5});
+multiple.sandbox.printV2AppendDraft_(multiple.stage,prepareV2({
+ sourceUid:fixture.uid,sourceRevision:5,expectedCommittedRevision:4,
+ virtual:v5,chunkSize:4000}),fixture.uid);
+const paymentSheet=multiple.book['TAXIAPP_決済内訳'];
+paymentSheet.failWrites(true);
+assert.throws(()=>runPublish(multiple),/Simulated Sheets service write failure/);
+assert.equal(multiple.book['TAXIAPP_印刷データ'].values[3][7],'合成乗車');
+assert.equal(multiple.book['TAXIAPP_決済内訳'].values[3][10],'主金種');
+assert.deepEqual(statuses(multiple.journal),['BEGIN','ROLLED_BACK']);
+compareProtected(multiple);
+paymentSheet.failWrites(false);
+assert.equal(runPublish(multiple).to,5);
+assert.deepEqual(statuses(multiple.journal),
+ ['BEGIN','ROLLED_BACK','BEGIN','COMMIT']);
 const wroteThenFailed=setup();
 const printable=wroteThenFailed.book['TAXIAPP_印刷データ'];
 const baseRange=printable.getRange;
