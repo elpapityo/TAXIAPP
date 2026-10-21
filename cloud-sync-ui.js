@@ -90,15 +90,16 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(shifts===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
    const visible=engine.excludeLocalRemovals(shifts);
    if(!stable()||!d.writerBootstrapAllowed?.())return false;
-   engine.assertSafeWriterSnapshot(visible);
-   if(!await d.onWriterSnapshot(visible))return false;
+   const planned=engine.planSafeWriterSnapshot(visible);
+   if(!await d.onWriterSnapshot(planned.shifts))return false;
    if(!stable())return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
+   planned.pendingIds.forEach(id=>queuedDutyIds.add(id));
    if(timer!==null){clearTimeout(timer);timer=null;}
-   writerFeedback='Googleから'+visible.length+'乗務を取得・保存しました';
+   writerFeedback='クラウドから'+visible.length+'乗務を取得・端末の未同期'+planned.pendingIds.length+'乗務を保護';
    d.onWriterBootstrapReady?.();
-   if(engine.hasLocalRemovals())queueSync(400);
+   if(queuedDutyIds.size||engine.hasLocalRemovals())queueSync(400);
    d.setStatus(writerFeedback);return true;
   }catch(error){
    if(stable()){
