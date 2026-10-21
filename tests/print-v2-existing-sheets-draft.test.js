@@ -7,6 +7,7 @@ const base=path.join(__dirname,'..'),fixtureId='shift-1792501200000-a',uid='synt
 const source=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyExistingSheetsDraft.gs'),'utf8');
 const stageJs=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyStageV2Draft.gs'),'utf8');
 const confirmJs=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyExistingSheetsConfirmDraft.gs'),'utf8');
+const reprintJs=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyExistingSheetsReprintPreflightDraft.gs'),'utf8');
 const production=fs.readFileSync(path.join(base,'google-apps-script','Code.gs'),'utf8');
 const html=fs.readFileSync(path.join(base,'index.html'),'utf8');
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -18,7 +19,7 @@ function ctx(){
    formatDate:()=> '2026-10-21 16:30:00'},
    LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
    Date,JSON,Math,Number,Object,Array,String,isFinite,Error,Set};
- vm.createContext(sandbox);vm.runInContext(stageJs+'\n'+source+'\n'+confirmJs,sandbox);
+ vm.createContext(sandbox);vm.runInContext(stageJs+'\n'+source+'\n'+confirmJs+'\n'+reprintJs,sandbox);
  return sandbox;
 }
 function sheet(name,header=[],maxRows=1200){
@@ -126,7 +127,7 @@ function make(){
  const virtual=projectTrustedPacket({packet:{kind:'TAXIAPP_SHIFT_V1',shift:sh,summary:sums},sourceRevision:3});
  const prepared=prepareV2({sourceUid:uid,sourceRevision:3,expectedCommittedRevision:0,virtual,chunkSize:4000});
  sandbox.printV2AppendDraft_(stage,prepared,uid);
- return {sandbox,ss,book,stage,prepared,legacyId,ui};
+ return {sandbox,ss,book,stage,prepared,legacyId,ui,shift:sh,sums};
 }
 function testRun(){
  const z=make(),{sandbox,ss,book,stage}=z;
@@ -239,6 +240,77 @@ function testRun(){
   'stale original must not remain selectable after index rollback');
  assert.equal(afterIndex.book['TAXIAPP_同期原本'].writes.length,0);
  // Race must be handled by a trusted backend and must never be reported as authorized.
+ // Stage 11 read-only reprint: immutable original V2 snapshot must match
+ // all four currently printed source rows BEFORE any revision can be updated.
+ const again=make();
+ const untilPublished=again.sandbox.printV2ExistingReprintPlan_(
+  again.ss,again.stage,fixtureId,uid,3);
+ assert.equal(untilPublished.status,'same-revision-checked');
+ assert.equal(untilPublished.sheetActions.length,4);
+ assert.equal(untilPublished.hasAnyChange,true,'not yet published source rows must not equal stage');
+ // Same-revision without matching sources is forbidden. A selected print
+ // must already match that immutable stage version for reprint eligibility.
+ const revised=make();
+ revised.sandbox.printV2ExistingPublishDraft_(revised.ss,revised.stage,fixtureId,uid,()=>true);
+ const beforeRevisionWrites=Object.fromEntries(labels.map(name=>[
+  name,revised.book[name].writes.length
+ ]));
+ const newShift=clone(revised.shift);
+ newShift.records[0].raw.AL='編集済み乗車地点（合成）';
+ const virtualV4=projectTrustedPacket({packet:{kind:'TAXIAPP_SHIFT_V1',
+  shift:newShift,summary:revised.sums},sourceRevision:4});
+ const nextPrepared=prepareV2({sourceUid:uid,sourceRevision:4,
+  expectedCommittedRevision:3,virtual:virtualV4,chunkSize:4000});
+ assert.equal(revised.sandbox.printV2AppendDraft_(revised.stage,nextPrepared,uid).state,'staged');
+ const diff=revised.sandbox.printV2ExistingReprintPlan_(
+  revised.ss,revised.stage,fixtureId,uid,3);
+ assert.equal(diff.status,'needs-maintenance-window-and-rollback');
+ assert.equal(diff.latestRevision,4);
+ assert.equal(diff.previousRevision,3);
+ assert.equal(diff.requiresRowMove,false);
+ assert.equal(diff.sheetActions.filter(x=>x.changed).length,1);
+ assert.equal(diff.sheetActions.find(x=>x.name==='TAXIAPP_印刷データ').beforeCount,37);
+ assert.equal(diff.sheetActions.find(x=>x.name==='TAXIAPP_印刷データ').afterCount,37);
+ assert.equal(diff.writeAuthorized,false);
+ assert.equal(diff.printAuthorized,false);
+ assert.equal(diff.selectorUnchanged,true);
+ for(const name of labels)assert.equal(revised.book[name].writes.length,
+  beforeRevisionWrites[name],'read-only reprint cannot touch '+name);
+ const changedCounts=make();
+ changedCounts.sandbox.printV2ExistingPublishDraft_(changedCounts.ss,
+  changedCounts.stage,fixtureId,uid,()=>true);
+ const extended=clone(changedCounts.shift);
+ const another=clone(extended.records[0]);
+ another.raw.A=38;
+ extended.records.push(another);
+ const newSums={...changedCounts.sums,meter:38000,goFee:7600,
+  cashRemittance:26600,totalRemittance:26600,
+  cashReceived:26600,paymentAllocated:45600};
+ const expanded=projectTrustedPacket({packet:{kind:'TAXIAPP_SHIFT_V1',
+  shift:extended,summary:newSums},sourceRevision:4});
+ changedCounts.sandbox.printV2AppendDraft_(changedCounts.stage,prepareV2({
+  sourceUid:uid,sourceRevision:4,expectedCommittedRevision:3,
+  virtual:expanded,chunkSize:4000}),uid);
+ const moved=changedCounts.sandbox.printV2ExistingReprintPlan_(
+  changedCounts.ss,changedCounts.stage,fixtureId,uid,3);
+ assert.equal(moved.status,'needs-row-reallocation-review');
+ assert.equal(moved.requiresRowMove,true);
+ const conflicting=make();
+ conflicting.sandbox.printV2ExistingPublishDraft_(
+  conflicting.ss,conflicting.stage,fixtureId,uid,()=>true);
+ conflicting.book['TAXIAPP_同期原本'].values[3]=[fixtureId,'OLD_GOOGLE_SOURCE'];
+ assert.throws(()=>conflicting.sandbox.printV2ExistingReprintPlan_(
+  conflicting.ss,conflicting.stage,fixtureId,uid,3),/混在を禁止/);
+ revised.book['TAXIAPP_印刷データ'].values[3][7]='unknown third party change';
+ assert.throws(()=>revised.sandbox.printV2ExistingReprintPlan_(
+  revised.ss,revised.stage,fixtureId,uid,3),/確定済み旧版/);
+ revised.book['TAXIAPP_印刷データ'].values[3][7]='合成乗車';
+ assert.throws(()=>revised.sandbox.printV2ExistingReprintPlan_(
+  revised.ss,revised.stage,fixtureId,'wrong-uid',3),/SHA256|本人UID/);
+ assert.throws(()=>revised.sandbox.printV2ExistingReprintPlan_(
+  revised.ss,revised.stage,fixtureId,uid,2),/確定行が不足/);
+ assert.equal(/printV2ExistingReprintPlan_/.test(production),false,
+  'no published reprint writer or runtime route');
  assert.equal(/printV2ExistingPublishDraft_|PrintOnlyExistingSheetsDraft/.test(production),false);
  assert.equal(/printV2ExistingPublishDraft_|PrintOnlyExistingSheetsDraft/.test(html),false);
  console.log('Existing sheet print-only draft PASS: 4 sources, original protection, no selector changes, interrupted retry and conflict rejection');
