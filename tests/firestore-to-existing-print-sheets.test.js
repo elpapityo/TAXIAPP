@@ -97,7 +97,7 @@ assert.equal(values.get('TAXIAPP_乗務一覧').get('2:13'),700);
 assert.equal(values.get('TAXIAPP_印刷データ').get('2:5'),1000);
 assert.equal(values.get('TAXIAPP_集計').get('6:3'),700);
 assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500).length,1);
-assert.ok(fetches.length===2,'read before lock and revalidate exact Firestore source');
+assert.ok(fetches.length===3,'read before lock, inside lock, and immediately before index publication');
 assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer synthetic-oauth'));
 const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
 assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
