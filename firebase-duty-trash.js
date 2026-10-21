@@ -68,6 +68,7 @@ function create(){
    const [original,trash,marker]=await Promise.all([
     tx.get(originalRef),tx.get(trashRef),tx.get(markerRef)]);
    guard(c);
+   if(sessionId(c)!==writerSessionId)throw Error('編集中の端末が変わりました');
    if(!original.exists())throw Error('指定された日報はクラウド上にありません');
    if(trash.exists())throw Error('同じIDの日報がすでにゴミ箱にあります');
    const row=original.data(),revision=revisionOf(row);
@@ -76,10 +77,15 @@ function create(){
    if(revision!==expectedRevision)
     throw Error('SYNC_CONFLICT:'+revision+':日報の版が変更されています');
    const shift=getShift(row,id);
+   // This prototype refuses to trash a currently open duty. Its GPS,
+   // pending ride and final settlement could otherwise be orphaned.
+   if(!shift.endedAt&&!shift.endedIso)
+    throw Error('未入庫の日報はゴミ箱に移せません。入庫・精算を先に確認してください');
    const prior=marker.exists()?marker.data():null;
    if(prior&&(prior.format!=='TAXIAPP_DUTY_TOMBSTONE_V1'||
-      prior.state!=='active'||prior.revision!==revision||
+      prior.state!=='active'||
       !Number.isSafeInteger(prior.generation)||prior.generation<1))
+
     throw Error('削除マーカーの更新番号が一致しません');
    const generation=prior?prior.generation+1:1;
    if(!Number.isSafeInteger(generation)||generation<1)
@@ -127,6 +133,7 @@ function create(){
    const [original,trash,marker]=await Promise.all([
     tx.get(originalRef),tx.get(trashRef),tx.get(markerRef)]);
    guard(c);
+   if(sessionId(c)!==writerSessionId)throw Error('編集中の端末が変わりました');
    if(original.exists())throw Error('同じIDの日報が存在します。上書きできません');
    if(!trash.exists()||!marker.exists())
     throw Error('ゴミ箱と削除履歴がそろっていません');
