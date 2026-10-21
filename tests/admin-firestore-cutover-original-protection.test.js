@@ -2,7 +2,9 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
 const a=html.indexOf('   if(accountScope.adminFirestore){',html.indexOf('onWriterSnapshot:async shifts=>'));
-const b=html.indexOf('   const storageKey=scopedStorageKey()',a);
+// Limit execution to the real legacy-protection guard; the snapshot overwrite follows 'const next'.
+// The former storageKey anchor was removed when scoped storage was refactored.
+const b=html.indexOf('   const next={...previous,shifts:',a);
 assert.ok(a>0&&b>a,'legacy administrator guard must run before the Firestore snapshot replaces the local model');
 const source=html.slice(a,b);
 const clone=x=>JSON.parse(JSON.stringify(x));
