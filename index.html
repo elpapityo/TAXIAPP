@@ -2253,6 +2253,7 @@ function historyLocationEditHtml(shift){
       (draft.splitSecond===p[0]?'selected':'')+'>'+safeText(p[1])+'</option>').join('')+'</select></label>'+
     '<label class="field"><span class="field-label">手動指定の決済金額（円）</span><input class="control" inputmode="decimal" data-history-edit-split="amount" value="'+safeText(draft.splitAmount??'')+'"></label>'+
     '<label class="field"><span class="field-label">金額を指定する金種</span><select class="control" data-history-edit-split="slot">'+
+    '<option value="" '+(draft.splitSlot===null?'selected':'')+'>未指定</option>'+
     '<option value="0" '+(draft.splitSlot===0?'selected':'')+'>最初の金種</option>'+
     '<option value="1" '+(draft.splitSlot===1?'selected':'')+'>追加金種</option></select></label></div>':'')+
    '<p class="caption-note">料金・手数料・納金の再計算には、既存アプリの正式計算処理を使用します。高速の複数区間など一部の複雑な明細は、この画面で変更できません。</p></details></section>';
@@ -2290,7 +2291,8 @@ function startHistoryLocationEdit(shiftId,recordId){
    [k,saved?.metaFields?.[k]??String(record.meta?.[k]??'')])):{},
   splitSecond:saved?.splitSecond??String(split.second||''),
   splitAmount:saved?.splitAmount??String(split.manualAmount??''),
-  splitSlot:saved?.splitSlot??(split.manualSlot===1?1:0),
+  splitSlot:saved&&Object.prototype.hasOwnProperty.call(saved,'splitSlot')?
+   saved.splitSlot:(split.manualSlot===0||split.manualSlot===1?split.manualSlot:null),
   message:mismatch?'Firestoreに新しい版があります。保存は停止中です。修正控えを確認し、不要なら「修正を取り消す」で原本へ戻してください。':''};
  saveHistoryLocationDraft(draft);
  historyLocationEdit=draft;
@@ -2315,7 +2317,7 @@ function historyLocationInputs(){
   for(const input of document.querySelectorAll('[data-history-edit-split]')){
    if(input.dataset.historyEditSplit==='second')draft.splitSecond=input.value;
    if(input.dataset.historyEditSplit==='amount')draft.splitAmount=input.value;
-   if(input.dataset.historyEditSplit==='slot')draft.splitSlot=Number(input.value);
+   if(input.dataset.historyEditSplit==='slot')draft.splitSlot=input.value===''?null:Number(input.value);
   }
  }
  saveHistoryLocationDraft(draft);
