@@ -3,7 +3,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'..','cloud-sync-ui.js'),'utf8');
-const idA='shift-1792620000000-ownerA';
+const idA='shift-1792620000000-ownerA',idB='shift-1792620000100-ownerB';
 let uid='uid-A',endpoint='/owner-A',pendingList=null,pendingRestore=null;
 let undoCount=0,receivedCount=0,listCount=0;
 const notices=[];
@@ -28,7 +28,7 @@ const sync=root.TAXIAPP_SYNC_UI({
   if(action==='syncList'){
    listCount++;
    if(listCount===1)return new Promise(resolve=>{pendingList=resolve;});
-   return Promise.resolve({shifts:[{id:idA,revision:2,deleted:true}]});
+   return Promise.resolve({shifts:[{id:idB,revision:2,deleted:true}]});
   }
   if(action==='syncRestore')return new Promise(resolve=>{pendingRestore=resolve;});
   throw Error('unexpected '+action);
@@ -48,10 +48,12 @@ const sync=root.TAXIAPP_SYNC_UI({
  assert.doesNotMatch(sync.panel(),/cloudId_A_unrelated/);
  assert.equal(await sync.cloudAction('load'),true);
  assert.match(sync.panel(),/クラウドから復元/);
- const staleRestore=sync.cloudAction('restore',idA);
+ assert.doesNotMatch(sync.panel(),/shift-1792620000000-ownerA/,'old owner duty must not appear');
+ assert.match(sync.panel(),/shift-1792620000100-ownerB/);
+ const staleRestore=sync.cloudAction('restore',idB);
  assert.equal(typeof pendingRestore,'function');
  sync.resetAccount();uid='uid-C';endpoint='/owner-C';
- pendingRestore({id:idA,revision:3,deleted:false});
+ pendingRestore({id:idB,revision:3,deleted:false});
  assert.equal(await staleRestore,false,'an in-flight restore must not update the next user');
  assert.equal(undoCount,0,'the new user deletion marker must remain intact');
  assert.equal(receivedCount,0,'the previous user duty must not be received by the next account');
