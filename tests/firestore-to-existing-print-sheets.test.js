@@ -60,7 +60,7 @@ const toField=v=>v===null?{nullValue:null}:typeof v==='string'?{stringValue:v}:
  (Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v}):
  Array.isArray(v)?{arrayValue:{values:v.map(toField)}}:
  {mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,toField(x)]))}};
-const payload={format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,shift};
+const payload={format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,shift,updatedAt:'2026-10-21T02:01:00.000Z'};
 const doc=(which=id,what=payload)=>({name:'projects/'+project+'/databases/(default)/documents/privateDuties/'+uid+'/shifts/'+which,
  fields:Object.fromEntries(Object.entries(what).map(([k,x])=>[k,toField(x)]))});
 const fetches=[];
@@ -99,7 +99,11 @@ assert.equal(values.get('TAXIAPP_集計').get('6:3'),700);
 assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500).length,1);
 assert.ok(fetches.length===2,'read before lock and revalidate exact Firestore source');
 assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer synthetic-oauth'));
-assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/同じ乗務ID/,'do not overwrite without revision recovery');
+const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'the identical Firebase revision may be read again without duplicate rows');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
+ 'idempotent read must leave all sheets unchanged');
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('shift-999-legacy'),/同じ乗務/,
  'same-ID legacy original must not be automatically converted');
