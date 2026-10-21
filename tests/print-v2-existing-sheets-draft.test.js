@@ -243,11 +243,9 @@ function testRun(){
  // Stage 11 read-only reprint: immutable original V2 snapshot must match
  // all four currently printed source rows BEFORE any revision can be updated.
  const again=make();
- const untilPublished=again.sandbox.printV2ExistingReprintPlan_(
-  again.ss,again.stage,fixtureId,uid,3);
- assert.equal(untilPublished.status,'same-revision-checked');
- assert.equal(untilPublished.sheetActions.length,4);
- assert.equal(untilPublished.hasAnyChange,true,'not yet published source rows must not equal stage');
+ assert.throws(()=>again.sandbox.printV2ExistingReprintPlan_(
+  again.ss,again.stage,fixtureId,uid,3),/確定済み旧版/,
+  'a duty not yet published to existing sheet rows can never be treated as reprint-ready');
  // Same-revision without matching sources is forbidden. A selected print
  // must already match that immutable stage version for reprint eligibility.
  const revised=make();
