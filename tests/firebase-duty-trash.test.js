@@ -5,7 +5,7 @@ const factory=globalThis.TAXIAPP_DUTY_TRASH;
 assert.equal(factory.RETENTION_DAYS,30);
 const clone=x=>JSON.parse(JSON.stringify(x));
 const id='shift-100-a';
-const originalShift={id,date:'2026-10-21',records:[{kind:'ride',raw:{K:2000}}],settings:{},startedAt:'08:00'};
+const originalShift={id,date:'2026-10-21',records:[{kind:'ride',raw:{K:2000}}],settings:{},startedAt:'08:00',endedAt:'18:00'};
 function harness(){
  const store=new Map(),calls=[],auth={currentUser:{uid:'user-A'}};
  const key=ref=>ref.uid+'/'+ref.section+'/'+ref.id;
@@ -81,6 +81,27 @@ function harness(){
   assert.equal(again.generation,2);
   assert.equal(h.store.get('user-A/tombstones/'+id).revision,2);
   assert.equal(h.store.get('user-A/trash/'+id).generation,2);
+ }
+ // Editing a restored duty bumps the source revision without requiring
+ // an ordinary sync client to rewrite the active tombstone after every edit.
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  await h.api.restore({shiftId:id,confirmed:true});
+  h.store.get('user-A/shifts/'+id).revision=3;
+  h.store.get('user-A/shifts/'+id).shift.records[0].raw.K=2900;
+  await h.api.move({shiftId:id,expectedRevision:3,confirmed:true});
+  assert.equal(h.store.get('user-A/trash/'+id).sourceRevision,3);
+  assert.equal(h.store.get('user-A/trash/'+id).shift.records[0].raw.K,2900);
+  assert.equal(h.store.get('user-A/tombstones/'+id).generation,2);
+ }
+ // A duty still in progress cannot be moved to a trash prototype.
+ {
+  const h=harness();
+  delete h.store.get('user-A/shifts/'+id).shift.endedAt;
+  await assert.rejects(h.api.move({shiftId:id,expectedRevision:1,confirmed:true}),/未入庫/);
+  assert.equal(h.store.has('user-A/shifts/'+id),true);
+  assert.equal(h.store.has('user-A/trash/'+id),false);
  }
  // If the original is duplicated before restore, fail closed.
  {
