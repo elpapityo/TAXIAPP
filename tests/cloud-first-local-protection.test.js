@@ -16,7 +16,8 @@ function harness(member=true){
  const ctx={
   deviceMode:'writer',writerLoadGate:true,writerLoadEpoch:7,MAX_RECORDS:60,
   model:{version:1,shifts:[clone(original)],activeId:original.id,prefs:{}},
-  accountScope:{uid:'user-A'},memberDiary:()=>member,
+  accountScope:{uid:'user-A'},accountScopeGeneration:1,memberDiary:()=>member,
+  trashEnabled:()=>false,
   deepCopy:clone,Date,Math,JSON,
   canonicalDutyJson:x=>JSON.stringify(x,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v),
   pendingMemberRecovery:null,memberRecoveryBusy:false,
