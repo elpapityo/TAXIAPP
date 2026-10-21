@@ -3,8 +3,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const context={Date,JSON,Number,Error,Object,Array,RegExp,Set,
  Utilities:{formatDate:(d,tz,format)=>{
-  assert.equal(tz,'Asia/Tokyo');assert.equal(format,'yyyy-MM-dd HH:mm:ss');
-  return new Intl.DateTimeFormat('sv-SE',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(d).replace('T',' ');
+  assert.equal(tz,'Asia/Tokyo');assert.ok(['yyyy-MM-dd','yyyy-MM-dd HH:mm:ss'].includes(format));
+  return new Intl.DateTimeFormat('sv-SE',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(d).replace('T',' ').slice(0,format==='yyyy-MM-dd'?10:19);
  }}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('google-apps-script/FirestorePrintSourcesDraft.gs','utf8'),context);
