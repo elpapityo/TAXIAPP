@@ -97,7 +97,9 @@ root.TAXIAPP_SYNC_UI=function(d){
    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
    planned.pendingIds.forEach(id=>queuedDutyIds.add(id));
    if(timer!==null){clearTimeout(timer);timer=null;}
-   writerFeedback='クラウドから'+visible.length+'乗務を取得・端末の未同期'+planned.pendingIds.length+'乗務を保護';
+   writerFeedback='クラウドから'+visible.length+'乗務を取得・端末の未同期'+planned.pendingIds.length+
+    '乗務を保護'+(planned.heldIds.length?'／以前の同期済み'+planned.heldIds.length+
+    '乗務はクラウド不在のため照合保留（自動再送信しません）':'');
    d.onWriterBootstrapReady?.();
    if(queuedDutyIds.size||engine.hasLocalRemovals())queueSync(400);
    d.setStatus(writerFeedback);return true;
