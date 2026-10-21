@@ -183,12 +183,30 @@ service cloud.firestore {
     get(tombPath(uid,shiftId)).data.state == 'deleted' &&
     get(tombPath(uid,shiftId)).data.generation == resource.data.generation &&
     get(tombPath(uid,shiftId)).data.revision == resource.data.sourceRevision &&
-    getAfter(tombPath(uid,shiftId)).data == get(tombPath(uid,shiftId)).data &&
+    getAfter(tombPath(uid,shiftId)).data.state == 'deleted' &&
+    getAfter(tombPath(uid,shiftId)).data.generation == resource.data.generation &&
+    getAfter(tombPath(uid,shiftId)).data.revision == resource.data.sourceRevision &&
+    getAfter(tombPath(uid,shiftId)).data.updatedAt == request.time &&
     !exists(dutyPath(uid,shiftId)) &&
     !existsAfter(dutyPath(uid,shiftId)) &&
     resource.data.expiresAt is timestamp &&
     resource.data.expiresAt <= request.time &&
-    editingSession(uid,resource.data.writerSessionId);
+    editingSession(uid,getAfter(tombPath(uid,shiftId)).data.writerSessionId);
+  }
+  // Expired cleanup changes only the writerSessionId/timestamp of the
+  // tombstone: it never removes the anti-resurrection marker.
+  function isPurging(uid,shiftId) {
+   return exists(trashPath(uid,shiftId)) &&
+    !existsAfter(trashPath(uid,shiftId)) &&
+    !exists(dutyPath(uid,shiftId)) &&
+    !existsAfter(dutyPath(uid,shiftId)) &&
+    get(trashPath(uid,shiftId)).data.expiresAt <= request.time &&
+    get(trashPath(uid,shiftId)).data.generation == resource.data.generation &&
+    get(trashPath(uid,shiftId)).data.sourceRevision == resource.data.revision &&
+    resource.data.state == 'deleted' &&
+    request.resource.data.state == 'deleted' &&
+    request.resource.data.generation == resource.data.generation &&
+    request.resource.data.revision == resource.data.revision;
   }
   match /privateDuties/{uid}/shifts/{shiftId} {
    allow get, list: if ownerEnabled(uid);
@@ -238,6 +256,8 @@ service cloud.firestore {
       request.resource.data.state == 'active' &&
       request.resource.data.generation == resource.data.generation &&
       isRestore(uid,shiftId))
+     ||
+     (isPurging(uid,shiftId))
     );
    allow delete: if false;
   }
