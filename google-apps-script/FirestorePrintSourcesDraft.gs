@@ -93,14 +93,16 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
   attempted.reverse().forEach(function(plan){
    try{
     var range=plan.sheet.getRange(plan.start,1,plan.rows.length,plan.width);
-    var actual=range.getValues();
-    // A failed setValues can nevertheless have partially written cells.
-    // Every cell must be either the intended new value or the original blank.
-    var safe=actual.length===plan.rows.length&&actual.every(function(row,i){
-     return row.length===plan.width&&row.every(function(cell,j){
-      return cell===''||cell===null||
-       JSON.stringify(cell)===JSON.stringify(plan.rows[i][j]);
-     });
+    var actual=range.getValues(),formulas=range.getFormulas();
+    // A competing formula can evaluate to the exact intended value.
+    // Never erase it during a failed-transfer rollback.
+    var safe=actual.length===plan.rows.length&&
+     formulas.length===plan.rows.length&&actual.every(function(row,i){
+     return row.length===plan.width&&formulas[i].length===plan.width&&
+      row.every(function(cell,j){
+       return !formulas[i][j]&&(cell===''||cell===null||
+        JSON.stringify(cell)===JSON.stringify(plan.rows[i][j]));
+      });
     });
     if(!safe){recovery.push(plan.name);return;}
     range.clearContent();
