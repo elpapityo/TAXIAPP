@@ -10,6 +10,56 @@
 const ID=/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/;
 const DAY_MS=86400000,RETENTION_DAYS=30;
 const clone=x=>JSON.parse(JSON.stringify(x));
+// The local model must never be silently republished after a server delete.
+// This read-only decision helper deliberately NEVER authorizes an upload.
+// Server-side tombstone Rules remain mandatory for old clients.
+function planReconciliation({uid,serverUid,localShifts,serverShifts,markerStates,markersComplete}={}){
+ if(typeof uid!=='string'||!uid||serverUid!==uid)
+  throw Error('本人UIDの照合が不一致です');
+ if(markersComplete!==true)
+  throw Error('削除マーカーの全件確認ができていません');
+ if(!Array.isArray(localShifts)||!Array.isArray(serverShifts)||
+    !Array.isArray(markerStates))
+  throw Error('日報と削除マーカーの一覧が不正です');
+ const toMap=(items,label)=>{
+  const seen=new Map();
+  for(const item of items){
+   if(!item||!ID.test(String(item.id||''))||seen.has(item.id))
+    throw Error(label+'の乗務IDが不正または重複しています');
+   seen.set(item.id,item);
+  }
+  return seen;
+ };
+ const local=toMap(localShifts,'端末'),remote=toMap(serverShifts,'Firebase');
+ const markers=toMap(markerStates,'削除マーカー');
+ for(const item of markerStates){
+  if(!['none','active','deleted'].includes(item.state))
+   throw Error('削除マーカーの状態が不正です');
+ }
+ // Marker reads must cover ALL local IDs. A missing result is NOT absence.
+ for(const id of local.keys())if(!markers.has(id))
+  throw Error('端末日報の削除マーカー照合が不足しています');
+ const result=[];
+ for(const [id,shift] of local){
+  const marker=markers.get(id),server=remote.get(id);
+  let action,reason;
+  if(marker.state==='deleted'){
+   action='protect-local-copy';reason='サーバーで削除済み。旧端末から再登録しない';
+   if(server)throw Error('削除マーカーとクラウド原本が矛盾しています：'+id);
+  }else if(server){
+   action=JSON.stringify(shift)===JSON.stringify(server)?'same':'review-difference';
+   reason=action==='same'?'原本が一致':'内容の差があるため個別確認が必要';
+  }else if(marker.state==='active'){
+   action='review-missing-cloud';reason='復元履歴があるのにクラウド原本がありません';
+  }else{
+   action='candidate-new';reason='サーバー原本も削除マーカーもありません（移行確認は別途必要）';
+  }
+  result.push({id,action,reason,uploadAuthorized:false});
+ }
+ for(const [id] of remote)if(!local.has(id))
+  result.push({id,action:'server-only',reason:'クラウドにだけ存在する原本',uploadAuthorized:false});
+ return {uid,complete:true,entries:result,uploadAuthorized:false};
+}
 function create(){
  let context=null,epoch=0;
  function bind(user,options={}){
@@ -106,6 +156,28 @@ function create(){
   guard(c);
   return result;
  }
+ // Read the tombstone for EVERY requested local shift, including absent
+ // tombstones; network/auth errors must abort the entire inspection.
+ async function readDeletionMarkers(shiftIds){
+  const c=checked();
+  if(!Array.isArray(shiftIds)||shiftIds.length>60||
+     new Set(shiftIds).size!==shiftIds.length)
+   throw Error('照合する日報IDが不正です');
+  const states=[];
+  for(const id of shiftIds){
+   const snap=await c.f.getDocFromServer(ref(c,'tombstones',id));
+   guard(c);
+   if(!snap.exists()){states.push({id,state:'none'});continue;}
+   const marker=snap.data();
+   if(marker?.format!=='TAXIAPP_DUTY_TOMBSTONE_V1'||
+      !['active','deleted'].includes(marker.state)||
+      !Number.isSafeInteger(marker.generation)||marker.generation<1)
+    throw Error('サーバーの削除マーカーが不正です：'+id);
+   states.push({id,state:marker.state,generation:marker.generation});
+  }
+  guard(c);
+  return {uid:c.uid,markersComplete:true,markerStates:states};
+ }
  async function list(){
   const c=checked();
   const snapshot=await c.f.getDocsFromServer(
@@ -168,7 +240,7 @@ function create(){
   guard(c);
   return result;
  }
- return Object.freeze({bind,move,restore,list});
+ return Object.freeze({bind,move,restore,list,readDeletionMarkers});
 }
-root.TAXIAPP_DUTY_TRASH=Object.freeze({create,RETENTION_DAYS});
+root.TAXIAPP_DUTY_TRASH=Object.freeze({create,planReconciliation,RETENTION_DAYS});
 })(typeof window!=='undefined'?window:globalThis);
