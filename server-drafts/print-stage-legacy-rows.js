@@ -19,10 +19,12 @@ const COLUMNS=Object.freeze({
  'TAXIAPP_決済内訳':Object.freeze(['乗務ID','営業番号','決済内訳番号','支払金種','支払金額','アプリ決済額','現金受取','高速料金','割引額','手数料','備考']),
  'TAXIAPP_集計':Object.freeze(['乗務ID','種類','金額','計算根拠','更新日時'])
 });
-const numeric=(value,label)=>{
+const SIGNED_TOTALS=new Set(['cashRemittance','totalRemittance']);
+const numeric=(value,label,allowNegative=false)=>{
  if(value===''||value===null||value===undefined)return 0;
  const n=Number(value);
- if(!Number.isSafeInteger(n)||n<0)throw Error(label+'の金額が不正です');
+ if(!Number.isSafeInteger(n)||(!allowNegative&&n<0))
+  throw Error(label+'の金額が不正です');
  return n;
 };
 const copy=x=>JSON.parse(JSON.stringify(x));
@@ -51,7 +53,7 @@ function projectTrustedPacket({packet,sourceRevision}={}){
     (!shift.endedAt&&!shift.endedIso)||!sum||
     !Number.isSafeInteger(sourceRevision)||sourceRevision<1)
   throw Error('印刷対象原本・更新番号が不正です');
- const totals=Object.fromEntries(SUM_KEYS.map(k=>[k,numeric(sum[k],k)]));
+ const totals=Object.fromEntries(SUM_KEYS.map(k=>[k,numeric(sum[k],k,SIGNED_TOTALS.has(k))]));
  if(totals.cancellation!==0||
     totals.totalRemittance!==totals.cashRemittance+totals.etcRemittance)
   throw Error('キャンセル料または納金合計が不正です');
