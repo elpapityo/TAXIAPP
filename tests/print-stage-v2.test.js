@@ -22,6 +22,20 @@ const totals={meter:60000,discount:0,goFee:12000,uberSurcharge:0,cashRemittance:
  etcRemittance:0,totalRemittance:42000,realToll:0,emptyToll:0,cancellation:0,
  tip:0,reservation:0,cashReceived:42000,paymentAllocated:72000};
 const original=JSON.stringify(shift),packet={kind:'TAXIAPP_SHIFT_V1',shift:clone(shift),summary:totals};
+// The real index.html totals() contract: reject plausible but inconsistent
+// receipt/allocation/cash deposit/ETC values before V2 hashes or Sheets writes.
+for(const key of ['cashReceived','paymentAllocated','cashRemittance',
+ 'etcRemittance','totalRemittance']){
+ const tampered=clone(packet);
+ tampered.summary[key]++;
+ assert.throws(()=>projectTrustedPacket({packet:tampered,sourceRevision:4}),
+  /現金受取|決済配分|GO納金|ETC合計/,'reject tampered '+key);
+}
+const wrongPayment=clone(packet);
+wrongPayment.shift.records[0].payments[0].company=699;
+assert.throws(()=>projectTrustedPacket({packet:wrongPayment,sourceRevision:4}),
+ /現金受取|決済配分|GO納金|ETC合計/,
+ 'reject hidden GO fee deduction without correcting totals');
 const virtual=projectTrustedPacket({packet,sourceRevision:4});
 assert.equal(virtual.pages[0].length,36);
 assert.equal(virtual.pages[1].length,24);
