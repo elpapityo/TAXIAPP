@@ -13,7 +13,7 @@ const sourceDuty={id,date:'2026-10-21',startedAt:'09:00',endedAt:'12:00',
  records:[{kind:'ride',raw:{A:1,K:1000},status:'complete'}],settings:{}};
 async function run(legacy,remote){
  const calls=[];
- const context={accountScope:{adminFirestore:true},db:{},
+ const context={accountScope:{adminFirestore:true},currentScope:()=>true,db:{},
  KEY:'taxiapp-v1',idbGet:async (db,key)=>{calls.push(key);return {shifts:clone(legacy)};},
  localStorage:{getItem:()=>null},JSON,Map,Error,
  googleShiftPacket:shift=>({shift:clone(shift)})};
