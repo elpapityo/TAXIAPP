@@ -2617,8 +2617,20 @@ function discardHistoryLocationEdit(){
  const draft=historyLocationEdit;
  if(!draft||draft.busy)return;
  if(!confirm('端末に保護した過去日報の修正案を取り消しますか？Firestoreの原本は変更しません。'))return;
- try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));}
- catch{draft.message='修正控えを削除できません';render();return;}
+ try{
+  const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
+  const snapshot=localStorage.getItem(key);
+  localStorage.removeItem(key);
+  if(draft.addRecord){
+   const pointer=historyPendingAdditionKey(draft.uid,draft.id,draft.sourceRecord.kind);
+   try{localStorage.removeItem(pointer);}
+   catch(error){
+    // Keep the in-progress edit addressable if the pointer could not be removed.
+    if(snapshot!==null)localStorage.setItem(key,snapshot);
+    throw error;
+   }
+  }
+ }catch{draft.message='修正控えを削除できません。端末の元データは保持しています';render();return;}
  historyLocationEdit=null;render();
 }
 
