@@ -79,10 +79,14 @@ function create(){
     docs=snapshot.docs;
    }
    ownerCheck(c);
+   const seen=new Set();
    return {shifts:docs.map(row=>{
-    const data=row.data(),id=row.id,revision=Number(data?.revision);
-    if(!ID.test(id)||!Number.isSafeInteger(revision)||revision<1)
-     throw Error('保存されている乗務一覧が不正です');
+    const data=row.data(),id=String(row.id||''),revision=Number(data?.revision);
+    if(!ID.test(id)||seen.has(id)||data?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+       !Number.isSafeInteger(revision)||revision<1||
+       data?.shift?.id!==id)
+     throw Error('保存されている乗務一覧の形式・ID・更新番号が不正です。同期を停止しました');
+    seen.add(id);
     return {id,revision,deleted:data?.trashed===true};
    })};
   }
