@@ -48,7 +48,7 @@ function context(mode){
     if(action==='syncGet')return {id,shift:cloud.get(id)};
     throw Error('unexpected '+action);
    }
-  })}}},
+  })}},
   ADMIN_FIRESTORE_PREF_PREFIX:'test-admin-firestore-optin:',
   deepCopy:o=>JSON.parse(JSON.stringify(o)),
   dateStamp:()=> '20261022',
