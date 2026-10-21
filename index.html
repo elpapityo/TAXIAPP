@@ -3131,6 +3131,7 @@ async function releaseVerifiedPreviousDuties(activeId){
    // A failed local write is NOT a completed archive. Reinsert the previous
    // original in memory rather than silently dropping the last protected copy.
    if(await save(true)!==true){
+    if(!sameOwner())return; // account switched during IndexedDB write
     model.shifts.splice(Math.min(at,model.shifts.length),0,released);
     await save(true);
     return;
