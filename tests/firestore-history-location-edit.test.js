@@ -12,6 +12,7 @@ const original={id:'shift-1792100000000-old',date:'2026-10-20',
 const active={id:'shift-1792300000000-current',records:[],settings:{},startedIso:'2026-10-22T08:00:00Z'};
 const server=new Map([[original.id,{revision:2,shift:JSON.parse(JSON.stringify(original))}]]);
 const storage=new Map();
+let sendUnknown=false;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const fields={historyEditPickup:{value:'新乗車地'},historyEditDropoff:{value:'新降車地'}};
 const ctx={
@@ -22,12 +23,17 @@ const ctx={
  historyCloudShifts:[clone(original)],historyLocationEdit:null,historyShiftId:'',
  historyCloudMessage:'',model:{shifts:[active],activeId:active.id},
  accountDiary:{ready:()=>true,async request(action,payload){
+  if(action==='syncGet'){
+   const item=server.get(payload.shiftId);
+   return {id:payload.shiftId,revision:item.revision,shift:clone(item.shift)};
+  }
   assert.equal(action,'syncPut');
   const shift=JSON.parse(payload.payload).shift;
   assert.equal(shift.id,original.id,'現在の乗務は送信しない');
   const item=server.get(shift.id);
   if(item.revision!==payload.baseRevision)throw Error('SYNC_CONFLICT:'+item.revision);
   item.revision++;item.shift=clone(shift);
+  if(sendUnknown){sendUnknown=false;throw Error('通信断で保存結果不明');}
   return {id:shift.id,revision:item.revision,confirmed:true};
  }},
  memberDiary:()=>true,canEditNow:()=>true,
@@ -40,6 +46,11 @@ const ctx={
  validateDraft:()=>[],validatePaymentBreakdown:()=>[],deriveRaw:row=>({...row.raw}),
  document:{getElementById:id=>fields[id]},
  deepCopy:clone,render:()=>{},toast:()=>{},safeText:s=>String(s),
+ canonicalStoredDuty:obj=>{
+  if(Array.isArray(obj))return obj.map(ctx.canonicalStoredDuty);
+  if(obj&&typeof obj==='object')return Object.fromEntries(Object.keys(obj).sort().map(k=>[k,ctx.canonicalStoredDuty(obj[k])]));
+  return obj;
+ },
  confirm:()=>true,googleShiftPacket:()=>{throw Error('一般利用者は印刷計算を行わない');},
  Number,JSON,String,encodeURIComponent,Error,Map
 };
@@ -90,5 +101,22 @@ vm.runInContext(source.slice(begin,end),ctx);
  assert.equal(server.get(original.id).shift.records.length,1,'対象営業だけ削除');
  assert.equal(server.get(original.id).shift.records[0].raw.A,1);
  assert.equal(ctx.model.shifts[0].id,active.id,'営業削除後も現在乗務を維持');
+ ctx.startHistoryNewRecord('ride');
+ const canceledId=ctx.historyLocationEdit.recordId;
+ assert.ok([...storage.keys()].some(k=>k.includes('taxiapp-history-new-v1')),'追加中の参照を保持');
+ ctx.discardHistoryLocationEdit();
+ assert.equal(ctx.historyLocationEdit,null,'追加中の修正を取り消せる');
+ assert.equal([...storage.keys()].filter(k=>k.includes('taxiapp-history-new-v1')).length,0,
+  '中止時は追加参照も外し、次の追加を妨げない');
+ ctx.startHistoryNewRecord('ride');
+ assert.notEqual(ctx.historyLocationEdit.recordId,canceledId,'取消した追加を新規作成としてやり直せる');
+ ctx.discardHistoryLocationEdit();
+ ctx.startHistoryLocationEdit(original.id,'ride-1');
+ fields.historyEditPickup.value='送信結果不明からの確認';
+ sendUnknown=true;
+ await ctx.commitHistoryLocationEdit();
+ assert.equal(ctx.historyLocationEdit,null,'CAS通信結果不明でも原本が一致すれば保存確認');
+ assert.equal(server.get(original.id).shift.records[0].raw.AL,'送信結果不明からの確認');
+ assert.equal(storage.size,0,'一致した修正控えだけ安全に整理');
  console.log('Firestore過去日報：新規1営業追加・削除・CAS・端末原本分離を確認');
 })().catch(error=>{console.error(error);process.exitCode=1;});
