@@ -377,7 +377,8 @@ root.TAXIAPP_SYNC_UI=function(d){
     if(!root.confirm('【クラウド日報のゴミ箱移動】\n'+date+'／営業'+count+'件\nID: '+id+
        '\n\n復元できる状態で非表示にします。印刷対象からも除外します。続けますか？'))return false;
     verifyScope();
-    d.download(JSON.stringify({kind:'TAXIAPP_BEFORE_TRASH',shift:row.shift,revision:row.revision}),
+    d.download(JSON.stringify({version:1,ownerUid:d.scopeKey?.()||null,
+      shifts:[row.shift],cloudBackup:{kind:'TAXIAPP_BEFORE_TRASH',revision:row.revision}}),
       'TAXIAPP_削除前バックアップ_'+d.dateStamp()+'_'+id+'.json','application/json;charset=utf-8');
     if(!root.confirm('元の日報のバックアップを保存したことを確認しましたか？\nOKでゴミ箱へ移動します。'))return false;
     verifyScope();
