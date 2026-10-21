@@ -21,19 +21,23 @@ function recordState(record){
   raw.E??'',raw.G??'',raw.M??'',meta.settledIso||'',
   meta.cancelAt||'',moneyState(record)];
 }
-function dutyState(shift){
+function dutyState(shift,operationalOnly=false){
+ const eventRecord=record=>operationalOnly?[
+  record?.id||'',record?.kind||'',record?.status||'',
+  record?.meta?.settledIso||'',record?.meta?.cancelAt||''
+ ]:recordState(record);
  return JSON.stringify([
   shift?.startedIso||shift?.startedAt||'',shift?.endedIso||shift?.endedAt||'',
   shift?.waiting?.id||'',shift?.waiting?.startedIso||'',
   (shift?.waitSegments||[]).map(x=>[x.id||'',x.startedIso||'',x.endedIso||'']),
   shift?.breakActive?.id||'',shift?.breakActive?.startedIso||'',
   (shift?.breakSessions||[]).map(x=>[x.id||'',x.endedIso||'']),
-  recordState(shift?.draft),
-  (shift?.records||[]).map(recordState)
+  eventRecord(shift?.draft),
+  (shift?.records||[]).map(eventRecord)
  ]);
 }
-function dutyStates(model){
- return new Map((model?.shifts||[]).map(shift=>[String(shift.id),dutyState(shift)]));
+function dutyStates(model,operationalOnly=false){
+ return new Map((model?.shifts||[]).map(shift=>[String(shift.id),dutyState(shift,operationalOnly)]));
 }
 root.TAXIAPP_SYNC_EVENT_POLICY=Object.freeze({dutyState,dutyStates});
 root.TAXIAPP_SYNC_UI=function(d){
@@ -78,7 +82,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(d.allowLegacyLocalWriter?.()&&d.prefs().syncMode!=='on'){
     if(!stable()||!d.writerBootstrapAllowed?.())return false;
     writerFeedback='端末内の日報を使用中（双方向同期OFF）';
-    observedDutyStates=dutyStates(d.getModel());
+    observedDutyStates=dutyStates(d.getModel(),Boolean(d.remoteOnDemand?.()));
     d.onWriterBootstrapReady?.();
     d.setStatus(writerFeedback);
     return true;
@@ -115,7 +119,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     if(!stable()||!d.writerBootstrapAllowed?.())return false;
     if(!await d.onWriterSnapshot(selected))return false;
     if(!stable())return false;
-    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
+    observedDutyStates=dutyStates(d.getModel(),Boolean(d.remoteOnDemand?.()));queuedDutyIds.clear();
     writerFeedback='本人Firestoreへ接続済み／端末の日報'+(d.getModel()?.shifts?.length||0)+'件を保護';
     d.onWriterBootstrapReady?.();
     d.setStatus(writerFeedback);return true;
@@ -131,7 +135,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(!await d.onWriterSnapshot(planned.shifts))return false;
    if(!stable())return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
-   observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
+   observedDutyStates=dutyStates(d.getModel(),Boolean(d.remoteOnDemand?.()));queuedDutyIds.clear();
    planned.pendingIds.forEach(id=>queuedDutyIds.add(id));
    if(timer!==null){clearTimeout(timer);timer=null;}
    writerFeedback='クラウドから'+visible.length+'乗務を取得・端末の未同期'+planned.pendingIds.length+
@@ -223,7 +227,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  function schedule(retry=false){
   if(viewEnabled()){viewSchedule();return;}
   if(!enabled())return;
-  const current=dutyStates(d.getModel());
+  const current=dutyStates(d.getModel(),Boolean(d.remoteOnDemand?.()));
   if(!observedDutyStates){observedDutyStates=current;if(queuedDutyIds.size||engine.hasLocalRemovals())queueSync(250);return;}
   let changed=false;
   for(const [id,fingerprint] of current){
