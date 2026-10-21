@@ -60,6 +60,18 @@ jobs:
           echo "Node tests executed: $count; failed: $failures"
           test "$failures" -eq 0
 
+      - name: Run newly merged main safety tests on staged app (workspace-only)
+        run: |
+          set -e
+          git fetch --no-tags --depth=1 origin main
+          for file in tests/account-diary-validation-boundaries.test.js tests/sync-account-switch-inflight.test.js tests/print-safety-boundaries.test.js; do
+            git show "FETCH_HEAD:$file" > "$file"
+            echo "::group::main regression $file"
+            node "$file"
+            echo "::endgroup::"
+          done
+          echo "Three main branch data-protection suites passed against staged code"
+
   gps-regression:
     name: GPS/HTML integration guards
     runs-on: ubuntu-latest
