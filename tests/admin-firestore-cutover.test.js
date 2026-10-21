@@ -88,4 +88,42 @@ assert.throws(()=>p.compareLegacySheet({
 assert.throws(()=>p.compareLegacySheet({
  uid:'my-uid',localShifts:[a],sheetShifts:[],selectedIds:['shift-404-a']
 }),/見つかりません/);
+// Three-source owner-only preflight must not regard unknown Google as empty.
+const tri=p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a,b,extra1],
+ cloudShifts:[altered,sheetOnly],
+ sheetShifts:[a,b],selectedIds:[a.id,b.id]
+});
+assert.equal(tri.firestoreVerified,true);
+assert.equal(tri.sheetVerified,true);
+assert.equal(tri.selectedCount,2);
+assert.equal(tri.selectedReviewCount,2);
+assert.equal(tri.firestoreOnlyCount,1);
+assert.equal(tri.firebaseCount,2);
+assert.equal(tri.entries[0].cloudStatus,'different');
+assert.equal(tri.entries[0].sheetStatus,'same');
+assert.ok(tri.entries[0].cloudOverlap.includes(sheetOnly.id));
+assert.equal(tri.cloudOnly[0].id,sheetOnly.id);
+assert.equal(tri.migrationAuthorized,false);
+assert.equal(tri.deleteAuthorized,false);
+const unknownSheet=p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a],
+ cloudShifts:[],selectedIds:[a.id]
+});
+assert.equal(unknownSheet.sheetVerified,false);
+assert.equal(unknownSheet.googleCount,null);
+assert.equal(unknownSheet.entries[0].sheetStatus,'not-checked');
+assert.equal(unknownSheet.entries[0].cloudStatus,'not-in-firestore');
+assert.throws(()=>p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'another-uid',localShifts:[a],
+ cloudShifts:[a],selectedIds:[a.id]
+}),/UID/);
+assert.throws(()=>p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a],
+ cloudShifts:[a,a],selectedIds:[a.id]
+}),/重複する/);
+assert.throws(()=>p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a],
+ cloudShifts:[a],selectedIds:['shift-8888-other']
+}),/ありません/);
 console.log('Administrator Firestore cutover preflight passed: selection, overlaps, UID isolation, no implicit migration');
