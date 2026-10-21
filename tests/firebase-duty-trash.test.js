@@ -304,5 +304,23 @@ function harness(){
   await assert.rejects(h.api.purgeExpired(),/UID/);
   assert.equal(h.store.has('user-A/shifts/'+id),true);
  }
+ // A writer session that changes between selection and transaction commit
+ // must never be allowed to delete or purge a duty.
+ {
+  const h=harness();let calls=0;
+  h.session.sessionId=()=>++calls===1?'a'.repeat(36):'b'.repeat(36);
+  await assert.rejects(h.api.move({shiftId:id,expectedRevision:1,confirmed:true}),/端末/);
+  assert.equal(h.store.has('user-A/shifts/'+id),true);
+  assert.equal(h.store.has('user-A/trash/'+id),false);
+ }
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  h.store.get('user-A/trash/'+id).expiresAt='2020-01-01T00:00:00.000Z';
+  let calls=0;
+  h.session.sessionId=()=>++calls===1?'a'.repeat(36):'b'.repeat(36);
+  await assert.rejects(h.api.purgeExpired(),/端末/);
+  assert.equal(h.store.has('user-A/trash/'+id),true);
+ }
  console.log('Firestore trash staging passed: CAS, UID isolation, 30-day expiry, move/restore and preservation');
 })().catch(error=>{console.error(error);process.exitCode=1;});
