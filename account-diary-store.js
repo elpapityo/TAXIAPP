@@ -24,6 +24,7 @@ function create(){
   const backend=options.admin&&options.storageBackend!=='firestore'?'legacy':'firestore';
   current={uid:user.uid,kind:backend==='firestore'?'member':'legacy',
    admin:options.admin===true,storageBackend:backend,
+   readOnly:options.readOnly===true,
    f:options.f,db:options.db,auth:options.auth,session:options.session};
  }
  function ready(){
@@ -94,6 +95,7 @@ function create(){
    return {id,revision,shift:validate(row.shift,id)};
   }
   if(action==='syncPut'){
+   if(c.readOnly)throw Error('照合用Firestore接続では日報を書き込めません');
    const parsed=JSON.parse(String(fields.payload||'null'));
    if(parsed?.kind!=='TAXIAPP_SHIFT_V1')throw Error('乗務データの種類が不正です');
    const id=String(parsed?.shift?.id||''),shift=validate(parsed.shift,id);
