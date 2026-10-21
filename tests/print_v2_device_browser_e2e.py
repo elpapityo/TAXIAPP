@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Synthetic V2 print device lab: Chrome mobile/landscape/desktop checks. No real data."""
-import tempfile
+import tempfile,base64,io
+from pypdf import PdfReader
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -42,6 +43,15 @@ try:
         latest.click()
         assert browser.find_element(By.ID,"derived").get_attribute("value")=="shift-1792124520000"
         assert browser.find_element(By.ID,"selectDuty").get_attribute("disabled") is not None
+    # Actual Chrome print rendering: independent laboratory sheet must
+    # produce exactly two A4 landscape pages even at the 60-record boundary.
+    for records in (1,36,37,60):
+        Select(browser.find_element(By.ID,"scenario")).select_by_value(str(records))
+        pdf=browser.execute_cdp_cmd("Page.printToPDF",{
+            "printBackground":True,"landscape":True,"preferCSSPageSize":True
+        })
+        count=len(PdfReader(io.BytesIO(base64.b64decode(pdf["data"]))).pages)
+        assert count==2,("synthetic A4 pages",records,count)
     browser.execute_script("window.__printed=0;window.print=()=>{window.__printed++};")
     browser.find_element(By.ID,"print").click()
     assert browser.execute_script("return window.__printed")==1
@@ -51,6 +61,6 @@ try:
     Select(browser.find_element(By.ID,"scenario")).select_by_value("37")
     assert "14 / 14" in browser.find_element(By.ID,"status").text
     assert browser.find_element(By.ID,"derived").get_attribute("value")=="shift-1792124520000"
-    print("V2 device preview smoke PASS: mobile portrait/landscape, tablet, desktop, 1/36/37/60, selection, print dialog stub, offline")
+    print("V2 device preview smoke PASS: mobile portrait/landscape, tablet, desktop, 1/36/37/60, selection, 2-page print layout, print dialog stub, offline")
 finally:
     browser.quit()
