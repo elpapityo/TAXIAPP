@@ -79,6 +79,9 @@ vm.runInContext(source.slice(begin,end),ctx);
  assert.equal(ctx.historyLocationEdit.al,'再修正案');
  assert.equal(storage.size,1,'競合した修正控えは削除しない');
  assert.match(ctx.historyLocationEdit.message,/SYNC_CONFLICT/);
+ // 保留中の修正控えは利用者が取り消すまで残す。後続の編集テストでは明示的に取り消す。
+ ctx.discardHistoryLocationEdit();
+ assert.equal(storage.size,0,'競合控えを本人が取り消した場合だけ解放');
  // 端末に同じ乗務があるときは直接編集を止める。
  ctx.model.shifts.push(clone(original));
  assert.throws(()=>ctx.startHistoryLocationEdit(original.id,'ride-1'),/未同期/);
