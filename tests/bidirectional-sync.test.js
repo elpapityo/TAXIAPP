@@ -11,19 +11,28 @@ function server(){
  const events=[];
  async function request(action,data){
   events.push(action);
-  if(action==='syncList')return {shifts:[...cloud].map(([id,r])=>({id,revision:r.revision}))};
+  if(action==='syncList')return {shifts:[...cloud].map(([id,r])=>({id,revision:r.revision,deleted:r.deleted===true}))};
   if(action==='syncGet'){
    const entry=cloud.get(data.shiftId);
-   if(!entry)throw Error('not found');
+   if(!entry||entry.deleted)throw Error('not found');
    return {id:data.shiftId,revision:entry.revision,shift:clone(entry.shift)};
   }
   if(action==='syncPut'){
    const shift=JSON.parse(data.payload).shift;
    const prior=cloud.get(shift.id),version=prior?.revision||0;
    if(Number(data.baseRevision)!==version)throw Error('SYNC_CONFLICT:'+version);
+   if(prior?.deleted)throw Error('deleted');
    const entry={revision:version+1,shift:clone(shift)};
    cloud.set(shift.id,entry);
    return {id:shift.id,revision:entry.revision};
+  }
+  if(action==='syncTrash'||action==='syncRestore'){
+   const row=cloud.get(data.shiftId);
+   if(!row)throw Error('missing original');
+   if(row.revision!==Number(data.baseRevision))throw Error('SYNC_CONFLICT:'+row.revision);
+   const deleted=action==='syncTrash';
+   if(Boolean(row.deleted)!==deleted){row.revision++;row.deleted=deleted;}
+   return {id:data.shiftId,revision:row.revision,deleted};
   }
   throw Error('unexpected '+action);
  }
@@ -166,4 +175,38 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  assert.equal(await C.app.run(),true);
  assert.equal(C.model.shifts.length,1,'explicit undo restores the hidden duty');
  console.log('削除済み日報の再取得防止を合成検証');
+})().catch(e=>{console.error(e);process.exitCode=1;});
+
+(async()=>{
+ const svc=server(),id='shift-998877665544-test';
+ const original={id,date:'2026-10-21',records:[],settings:{},startingOdo:'0'};
+ const owner=client('realTrash',svc,{shifts:[clone(original)]});
+ assert.equal(await owner.app.run(),true);
+ assert.equal(svc.cloud.get(id).revision,1);
+ assert.equal(owner.app.markLocalRemoval(id,original),true);
+ owner.model.shifts=[];
+ assert.equal(await owner.app.run(),true,'delete marker reaches server with CAS');
+ assert.equal(svc.cloud.get(id).deleted,true);
+ assert.equal(svc.cloud.get(id).revision,2);
+ assert.equal(svc.cloud.size,1,'soft delete never destroys the original');
+ const another=client('otherReader',svc,{shifts:[]});
+ assert.equal(await another.app.run(),true);
+ assert.equal(another.model.shifts.length,0,'other device never imports a trashed duty');
+ assert.deepEqual(await another.app.readOnly(),[],'viewer cannot display trashed duty');
+ const after=await svc.request('syncRestore',{shiftId:id,baseRevision:2});
+ assert.equal(after.deleted,false);
+ owner.app.undoLocalRemoval(id);
+ assert.equal(await owner.app.run(),true);
+ assert.equal(owner.model.shifts.length,1,'restore is an explicit operation');
+ const changedId='shift-998877665544-race';
+ const changed={...original,id:changedId};
+ const racer=client('trashRace',svc,{shifts:[clone(changed)]});
+ assert.equal(await racer.app.run(),true);
+ assert.equal(racer.app.markLocalRemoval(changedId,changed),true);
+ racer.model.shifts=[];
+ svc.cloud.get(changedId).revision++;
+ svc.cloud.get(changedId).shift.startingOdo='8';
+ assert.equal(await racer.app.run(),false,'concurrent edit blocks deletion');
+ assert.notEqual(svc.cloud.get(changedId).deleted,true);
+ console.log('クラウドの論理削除と復元：別端末へ復活しない／編集競合を保護');
 })().catch(e=>{console.error(e);process.exitCode=1;});
