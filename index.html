@@ -2377,7 +2377,16 @@ function applyHistoryBusinessEdits(record,draft,settings,date){
   }
   if(changed.has('O'))updateDiscountForDraft(record,'O');
   if(changed.has('K'))updateDiscountForDraft(record,'K');
-  if(changed.has('AR'))updateDiscountForDraft(record,'AR');
+  if(changed.has('AR')){
+   if(!['シ','高'].includes(record.raw.O)&&number(record.raw.AR)>0)
+    throw Error('割引区分のない営業に割引金額は設定できません');
+   updateDiscountForDraft(record,'AR');
+  }
+  for(const [from,to,label] of [['F','L','実車距離'],['S','V','実車高速距離'],['AB','AE','空車高速距離']]){
+   if((changed.has(from)||changed.has(to))&&number(record.raw[from])!==null&&
+      number(record.raw[to])!==null&&number(record.raw[to])<number(record.raw[from]))
+    throw Error(label+'の降車側は乗車側以上で入力してください');
+  }
   if([...changed].some(key=>['K','N','E','O','AR','AN','AO','W',
        'uberAppDisplayed','uberReservation','uberTip','splitPayment'].includes(key))){
    const problems=validatePaymentBreakdown(record,settings,date);
