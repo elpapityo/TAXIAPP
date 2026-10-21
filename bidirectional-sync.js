@@ -73,6 +73,25 @@ function create(deps){
   const removed=localRemovals();
   return (shifts||[]).filter(x=>!Object.prototype.hasOwnProperty.call(removed,x.id));
  }
+ // A login's cloud-first snapshot must never overwrite unsynced local shifts.
+ // A matching prior hash means the local copy is unchanged since its last sync.
+ // With no baseline, only byte-identical projected data can be safely adopted.
+ function assertSafeWriterSnapshot(incoming){
+  if(!Array.isArray(incoming))throw Error('クラウドの日報一覧が不正です');
+  const cloud=new Map(incoming.map(shift=>[shift.id,shift]));
+  if(cloud.size!==incoming.length)throw Error('クラウドの乗務IDが重複しています');
+  const saved=getSaved(),local=[...(getModel()?.shifts||[])];
+  for(const shift of local){
+   const remote=cloud.get(shift.id);
+   if(!remote)throw Error('端末に残る乗務 '+shift.id+
+    ' がクラウドにありません。未同期の日報を保護するため受信を停止しました');
+   const localValue=localHash(shift),remoteValue=remoteHash(remote);
+   if(localValue!==remoteValue&&saved[shift.id]?.hash!==localValue)
+    throw Error('端末の乗務 '+shift.id+
+     ' に未同期の変更があります。クラウド受信で上書きせず停止しました');
+  }
+  return true;
+ }
  const localHash=shift=>digest(stable(getPacket(shift).shift));
  const remoteHash=shift=>digest(stable(getPacket(shift).shift));
  function status(){
@@ -353,7 +372,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,assertSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
