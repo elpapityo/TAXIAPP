@@ -8,6 +8,10 @@ on:
   pull_request:
     branches:
       - main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 jobs:
@@ -19,14 +23,46 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Pure and controller regression tests
+      - name: Run all JavaScript regression tests and summarize failures
+        id: regressions
+        continue-on-error: true
         run: |
           set -e
-          for file in tests/*.test.js; do
+          passed=0
+          failed=0
+          failed_files=()
+          shopt -s nullglob
+          files=(tests/*.test.js)
+          if (( ${#files[@]} == 0 )); then
+            echo '::error::No JavaScript regression tests were found.'
+            exit 1
+          fi
+          for file in "${files[@]}"; do
             echo "::group::$file"
-            node "$file"
-            echo "::endgroup::"
+            if node "$file"; then
+              passed=$((passed + 1))
+            else
+              status=$?
+              failed=$((failed + 1))
+              failed_files+=("$file (exit $status)")
+              echo "::error file=$file,title=Regression test failed::Exit code $status"
+            fi
+            echo '::endgroup::'
           done
+          {
+            echo '## TAXIAPP JavaScript regression tests'
+            echo
+            echo '| Passed | Failed | Total |'
+            echo '| ---: | ---: | ---: |'
+            echo "| $passed | $failed | $((passed + failed)) |"
+            if ((failed > 0 )); then
+              echo
+              echo '### Failed files'
+              for item in "${failed_files[@]}"; do echo "- $item"; done
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "JavaScript tests: $passed passed, $failed failed."
+          if ((failed > 0 )); then exit 1; fi
       - name: Require version bump when the main app changes
         if: github.event_name == 'pull_request'
         run: |
@@ -58,3 +94,6 @@ jobs:
           }
           console.log('Inline HTML scripts compile');
           NODE
+      - name: Fail if regression tests failed
+        if: steps.regressions.outcome == 'failure'
+        run: exit 1
