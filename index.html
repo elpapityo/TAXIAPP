@@ -4283,6 +4283,9 @@ async function deleteWholeShift(shiftId){
 async function importBackup(file){
  if(!file)return;
  if(!canEditNow()){toast('バックアップの復元は認証済みの操作端末で行ってください',true);return;}
+ const generation=accountScopeGeneration,uid=accountScope.uid,key=scopedStorageKey();
+ const sameOwner=()=>canEditNow()&&accountScopeGeneration===generation&&
+  accountScope.uid===uid&&scopedStorageKey()===key;
  if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}
  let json;
  try{
@@ -4296,12 +4299,14 @@ async function importBackup(file){
   if(new Set(json.shifts.map(x=>x.id)).size!==json.shifts.length)
    throw Error('バックアップ内で乗務IDが重複しています');
  }catch(e){toast('復元できません: '+e.message,true);return;}
+ if(!sameOwner()){toast('復元準備中にログインが変わりました。処理を中止します',true);return;}
  const existingIds=new Set(model.shifts.map(s=>s.id));
  const addition=json.shifts.filter(shift=>!existingIds.has(shift.id));
  const skipped=json.shifts.length-addition.length;
  if(!addition.length){toast(`新規に取り込む乗務はありません（重複 ${skipped}件）`);return;}
  if(!confirm(`バックアップから${addition.length}乗務を追加します。既存${model.shifts.length}乗務は変更しません。\n同じIDの${skipped}乗務は上書きせずスキップします。続けますか？`))return;
- const previous=deepCopy(model),uid=accountScope.uid,key=scopedStorageKey();
+ if(!sameOwner()){toast('確認中にログインが変わりました。復元を中止します',true);return;}
+ const previous=deepCopy(model);
  try{
   clearTimeout(persistTimer);persistTimer=0;
   model.shifts.push(...deepCopy(addition));
@@ -4311,9 +4316,13 @@ async function importBackup(file){
   const saved=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
   if(!saved||!Array.isArray(saved.shifts)||
      addition.some(shift=>!saved.shifts.some(x=>x.id===shift.id))||
-     scopedStorageKey()!==key||accountScope.uid!==uid)
-   throw Error('復元後の日報が端末に正しく保存されていません');
+     !sameOwner())
+   throw Error('復元後の日報が端末に正しく保存されていないか、ログインが変更されました');
  }catch(error){
+  if(!sameOwner()){
+   toast('復元途中でログインが変わりました。別の利用者の記録は変更していません。',true);
+   return;
+  }
   model=previous;
   await save(true);
   toast('復元を中止しました。以前の日報を維持します：'+String(error?.message||error),true);
