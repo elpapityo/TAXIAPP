@@ -10,7 +10,7 @@ const script=html.slice(begin,end);
 new Function(script);
 const realBreak=html.slice(html.indexOf('function breakSeconds('),html.indexOf('function endBreak(',html.indexOf('function breakSeconds(')));
 new Function(realBreak);
-assert.match(html,/<title>TAXIAPP v0\.3\.114 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.115 — 乗務日報<\/title>/);
 const fixedDate=new Date('2026-10-20T01:00:00.000Z');
 const shift={
  id:'test-shift',date:'2026-10-19',startedAt:'07:00',startedIso:'2026-10-19T07:00:00Z',
@@ -59,7 +59,7 @@ if(process.env.TAXIAPP_OPS_FIXTURE==='1'){
  // A synthetic shift is used; no production user record is loaded or overwritten.
  const htmlFixture='<!doctype html><html lang="ja" data-ui-theme="day"><head><meta charset="utf-8">'
   +'<meta name="viewport" content="width=device-width,initial-scale=1">'
-  +'<title>TAXIAPP v0.3.114 operations test</title><style>'+styles+'</style></head>'
+  +'<title>TAXIAPP v0.3.115 operations test</title><style>'+styles+'</style></head>'
   +'<body><div id="ops-e2e-host" class="layout">'+first+'</div></body></html>';
  fs.writeFileSync('tests/operations_dashboard_fixture.html',htmlFixture);
 }
