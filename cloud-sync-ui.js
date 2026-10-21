@@ -104,14 +104,16 @@ root.TAXIAPP_SYNC_UI=function(d){
    return false;
   }
   if(writerRunBusy||status().busy)return false;
-  if(!manual&&!queuedDutyIds.size)return true;
+  // Deletion markers persist across logout/restart even when the in-memory
+  // event queue is cleared. Include them in each required retry batch.
+  if(!manual&&!queuedDutyIds.size&&!engine.hasLocalRemovals())return true;
   const requested=Array.isArray(onlyIds)?onlyIds:null;
   if(requested&&(!manual||requested.length!==1||typeof requested[0]!=='string'||
     !d.getModel()?.shifts?.some(shift=>shift.id===requested[0]))){
    d.toast('選択した乗務が見つからないため、Google送信を停止しました',true);
    return false;
   }
-  const batch=[...queuedDutyIds];
+  const batch=[...new Set([...queuedDutyIds,...engine.localRemovalIds()])];
   if(!requested)queuedDutyIds.clear();
   writerRunBusy=true;
   writerFeedback='Googleと照合中…';
