@@ -65,15 +65,47 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches){
   plans.push({name:name,sheet:sheet,start:last+2,rows:prepared,width:headers.length});
  });
  // Complete printable detail/payment/aggregate FIRST, index LAST.
- // A failed write never makes a partially appended duty selectable in index.
- plans.forEach(function(plan){
-  if(!plan.rows.length)return;
-  var range=plan.sheet.getRange(plan.start,1,plan.rows.length,plan.width);
-  range.setValues(plan.rows);
-  var actual=range.getValues();
-  if(JSON.stringify(actual)!==JSON.stringify(plan.rows))
-   throw Error('印刷元の転送確認に失敗しました：'+plan.name);
- });
+ // When a new duty fails mid-append, remove ONLY cells written by this
+ // attempt. Google Sheets has no multi-sheet transaction: a competing manual
+ // edit must halt rollback rather than be silently erased.
+ var attempted=[];
+ try{
+  plans.forEach(function(plan){
+   if(!plan.rows.length)return;
+   var range=plan.sheet.getRange(plan.start,1,plan.rows.length,plan.width);
+   attempted.push(plan);
+   range.setValues(plan.rows);
+   var actual=range.getValues();
+   if(JSON.stringify(actual)!==JSON.stringify(plan.rows))
+    throw Error('印刷元の転送確認に失敗しました：'+plan.name);
+  });
+ }catch(writeError){
+  var recovery=[],rollbackErrors=[];
+  attempted.reverse().forEach(function(plan){
+   try{
+    var range=plan.sheet.getRange(plan.start,1,plan.rows.length,plan.width);
+    var actual=range.getValues();
+    // A failed setValues can nevertheless have partially written cells.
+    // Every cell must be either the intended new value or the original blank.
+    var safe=actual.length===plan.rows.length&&actual.every(function(row,i){
+     return row.length===plan.width&&row.every(function(cell,j){
+      return cell===''||cell===null||
+       JSON.stringify(cell)===JSON.stringify(plan.rows[i][j]);
+     });
+    });
+    if(!safe){recovery.push(plan.name);return;}
+    range.clearContent();
+    if(range.getValues().some(function(row){
+      return row.some(function(cell){return cell!==''&&cell!==null;});
+    }))recovery.push(plan.name);
+   }catch(e){rollbackErrors.push(plan.name);}
+  });
+  if(recovery.length||rollbackErrors.length)
+   throw Error('印刷元の更新が中断され、一部の内容を安全に復旧できません。手作業で確認してください：'+
+     [...recovery,...rollbackErrors].join('、')+'／原因：'+String(writeError.message||writeError));
+  throw Error('印刷元の更新に失敗したため、追記内容を検証用の空白へ戻しました：'+
+   String(writeError.message||writeError));
+ }
  return {id:shiftId,changedSheets:plans.filter(function(p){return p.rows.length;})
   .map(function(p){return p.name;}),oldOriginalUnchanged:true,paperFormsUnchanged:true};
 }
