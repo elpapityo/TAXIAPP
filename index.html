@@ -2888,7 +2888,9 @@ async function returnAdminToLegacy(){
 }
 
 function renderSheetTargetSettings(){
- if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2>'+
+  '<p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>'+
+  syncUI.privateDiaryPanel();
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
