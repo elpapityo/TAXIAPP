@@ -74,6 +74,7 @@ function firestorePrintDocDraft_(cfg,id){
  if(String(doc.name||'')!==expectedName)
   throw Error('Firestoreの本人UID・乗務ID・プロジェクトが取得先と一致しません');
  var data=firestorePrintDecodeDraft_({mapValue:{fields:doc.fields||{}}},0);
+ if(data.trashed===true)throw Error('ゴミ箱に移した乗務は印刷元に取り込めません');
  if(data.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
     !Number.isSafeInteger(data.revision)||data.revision<1||
     data.shift?.id!==id||!Array.isArray(data.shift?.records)||
