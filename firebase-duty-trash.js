@@ -196,6 +196,65 @@ function create(){
     generation:row.generation};
   });
  }
+ // Free-tier-first alternative to managed Firestore TTL: after expiry,
+ // the authenticated current writer can initiate cleanup at next app visit.
+ // NOT a guaranteed clock-time job. No background invocation is wired up.
+ async function purgeExpired({max=20}={}){
+  const c=checked(),writerSessionId=sessionId(c);
+  if(!Number.isSafeInteger(max)||max<1||max>20)
+   throw Error('一度に整理する件数が不正です');
+  const listing=await c.f.getDocsFromServer(
+   c.f.collection(c.db,'privateDuties',c.uid,'trash'));
+  guard(c);
+  const docs=listing.docs||[];
+  if(!Array.isArray(docs)||docs.length>500)
+   throw Error('ゴミ箱の件数が多いため、安全確認が必要です');
+  let count=0;
+  const purged=[];
+  for(const doc of docs){
+   guard(c);
+   if(count>=max)break;
+   const id=String(doc.id||'');
+   const row=doc.data();
+   if(row?.format!=='TAXIAPP_DUTY_TRASH_V1'||
+      row.shift?.id!==id)throw Error('ゴミ箱に不正な原本があります');
+   const due=row.expiresAt?.toDate?.()||
+    (row.expiresAt instanceof Date?row.expiresAt:
+     typeof row.expiresAt==='string'?new Date(row.expiresAt):null);
+   if(!(due instanceof Date)||!Number.isFinite(due.getTime()))
+    throw Error('ゴミ箱の保存期限が不正です');
+   if(due>new Date())continue;
+   const originalRef=ref(c,'shifts',id),trashRef=ref(c,'trash',id),
+    markerRef=ref(c,'tombstones',id);
+   const done=await c.f.runTransaction(c.db,async tx=>{
+    const [original,trash,marker]=await Promise.all([
+     tx.get(originalRef),tx.get(trashRef),tx.get(markerRef)]);
+    guard(c);
+    if(sessionId(c)!==writerSessionId)
+     throw Error('編集中の端末が変わりました');
+    if(original.exists())throw Error('日報が通常一覧に復活しているため整理を中止しました');
+    if(!trash.exists()||!marker.exists())return false;
+    const t=trash.data(),m=marker.data();
+    if(t.format!=='TAXIAPP_DUTY_TRASH_V1'||
+       m.format!=='TAXIAPP_DUTY_TOMBSTONE_V1'||
+       m.state!=='deleted'||m.generation!==t.generation||
+       m.revision!==t.sourceRevision||t.shift?.id!==id)
+     throw Error('サーバーの削除履歴が一致しません');
+    const expiry=t.expiresAt?.toDate?.()||
+     (t.expiresAt instanceof Date?t.expiresAt:
+      typeof t.expiresAt==='string'?new Date(t.expiresAt):null);
+    if(!(expiry instanceof Date)||!Number.isFinite(expiry.getTime())||
+       expiry>new Date())throw Error('まだ保管期間内の日報です');
+    // Keep ONLY the tiny marker to prevent an offline old client from
+    // resurrecting a discarded original. The full duty is deleted.
+    tx.delete(trashRef);
+    return true;
+   });
+   guard(c);
+   if(done){count++;purged.push(id);}
+  }
+  return {purged,remainingNotChecked:Math.max(0,docs.length-purged.length-max)};
+ }
  async function restore({shiftId,confirmed}={}){
   if(confirmed!==true)throw Error('復元対象の本人確認が必要です');
   const c=checked(),writerSessionId=sessionId(c),id=String(shiftId||'');
@@ -240,7 +299,7 @@ function create(){
   guard(c);
   return result;
  }
- return Object.freeze({bind,move,restore,list,readDeletionMarkers});
+ return Object.freeze({bind,move,restore,list,readDeletionMarkers,purgeExpired});
 }
 root.TAXIAPP_DUTY_TRASH=Object.freeze({create,planReconciliation,RETENTION_DAYS});
 })(typeof window!=='undefined'?window:globalThis);
