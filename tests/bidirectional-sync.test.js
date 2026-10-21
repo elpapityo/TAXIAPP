@@ -243,3 +243,26 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  assert.equal(held.shifts[0].id,original.id,'local recovered duty remains editable');
  console.log('編集端末の起動受信：未同期と端末固有の日報を上書きしない');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+ 
+// Past-duty release requires a confirmed local packet AND the same server revision.
+// Successful upload alone, unsent edits, and a removed duty are not sufficient.
+(async()=>{
+ const svc=server(),id='shift-20261022-retain';
+ const shift={id,date:'2026-10-21',records:[],settings:{},startedAt:'08:00',endedAt:'18:00'};
+ const C=client('confirmedRetentionRevision',svc,{shifts:[clone(shift)]},false,true);
+ assert.equal(C.app.verifiedRevision(id),null,'new unsent duty has no confirmed revision');
+ assert.equal(await C.app.run(),true);
+ assert.equal(C.app.verifiedRevision(id),1,'matching saved packet has confirmed revision');
+ C.model.shifts[0].startedAt='09:00';
+ assert.equal(C.app.verifiedRevision(id),null,'local edits invalidate retention approval');
+ assert.equal(await C.app.run(),true);
+ assert.equal(C.app.verifiedRevision(id),2,'new confirmed version may be released after server check');
+ C.app.markLocalRemoval(id,C.model.shifts[0]);
+ assert.equal(C.app.verifiedRevision(id),null,'deletion intent blocks automatic release');
+ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ assert.match(html,/const confirmedRevision=syncUI\.verifiedRevision\(old\.id\)/);
+ assert.match(html,/confirmedRevision===null\|\|server\.revision!==confirmedRevision/);
+ console.log('前回乗務の端末整理：確認済み更新番号と未同期状態を検証');
+})().catch(e=>{console.error(e);process.exitCode=1;});
