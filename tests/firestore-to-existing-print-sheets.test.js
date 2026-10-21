@@ -61,7 +61,8 @@ const toField=v=>v===null?{nullValue:null}:typeof v==='string'?{stringValue:v}:
  Array.isArray(v)?{arrayValue:{values:v.map(toField)}}:
  {mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,toField(x)]))}};
 const payload={format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,shift,updatedAt:'2026-10-21T02:01:00.000Z'};
-const doc=(which=id,what=payload)=>({name:'projects/'+project+'/databases/(default)/documents/privateDuties/'+uid+'/shifts/'+which,
+let returnedUid=uid;
+const doc=(which=id,what=payload)=>({name:'projects/'+project+'/databases/(default)/documents/privateDuties/'+returnedUid+'/shifts/'+which,
  fields:Object.fromEntries(Object.entries(what).map(([k,x])=>[k,toField(x)]))});
 const fetches=[];
 const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
@@ -105,6 +106,9 @@ assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
 assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
  'idempotent read must leave all sheets unchanged');
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
+returnedUid='anotherSyntheticOwner';
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID・プロジェクト/);
+returnedUid=uid;
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('shift-999-legacy'),/同じ乗務/,
  'same-ID legacy original must not be automatically converted');
 assert.match(load('index.html'),/ADMIN_FIRESTORE_CUTOVER_ENABLED=false/,
