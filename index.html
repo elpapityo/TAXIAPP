@@ -2230,11 +2230,11 @@ function startHistoryLocationEdit(shiftId,recordId){
  if(saved&&(saved.uid!==accountScope.uid||saved.id!==shiftId||saved.recordId!==recordId||
     saved.date!==row.shift.date||!Number.isSafeInteger(saved.baseRevision)))
   throw Error('端末内の修正控えが一致しません。自動上書きを停止しました');
- if(saved&&saved.baseRevision!==row.revision)
-  throw Error('修正控えを作成した後、Firestore原本が更新されました。修正案を保持しているため自動上書きを停止しました');
+ const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
  const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
-  baseRevision:row.revision,al:saved?.al??String(record.raw?.AL??''),
-  am:saved?.am??String(record.raw?.AM??''),busy:false,message:''};
+  baseRevision:saved?.baseRevision??row.revision,al:saved?.al??String(record.raw?.AL??''),
+  am:saved?.am??String(record.raw?.AM??''),busy:false,
+  message:mismatch?'Firestoreに新しい版があります。保存は停止中です。修正控えを確認し、不要なら「修正を取り消す」で原本へ戻してください。':''};
  saveHistoryLocationDraft(draft);
  historyLocationEdit=draft;
  historyShiftId=shiftId;render();
