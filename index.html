@@ -4235,6 +4235,11 @@ async function deleteWholeShift(shiftId){
  if(!confirm('【乗務1件の削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
   '\nこの端末から削除し、同じ保存先から再取得しても復活させません。\nGoogle・Firestoreの原本やほかの端末は消しません。\n本当に削除しますか？'))return;
  if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
+ // Download a single-duty recovery copy BEFORE local removal; it contains
+ // no Google connection key or another driver's daily records.
+ download(JSON.stringify({version:1,shifts:[deepCopy(shift)]}),
+  'TAXIAPP_削除前_'+dateStamp()+'_'+shiftId+'.json','application/json;charset=utf-8');
+ if(!confirm('この乗務のJSONバックアップを保存・保管したことを確認しましたか？\n未保存の場合はキャンセルしてください。'))return;
  const previous=deepCopy(model);
  let newlyMarked=false;
  try{
@@ -4275,14 +4280,61 @@ async function deleteWholeShift(shiftId){
   render();toast('削除を取り消しました：'+String(e.message||e),true);
  }
 }
-async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}let json;try{json=JSON.parse(await file.text());if(json.version!==1||!Array.isArray(json.shifts)||json.shifts.some(s=>!Array.isArray(s.records)||s.records.length>MAX_RECORDS||s.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||!s.settings))throw Error('互換性のないデータです');}catch(e){toast('復元できません: '+e.message,true);return;}const existingIds=new Set(model.shifts.map(s=>s.id));
- const addition=json.shifts.filter(s=>!existingIds.has(s.id));
+async function importBackup(file){
+ if(!file)return;
+ if(!canEditNow()){toast('バックアップの復元は認証済みの操作端末で行ってください',true);return;}
+ if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}
+ let json;
+ try{
+  json=JSON.parse(await file.text());
+  if(json.version!==1||!Array.isArray(json.shifts)||
+     json.shifts.some(shift=>!shift||typeof shift.id!=='string'||
+      !Array.isArray(shift.records)||shift.records.length>MAX_RECORDS||
+      shift.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||
+      !shift.settings))
+   throw Error('互換性のないデータです');
+  if(new Set(json.shifts.map(x=>x.id)).size!==json.shifts.length)
+   throw Error('バックアップ内で乗務IDが重複しています');
+ }catch(e){toast('復元できません: '+e.message,true);return;}
+ const existingIds=new Set(model.shifts.map(s=>s.id));
+ const addition=json.shifts.filter(shift=>!existingIds.has(shift.id));
  const skipped=json.shifts.length-addition.length;
  if(!addition.length){toast(`新規に取り込む乗務はありません（重複 ${skipped}件）`);return;}
  if(!confirm(`バックアップから${addition.length}乗務を追加します。既存${model.shifts.length}乗務は変更しません。\n同じIDの${skipped}乗務は上書きせずスキップします。続けますか？`))return;
- model.shifts.push(...addition);
- model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
- upgradeWaitingHistory();await save();historyDate='';historyShiftId='';tab='history';render();toast(`${addition.length}乗務を追加しました。既存データは維持しました。`);}
+ const previous=deepCopy(model),uid=accountScope.uid,key=scopedStorageKey();
+ try{
+  clearTimeout(persistTimer);persistTimer=0;
+  model.shifts.push(...deepCopy(addition));
+  model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+  upgradeWaitingHistory();
+  await save(true);
+  const saved=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  if(!saved||!Array.isArray(saved.shifts)||
+     addition.some(shift=>!saved.shifts.some(x=>x.id===shift.id))||
+     scopedStorageKey()!==key||accountScope.uid!==uid)
+   throw Error('復元後の日報が端末に正しく保存されていません');
+ }catch(error){
+  model=previous;
+  await save(true);
+  toast('復元を中止しました。以前の日報を維持します：'+String(error?.message||error),true);
+  return;
+ }
+ const pending=[];
+ if(memberDiary()||googleIsConfigured()){
+  for(const shift of addition){
+   try{syncUI.undoLocalRemoval(shift.id);}
+   catch(error){pending.push(shift.id);}
+  }
+ }
+ historyDate='';historyShiftId='';tab='history';render();
+ if(pending.length){
+  toast(addition.length+'乗務を端末に復元しました。'+pending.length+
+   '乗務は削除済み同期情報を解除できませんでした。クラウド照合前に確認してください。',true);
+ }else{
+  if(syncUI.enabled())syncUI.schedule();
+  toast(addition.length+'乗務を復元しました。クラウド原本がゴミ箱の場合は個別に復元してください。');
+ }
+}
 appEl.addEventListener('click',event=>{
  const hwyTime=event.target.closest('[data-hwy-now]');
  if(hwyTime){
