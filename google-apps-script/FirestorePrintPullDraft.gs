@@ -123,7 +123,10 @@ function firestorePrintLatestDutyDraft_(){
  for(var page=0;page<10;page++){
   var response=firestorePrintRestDraft_(cfg,path+'?pageSize=100'+(token?'&pageToken='+encodeURIComponent(token):''));
   (response.documents||[]).forEach(function(doc){
-   var id=String(doc.name||'').split('/').pop();
+   var prefix='projects/'+cfg.project+'/databases/(default)/documents/privateDuties/'+cfg.uid+'/shifts/';
+   var name=String(doc.name||'');
+   if(name.indexOf(prefix)!==0)throw Error('印刷候補に本人以外のFirestore原本が含まれています');
+   var id=name.slice(prefix.length);
    if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||seen[id])
     throw Error('Firestoreの印刷一覧に不正な乗務IDがあります');
    seen[id]=true;
