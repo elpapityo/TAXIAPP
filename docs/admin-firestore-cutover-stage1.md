@@ -50,4 +50,13 @@
 - `admin-firestore-cutover.js` の `compareLegacySheet()` は `firebaseVerified:false`、`migrationAuthorized:false`、`deleteAuthorized:false` を返す。通信は担当しない純粋比較器。
 - モックテストで `syncList` / `syncGet` 以外の呼出しがないこと、5件中2件の選択、Googleにだけある日報、通信失敗、UID切替などを検証。
 
-**現状：端末内日報の選択とGoogleのTAXIAPP_同期原本の読取専用照合は実装。管理者Firestore正式切替、Sheets印刷専用化、その他のGoogle旧原本・Firebaseとの照合、サーバーゴミ箱・完全削除は未実装。本番環境の変更はゼロ。**
+## 2026-10-21 第4段階：本人Firestore日報の読取専用照合
+- `index.html` 開発版v0.3.116の管理者用「設定 → データ管理」に **「本人Firebase原本を照合（読取専用）」** を追加。実行は本人のボタン操作時に限る。
+- 管理者ログインの正式な保存先はこれまでどおりGoogle Sheets。照合の間だけ、**別インスタンス**の `TAXIAPP_ACCOUNT_DIARY` を `{admin:true, storageBackend:'firestore', readOnly:true}` で本人のUIDに束縛する。照合用接続では `syncPut` を強制拒否。Firestoreの権限を変更しない。
+- `syncList` と `syncGet` だけで **`privateDuties/{本人UID}/shifts`** を読込む。原本の本文・GPS・売上明細は書出しせず、表示はID・日時・件数・一致/相違・時間重複に限る。
+- 取得の前後で日報ID・更新番号が一致するか再取得して確認。操作権・本人UID・ログイン世代・端末の日報が途中で変わる場合は結果を破棄。25件超、権限エラー、旧Firebaseルールによる許可拒否などは**空一覧や照合完了と誤認させず**エラーとして停止。
+- `admin-firestore-cutover.js` の `compareOwnFirestore()` で端末・Firebase・確認済みGoogle同期原本の3系統を比較。Google側を未取得なら `sheetVerified:false` として、空シートと混同しない。`migrationAuthorized:false` と `deleteAuthorized:false` は固定。
+- `tests/admin-firebase-audit-ui.test.js` / `tests/admin-firestore-binding.test.js` / `tests/admin-firestore-cutover.test.js` で、本人UID限定、読み込み失敗、更新番号変化、旧端末の読取不能、書込み拒否、重複判定、Google未照合状態を合成データで確認。
+- **実際のFirebase本番を操作・読み込みした結果ではない。** 実機でのルール公開・ログイン別検証は今後必要。Firestore Rulesが本番未反映の場合、照合は許可拒否になる可能性がある。
+
+**現状：端末・GoogleのTAXIAPP_同期原本・本人UID別Firestoreの読み取り専用比較UIまで実装。その他の旧Googleシート、管理者Firestore正式切替、Sheets印刷専用化、サーバーゴミ箱・完全削除は未実装。本番環境への書き込み・変更はゼロ。**
