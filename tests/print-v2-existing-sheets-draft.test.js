@@ -38,6 +38,14 @@ function sheet(name,header=[],maxRows=1200){
    });},
    getFormulas:()=>Array.from({length:count},(_,i)=>Array.from({length:cols},(_,j)=>
     formulaCells.has((first+i)+':'+(col+j))?'=SENTINEL':'')),
+   clearContent:()=>{
+    writes.push({first,col,clear:true});
+    for(let i=0;i<count;i++){
+     const row=values[first+i]||[];
+     for(let j=0;j<cols;j++)row[col-1+j]='';
+     values[first+i]=row;
+    }
+   },
    setValues:rows=>{
     if(failWrites)throw Error('Simulated Sheets service write failure');
     if(name==='TAXIAPP_同期原本'||name==='TAXIAPP_印刷操作'||name.startsWith('補助簿'))throw Error('PROTECTED_SHEET_WRITE');
@@ -139,7 +147,7 @@ function testRun(){
  const result=sandbox.printV2ExistingPublishDraft_(ss,stage,fixtureId,uid,()=>{
   authCalls++;return true;
  });
- assert.equal(authCalls,2);
+ assert.equal(authCalls,3);
  assert.equal(result.state,'print-source-staged-review-required');
  assert.equal(result.printAuthorized,false);
  assert.equal(result.changedSheets.length,4);
@@ -220,7 +228,16 @@ function testRun(){
  const mutateAfter=make();let checks=0;
  assert.throws(()=>mutateAfter.sandbox.printV2ExistingPublishDraft_(
   mutateAfter.ss,mutateAfter.stage,fixtureId,uid,()=>++checks===1),/転送中/);
- assert.equal(mutateAfter.book['TAXIAPP_乗務一覧'].writes.length,1);
+ assert.equal(mutateAfter.book['TAXIAPP_乗務一覧'].writes.length,0,
+  'an expired source before publishing must never create a selectable index');
+ const afterIndex=make();let finalChecks=0;
+ assert.throws(()=>afterIndex.sandbox.printV2ExistingPublishDraft_(
+  afterIndex.ss,afterIndex.stage,fixtureId,uid,()=>++finalChecks<3),/転送中/);
+ assert.equal(afterIndex.book['TAXIAPP_乗務一覧'].writes.length,2,
+  'failed last check writes then clears ONLY the newly appended list cells');
+ assert.equal(afterIndex.book['TAXIAPP_乗務一覧'].values[3][0],'',
+  'stale original must not remain selectable after index rollback');
+ assert.equal(afterIndex.book['TAXIAPP_同期原本'].writes.length,0);
  // Race must be handled by a trusted backend and must never be reported as authorized.
  assert.equal(/printV2ExistingPublishDraft_|PrintOnlyExistingSheetsDraft/.test(production),false);
  assert.equal(/printV2ExistingPublishDraft_|PrintOnlyExistingSheetsDraft/.test(html),false);
