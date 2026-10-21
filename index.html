@@ -2571,12 +2571,30 @@ async function commitHistoryLocationEdit(){
   const packet=accountScope.adminFirestore?googleShiftPacket(updated):
    {kind:'TAXIAPP_SHIFT_V1',shift:updated};
   if(accountScope.adminFirestore)packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
-  const saved=await accountDiary.request('syncPut',{
-   baseRevision:draft.baseRevision,payload:JSON.stringify(packet)
-  });
-  if(saved?.id!==draft.id||saved.revision!==draft.baseRevision+1||saved.confirmed!==true)
-   throw Error('Firestore保存後の原本を確認できません');
-  if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||epoch!==historyCloudEpoch)return;
+  let saved=null,sendError=null;
+  try{
+   saved=await accountDiary.request('syncPut',{
+    baseRevision:draft.baseRevision,payload:JSON.stringify(packet)
+   });
+  }catch(error){sendError=error;}
+  if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
+     epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
+  // The network can fail AFTER the CAS transaction committed. A fresh server
+  // read avoids submitting the same changed duty again with a stale revision.
+  if(!saved?.confirmed||saved?.id!==draft.id||saved.revision!==draft.baseRevision+1){
+   let checked=null;
+   try{checked=await accountDiary.request('syncGet',{shiftId:draft.id});}
+   catch{/* Unknown delivery: keep the on-device correction without replacement. */}
+   if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
+      epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
+   if(checked?.id!==draft.id||
+      !Number.isSafeInteger(checked.revision)||checked.revision<=draft.baseRevision||
+      JSON.stringify(canonicalStoredDuty(checked.shift))!==
+       JSON.stringify(canonicalStoredDuty(packet.shift)))
+    throw Error('保存結果を確認できません。'+String(sendError?.message||'更新競合またはサーバー原本が異なります')+
+     '。修正控えを保持し、双方を上書きしません');
+   saved={id:draft.id,revision:checked.revision,confirmed:true};
+  }
   const i=historyCloudRows.findIndex(item=>item.id===draft.id);
   if(i>=0)historyCloudRows[i]={id:draft.id,revision:saved.revision,shift:deepCopy(packet.shift)};
   historyCloudShifts=historyCloudRows.map(item=>item.shift);
