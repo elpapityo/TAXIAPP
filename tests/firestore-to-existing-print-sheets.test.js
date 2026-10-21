@@ -72,7 +72,10 @@ const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
  ScriptApp:{getOAuthToken:()=> 'synthetic-oauth'},
  UrlFetchApp:{fetch:(url,opts)=>{
   fetches.push({url,auth:opts.headers.Authorization});
-  const reply=url.includes('?pageSize=100')?{documents:[doc()]}:doc();
+  const legacy=url.endsWith('/shift-999-legacy');
+  const responseDoc=legacy?doc('shift-999-legacy',
+   {...payload,shift:{...shift,id:'shift-999-legacy'}}):doc();
+  const reply=url.includes('?pageSize=100')?{documents:[doc()]}:responseDoc;
   return {getResponseCode:()=>200,getContentText:()=>JSON.stringify(reply)};
  }},
  LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
