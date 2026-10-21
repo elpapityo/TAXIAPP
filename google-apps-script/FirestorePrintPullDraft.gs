@@ -104,7 +104,13 @@ function firestorePrintSelectedDutyDraft_(id){
    throw Error('印刷転送中にFirestore原本が更新されました');
   // The original Google sync storage and existing 2-page print forms
   // are NOT changed. Only the four existing print-source sheets receive rows.
-  return savePacket_(current.packet,{firestorePrintOnly:true});
+  return savePacket_(current.packet,{firestorePrintOnly:true,
+   verifyCurrentSource:function(){
+    var beforeIndex=firestorePrintDocDraft_(cfg,id);
+    if(beforeIndex.revision!==current.revision||
+       JSON.stringify(beforeIndex.packet)!==JSON.stringify(current.packet))
+     throw Error('印刷元の公開直前にFirestore原本が更新されました。転送を停止します');
+   }});
  }finally{lock.releaseLock();}
 }
 /** Convenience for new duties not yet present in the print dropdown. */
