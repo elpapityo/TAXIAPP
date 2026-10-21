@@ -136,6 +136,21 @@ function printStageAppendV1_(sheet,prepared,verifiedAdminUid) {
  if(!prepared||typeof verifiedAdminUid!=='string'||
     !verifiedAdminUid||prepared.sourceUid!==verifiedAdminUid)
   throw Error('本人認証された管理者UIDと一致しません');
+ if(!TAXIAPP_PRINT_STAGE_ID_V1.test(String(prepared.id||''))||
+    !Number.isSafeInteger(prepared.revision)||prepared.revision<1||
+    typeof prepared.projectionJson!=='string'||prepared.projectionJson.length>30000||
+    printStageHashV1_(prepared.projectionJson)!==prepared.digest||
+    printStageHashV1_([verifiedAdminUid,prepared.id,prepared.revision,
+      prepared.digest].join('|'))!==prepared.transferId)
+  throw Error('印刷ステージの転送IDまたはSHA256検証に失敗しました');
+ var verifiedProjection;
+ try{verifiedProjection=JSON.parse(prepared.projectionJson);}
+ catch(e){throw Error('印刷派生JSONが不正です');}
+ if(verifiedProjection?.format!=='TAXIAPP_PRINT_PROJECTION_V1'||
+    verifiedProjection.id!==prepared.id||
+    verifiedProjection.sourceRevision!==prepared.revision||
+    !Array.isArray(verifiedProjection.printRows))
+  throw Error('印刷派生データの版またはIDが一致しません');
  if(typeof LockService==='undefined'||!LockService.getScriptLock)
   throw Error('排他ロックが利用できません');
  var lock=LockService.getScriptLock();
