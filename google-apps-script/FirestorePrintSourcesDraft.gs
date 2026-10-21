@@ -19,7 +19,7 @@ var TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS={
 // Only accept the exact equivalent Japan-local timestamp, never a loose cast.
 function firestorePrintSameCellDraft_(actual,expected){
  if(Object.prototype.toString.call(actual)==='[object Date]' &&
-    typeof expected==='string' && /^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$/.test(expected))
+    typeof expected==='string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(expected))
   return Number.isFinite(actual.getTime()) &&
    Utilities.formatDate(actual,'Asia/Tokyo','yyyy-MM-dd HH:mm:ss')===expected;
  return JSON.stringify(actual)===JSON.stringify(expected);
