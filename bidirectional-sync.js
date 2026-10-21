@@ -46,7 +46,7 @@ function create(deps){
     Object.keys(data).some(id=>{
      const entry=data[id],at=typeof entry==='number'?entry:entry?.at;
      return !validId(id)||!Number.isSafeInteger(at)||at<1||
-      (typeof entry==='object'&&(typeof entry.hash!=='string'||entry.hash.length>100));
+      (typeof entry==='object'&&(entry===null||typeof entry.hash!=='string'||entry.hash.length>100));
     }))
    throw Error('削除済み日報の管理情報が不正です。再受信を停止しました');
   return data;
@@ -68,6 +68,7 @@ function create(deps){
   const state=localRemovals();
   if(Object.prototype.hasOwnProperty.call(state,id)){delete state[id];saveRemovals(state);}
  }
+ function hasLocalRemovals(){return Object.keys(localRemovals()).length>0;}
  function excludeLocalRemovals(shifts){
   const removed=localRemovals();
   return (shifts||[]).filter(x=>!Object.prototype.hasOwnProperty.call(removed,x.id));
@@ -352,7 +353,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
