@@ -397,7 +397,9 @@ function savePacket_(data,options) {
    .forEach(function(k){if(typeof summary[k]!=='number'||!Number.isFinite(summary[k]))
      throw Error('Firestoreの計算済み金額がありません：'+k);});
  }
- var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+ var printedAt=printOnly?new Date(String(data.printRecordedAt||'')):new Date();
+ if(!Number.isFinite(printedAt.getTime()))throw Error('Firestore原本の更新時刻が不正です');
+ var now = Utilities.formatDate(printedAt, 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
  var records = shift.records || [];
  var shiftRows = [[id,shift.date,shiftTimestamp_(shift.startedIso,shift.date,shift.startedAt),
   shiftTimestamp_(shift.endedIso,shift.date,shift.endedAt),shift.driver||'',shift.driverNo||'',
