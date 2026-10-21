@@ -68,3 +68,32 @@ function adapter(){
  assert.deepEqual(model.shifts,[],'must not reimport the deleted duty');
  console.log('再ログイン後の削除同期：端末キューが空でも原本を保持してゴミ箱へ移動');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+(async()=>{
+ // Cleanup must be explicitly available while background synchronization is OFF.
+ const state={shifts:[]};
+ let calls=0,holderHtml='',manualToasts=[];
+ const localStore=new Map();
+ const localStorage={getItem:k=>localStore.get(k)??null,setItem:(k,v)=>localStore.set(k,String(v))};
+ const root={localStorage,confirm:()=>true,TAXIAPP_BIDIRECTIONAL_SYNC:globalThis.TAXIAPP_BIDIRECTIONAL_SYNC};
+ const moduleText=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','cloud-sync-ui.js'),'utf8');
+ const vm=require('node:vm');
+ vm.runInNewContext(moduleText,{window:root,globalThis:root,console,Date,setTimeout,clearTimeout});
+ const holder={innerHTML:'',querySelector:()=>({active:true})};
+ const sync=root.TAXIAPP_SYNC_UI({
+  getModel:()=>state,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift}),
+  replace:async()=>{},request:async action=>{
+   calls++;if(action==='syncList')return {shifts:[]};throw Error('unexpected action '+action);
+  },
+  endpoint:()=>'/synthetic-disabled-sync',scopeKey:()=> 'uid-1',
+  configured:()=>true,prefs:()=>({syncMode:'off'}),canSync:()=>true,canView:()=>false,
+  root:{querySelector:key=>key==='[data-sync-cloud-trash]'?holder:null},
+  setStatus:()=>{},toast:text=>manualToasts.push(text),
+  escape:x=>String(x),download:()=>{},dateStamp:()=> '20261021'
+ });
+ assert.equal(await sync.cloudAction('load'),true);
+ assert.equal(calls,1,'manual cleanup reads cloud without enabling auto sync');
+ assert.match(holder.innerHTML,/クラウド保存済み日報/,'focused cloud button cannot block completion redraw');
+ assert.ok(manualToasts.some(x=>x.includes('クラウド保存')));
+ console.log('手動クラウド日報整理：自動同期OFFでも一覧取得と表示が動作');
+})().catch(e=>{console.error(e);process.exitCode=1;});
