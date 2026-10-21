@@ -1,0 +1,160 @@
+# Development-only regression of PR #115 and its PR #113 dependency.
+# No deploy commands, credentials, production Firebase, Google Sheets or real data.
+name: TAXIAPP PR115 staged full regression
+on:
+  push:
+    branches:
+      - feat/firebase-trash-staging-20261021
+    paths:
+      - '.github/workflows/pr115-staged-regression.yml'
+      - 'index.html'
+      - 'tests/**'
+      - '*.js'
+      - 'emulator-trash/**'
+      - 'rules-drafts/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  node-regression:
+    name: All Node tests and inline HTML syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript source parses
+        run: |
+          set -e
+          for file in *.js; do node --check "$file"; done
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const [,code] of html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)){
+            if(code.trim())new Function(code);
+          }
+          console.log('Inline HTML script syntax passed');
+          NODE
+      - name: Run every Node regression with failure summary
+        run: |
+          set +e
+          failures=0
+          count=0
+          for file in tests/*.test.js; do
+            count=$((count+1))
+            echo "::group::$file"
+            node "$file"
+            status=$?
+            echo "::endgroup::"
+            if [ "$status" -ne 0 ]; then
+              echo "::error file=$file::Node regression failed (exit $status)"
+              failures=$((failures+1))
+            fi
+          done
+          echo "Node tests executed: $count; failed: $failures"
+          test "$failures" -eq 0
+
+  gps-regression:
+    name: GPS/HTML integration guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: GPS syntax and source integrations
+        run: |
+          set -e
+          node --check gps-native-bridge.js
+          node --check gps-trip-ui.js
+          node --check daily-reference.js
+          node --check highway-report.js
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('index.html').read_text()
+          ui=Path('gps-trip-ui.js').read_text()
+          bridge=Path('gps-diary-bridge.js').read_text()
+          assert '<script src="./gps-diary-bridge.js?v=20261020-2"></script>' in html
+          assert "if(!shift?.draft||shift.draft.editId)" in html
+          assert "active.draft?.editId" in html
+          assert "window.TAXIAPP_EXTERNAL_GPS.recordManual(localStorage,shiftId,data.tripKm,manualValue,data.runId)" in html
+          assert "String(active.draft.raw[id]??'')!==originalField" in html
+          assert 'if(root.TAXIAPP_EXTERNAL_GPS)return false;' in ui
+          assert 'simulated:x.simulated===true' in bridge
+          assert 'data.simulated===true' in html
+          assert '模擬入力です：GPS距離' in html
+          assert 'allowSimulation' not in bridge
+          assert "EXPECTED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_4_0_100'" in bridge
+          assert "EXPECTED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv140'" in bridge
+          assert "const DB_NAME='taxiapp-store-v1'" in html
+          assert "accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create" in html
+          assert "canSync:()=>canEditNow()" in html
+          print('GPS and HTML source guards passed')
+          PY
+
+  chrome-regression:
+    name: Production-compatible Chrome data-preservation UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify legacy production source compatibility
+        run: |
+          node tests/production-v0360-integration.test.js
+          node --check gps-diary-bridge.js
+          node --check highway-sections.js
+          node --check highway-report.js
+      - name: Install Selenium
+        run: python -m pip install --disable-pip-version-check 'selenium>=4.25,<5'
+      - name: Serve current branch locally
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/taxiapp-browser.log 2>&1 &
+          python3 - <<'PY'
+          import urllib.request,time
+          for attempt in range(25):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8765/', timeout=2)
+                  break
+              except Exception: time.sleep(1)
+          else: raise SystemExit('Local server did not start')
+          PY
+      - name: Production local data preservation and reload
+        run: python3 tests/production_v0360_browser_e2e.py
+      - name: Break clock and layout in both themes
+        run: python3 tests/break_layout_browser_e2e.py
+      - name: Set up operations display fixture
+        run: TAXIAPP_OPS_FIXTURE=1 node tests/operations-seven-panels.test.js
+      - name: Seven-panel operations display
+        run: python3 tests/operations_dashboard_browser_e2e.py
+      - name: Diary fields and distance settings
+        run: python3 tests/diary_field_settings_browser_e2e.py
+
+  firestore-emulator:
+    name: Isolated draft Firestore security rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GCLOUD_PROJECT: demo-taxiapp-trash
+      GOOGLE_CLOUD_PROJECT: demo-taxiapp-trash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install isolated Emulator dependencies (no project credentials)
+        working-directory: emulator-trash
+        run: npm install --no-audit --no-fund
+      - name: Validate draft rules on real Firestore Emulator
+        working-directory: emulator-trash
+        run: npm run emulator
