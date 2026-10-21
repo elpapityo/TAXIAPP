@@ -190,6 +190,8 @@ function create(){
       row.sourceRevision<1)
     throw Error('ゴミ箱のデータが不正です');
    return {id:doc.id,date:String(row.shift.date||''),
+    startedAt:String(row.shift.startedAt||''),endedAt:String(row.shift.endedAt||''),
+    startedIso:String(row.shift.startedIso||''),endedIso:String(row.shift.endedIso||''),
     recordCount:Array.isArray(row.shift.records)?row.shift.records.length:0,
     expiresAt:row.expiresAt?.toDate?.()?.toISOString?.()||
      (row.expiresAt instanceof Date?row.expiresAt.toISOString():String(row.expiresAt||'')),
