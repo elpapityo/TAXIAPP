@@ -88,5 +88,33 @@ const replace=(ctx)=>extract('replace:async(id,incoming,existing)=>{','root:appE
   assert.equal(ctx.disk.get('taxiapp-account-state-v1-user-A').shifts[0].startedIso,newShift.startedIso);
   assert.deepEqual(ctx.writes,['taxiapp-account-state-v1-user-A']);
  }
- console.log('Cloud-first local duty protection: 6 cases passed');
+ // A login switch DURING IndexedDB receipt must never install A's
+ // remote diary into B's in-memory model.
+ {
+  const {ctx,original}=harness(true);
+  const oldPut=ctx.idbPut;
+  ctx.idbPut=async(db,value,key)=>{
+   await oldPut(db,value,key);
+   ctx.accountScope={uid:'user-B'};ctx.accountScopeGeneration++;
+   ctx.model={version:1,shifts:[],activeId:null,prefs:{from:'user-B'}};
+  };
+  const ok=await snapshot(ctx)([clone(original)]);
+  assert.equal(ok,false);
+  assert.equal(ctx.accountScope.uid,'user-B');
+  assert.equal(ctx.model.prefs.from,'user-B');
+  assert.equal(ctx.model.shifts.length,0);
+ }
+ // An interrupted per-shift sync must not roll back a different user's
+ // account-scoped model in its catch handler.
+ {
+  const {ctx,original}=harness(true);
+  ctx.save=async()=>{
+   ctx.accountScope={uid:'user-B'};ctx.accountScopeGeneration++;
+   ctx.model={version:1,shifts:[],activeId:null,prefs:{from:'user-B'}};
+  };
+  await assert.rejects(replace(ctx)(original.id,{...original,date:'2026-10-21'},original),/アカウント/);
+  assert.equal(ctx.model.prefs.from,'user-B');
+  assert.equal(ctx.model.shifts.length,0);
+ }
+ console.log('Cloud-first local duty protection: 8 cases passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
