@@ -26,6 +26,21 @@ const numeric=(value,label)=>{
  return n;
 };
 const copy=x=>JSON.parse(JSON.stringify(x));
+const timestamp=(iso,day,clock)=>{
+ // Match Code.gs shiftTimestamp_ so the existing print formulas receive
+ // native Sheets Date cells rather than ISO strings with double JST offsets.
+ if(iso){
+  const d=new Date(String(iso));
+  if(Number.isFinite(d.getTime()))return d;
+ }
+ if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(day||''))&&
+    /^[0-9]{1,2}:[0-9]{2}/.test(String(clock||''))){
+  const [year,month,date]=day.split('-').map(Number);
+  const [hour,minute,second]=clock.split(':').map(Number);
+  return new Date(Date.UTC(year,month-1,date,hour-9,minute,second||0));
+ }
+ return '';
+};
 // Keep the same spreadsheet-formula injection protection as Code.gs safeCell_.
 const safeCell=item=>typeof item==='string'&&/^[=+@]/.test(item)?"'"+item:item;
 function projectTrustedPacket({packet,sourceRevision}={}){
@@ -72,8 +87,10 @@ function projectTrustedPacket({packet,sourceRevision}={}){
  }
  if(totals.meter!==meter)throw Error('印刷明細のメーター売上が一致しません');
  for(const k of SUM_KEYS)revenue.push([id,k,totals[k],'TAXIAPP 計算済み','']);
- const summary=[[id,shift.date,shift.startedIso||shift.startedAt||'',
-  shift.endedIso||shift.endedAt||'',shift.driver||'',shift.driverNo||'',
+ const summary=[[id,shift.date,
+  timestamp(shift.startedIso,shift.date,shift.startedAt),
+  timestamp(shift.endedIso,shift.date,shift.endedAt),
+  shift.driver||'',shift.driverNo||'',
   shift.vehicle||'',shift.records.length,totals.meter,totals.discount,
   totals.goFee,totals.uberSurcharge,totals.cashRemittance,
   totals.etcRemittance,totals.totalRemittance,'','印刷派生候補',
@@ -91,7 +108,8 @@ function projectTrustedPacket({packet,sourceRevision}={}){
   format:'TAXIAPP_LEGACY_PRINT_VIRTUAL_ROWS_V1',
   id,sourceRevision,
   headers:COLUMNS,
-  rows:copy(rows),
+  rows:Object.fromEntries(Object.entries(rows).map(([name,data])=>[
+   name,data.map(line=>line.map(cell=>cell instanceof Date?new Date(cell):cell))])),
   pages:[copy(detail.slice(0,36)),copy(detail.slice(36,60))],
   meter:totals.meter,records:detail.length,
   sourceSheetsRequired:Object.keys(COLUMNS),
