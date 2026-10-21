@@ -12,7 +12,9 @@ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 function extract(name){
  const start=html.indexOf('function '+name+'(');
  assert.ok(start>=0,'production function missing '+name);
- const bodyStart=html.indexOf('{',start);
+ const argsEnd=html.indexOf('){',start);
+ assert.ok(argsEnd>start,'production function body missing '+name);
+ const bodyStart=argsEnd+1;
  let level=0,stop=-1;
  for(let i=bodyStart;i<html.length;i++){
   if(html[i]==='{')level++;
