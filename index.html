@@ -2622,6 +2622,22 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   }
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
+   if(accountScope.adminFirestore){
+    // The old administrator's 2 real duties may still live in the existing
+    // local IndexedDB key. Never hide them just because the new cloud is empty.
+    const legacy=db?await idbGet(db,KEY):
+     JSON.parse(localStorage.getItem(KEY)||'null');
+    const cloudById=new Map(shifts.map(x=>[x.id,x]));
+    const source=Array.isArray(legacy?.shifts)?legacy.shifts:[];
+    const canonical=shift=>JSON.stringify({...shift,__taxiPrintSummary:undefined,
+     records:(shift.records||[]).map(r=>({...r,amounts:undefined,payments:undefined}))});
+    const missing=source.filter(x=>!cloudById.has(x.id));
+    const different=source.filter(x=>cloudById.has(x.id)&&
+     canonical(x)!==canonical(cloudById.get(x.id)));
+    if(missing.length||different.length)
+     throw Error('旧端末の実日報がFirestoreに未移行です（未保存'+missing.length+
+      '件／内容相違'+different.length+'件）。旧日報を保護するため切替を中止しました');
+   }
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
    // multiple unfinished duties, which can display a stale zero-sale duty.
