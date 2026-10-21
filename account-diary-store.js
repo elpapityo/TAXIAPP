@@ -128,7 +128,17 @@ function create(){
     return {id,revision:revision+1};
    });
    ownerCheck(c);
-   return result;
+   // A successful transaction alone is not proof that the remote original
+   // can be reopened. Keep the local working copy until server read-back.
+   const confirmed=await c.f.getDocFromServer(ref);
+   ownerCheck(c);
+   if(!confirmed.exists())throw Error('Firestore保存後の原本を読み戻せません。端末の記録を保持してください');
+   const saved=confirmed.data();
+   if(saved?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+      saved?.trashed===true||saved?.revision!==result.revision||
+      JSON.stringify(saved?.shift)!==JSON.stringify(shift))
+    throw Error('Firestore保存後の原本に差異があります。端末の記録を保持し、競合を確認してください');
+   return {...result,confirmed:true};
   }
   if(action==='syncTrash'||action==='syncRestore'){
    if(c.readOnly)throw Error('閲覧端末では日報の削除状態を変更できません');
