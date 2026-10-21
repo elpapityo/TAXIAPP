@@ -449,7 +449,7 @@ function savePacket_(data,options) {
   {name:'TAXIAPP_決済内訳',rows:payments,width:11},
   {name:'TAXIAPP_集計',rows:aggregate,width:5},
   {name:'TAXIAPP_乗務一覧',rows:shiftRows,width:19}
- ]);
+ ],options&&options.verifyCurrentSource);
  // Save a lossless shift snapshot in 30,000-character chunks (under cell limit).
  var json = JSON.stringify(shift);
  var chunks = [];
