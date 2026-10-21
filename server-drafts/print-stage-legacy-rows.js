@@ -26,6 +26,8 @@ const numeric=(value,label)=>{
  return n;
 };
 const copy=x=>JSON.parse(JSON.stringify(x));
+// Keep the same spreadsheet-formula injection protection as Code.gs safeCell_.
+const safeCell=item=>typeof item==='string'&&/^[=+@]/.test(item)?"'"+item:item;
 function projectTrustedPacket({packet,sourceRevision}={}){
  const shift=packet?.shift,sum=packet?.summary;
  if(!packet||packet.kind!=='TAXIAPP_SHIFT_V1'||!shift||!ID.test(String(shift.id||''))||
@@ -83,6 +85,7 @@ function projectTrustedPacket({packet,sourceRevision}={}){
  for(const [name,values] of Object.entries(rows)){
   const width=COLUMNS[name].length;
   if(values.some(r=>r.length!==width))throw Error(name+'の列数が不正です');
+  rows[name]=values.map(row=>row.map(safeCell));
  }
  return Object.freeze({
   format:'TAXIAPP_LEGACY_PRINT_VIRTUAL_ROWS_V1',
