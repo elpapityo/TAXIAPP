@@ -14,7 +14,8 @@ assert.match(html,/JSON\.stringify\(stored\.shifts\)!==JSON\.stringify\(next\.sh
 assert.match(html,/writerLoadGate=false;writerLoadError=''/);
 assert.match(adapter,/async function bootstrapWriter\(\)/);
 assert.match(adapter,/await engine\.readOnly\(\)/);
-assert.match(adapter,/engine\.assertSafeWriterSnapshot\(visible\)/);
+assert.match(adapter,/engine\.planSafeWriterSnapshot\(visible\)/);
+assert.match(adapter,/await d\.onWriterSnapshot\(planned\.shifts\)/);
 assert.match(adapter,/\.\.\.engine\.localRemovalIds\(\)/);
 assert.match(adapter,/!engine\.hasLocalRemovals\(\)/);
 assert.match(adapter,/const visible=engine\.excludeLocalRemovals\(shifts\)/);
