@@ -29,12 +29,12 @@ for(const key of ['cashReceived','paymentAllocated','cashRemittance',
  const tampered=clone(packet);
  tampered.summary[key]++;
  assert.throws(()=>projectTrustedPacket({packet:tampered,sourceRevision:4}),
-  /現金受取|決済配分|GO納金|ETC合計/,'reject tampered '+key);
+  /現金受取|決済配分|GO納金|ETC合計|納金合計/,'reject tampered '+key);
 }
 const wrongPayment=clone(packet);
 wrongPayment.shift.records[0].payments[0].company=699;
 assert.throws(()=>projectTrustedPacket({packet:wrongPayment,sourceRevision:4}),
- /現金受取|決済配分|GO納金|ETC合計/,
+ /現金受取|決済配分|GO納金|ETC合計|納金合計/,
  'reject hidden GO fee deduction without correcting totals');
 const virtual=projectTrustedPacket({packet,sourceRevision:4});
 assert.equal(virtual.pages[0].length,36);
