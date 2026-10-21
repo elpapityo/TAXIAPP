@@ -77,7 +77,7 @@
 ## 第6段階：ゴミ箱選択画面の確認用プレビューとEmulator実行設定
 - `firebase-trash-review.js` を追加。**アプリとは未接続の表示専用モジュール**であり、管理画面の日報一覧に入れる前に、本人UID、選択した日報の更新番号、日付・入庫/出庫・営業件数・売上・ゴミ箱期限を確認できるようにする。未入庫と更新番号未確定の日報は候補外。元データを書き換えるイベントや削除操作は実装していない。表示内容はHTMLエスケープする。
 - `tests/firebase-trash-review.test.js` に5件のうち必要な日報の選択に向けたプレビューの表示条件、UID違い・重複ID・未入庫・XSS文字列のチェックを追加。
-- `emulator-trash/` の専用テスト、`.github/workflows/firestore-trash-emulator.yml` にGitHub Actionsで試験できる経路を追加。ただし**このターンではGitHub ActionsのEmulatorテストが実行済みか確認できていない**。既存のNode.js/GPS/Chromeテストの新コミットでの実行結果も未取得。前段階で成功した結果を最新コミットの検証結果として流用しない。
+- `emulator-trash/` の専用テスト、`.github/workflows/firestore-trash-emulator.yml` にGitHub Actionsで試験できる経路を追加。ただし**この第6段階時点では実行待ちだったが、第7段階でEmulator含む4系統に合格済み**。前段階で成功した結果を最新コミットの検証結果として流用しない。
 - Emulatorルールは `rules-drafts/firestore-trash.rules` に隔離してあり、**本番用 `firestore.rules` は一切変更していない**。Emulatorの実機相当ルール試験が確認できない限り、本番データ移行、ルール公開、30日後の自動削除、選択・復元UIへの書込連携を行わない。
 - 一時的にテスト用のジョブを既存CIに入れて実行を試みたが、**実行結果を取得できず元に戻した**。既存のCI仕様には恒久的な変更を加えない。
 
@@ -87,7 +87,7 @@
 - `firebase-trash-actions.js` と `tests/firebase-trash-actions.test.js` を追加。**本人が1件を選択**したとき、サーバーから最新の対象日報・revisionを再取得し、元の日報全文を本人UIDの保護コピーとして保存して**読み戻し確認済みのコールバック**を必須とする。さらに本人の最終確認後、`trash.move()` のCASを通過した場合だけゴミ箱へ移す。失敗・同時更新・ログイン変更時は停止する。
 - ゴミ箱からの復元も本人の確認後にサーバーで復元し、更新番号と原本の読戻し確認を要求。**復元した内容を端末の未同期日報へ自動上書きしない**。
 - `firebase-trash-review.js` の確認プレビューと `firebase-trash-actions.js` の操作制御は**index.htmlに未接続**。バックアップを保存・検証する本番側処理の結合、ユーザーが選択するUI、PR #110 の未同期日報保護との衝突検査まで済まない限り、実日報のサーバー操作を有効にしない。
-- 上記の追加コードは Node.jsモックテストとEmulatorテストの対象。今回の最新コミットで再テスト中であり、最新結果はGitHub Actionsで確認して報告する。
+- 上記の追加コードと不正操作の追加検証を含め、コミット `0ddbd599a9932d92ef0c13dc9c368e2f5175cd6b` で **TAXIAPP / GPS / Chrome / Firestore Emulator の4系統すべてGitHub Actions成功**（Emulator実行ID `39530203662`）。権限草案の隔離テストは合格したが、本番ルール未公開・アプリ未接続の状態は変わらない。
 
 ## 本番切替までの残作業
 - `account-diary-store.js` のオプトインガードと双方向同期の通常クライアントを接続し、**墓標のある日報が旧端末から再作成されないこと**を本物のRulesで検証。
