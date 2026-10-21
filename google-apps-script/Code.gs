@@ -564,6 +564,14 @@ function applySelectedPrintShift() {
   expected=Number(verified.packet.summary.meter);
   if(!Number.isFinite(expected)||Number(matching[0][7])!==shift.records.length)
    throw Error('Firestoreの印刷件数・金額を確認できません');
+  // A correction can change individual rides without changing the meter sum
+  // or count. Compare the source timestamp already copied into print index P.
+  var sourceAt=new Date(String(verified.packet.printRecordedAt||''));
+  if(!Number.isFinite(sourceAt.getTime())||
+     String(matching[0][15]||'').trim()!==Utilities.formatDate(sourceAt,'Asia/Tokyo','yyyy-MM-dd HH:mm:ss'))
+   throw Error('Firestore原本の更新日時と印刷元が一致しません。再取込内容を確認してください');
+  if(Number(matching[0][8])!==expected)
+   throw Error('Firestore印刷元のメーター売上が原本と一致しません');
  }
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');
