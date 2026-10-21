@@ -2198,10 +2198,25 @@ async function loadHistoryFromCloud(date){
 function historyEditStorageKey(uid,id,recordId){
  return 'taxiapp-history-edit-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(id)+'-'+encodeURIComponent(recordId);
 }
+const HISTORY_EDIT_FIELDS=['C','E','F','G','I','J','K','L','M','N','O','AN','AO','AR',
+ 'Q','R','S','T','U','V','W','Z','AA','AB','AC','AD','AE','AF','AG','AH'];
+const HISTORY_EDIT_NUMERIC=new Set(['F','I','J','K','L','AN','AO','AR','S','V','W','AB','AE','AF','AG','AH']);
+const HISTORY_EDIT_TIMES=new Set(['C','G','M','R','U','AA','AD']);
+const HISTORY_EDIT_HIGHWAY=new Set(['Q','R','S','T','U','V','W','Z','AA','AB','AC','AD','AE','AF','AG','AH']);
+const HISTORY_EDIT_META=['uberAppDisplayed','uberReservation','uberTip'];
+function historyEditableKeys(record){
+ if(record.kind==='cancel')return ['C','E'];
+ if(record.kind==='empty')return HISTORY_EDIT_FIELDS.filter(k=>HISTORY_EDIT_HIGHWAY.has(k));
+ return HISTORY_EDIT_FIELDS.filter(k=>record.kind==='ride'&&
+   (!HISTORY_EDIT_HIGHWAY.has(k)||!Array.isArray(record.meta?.highwaySections)));
+}
 function saveHistoryLocationDraft(draft){
  const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
  const minimal={uid:draft.uid,id:draft.id,recordId:draft.recordId,date:draft.date,
-  baseRevision:draft.baseRevision,al:draft.al,am:draft.am};
+  baseRevision:draft.baseRevision,al:draft.al,am:draft.am,
+  fields:draft.fields||{},metaFields:draft.metaFields||{},
+  splitSecond:draft.splitSecond??'',splitAmount:draft.splitAmount??'',
+  splitSlot:draft.splitSlot??null};
  const json=JSON.stringify(minimal);
  localStorage.setItem(key,json);
  if(localStorage.getItem(key)!==json)throw Error('修正内容を端末に保護できません');
@@ -2215,7 +2230,32 @@ function historyLocationEditHtml(shift){
   '<label class="field"><span class="field-label">降車地</span><input class="control" id="historyEditDropoff" maxlength="160" value="'+safeText(draft.am)+'"></label>'+
   '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>Firestoreへ保存</button>'+
   '<button class="btn" data-action="cancelHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>修正を取り消す</button></div>'+
-  (draft.message?'<p class="caption-note">'+safeText(draft.message)+'</p>':'')+'</section>';
+  (draft.message?'<p class="caption-note">'+safeText(draft.message)+'</p>':'')+
+  '<details><summary>営業・料金・決済などの修正項目</summary>'+
+  '<div class="form-grid">'+historyEditableKeys(draft.sourceRecord||{}).map(key=>{
+   const name=RAW_COLUMNS.find(x=>x[0]===key)?.[1]||key;
+   const value=String(draft.fields?.[key]??'');
+   const options=key==='E'?TYPES.map(k=>[k,k]):key==='N'?PAYMENTS:
+    key==='O'?[['','なし'],['シ','シ'],['高','高']]:null;
+   const control=options?
+    '<select class="control" data-history-edit-field="'+key+'">'+
+     options.map(pair=>'<option value="'+safeText(pair[0])+'" '+(value===pair[0]?'selected':'')+'>'+safeText(pair[1])+'</option>').join('')+'</select>':
+    '<input class="control" data-history-edit-field="'+key+'" maxlength="160" value="'+safeText(value)+'" '+(HISTORY_EDIT_NUMERIC.has(key)?'inputmode="decimal"':'')+'>';
+   return '<label class="field"><span class="field-label">'+safeText(name)+'</span>'+control+'</label>';
+  }).join('')+'</div>'+
+  (draft.sourceRecord?.kind==='ride'?'<div class="form-grid">'+
+    HISTORY_EDIT_META.map(key=>'<label class="field"><span class="field-label">'+
+     safeText(({uberAppDisplayed:'Uberアプリ表示額',uberReservation:'Uber予約料',uberTip:'Uberチップ'})[key])+
+     '</span><input class="control" inputmode="decimal" data-history-edit-meta="'+key+
+     '" value="'+safeText(draft.metaFields?.[key]??'')+'"></label>').join('')+
+    '<label class="field"><span class="field-label">追加決済金種</span><select class="control" data-history-edit-split="second">'+
+    [['','なし'],...PAYMENTS.filter(x=>x[0]!=='キ')].map(p=>'<option value="'+safeText(p[0])+'" '+
+      (draft.splitSecond===p[0]?'selected':'')+'>'+safeText(p[1])+'</option>').join('')+'</select></label>'+
+    '<label class="field"><span class="field-label">手動指定の決済金額（円）</span><input class="control" inputmode="decimal" data-history-edit-split="amount" value="'+safeText(draft.splitAmount??'')+'"></label>'+
+    '<label class="field"><span class="field-label">金額を指定する金種</span><select class="control" data-history-edit-split="slot">'+
+    '<option value="0" '+(draft.splitSlot===0?'selected':'')+'>最初の金種</option>'+
+    '<option value="1" '+(draft.splitSlot===1?'selected':'')+'>追加金種</option></select></label></div>':'')+
+   '<p class="caption-note">料金・手数料・納金の再計算には、既存アプリの正式計算処理を使用します。高速の複数区間など一部の複雑な明細は、この画面で変更できません。</p></details></section>';
 }
 function startHistoryLocationEdit(shiftId,recordId){
  if(!memberDiary()||!accountDiary.ready()||!canEditNow()||historyCloudUid!==accountScope.uid)
