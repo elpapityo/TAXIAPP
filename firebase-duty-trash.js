@@ -133,7 +133,9 @@ function create(){
       t.generation!==m.generation||t.sourceRevision!==m.revision)
     throw Error('ゴミ箱の更新世代が一致しません');
    const shift=getShift(t,id);
-   const due=t.expiresAt?.toDate?.()||t.expiresAt;
+   const due=t.expiresAt?.toDate?.()||
+    (t.expiresAt instanceof Date?t.expiresAt:
+     typeof t.expiresAt==='string'?new Date(t.expiresAt):null);
    if(!(due instanceof Date)||!Number.isFinite(due.getTime())||due<=new Date())
     throw Error('保管期限が終了しているため復元できません');
    const revision=m.revision+1;
