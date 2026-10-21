@@ -43,7 +43,11 @@ function create(deps){
   let data;
   try{data=JSON.parse(raw)}catch{throw Error('削除済み日報の管理情報が破損しています。再受信を停止しました');}
   if(!data||typeof data!=='object'||Array.isArray(data)||
-    Object.keys(data).some(id=>!validId(id)||!Number.isSafeInteger(data[id])||data[id]<1))
+    Object.keys(data).some(id=>{
+     const entry=data[id],at=typeof entry==='number'?entry:entry?.at;
+     return !validId(id)||!Number.isSafeInteger(at)||at<1||
+      (typeof entry==='object'&&(typeof entry.hash!=='string'||entry.hash.length>100));
+    }))
    throw Error('削除済み日報の管理情報が不正です。再受信を停止しました');
   return data;
  }
@@ -53,11 +57,12 @@ function create(deps){
   if(storage.getItem(removalKey())!==content)
    throw Error('削除済み日報の再受信防止情報を保存できません');
  }
- function markLocalRemoval(id){
+ function markLocalRemoval(id,shift){
   if(!validId(id))throw Error('削除する日報IDが不正です');
   const state=localRemovals();
   if(Object.prototype.hasOwnProperty.call(state,id))return false;
-  saveRemovals({...state,[id]:Date.now()});return true;
+  const entry=shift?{at:Date.now(),hash:localHash(shift)}:Date.now();
+  saveRemovals({...state,[id]:entry});return true;
  }
  function undoLocalRemoval(id){
   const state=localRemovals();
@@ -98,10 +103,36 @@ function create(deps){
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
    const present=new Map(shifts.map(s=>[s.id,s]));
    const nextConflict=selected?Object.fromEntries(Object.entries(conflict).filter(([id])=>!selected.has(id))):{};
+   // Send explicit deletion intent even though the duty is no longer in model.
+   // Require the original content to match the version actually deleted locally.
+   for(const [id,marker] of Object.entries(removed)){
+    if(selected&&!selected.has(id))continue;
+    const remote=cloud.get(id);
+    if(!remote||remote.deleted===true)continue;
+    if(typeof marker!=='object'||typeof marker.hash!=='string')continue;
+    const base=saved[id];
+    if(base&&base.revision!==remote.revision){
+     nextConflict[id]={id,reason:'削除後に別端末が原本を更新しました。自動削除を保留',localRevision:base.revision,remoteRevision:remote.revision};
+     continue;
+    }
+    const received=await scopedRequest('syncGet',{shiftId:id});
+    if(!received?.shift||received.id!==id||received.revision!==remote.revision||
+       remoteHash(received.shift)!==marker.hash){
+     nextConflict[id]={id,reason:'削除対象のクラウド原本が端末で確認した内容と異なります',localRevision:base?.revision??null,remoteRevision:remote.revision};
+     continue;
+    }
+    const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:remote.revision});
+    if(!done||done.id!==id||done.deleted!==true||done.revision!==remote.revision+1)
+     throw Error('クラウド側の削除状態を確認できません');
+    const next={revision:done.revision,hash:marker.hash};
+    if(!setSaved({...saved,[id]:next}))throw Error(lastError);
+    saved[id]=next;
+   }
    // Pull cloud-only shifts first. Do not silently create an editing session
    // if the phone has its own active duty.
    for(const remote of listing.shifts){
     if(selected&&!selected.has(remote.id))continue;
+    if(remote.deleted===true)continue;
     if(Object.prototype.hasOwnProperty.call(removed,remote.id))continue;
     if(present.has(remote.id))continue;
     const received=await scopedRequest('syncGet',{shiftId:remote.id});
@@ -120,6 +151,10 @@ function create(deps){
     if(selected&&!selected.has(id))continue;
     if(Object.prototype.hasOwnProperty.call(removed,id))continue;
     delete nextConflict[id];
+    if(cloud.get(id)?.deleted===true){
+     nextConflict[id]={id,reason:'クラウド側でゴミ箱に移動済みです。端末の日報は安全のため保持しています',localRevision:saved[id]?.revision??null,remoteRevision:cloud.get(id).revision};
+     continue;
+    }
     const remote=cloud.get(id),base=saved[id];
     let current=getModel()?.shifts?.find(s=>s.id===id);
     if(!current)continue;
@@ -223,6 +258,7 @@ function create(deps){
    const previous=viewerEndpoint===endpoint?viewerCache:new Map();
    const updated=new Map();
    for(const item of listing.shifts){
+    if(item?.deleted===true)continue;
     const id=String(item?.id||''),revision=Number(item?.revision);
     if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||
        !Number.isSafeInteger(revision)||revision<1||updated.has(id))
