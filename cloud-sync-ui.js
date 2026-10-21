@@ -284,6 +284,10 @@ root.TAXIAPP_SYNC_UI=function(d){
  }
  async function resolve(id,localWins){
   if(!enabled())return;
+  if(localWins===null){
+   writerFeedback='競合を保留しました。端末・Firestoreの双方は変更していません。';
+   d.setStatus(message());d.toast(writerFeedback);return;
+  }
   const pass=String(d.root.querySelector('[data-sync-backup-password]')?.value||'');
   if(!root.TAXIAPP_TRANSFER.passwordOk(pass)){
    d.toast('競合の控えを暗号化する12文字以上のパスワードを入力してください',true);return;
@@ -299,7 +303,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  }
 
  async function saveConflictCopies(){
-  if(!enabled()||archiving||!status().conflicts.length)return;
+  if(!enabled()||archiving||!status().conflicts.length||d.remoteOnDemand?.())return;
   archiving=true;
   try{
    for(const conflict of status().conflicts){
@@ -493,7 +497,8 @@ root.TAXIAPP_SYNC_UI=function(d){
   const conflicts=s.conflicts.map(c=>'<div class="card"><strong>競合乗務 '+d.escape(c.id)+'</strong>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
    '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'">クラウド版を採用</button>'+
-   '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'">この端末版を採用</button></div></div>').join('');
+   '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'">この端末版を採用</button>'+
+   '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（変更しない）</button></div></div>').join('');
   return conflicts?'<h3 class="subsection">競合の解決</h3><p class="warn">採用する版を選ぶ前に、両方の版を暗号化バックアップします。</p>'+
    '<label class="field"><span class="field-label">バックアップ用パスワード（12文字以上）</span>'+
    '<input class="control" type="password" data-sync-backup-password autocomplete="new-password"></label>'+conflicts:'';
@@ -519,7 +524,8 @@ root.TAXIAPP_SYNC_UI=function(d){
  function privateDiaryPanel(){
   return '<section class="card"><h2 class="h2">本人専用クラウド日報の整理</h2>'+
    '<p class="helper">現在ログインしている本人UIDの日報だけを確認します。ゴミ箱への移動後も原本は保持され、復元できます。</p>'+
-   '<div data-sync-cloud-trash>'+cloudTrashMarkup()+'</div></section>';
+   '<div data-sync-cloud-trash>'+cloudTrashMarkup()+'</div>'+
+   '<div data-sync-conflicts>'+conflictMarkup(status())+'</div></section>';
  }
  function panel(){
   const on=d.prefs().syncMode==='on',s=status();
