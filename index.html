@@ -2935,7 +2935,7 @@ function adminCutoverSheetHtml(){
    (remoteOnly.length?'<h3 class="subsection">Googleにだけ存在する日報</h3><ul>'+remoteOnly.join('')+'</ul>':'')+
    '<p class="helper">確認時刻：'+safeText(audit.checkedAt)+
    '。Google側はTAXIAPP_同期原本だけを取得しました。'+
-   'その他の旧シート・印刷領域・Firebaseは未照合です。'+
+   'その他の旧シート・印刷領域は未照合です。Firebaseは下の専用欄で確認してください。'+
    '照合結果は削除・移行の許可を意味しません。</p>';
  }catch(error){
   return '<p role="alert" class="warn">照合データを確認できません：'+safeText(String(error?.message||error))+'</p>';
@@ -3032,7 +3032,7 @@ function adminCutoverSummaryHtml(){
   return '<p role="status">選択：<strong>'+selected+'件</strong>／端末内：'+result.sourceCount+
    '件／対象外：'+result.excludedCount+'件／要確認：'+warnings.length+'件</p>'+
    (selected?'<ul>'+rows+'</ul>':'<p class="helper">移行する日報をチェックしてください。初期状態では1件も選択していません。</p>')+
-   '<p class="warn">Firebase側とGoogleシート側の原本はまだ照合していません。'+
+   '<p class="warn">GoogleとFirebaseの照合結果は下の専用欄で別々に確認してください。'+
    'ここで選択しても移行・削除・同期は実行されません。</p>';
  }catch(error){return '<p role="alert" class="warn">候補の確認を停止しました：'+
   safeText(String(error?.message||error))+'</p>';}
@@ -3056,7 +3056,7 @@ function renderAdminCutoverSelectionPanel(){
  return '<section class="card" data-admin-cutover-panel>'+
   '<h2 class="h2">Firebase移行前の日報選択（確認用）</h2>'+
   '<p class="helper">まず端末内で確認できる日報だけを一覧にします。'+
-  '必要な日報を1件ずつ選んでください。Googleシート内の別の原本やFirebaseの記録は、まだ取得していません。</p>'+
+  '必要な日報を1件ずつ選んでください。GoogleとFirebaseの原本は下の読み取り専用ボタンで照合できます。</p>'+
   (rows||'<p class="empty-state">この端末内に日報がありません。Googleシートの保存原本も未照合です。</p>')+
   '<div data-admin-cutover-summary>'+adminCutoverSummaryHtml()+'</div>'+
   '<div class="actions"><button class="btn" type="button" data-action="adminCutoverClear">選択を解除</button>'+
