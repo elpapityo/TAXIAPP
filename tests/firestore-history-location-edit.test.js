@@ -31,6 +31,7 @@ const ctx={
   return {id:shift.id,revision:item.revision,confirmed:true};
  }},
  memberDiary:()=>true,canEditNow:()=>true,
+ selectedHistoryShift:()=>ctx.historyCloudRows[0]?.shift,
  localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)||null,removeItem:k=>storage.delete(k)},
  MAX_RECORDS:60,
  makeDraft:(_shift,kind,when)=>({kind,status:'draft',id:'new-temporary',raw:{
