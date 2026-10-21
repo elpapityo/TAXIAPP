@@ -69,4 +69,24 @@ const oldOriginal='TAXIAPP_同期原本';
  assert.equal(retry.changedSheets.length,0,'identical retry is a no-op');
  assert.equal(JSON.stringify([...book.state].map(([name,rows])=>[name,[...rows]])),before);
 }
-console.log('Firestore印刷転送：途中失敗・書込後応答喪失・第三者編集・同一再実行の保護を合成検証');
+{
+ const book=workbook();
+ let checked=0;
+ assert.throws(()=>ctx.firestorePrintPublishRowsDraft_(book.ss,id,packages(),()=>{
+  checked++;throw Error('合成のFirestore原本更新');
+ }),/空白へ戻しました/);
+ assert.equal(checked,1,'source checked before index is published');
+ for(const name of names)
+  assert.equal(book.state.get(name).get('2:1')??'','',name+' rolled back');
+}
+{
+ const book=workbook(),first=packages()[0];
+ book.sheets.get(first.name).getRange(2,1,1,first.width).setValues(first.rows);
+ assert.throws(()=>ctx.firestorePrintPublishRowsDraft_(book.ss,id,packages()),/一部だけ残っています/);
+ assert.equal(book.state.get('TAXIAPP_乗務一覧').get('2:1')??'','');
+}
+{
+ const book=workbook();
+ assert.throws(()=>ctx.firestorePrintPublishRowsDraft_(book.ss,id,packages().reverse()),/行形式が不正/);
+}
+console.log('Firestore印刷転送：途中失敗・第三者編集・原本更新・部分残存・書込順序を合成検証');
