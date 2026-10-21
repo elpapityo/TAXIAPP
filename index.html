@@ -2858,6 +2858,7 @@ async function returnAdminToLegacy(){
     sourceScope.firebase?.auth?.currentUser?.uid!==uid){
   toast('ログインまたは操作権が変わったため旧保存先への切替を中止しました',true);return;
  }
+ adminCutoverBusy=true;
  const key=ADMIN_FIRESTORE_PREF_PREFIX+uid,previous=localStorage.getItem(key);
  try{
   localStorage.removeItem(key);
@@ -2876,7 +2877,7 @@ async function returnAdminToLegacy(){
    }
   }catch(recovery){console.error('legacy-cutover-recovery',recovery);}
   toast('旧Googleへの切替を停止しました：'+String(error?.message||error),true);
- }
+ }finally{adminCutoverBusy=false;render();}
 }
 
 function renderSheetTargetSettings(){
