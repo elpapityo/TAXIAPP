@@ -8,7 +8,7 @@ const cut=(a,b)=>{
  assert.ok(i>=0&&j>i,'expected boundaries: '+a);
  return html.slice(i,j);
 };
-assert.match(html,/<title>TAXIAPP v0\.3\.112 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.116 — 乗務日報<\/title>/);
 const defaultsSource=cut('function renderDriverDefaults(){','function renderShiftManager(');
 const dutySource=cut('function renderDutyPlanSettings(){','function currentDutySummary(');
 const settings=cut('function renderSettings(shift){','function download(');

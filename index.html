@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・GPS統合正式版">
-<title>TAXIAPP v0.3.112 — 乗務日報</title>
+<title>TAXIAPP v0.3.116 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -908,6 +908,7 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 <script src="./device-session.js?v=20261017-13"></script>
 <script src="./account-auto-sync.js?v=20261020-1"></script>
 <script src="./account-diary-store.js?v=20261020-1"></script>
+<script src="./admin-firestore-cutover.js?v=20261021-1"></script>
 <script>
 (async function () {
   'use strict';
@@ -1304,6 +1305,11 @@ let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
 let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
+// Preview-only selection. Never persists or sends duty originals.
+let adminCutoverSelectionUid="",adminCutoverSelected=new Set();
+let adminCutoverSheetAudit=null,adminCutoverSheetBusy=false,adminCutoverSheetRequestToken=0;
+let adminCutoverFirebaseConnection=null,adminCutoverFirebaseAudit=null;
+let adminCutoverFirebaseBusy=false,adminCutoverFirebaseRequestToken=0;
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
@@ -1584,6 +1590,15 @@ function idbPut(db,state,key=KEY){return new Promise((resolve,reject)=>{const tx
 async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('DB起動の待機時間超過')),2500))]);const m=await idbGet(db);storageStatus='IndexedDB';if(m&&m.version===1&&Array.isArray(m.shifts))model=m;}catch(e){console.warn('IndexedDB unavailable',e);db=null;try{const m=JSON.parse(localStorage.getItem('taxiapp-v1'));storageStatus='localStorage（代替保存）';if(m?.version===1&&Array.isArray(m.shifts))model=m;}catch{storageStatus='保存できない環境';}}}
 async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
+ adminCutoverSelectionUid='';
+ adminCutoverSelected=new Set();
+ adminCutoverSheetAudit=null;
+ adminCutoverSheetBusy=false;
+ adminCutoverSheetRequestToken++;
+ adminCutoverFirebaseRequestToken++;
+ adminCutoverFirebaseAudit=null;
+ adminCutoverFirebaseBusy=false;
+ adminCutoverFirebaseConnection=scope?.admin===true?scope.firebase:null;
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
@@ -1592,6 +1607,7 @@ async function switchAccountScope(scope){
  syncUI.resetAccount();
  accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
  accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
+ adminCutoverSelectionUid=legacyDiary()?accountScope.uid:'';
  const key=scopedStorageKey();
  // Blank the previous account immediately, before any async IndexedDB read.
  model=emptyAccountModel();render();
@@ -2749,7 +2765,7 @@ function renderDataManagement(){
    <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">この乗務を削除</button>
   </article>`;
  }).join('');
- return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
+ return `${renderAdminCutoverSelectionPanel()}<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
    <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
    <p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
@@ -2759,6 +2775,341 @@ function renderDataManagement(){
   </section>`;
 }
 
+// Preflight never calls accountDiary.request, googlePostRequest, save or sync.
+// The cloud-side comparison is a separate future step.
+function adminCutoverLocalPreview(){
+ if(!legacyDiary()||!accountScope.uid||adminCutoverSelectionUid!==accountScope.uid)
+  return null;
+ return window.TAXIAPP_ADMIN_CUTOVER.previewLocal({
+  uid:accountScope.uid,legacyShifts:model.shifts,
+  selectedIds:[...adminCutoverSelected]
+ });
+}
+// A Google Sheets sync snapshot is kept only in memory. It is discarded on
+// account switch. Never upload or delete during this audit.
+function adminCutoverFirebaseHtml(){
+ if(!legacyDiary()||!accountScope.uid)return '';
+ if(adminCutoverFirebaseBusy)
+  return '<p role="status">本人UIDのFirebase原本を読み取り専用で照合中です。</p>';
+ const audit=adminCutoverFirebaseAudit;
+ if(!audit||audit.uid!==accountScope.uid)
+  return '<p class="helper">本人UIDのFirebase日報は未照合です。権限確認を含めて読み取ります。</p>';
+ if(audit.localSignature!==JSON.stringify(model.shifts))
+  return '<p role="alert" class="warn">Firebase照合後に端末の日報が変更されました。再照合してください。</p>';
+ try{
+  const sheet=adminCutoverSheetAudit?.uid===accountScope.uid&&
+   adminCutoverSheetAudit.localSignature===JSON.stringify(model.shifts)
+   ?adminCutoverSheetAudit.sheetShifts:null;
+  const result=window.TAXIAPP_ADMIN_CUTOVER.compareOwnFirestore({
+   uid:accountScope.uid,cloudUid:audit.uid,localShifts:model.shifts,
+   cloudShifts:audit.cloudShifts,sheetShifts:sheet,selectedIds:[...adminCutoverSelected]
+  });
+  const lines=result.entries.filter(x=>x.cloudStatus!=='same'||
+   x.sheetStatus==='different'||x.cloudOverlap.length||x.sheetOverlap.length||x.timeIssue)
+   .map(x=>'<li>'+safeText(x.date)+'（'+safeText(x.id)+'）'+
+    '／Firebase：'+(x.cloudStatus==='same'?'同ID内容一致':
+     x.cloudStatus==='different'?'同ID内容違い':'Firebaseに存在しない')+
+    (x.sheetStatus==='different'?'／Google同ID内容違い':'')+
+    (x.cloudOverlap.length?'／Firebase側の別IDで時間重複 '+x.cloudOverlap.length+'件':'')+
+    (x.sheetOverlap.length?'／Google側の別IDで時間重複 '+x.sheetOverlap.length+'件':'')+
+    (x.timeIssue?'／'+safeText(x.timeIssue):'')+
+    (x.selected?'（移行候補）':'')+'</li>');
+  const cloudOnly=result.cloudOnly.map(x=>'<li>'+safeText(x.date)+
+   '（'+safeText(x.id)+'）／営業 '+x.recordCount+'件'+
+   (x.overlappingLocal.length?'／端末と時間重複 '+x.overlappingLocal.length+'件':'')+'</li>');
+  return '<p role="status">本人Firebase原本：'+result.firebaseCount+
+   '件／端末：'+result.localCount+'件／Firebaseだけ：'+
+   result.firestoreOnlyCount+'件／移行候補の要確認：'+result.selectedReviewCount+'件</p>'+
+   (lines.length?'<h3 class="subsection">Firebaseとの内容違い・重複</h3><ul>'+lines.join('')+'</ul>':'')+
+   (cloudOnly.length?'<h3 class="subsection">Firebaseにだけ存在する日報</h3><ul>'+cloudOnly.join('')+'</ul>':'')+
+   '<p class="helper">Google同期原本：'+(result.sheetVerified?'照合済み':'未照合')+
+   '／確認時刻：'+safeText(audit.checkedAt)+
+   '。本人UIDのprivateDutiesのみ確認しました。印刷用シートや旧シートの全件照合ではありません。'+
+   'この結果から日報を移行・削除することはできません。</p>';
+ }catch(error){return '<p role="alert" class="warn">Firebaseの照合データが不正です：'+
+  safeText(String(error?.message||error))+'</p>';}
+}
+async function compareAdminCutoverFirebase(){
+ if(!legacyDiary()||!accountScope.uid||!canEditNow()||
+   adminCutoverFirebaseBusy||adminCutoverSelectionUid!==accountScope.uid)return;
+ const connection=adminCutoverFirebaseConnection;
+ if(!connection?.f||!connection.db||!connection.auth||
+    connection.auth.currentUser?.uid!==accountScope.uid){
+  toast('管理者本人のFirebase認証を確認できません。',true);return;
+ }
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ const token=++adminCutoverFirebaseRequestToken;
+ const signature=JSON.stringify(model.shifts),MAX_AUDIT_SHIFTS=25;
+ const guard=()=>{
+  if(token!==adminCutoverFirebaseRequestToken||!legacyDiary()||
+     !canEditNow()||uid!==accountScope.uid||
+     generation!==accountScopeGeneration||
+     adminCutoverFirebaseConnection!==connection||
+     connection.auth.currentUser?.uid!==uid||
+     signature!==JSON.stringify(model.shifts))
+   throw Error('本人認証・操作権・端末日報が変わったため照合を中止しました');
+ };
+ adminCutoverFirebaseBusy=true;adminCutoverFirebaseAudit=null;updateAdminCutoverPreview();
+ const reader=window.TAXIAPP_ACCOUNT_DIARY.create();
+ try{
+  guard();
+  // Force a separate read-only client: cannot change current writer backend.
+  reader.bind({uid},{...connection,admin:true,
+   storageBackend:'firestore',readOnly:true});
+  const listing=await reader.request('syncList');
+  guard();
+  const entries=listing?.shifts;
+  if(!Array.isArray(entries))throw Error('Firebase原本の一覧が不正です');
+  if(entries.length>MAX_AUDIT_SHIFTS)
+   throw Error('Firebase原本が'+entries.length+'件あり、照合上限25件を超えました');
+  const seen=new Set(),cloudShifts=[];
+  for(const entry of entries){
+   const id=String(entry?.id||'');
+   if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||seen.has(id)||
+     !Number.isSafeInteger(entry.revision)||entry.revision<1)
+    throw Error('Firebase日報のIDまたは更新番号が不正です');
+   seen.add(id);
+   const record=await reader.request('syncGet',{shiftId:id});
+   guard();
+   if(record?.id!==id||record.shift?.id!==id||
+      record.revision!==entry.revision)
+    throw Error('Firebase原本の版が照合中に変更されました：'+id);
+   cloudShifts.push(record.shift);
+  }
+  const second=await reader.request('syncList');
+  guard();
+  const listed=second?.shifts;
+  const revisions=new Map(Array.isArray(listed)?listed.map(x=>[x.id,x.revision]):[]);
+  if(!Array.isArray(listed)||listed.length!==entries.length||
+     revisions.size!==seen.size||
+     entries.some(x=>revisions.get(x.id)!==x.revision))
+   throw Error('Firebase原本の件数または更新番号が変わりました。再照合してください');
+  guard();
+  adminCutoverFirebaseAudit={uid,localSignature:signature,
+   checkedAt:new Date().toLocaleString('ja-JP'),cloudShifts};
+  toast('本人のFirebase原本 '+cloudShifts.length+'件を読み取り専用で確認しました。');
+ }catch(error){
+  if(token===adminCutoverFirebaseRequestToken){
+   adminCutoverFirebaseAudit=null;
+   if(uid===accountScope.uid&&generation===accountScopeGeneration)
+    toast('Firebase照合を完了できません：'+String(error?.message||error),true);
+  }
+ }finally{
+  reader.bind(null);
+  if(token===adminCutoverFirebaseRequestToken){
+   adminCutoverFirebaseBusy=false;
+   if(uid===accountScope.uid&&generation===accountScopeGeneration)
+    updateAdminCutoverPreview();
+  }
+ }
+}
+function adminCutoverSheetHtml(){
+ if(!legacyDiary()||!accountScope.uid)return '';
+ const audit=adminCutoverSheetAudit;
+ if(adminCutoverSheetBusy)
+  return '<p role="status">Googleシートの同期原本を読み取り中です。保存・変更はしていません。</p>';
+ if(!audit||audit.uid!==accountScope.uid)
+  return '<p class="helper">Googleシートの原本は未照合です。下のボタンで読み取り専用の照合ができます。</p>';
+ if(audit.localSignature!==JSON.stringify(model.shifts))
+  return '<p role="alert" class="warn">照合後に端末内の日報が変更されました。比較結果を破棄し、再度照合してください。</p>';
+ try{
+  const report=window.TAXIAPP_ADMIN_CUTOVER.compareLegacySheet({
+   uid:accountScope.uid,localShifts:model.shifts,
+   sheetShifts:audit.sheetShifts,selectedIds:[...adminCutoverSelected]
+  });
+  const lines=report.device.filter(x=>x.status!=='same-id-identical'||x.overlapsSheet.length)
+   .map(x=>'<li>'+safeText(x.date)+'（'+safeText(x.id)+'）'+
+    (x.status==='device-only'?'：端末のみ':x.status==='same-id-different'?'：同IDの内容違い':'：内容一致')+
+    (x.overlapsSheet.length?'／別IDで乗務時間重複 '+x.overlapsSheet.length+'件':'')+
+    (x.selected?'（移行候補）':'')+'</li>');
+  const remoteOnly=report.sheetOnly.map(x=>'<li>'+safeText(x.date)+
+   '／営業 '+x.recordCount+'件（'+safeText(x.id)+'）'+
+   (x.overlapsLocal.length?'／端末日報と時間重複 '+x.overlapsLocal.length+'件':'')+'</li>');
+  const selectedConflicts=report.selected.filter(x=>x.needsReview).length;
+  return '<p role="status">Google同期原本との照合：'+
+   '端末 '+report.localCount+'件／Google同期原本 '+report.sheetCount+'件／'+
+   '同ID内容一致 '+report.matchingCount+'件／内容違い '+report.changedCount+
+   '件／端末のみ '+report.deviceOnlyCount+'件／Googleのみ '+report.sheetOnlyCount+'件</p>'+
+   '<p>移行候補 '+report.selectedCount+'件のうち要確認 '+selectedConflicts+'件。</p>'+
+   (lines.length?'<h3 class="subsection">一致しない日報・時間重複</h3><ul>'+lines.join('')+'</ul>':'')+
+   (remoteOnly.length?'<h3 class="subsection">Googleにだけ存在する日報</h3><ul>'+remoteOnly.join('')+'</ul>':'')+
+   '<p class="helper">確認時刻：'+safeText(audit.checkedAt)+
+   '。Google側はTAXIAPP_同期原本だけを取得しました。'+
+   'その他の旧シート・印刷領域は未照合です。Firebaseは下の専用欄で確認してください。'+
+   '照合結果は削除・移行の許可を意味しません。</p>';
+ }catch(error){
+  return '<p role="alert" class="warn">照合データを確認できません：'+safeText(String(error?.message||error))+'</p>';
+ }
+}
+async function compareAdminCutoverSheet(){
+ if(!legacyDiary()||!accountScope.uid||!canEditNow()||adminCutoverSheetBusy||
+    adminCutoverSelectionUid!==accountScope.uid)return;
+ if(!googleIsConfigured()){
+  toast('Google Apps Scriptの接続先・接続キーを先に確認してください。',true);return;
+ }
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ const requestToken=++adminCutoverSheetRequestToken;
+ const signature=JSON.stringify(model.shifts),MAX_AUDIT_SHIFTS=25;
+ const assertAccount=()=>{
+  if(adminCutoverSheetRequestToken!==requestToken||
+     !legacyDiary()||!canEditNow()||accountScope.uid!==uid||
+     accountScopeGeneration!==generation||
+     adminCutoverSelectionUid!==uid||JSON.stringify(model.shifts)!==signature)
+   throw Error('照合中に端末データ・ログイン利用者・操作権が変更されました');
+ };
+ adminCutoverSheetBusy=true;adminCutoverSheetAudit=null;
+ updateAdminCutoverPreview();
+ try{
+  assertAccount();
+  const listResponse=await googlePostRequest('syncList');
+  assertAccount();
+  const found=listResponse?.data?.shifts;
+  if(!Array.isArray(found))throw Error('Google同期原本の一覧を取得できません');
+  if(found.length>MAX_AUDIT_SHIFTS)
+   throw Error('Google同期原本が'+found.length+'件あります。安全のため一度に照合できる上限'+MAX_AUDIT_SHIFTS+'件を超えました。データは変更していません');
+  const seen=new Set(),shifts=[];
+  for(const item of found){
+   const id=String(item?.id||'');
+   if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||seen.has(id))
+    throw Error('Google同期原本の一覧に不正または重複した乗務IDがあります');
+   seen.add(id);
+   const response=await googlePostRequest('syncGet',{shiftId:id});
+   assertAccount();
+   const data=response?.data;
+   if(data?.id!==id||data?.shift?.id!==id||
+      !Array.isArray(data.shift.records)||!data.shift.settings||
+      typeof data.shift.settings!=='object'||
+      !Number.isSafeInteger(Number(data.revision))||
+      Number(data.revision)!==Number(item.revision))
+    throw Error('Googleの乗務原本または更新番号を照合できません：'+id);
+   shifts.push(data.shift);
+  }
+  // Re-read revisions after collecting all records to detect concurrent
+  // Google-side edits. Never publish a partial or stale comparison as complete.
+  const finalResponse=await googlePostRequest('syncList');
+  assertAccount();
+  const finalRows=finalResponse?.data?.shifts;
+  if(!Array.isArray(finalRows)||finalRows.length!==found.length)
+   throw Error('照合中にGoogle側の日報一覧が変更されました。もう一度照合してください');
+  const finalMap=new Map(finalRows.map(row=>[row?.id,Number(row?.revision)]));
+  if(finalMap.size!==seen.size||found.some(row=>
+     !finalMap.has(row.id)||finalMap.get(row.id)!==Number(row.revision)))
+   throw Error('照合中にGoogle側の日報更新番号が変わりました。もう一度照合してください');
+  assertAccount();
+  // A Google read does not authenticate the Firestore owner or change its
+  // data. This is only the configured legacy administrator's sync originals.
+  adminCutoverSheetAudit={uid,localSignature:signature,
+   checkedAt:new Date().toLocaleString('ja-JP'),sheetShifts:shifts};
+  toast('Google同期原本 '+shifts.length+'件を読み取り専用で照合しました。');
+ }catch(error){
+  if(adminCutoverSheetRequestToken===requestToken){
+   adminCutoverSheetAudit=null;
+   if(accountScope.uid===uid&&accountScopeGeneration===generation)
+    toast('Google原本の照合を完了できません：'+String(error?.message||error),true);
+  }
+ }finally{
+  if(adminCutoverSheetRequestToken===requestToken){
+   adminCutoverSheetBusy=false;
+   if(accountScope.uid===uid&&accountScopeGeneration===generation)
+    updateAdminCutoverPreview();
+  }
+ }
+}
+function adminCutoverSummaryHtml(){
+ try{
+  const result=adminCutoverLocalPreview();
+  if(!result)return '<p class="helper">管理者本人としてログイン後に利用できます。</p>';
+  const selected=result.entries.length;
+  const warnings=result.entries.filter(x=>x.timeIssue||x.overlapsSelected.length||x.overlapsExcluded.length);
+  const rows=result.entries.map(x=>{
+   const parts=[];
+   if(x.timeIssue)parts.push(safeText(x.timeIssue));
+   if(x.overlapsSelected.length)parts.push('選択した別日報と乗務時間が重複：'+x.overlapsSelected.length+'件');
+   if(x.overlapsExcluded.length)parts.push('選択しなかった別日報と乗務時間が重複：'+x.overlapsExcluded.length+'件');
+   return '<li>'+safeText(x.date)+' 出庫 '+safeText(x.startedAt||'不明')+
+     '／'+x.recordCount+'営業'+(parts.length?' <strong class="warn">'+parts.join('／')+'</strong>':'')+'</li>';
+  }).join('');
+  return '<p role="status">選択：<strong>'+selected+'件</strong>／端末内：'+result.sourceCount+
+   '件／対象外：'+result.excludedCount+'件／要確認：'+warnings.length+'件</p>'+
+   (selected?'<ul>'+rows+'</ul>':'<p class="helper">移行する日報をチェックしてください。初期状態では1件も選択していません。</p>')+
+   '<p class="warn">GoogleとFirebaseの照合結果は下の専用欄で別々に確認してください。'+
+   'ここで選択しても移行・削除・同期は実行されません。</p>';
+ }catch(error){return '<p role="alert" class="warn">候補の確認を停止しました：'+
+  safeText(String(error?.message||error))+'</p>';}
+}
+function renderAdminCutoverSelectionPanel(){
+ if(!legacyDiary()||!accountScope.uid||adminCutoverSelectionUid!==accountScope.uid)return '';
+ const selected=adminCutoverSelectionUid===accountScope.uid?adminCutoverSelected:new Set();
+ const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ const rows=shifts.map(shift=>{
+  const total=totals(shift.records||[],shift.settings||{},shift.date||'');
+  return '<label class="duty-management-item" style="display:flex;align-items:flex-start;gap:12px">'+
+   '<input type="checkbox" data-admin-cutover-choice="'+safeText(shift.id)+'" '+
+   (selected.has(shift.id)?'checked ':'')+
+   'aria-label="移行候補に選ぶ '+safeText(shift.date||'日付不明')+'" style="width:24px;height:24px;flex-shrink:0">'+
+   '<span class="duty-management-info"><strong>'+safeText(shift.date||'日付不明')+'</strong>'+
+   '<span>出庫 '+safeText(shortTime(shift.startedAt)||'不明')+
+   ' ～ 入庫 '+safeText(shift.endedAt?shortTime(shift.endedAt):'未入庫')+'</span>'+
+   '<span>営業 '+(shift.records||[]).length+'件／メーター売上 '+money(total.meter)+'</span>'+
+   '<span class="helper">乗務ID：'+safeText(shift.id)+'</span></span></label>';
+ }).join('');
+ return '<section class="card" data-admin-cutover-panel>'+
+  '<h2 class="h2">Firebase移行前の日報選択（確認用）</h2>'+
+  '<p class="helper">まず端末内で確認できる日報だけを一覧にします。'+
+  '必要な日報を1件ずつ選んでください。GoogleとFirebaseの原本は下の読み取り専用ボタンで照合できます。</p>'+
+  (rows||'<p class="empty-state">この端末内に日報がありません。Googleシートの保存原本も未照合です。</p>')+
+  '<div data-admin-cutover-summary>'+adminCutoverSummaryHtml()+'</div>'+
+  '<div class="actions"><button class="btn" type="button" data-action="adminCutoverClear">選択を解除</button>'+
+  '<button class="btn primary" type="button" data-action="adminCutoverExport" '+
+  (!selected.size?'disabled':'')+'>⇩ 選択結果をJSONで保存（データ移行なし）</button></div>'+
+  '<p class="footnote">このJSONは「移行候補の選択メモ」であり日報のバックアップではありません。'+
+  '元の日報、売上、Googleシート、Firebaseには一切変更しません。</p>'+
+  '<hr class="divider"><h3 class="subsection">Google同期原本との読み取り専用照合</h3>'+
+  '<p class="helper">管理者の設定済みGoogleシートの「TAXIAPP_同期原本」から最大25件を読み取り、'+
+  '端末の乗務と照合します。新しい日報の保存・削除・同期はしません。</p>'+
+  '<div data-admin-cutover-sheet-report>'+adminCutoverSheetHtml()+'</div>'+
+  '<button class="btn" type="button" data-action="adminCutoverCompareSheet" '+
+  (adminCutoverSheetBusy?'disabled':'')+'>↻ Google同期原本を照合（読取専用）</button>'+
+  '<hr class="divider"><h3 class="subsection">本人Firebase原本との読み取り専用照合</h3>'+
+  '<p class="helper">本人UIDのFirestore日報だけを取得します。Google同期・日報保存先変更はしません。'+
+  'Firebaseのアクセスルールが未公開の場合は権限エラーになります。</p>'+
+  '<div data-admin-cutover-firebase-report>'+adminCutoverFirebaseHtml()+'</div>'+
+  '<button class="btn" type="button" data-action="adminCutoverCompareFirebase" '+
+  (adminCutoverFirebaseBusy?'disabled':'')+'>↻ 本人Firebase原本を照合（読取専用）</button></section>';
+}
+function updateAdminCutoverPreview(){
+ const holder=appEl.querySelector('[data-admin-cutover-summary]');
+ if(holder)holder.innerHTML=adminCutoverSummaryHtml();
+ const button=appEl.querySelector('[data-action="adminCutoverExport"]');
+ if(button)button.disabled=adminCutoverSelected.size===0;
+ const sheetHolder=appEl.querySelector('[data-admin-cutover-sheet-report]');
+ if(sheetHolder)sheetHolder.innerHTML=adminCutoverSheetHtml();
+ const firebaseHolder=appEl.querySelector('[data-admin-cutover-firebase-report]');
+ if(firebaseHolder)firebaseHolder.innerHTML=adminCutoverFirebaseHtml();
+}
+function handleAdminCutoverChoice(id,selected){
+ if(!legacyDiary()||!accountScope.uid||!canEditNow())return;
+ if(!model.shifts.some(s=>s.id===id))return;
+ if(adminCutoverSelectionUid!==accountScope.uid){
+  adminCutoverSelectionUid=accountScope.uid;adminCutoverSelected=new Set();
+ }
+ if(selected)adminCutoverSelected.add(id);
+ else adminCutoverSelected.delete(id);
+ updateAdminCutoverPreview();
+}
+function exportAdminCutoverSelection(){
+ if(!legacyDiary()||!accountScope.uid||!canEditNow()||
+    adminCutoverSelectionUid!==accountScope.uid||!adminCutoverSelected.size)return;
+ try{
+  const preview=adminCutoverLocalPreview();
+  if(!preview||!preview.selectedCount)throw Error('移行候補を選択してください');
+  const memo={...preview,exportedAt:new Date().toISOString(),
+   note:'移行候補の選択メモです。日報のバックアップや移行承認ではありません。'};
+  download(JSON.stringify(memo,null,2),'TAXIAPP_Firebase移行候補_'+dateStamp(new Date())+'.json',
+   'application/json;charset=utf-8');
+  toast('移行候補の選択メモをダウンロードしました。実データの移行や削除はしていません。');
+ }catch(error){toast('移行候補の確認に失敗：'+String(error?.message||error),true);}
+}
 function renderDeviceManagementPanel(){
  return '<section class="card"><h2 class="h2">PCから別端末への一括移行</h2>'+
   '<p class="helper">営業データ、乗務設定、待機場所、Googleスプレッドシートの接続URLと接続キーを暗号化してまとめて移します。Googleログインや位置情報の許可は移行されません。</p>'+
@@ -3295,6 +3646,17 @@ function handleAction(action,id){
   saveLater();render();toast('現在のGPSトリップ '+km+'km を入力しました。');
   return;
  }
+ if(action==='adminCutoverClear'){
+   if(legacyDiary()&&canEditNow()){
+    adminCutoverSelectionUid=accountScope.uid;adminCutoverSelected=new Set();
+    appEl.querySelectorAll('[data-admin-cutover-choice]').forEach(x=>x.checked=false);
+    updateAdminCutoverPreview();
+   }
+   return;
+ }
+ if(action==='adminCutoverExport'){exportAdminCutoverSelection();return;}
+ if(action==='adminCutoverCompareSheet'){void compareAdminCutoverSheet();return;}
+ if(action==='adminCutoverCompareFirebase'){void compareAdminCutoverFirebase();return;}
  if(action==='exportDevice'){exportDevice();return;}
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
@@ -4080,7 +4442,11 @@ appEl.addEventListener('click',event=>{
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
-appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
+appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{
+ if(event.target.matches('[data-admin-cutover-choice]')){
+  handleAdminCutoverChoice(event.target.dataset.adminCutoverChoice,event.target.checked);return;
+ }
+ if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
  if(event.target.matches('[data-ride-field]')){const key=event.target.dataset.rideField;if(!RIDE_FIELD_PREFS.some(([name])=>name===key))return;model.prefs.rideFieldVisibility??={};model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-mode]')){model.prefs.cancelMeterMode=event.target.value==='reset'?'reset':'retain';saveLater();render();return;}
