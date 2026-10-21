@@ -27,6 +27,7 @@ async function scenario({odometer='0',unresolvedGap=true,gapCount=3,elapsedSecon
 }
 (async()=>{
  const zero=await scenario({});
+ assert.ok(zero.shift.externalGpsSnapshot,'初回GPS測位が登録されていません：'+JSON.stringify(zero.notices));
  assert.equal(zero.shift.externalGpsSnapshot.tripKm,0);
  assert.equal(bridge.baseline(zero.localStorage,zero.id).value,0);
  assert.equal(bridge.gapAcknowledged(zero.localStorage,zero.id,3),true);
