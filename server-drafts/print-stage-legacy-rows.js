@@ -85,7 +85,23 @@ function projectTrustedPacket({packet,sourceRevision}={}){
     ptype===raw.N?'主金種':'複合決済']);
   });
  }
- if(totals.meter!==meter)throw Error('印刷明細のメーター売上が一致しません');
+ // Compare against the actual production totals() settlement rules.
+ // A signed-in caller's monetary summary cannot be trusted without checking
+ // the payment rows; otherwise a plausible-looking V2 packet could print an
+ // incorrect cash deposit or allocated total.
+ const cashReceived=payments.filter(r=>r[3]==='現').reduce((v,r)=>v+r[4],0);
+ const allocated=payments.filter(r=>r[3]!=='キ').reduce((v,r)=>v+r[4]-r[9],0);
+ const noncash=payments.filter(r=>r[3]!=='現'&&r[3]!=='キ')
+  .reduce((v,r)=>v+r[4]-r[9],0);
+ const expectedCash=totals.meter+totals.goFee-totals.discount-
+  noncash-totals.emptyToll;
+ if(totals.cashReceived!==cashReceived||
+    totals.paymentAllocated!==allocated||
+    totals.cashRemittance!==expectedCash||
+    totals.etcRemittance!==totals.realToll+totals.emptyToll||
+    totals.totalRemittance!==totals.cashRemittance+totals.etcRemittance)
+  throw Error('印刷用の現金受取・決済配分・GO納金・ETC合計が一致しません');
+  if(totals.meter!==meter)throw Error('印刷明細のメーター売上が一致しません');
  for(const k of SUM_KEYS)revenue.push([id,k,totals[k],'TAXIAPP 計算済み','']);
  const summary=[[id,shift.date,
   timestamp(shift.startedIso,shift.date,shift.startedAt),
