@@ -77,21 +77,37 @@ function create(deps){
  // A login's cloud-first snapshot must never overwrite unsynced local shifts.
  // A matching prior hash means the local copy is unchanged since its last sync.
  // With no baseline, only byte-identical projected data can be safely adopted.
- function assertSafeWriterSnapshot(incoming){
+ // On login, merge nonconflicting cloud originals with local-only drafts.
+ // A local duty without a known cloud ancestor is never dropped by a pull.
+ // A previously synced duty missing in the cloud is a conflict, not a new upload.
+ function planSafeWriterSnapshot(incoming){
   if(!Array.isArray(incoming))throw Error('クラウドの日報一覧が不正です');
   const cloud=new Map(incoming.map(shift=>[shift.id,shift]));
   if(cloud.size!==incoming.length)throw Error('クラウドの乗務IDが重複しています');
   const saved=getSaved(),local=[...(getModel()?.shifts||[])];
+  const pendingIds=[],localIds=new Set();
   for(const shift of local){
-   const remote=cloud.get(shift.id);
-   if(!remote)throw Error('端末に残る乗務 '+shift.id+
-    ' がクラウドにありません。未同期の日報を保護するため受信を停止しました');
+   if(!shift||!validId(shift.id)||localIds.has(shift.id))
+    throw Error('端末の日報IDが不正です。受信せず保持します');
+   localIds.add(shift.id);
+   const remote=cloud.get(shift.id),base=saved[shift.id];
+   if(!remote){
+    if(base?.revision>0)
+     throw Error('以前同期した乗務 '+shift.id+
+      ' がクラウドで見つかりません。端末原本を保持して確認を待ちます');
+    pendingIds.push(shift.id);
+    continue;
+   }
    const localValue=localHash(shift),remoteValue=remoteHash(remote);
-   if(localValue!==remoteValue&&saved[shift.id]?.hash!==localValue)
+   if(localValue!==remoteValue&&base?.hash!==localValue)
     throw Error('端末の乗務 '+shift.id+
      ' に未同期の変更があります。クラウド受信で上書きせず停止しました');
   }
-  return true;
+  const extra=local.filter(shift=>!cloud.has(shift.id));
+  return {shifts:[...incoming,...extra],pendingIds};
+ }
+ function assertSafeWriterSnapshot(incoming){
+  planSafeWriterSnapshot(incoming);return true;
  }
  const localHash=shift=>digest(stable(getPacket(shift).shift));
  const remoteHash=shift=>digest(stable(getPacket(shift).shift));
@@ -373,7 +389,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
