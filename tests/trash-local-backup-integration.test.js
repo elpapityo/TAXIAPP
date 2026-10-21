@@ -66,6 +66,30 @@ function rig(){
   await assert.rejects(h.invoke('afterTrashChange',{uid,shiftId:id,action:'moved'}),/更新されました/);
   assert.equal(h.ctx.model.shifts.length,2);
  }
+ // An IndexedDB write may yield while a GPS/input event changes the
+ // in-memory diary. The stale filtered snapshot must NOT remain on disk:
+ // restore the newer complete local model before reporting a conflict.
+ {
+  const h=rig();
+  await h.invoke('verifiedTrashBackup',{uid,shiftId:id,revision:4,shift:clone(duty)});
+  const storageKey='taxiapp-account-state-v1-'+uid;
+  const originalPut=h.ctx.idbPut;
+  let injected=false;
+  h.ctx.idbPut=async(db,value,key)=>{
+   await originalPut(db,value,key);
+   if(key===storageKey&&!injected){
+    injected=true;
+    h.ctx.model.shifts[1].records[0].raw.K=9999;
+   }
+  };
+  await assert.rejects(h.invoke('afterTrashChange',
+   {uid,shiftId:id,action:'moved'}),/新しい端末原本を再保存/);
+  assert.equal(h.ctx.model.shifts.length,2);
+  assert.equal(h.ctx.model.shifts[1].records[0].raw.K,9999);
+  assert.equal(h.disk.get(storageKey).shifts.length,2);
+  assert.equal(h.disk.get(storageKey).shifts[0].records[0].raw.K,1500);
+  assert.equal(h.disk.get(storageKey).shifts[1].records[0].raw.K,9999);
+ }
  // Account switch invalidates any staged mutation or restoration UI.
  {
   const h=rig();
