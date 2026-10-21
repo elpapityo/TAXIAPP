@@ -10,6 +10,8 @@ vm.createContext(context);
 vm.runInContext(fs.readFileSync('google-apps-script/FirestorePrintSourcesDraft.gs','utf8'),context);
 const date=new Date('2026-10-22T08:30:00+09:00');
 assert.equal(context.firestorePrintSameCellDraft_(date,'2026-10-22 08:30:00'),true);
+assert.equal(context.firestorePrintSameCellDraft_(date,'2026-10-22'),true);
+assert.equal(context.firestorePrintSameCellDraft_(date,'2026-10-23'),false);
 assert.equal(context.firestorePrintSameCellDraft_(date,'2026-10-22 08:30:01'),false);
 assert.equal(context.firestorePrintSameCellDraft_(date,'2026-10-22 08:30:00=1'),false);
 assert.equal(context.firestorePrintSameCellDraft_('abc','abc'),true);
