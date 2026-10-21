@@ -8,7 +8,7 @@ const from=html.indexOf('function renderSheetTargetSettings(){');
 const to=html.indexOf('function handleSheetTargetSetting(',from);
 assert.ok(from>0&&to>from,'日報保存先の設定画面が見つかりません');
 let uid='owner-A',canWrite=true,viewer=false,deleted=false,revision=1,cloudReads=0;
-const id='shift-1792600000000-cloud-member';
+const id='shift-1792600000000-member';
 const original={id,date:'2026-10-21',records:[],settings:{}};
 const clone=value=>JSON.parse(JSON.stringify(value));
 const log=[],remote={id,revision,shift:clone(original)};
