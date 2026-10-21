@@ -2895,10 +2895,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
    else localStorage.setItem(storageKey,JSON.stringify(next));
    const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
-   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(writerLoadEpoch!==epoch||deviceMode!=='writer'||accountScopeGeneration!==scopeGenerationAtSnapshot||accountScope.uid!==uidAtSnapshot)return false;
    model=next;
   }
-  if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+  if(writerLoadEpoch!==epoch||deviceMode!=='writer'||accountScopeGeneration!==scopeGenerationAtSnapshot||accountScope.uid!==uidAtSnapshot)return false;
   return true;
  },
  onWriterBootstrapReady:()=>{
@@ -2924,7 +2924,13 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   return result.data;
  },
  replace:async(id,incoming,existing)=>{
-  if(!canEditNow())throw Error('操作権が切り替わったため受信を保留しました');
+  const replaceUid=accountScope.uid,replaceGeneration=accountScopeGeneration;
+  const replaceKey=scopedStorageKey();
+  const checkIdentity=()=>{
+   if(!canEditNow()||accountScope.uid!==replaceUid||accountScopeGeneration!==replaceGeneration)
+    throw Error('受信中にアカウントまたは操作権が切り替わりました');
+  };
+  checkIdentity();
   if(!incoming||incoming.id!==id||!Array.isArray(incoming.records)||
      incoming.records.length>MAX_RECORDS||!incoming.settings)
    throw Error('受信した乗務の内容が不正です');
@@ -2939,13 +2945,19 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
   try{
    await save(true);
-   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+   checkIdentity();
+   const stored=db?await idbGet(db,replaceKey):JSON.parse(localStorage.getItem(replaceKey)||'null');
+   checkIdentity();
    const savedShift=stored?.shifts?.find(x=>x.id===id);
    const expectedShift=model.shifts.find(x=>x.id===id);
    if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
   }catch(error){
-   model=previous;await save(true);throw error;
+   if(accountScope.uid===replaceUid&&accountScopeGeneration===replaceGeneration){
+    model=previous;await save(true);
+   }
+   throw error;
   }
+  checkIdentity();
   render(); // Cloud reception must refresh operations/summary as well as history.
 
  },
