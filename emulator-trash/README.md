@@ -9,6 +9,11 @@
 - プロジェクトIDは **`demo-taxiapp-trash`**。接頭辞 `demo-` のFirebase Emulator用仮想プロジェクト以外は使用しない。
 - `@firebase/rules-unit-testing` の `withSecurityRulesDisabled` はテストデータの初期化に限り使用。本番SDKへ接続しない。
 
+## テスト原本と実行フォルダの保護
+- Firebase CLIはプロジェクト外のルールを直接読めないため、`npm run emulator` の開始時に `../rules-drafts/firestore-trash.rules` を `./firestore-trash.rules` へ**一時的にコピー**する。原本を編集・公開しない。コピーは `.gitignore` に登録済み。
+- `firebase.json` が読むのはこのローカルコピー。テストの `initializeTestEnvironment` はリポジトリ側の同じ草案を読み込む。
+- 実際の本番 `firestore.rules` は読み込みも変更もしない。
+
 ## 実行（ネットワークから依存パッケージを取得できる専用環境でのみ）
 ```sh
 cd emulator-trash
