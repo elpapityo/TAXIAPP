@@ -72,6 +72,27 @@ function runMock(confirmValue){
   assert.equal(h.disk.size,0);
   assert.ok(h.msgs.some(x=>String(x[0]).includes('中止')));
  }
+ // Another event may change account settings while IndexedDB persists
+ // the filtered duty list. Preserve the latest full model, including that
+ // unrelated edit, and abort removal until deletion markers are rechecked.
+ {
+  const h=runMock(true),targetKey='taxiapp-account-state-v1-'+uid;
+  const oldPut=h.state.idbPut;
+  let injected=false;
+  h.state.idbPut=async(db,value,key)=>{
+   await oldPut(db,value,key);
+   if(key===targetKey&&!injected){
+    injected=true;
+    h.state.model.prefs.theme='night';
+   }
+  };
+  await vm.runInContext('resolveDeletedLocalShifts()',h.state);
+  assert.equal(h.state.model.shifts.length,1);
+  assert.equal(h.state.model.prefs.theme,'night');
+  assert.equal(h.disk.get(targetKey).shifts.length,1);
+  assert.equal(h.disk.get(targetKey).prefs.theme,'night');
+  assert.ok(h.msgs.some(x=>String(x[0]).includes('中止')));
+ }
  // Re-read tombstone: if deletion was reversed on the server, do nothing.
  {
   const h=runMock(true);
