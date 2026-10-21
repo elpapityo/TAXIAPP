@@ -222,7 +222,7 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  const uploaded=client('writerEdited',svc,{shifts:[clone(original)]});
  assert.equal(await uploaded.app.run(),true);
  uploaded.model.shifts[0].startedAt='11:00';
- assert.throws(()=>uploaded.app.assertSafeWriterSnapshot([original]),/未同期の変更/);
+ assert.throws(()=>uploaded.app.assertSafeWriterSnapshot([original]),/競合/);
  uploaded.model.shifts[0].startedAt='10:00';
  assert.equal(uploaded.app.assertSafeWriterSnapshot([{...original,startedAt:'12:00'}]),true,
   'an unchanged local version may accept a newer cloud version');
