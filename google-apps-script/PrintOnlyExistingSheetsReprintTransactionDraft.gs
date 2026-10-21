@@ -166,7 +166,6 @@ function printV2ExistingReprintPublishDraft_(ss,stage,journal,
     }))throw Error('新版データの書込確認ができません：'+action.name);
    }
    printV2ReprintVerify_(verifyActive,verifyMaintenance,verifiedUid,entry);
-   printV2ReprintJournalAppend_(journal,entry,'COMMIT');
   }catch(err){writeError=err;}
   if(writeError){
    var failed=[];
@@ -195,6 +194,15 @@ function printV2ExistingReprintPublishDraft_(ss,stage,journal,
    }
    printV2ReprintJournalAppend_(journal,entry,'ROLLED_BACK');
    throw writeError;
+  }
+  // This confirmation is deliberately OUTSIDE the rollback catch. If the
+  // COMMIT row was appended but its readback response was lost, rollback
+  // would create contradictory COMMIT→ROLLED_BACK journal history.
+  // In an unknown state, stop and require audit readback before further work.
+  try{
+   printV2ReprintJournalAppend_(journal,entry,'COMMIT');
+  }catch(commitUncertain){
+   throw Error('COMMIT_CONFIRMATION_UNKNOWN:印刷更新の監査行を再確認してください');
   }
   return {state:'reprint-source-updated-needs-paper-review',
    id:plan.id,from:plan.previousRevision,to:plan.latestRevision,
