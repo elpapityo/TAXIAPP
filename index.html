@@ -2632,8 +2632,13 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  },
  writerBootstrapAllowed:()=>deviceMode==='writer'&&writerLoadGate,
  onWriterSnapshot:async shifts=>{
-  if(deviceMode!=='writer'||!writerLoadGate)return false;
-  const epoch=writerLoadEpoch;
+  if(deviceMode!=='writer'||!writerLoadGate||!accountScopeLoaded)return false;
+  const epoch=writerLoadEpoch,generation=accountScopeGeneration,
+   uid=accountScope.uid,storageKey=scopedStorageKey();
+  const currentScope=()=>writerLoadEpoch===epoch&&
+   accountScopeGeneration===generation&&accountScope.uid===uid&&
+   scopedStorageKey()===storageKey&&deviceMode==='writer'&&writerLoadGate&&
+   accountScopeLoaded;
   if(!Array.isArray(shifts))throw Error('Googleの乗務一覧が不正です');
   const ids=new Set();
   for(const shift of shifts){
@@ -2648,6 +2653,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     // local IndexedDB key. Never hide them just because the new cloud is empty.
     const legacy=db?await idbGet(db,KEY):
      JSON.parse(localStorage.getItem(KEY)||'null');
+    if(!currentScope())return false;
     const cloudById=new Map(shifts.map(x=>[x.id,x]));
     const manifest=typeof adminFirestoreManifest==='function'?adminFirestoreManifest(accountScope.uid):null;
     const allLegacy=Array.isArray(legacy?.shifts)?legacy.shifts:[];
@@ -2676,14 +2682,15 @@ const syncUI=window.TAXIAPP_SYNC_UI({
    next.activeId=open.length===1?open[0].id:null;
    // A last-resort local recovery copy. It is never uploaded or counted.
    try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy'),JSON.stringify(previous));}catch{}
-   if(db)await idbPut(db,next,scopedStorageKey());
-   else localStorage.setItem(scopedStorageKey(),JSON.stringify(next));
-   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+   if(!currentScope())return false;
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
-   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(!currentScope())return false;
    model=next;
   }
-  if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+  if(!currentScope())return false;
   return true;
  },
  onWriterBootstrapReady:()=>{
