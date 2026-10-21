@@ -7,7 +7,9 @@ assert.match(html,/function canEditNow\(\)\{return deviceMode==='writer'&&!write
 assert.match(html,/syncUI\.bootstrapWriter\(\)/);
 assert.match(html,/writerBootstrapAllowed:/);
 assert.match(html,/onWriterSnapshot:async shifts=>/);
-assert.ok(html.includes('await idbPut(db,next,scopedStorageKey())'));
+assert.ok(html.includes('await idbPut(db,next,storageKey)'));
+assert.match(html,/if\(!currentScope\(\)\)return false;/);
+assert.match(html,/accountScopeGeneration===generation/);
 assert.match(html,/JSON\.stringify\(stored\.shifts\)!==JSON\.stringify\(next\.shifts\)/);
 assert.match(html,/writerLoadGate=false;writerLoadError=''/);
 assert.match(adapter,/async function bootstrapWriter\(\)/);
