@@ -2537,12 +2537,32 @@ function markHistoryRecordRemoval(recordId){
  saveHistoryLocationDraft(draft);
  render();
 }
+function unchangedHistoryEdit(draft){
+ if(!draft||draft.addRecord||draft.removeRecord)return false;
+ const original=draft.sourceRecord;
+ if(!original)return false;
+ if(draft.al!==String(original.raw?.AL??'')||draft.am!==String(original.raw?.AM??''))return false;
+ if(Object.entries(draft.fields||{}).some(([key,val])=>val!==String(original.raw?.[key]??'')))return false;
+ if(Object.entries(draft.metaFields||{}).some(([key,val])=>val!==String(original.meta?.[key]??'')))return false;
+ const split=original.meta?.splitPayment||{};
+ if(draft.splitSecond!==String(split.second||'')||draft.splitAmount!==String(split.manualAmount??''))return false;
+ const oldSlot=split.manualSlot===0||split.manualSlot===1?split.manualSlot:null;
+ if(draft.splitSecond&&draft.splitSlot!==oldSlot)return false;
+ return JSON.stringify(draft.highwaySections??null)===
+  JSON.stringify(original.meta?.highwaySections??null);
+}
 async function commitHistoryLocationEdit(){
  const draft=historyLocationEdit;
  if(!draft||draft.busy)return;
  try{if(!historyLocationInputs())throw Error('修正入力が見つかりません');}
  catch(error){draft.message=String(error?.message||error);render();return;}
  if(!accountDiary.ready()||!canEditNow()||accountScope.uid!==draft.uid)return;
+ if(unchangedHistoryEdit(draft)){
+  try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));}
+  catch{draft.message='変更なしですが、端末の修正控えを整理できません';render();return;}
+  historyLocationEdit=null;historyCloudMessage='変更された項目はありません';
+  render();return;
+ }
  const row=historyCloudRows.find(row=>row.id===draft.id&&row.revision===draft.baseRevision);
  if(!row||row.shift?.date!==draft.date||model.shifts.some(item=>item.id===draft.id)){
   draft.message='端末の日報または取得した原本が変更されています。修正内容は保持しました。';render();return;
