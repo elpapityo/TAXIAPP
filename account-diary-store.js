@@ -99,6 +99,32 @@ function create(){
     return {id,revision,deleted:data?.trashed===true};
    })};
   }
+  if(action==='syncHistoryDate'){
+   const date=String(fields.date||'');
+   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||
+      !Number.isFinite(Date.parse(date+'T00:00:00Z'))||
+      new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date)
+    throw Error('過去日報の取得日付が不正です');
+   // Date-scoped Firestore query: do not load old duties into the local
+   // working model, and never open another account's collection.
+   const query=typeof c.f.query==='function'&&typeof c.f.where==='function'?
+    c.f.query(collectionRef(c),c.f.where('shift.date','==',date)):
+    collectionRef(c);
+   const snapshot=await c.f.getDocsFromServer(query);
+   ownerCheck(c);
+   const seen=new Set(),rows=[];
+   for(const doc of snapshot.docs){
+    const id=String(doc.id||''),data=doc.data(),revision=Number(data?.revision);
+    if(!ID.test(id)||seen.has(id)||data?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+       !Number.isSafeInteger(revision)||revision<1||data?.shift?.id!==id)
+     throw Error('過去日報の原本形式が不正です。表示を停止しました');
+    seen.add(id);
+    if(data.trashed===true||data.shift.date!==date)continue;
+    rows.push({id,revision,shift:validate(data.shift,id)});
+    if(rows.length>20)throw Error('指定日に乗務が多すぎます。日付を確認してください');
+   }
+   return {date,shifts:rows};
+  }
   if(action==='syncGet'){
    const id=String(fields.shiftId||'');
    const snapshot=await c.f.getDocFromServer(docRef(c,id));
