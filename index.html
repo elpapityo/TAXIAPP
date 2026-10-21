@@ -2862,6 +2862,17 @@ async function compareAdminCutoverSheet(){
     throw Error('Googleの乗務原本または更新番号を照合できません：'+id);
    shifts.push(data.shift);
   }
+  // Re-read revisions after collecting all records to detect concurrent
+  // Google-side edits. Never publish a partial or stale comparison as complete.
+  const finalResponse=await googlePostRequest('syncList');
+  assertAccount();
+  const finalRows=finalResponse?.data?.shifts;
+  if(!Array.isArray(finalRows)||finalRows.length!==found.length)
+   throw Error('照合中にGoogle側の日報一覧が変更されました。もう一度照合してください');
+  const finalMap=new Map(finalRows.map(row=>[row?.id,Number(row?.revision)]));
+  if(finalMap.size!==seen.size||found.some(row=>
+     !finalMap.has(row.id)||finalMap.get(row.id)!==Number(row.revision)))
+   throw Error('照合中にGoogle側の日報更新番号が変わりました。もう一度照合してください');
   assertAccount();
   // A Google read does not authenticate the Firestore owner or change its
   // data. This is only the configured legacy administrator's sync originals.
