@@ -899,15 +899,15 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-sections.js?v=20261020-1"></script>
 <script src="./highway-report.js?v=20261020-1"></script>
-<script src="./bidirectional-sync.js?v=20261022-7"></script>
-<script src="./cloud-sync-ui.js?v=20261022-7"></script>
+<script src="./bidirectional-sync.js?v=20261022-8"></script>
+<script src="./cloud-sync-ui.js?v=20261022-8"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
 <script src="./login-core.js?v=20261017-2"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
 <script src="./account-auto-sync.js?v=20261020-1"></script>
-<script src="./account-diary-store.js?v=20261021-5"></script>
+<script src="./account-diary-store.js?v=20261022-8"></script>
 <script>
 (async function () {
   'use strict';
@@ -2216,7 +2216,7 @@ function historyHighwayControls(draft){
  if(!Array.isArray(draft.highwaySections))return '';
  const labels={entryIC:'入口インター',entryTime:'入口時刻',entryKm:'入口距離（km）',
   exitIC:'出口インター',exitTime:'出口時刻',exitKm:'出口距離（km）',fee:'高速料金（円）'};
- return '<details><summary>高速道路の区間別明細（'+draft.highwaySections.length+'区間）</summary>'+
+ return '<details '+(draft.highwayOpen?'open':'')+'><summary>高速道路の区間別明細（'+draft.highwaySections.length+'区間）</summary>'+
   draft.highwaySections.map((section,index)=>'<div class="card"><strong>'+
    (section.mode==='実'?'実車':'空車')+'高速 '+(index+1)+'区間</strong>'+
    '<div class="form-grid">'+HISTORY_HIGHWAY_FIELDS.map(key=>
@@ -2248,6 +2248,7 @@ function editHistoryHighwaySection(operation,modeOrIndex){
  }else return;
  try{saveHistoryLocationDraft(draft);}
  catch(error){draft.highwaySections=previous;throw error;}
+ draft.highwayOpen=true;
  render();
 }
 function saveHistoryLocationDraft(draft){
