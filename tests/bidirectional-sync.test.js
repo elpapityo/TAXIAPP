@@ -184,6 +184,7 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  assert.equal(await owner.app.run(),true);
  assert.equal(svc.cloud.get(id).revision,1);
  assert.equal(owner.app.markLocalRemoval(id,original),true);
+ assert.deepEqual(owner.app.localRemovalIds(),[id],'restart queue can recover deleted duty IDs');
  owner.model.shifts=[];
  assert.equal(await owner.app.run(),true,'delete marker reaches server with CAS');
  assert.equal(svc.cloud.get(id).deleted,true);
