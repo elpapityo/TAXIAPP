@@ -159,8 +159,8 @@ twin.rows['TAXIAPP_決済内訳'].forEach(row=>row[0]=twin.id);
 twin.rows['TAXIAPP_集計'].forEach(row=>row[0]=twin.id);
 const ambiguous=previewSelector({committed:[...labels,{id:twin.id,revision:5,projection:twin}],b17:selection.label});
 assert.equal(ambiguous.state,'not-selected');
-const secondLatest=previewSelector({committed:[...labels,{id:twin.id,revision:5,projection:twin}],followLatest:true});
-assert.equal(secondLatest.state,'preview-only','different legitimate IDs have an unambiguous lexical timestamp and suffix');
+assert.throws(()=>previewSelector({committed:[...labels,{id:twin.id,revision:5,projection:twin}],followLatest:true}),
+ /最新乗務の判定が曖昧/,'same timestamp must never auto-select the wrong duty');
 for(const [name,cols] of Object.entries(COLUMNS)){
  assert.match(code,new RegExp("'"+name+"'"),'existing production GAS source uses '+name);
  assert.equal(decoded.rows[name][0].length,cols.length);
