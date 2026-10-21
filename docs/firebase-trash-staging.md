@@ -26,9 +26,18 @@
 ### 復元
 本人の明示的確認後、トランザクション内で原本が存在せず、ゴミ箱と墓標の世代・元の更新番号が一致し、期限内であることを検証。新しい更新番号で原本を復活させ、墓標を「active」にしゴミ箱全文を削除する。既存IDへの上書きは**しない**。別IDとの乗務時間重複もUIで警告すべき（未実装）。
 
-### 完全削除
+### 完全削除（**無料運用優先**）
+**重要：Firebase公式のFirestore料金表では、マネージドTTL削除は無料枠の対象外で、利用には課金設定が必要。** 本アプリでは利用者が無料運用を希望しているため、TTLを無断で有効化しない。
+
+- **第一候補（無料枠内での利用を目指す）：** ゴミ箱移動から30日経過後、本人が次にアプリへログインして編集権を持つタイミングで `purgeExpired()` を呼び、サーバーの期限切れゴミ箱原本を削除する。Firestore標準の読み取り・書き込み・削除回数の無料枠内なら費用は発生しないが、枠を超えると課金条件による。**アプリに誰もアクセスしない期間は期限超過データが残る**。
+- **第二候補（有料・要事前承認）：** Firestore TTLにより期限到来後の自動削除を依頼する。TTL削除は無料枠外で課金設定が必要。実際の削除は即時ではなく、通常は期限後24時間以内の遅延があるため「30日ちょうどで消える」とは約束しない。
+- **本PRの試作は `purgeExpired()` のユニットテストまで。** ユーザー画面・ログイン時の自動呼出・Firestore Rules・TTL設定には未接続。
+- いずれも本人UID、サーバーでの期限照合、現行編集セッション、墓標の維持を必須にする。
+- Firebase公式料金資料： https://firebase.google.com/docs/firestore/pricing
+- TTL挙動の資料： https://firebase.google.com/docs/firestore/ttl
+
 - Firestore TTLは別途管理者の本番設定が必要であり、**今回設定していない**。TTLの削除時刻には遅延があり得るため、単に期限フィールドを置いただけで「30日で必ず削除済み」と報告しない。
-- 条件確定後の予定：`trash.expiresAt` にTTLを設定し、期限後の実際の削除・監査（TTL遅延時の対応）を検証する。
+- 自動TTLを選ぶ場合だけ `trash.expiresAt` のTTL設定と課金影響を別途確認する。無料案は次回ログインでの期限切れ整理。
 - 法令・税務上の保存義務がある日報は、試験用の日報とは区別して保持・バックアップ要件を確認する。
 - 墓標は売上・GPS・個人の明細を保持しないが、旧端末の再アップロード防止のため残る。**データの完全な無痕跡化とは異なる**。保存期間は別途判断する。
 
@@ -52,7 +61,7 @@
 - この判定コードは現時点の `bidirectional-sync.js` や `account-diary-store.js` には**接続していない**。現在の本番では依然として日報が復活する可能性がある。新旧クライアントの安全を担保するにはFirestore Rulesの `deleted` マーカー確認と同期UIへの結合が別途必要。
 
 ## 今回の試作コード
-`firebase-duty-trash.js` は `TAXIAPP_DUTY_TRASH.create()` を提供。本人UIDに `bind()` し、`move({shiftId,expectedRevision,confirmed:true})`、`list()`、`restore({shiftId,confirmed:true})` を試験可能。**未実装のUIやRules公開を迂回して本番で呼び出さない**。
+`firebase-duty-trash.js` は `TAXIAPP_DUTY_TRASH.create()` を提供。本人UIDに `bind()` し、`move({shiftId,expectedRevision,confirmed:true})`、`list()`、`restore({shiftId,confirmed:true})`、`purgeExpired({max:20})` を試験可能。**未実装のUIやRules公開を迂回して本番で呼び出さない**。
 
 `tests/firebase-duty-trash.test.js` はモックFirestoreを使って版競合、本人の確認、再削除、復元、期限、UID変更、読み取り専用拒否、旧端末の再送信候補抑止などを検証する。モックテストはセキュリティルール実機試験の代わりにはならない。
 
