@@ -160,8 +160,6 @@ function create(deps){
      throw Error('クラウドの日報一覧に不正または重複したIDがあります。同期を停止しました');
     seenRemoteIds.add(id);
    }
-   if(selected&&listing.shifts.some(item=>!selected.has(String(item.id))))
-    throw Error('指定した乗務以外がクラウド一覧に含まれています。誤受信を防ぐため停止しました');
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
    const removed=localRemovals();
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
