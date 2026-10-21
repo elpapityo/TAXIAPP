@@ -1297,6 +1297,12 @@ function validateDraft(draft){let errs=[];if(!draft)errs.push('入力データ�
 function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
 
 
+function canonicalDutyJson(value){
+ return JSON.stringify(value,(_key,entry)=>
+  entry&&typeof entry==='object'&&!Array.isArray(entry)
+   ?Object.fromEntries(Object.keys(entry).sort().map(key=>[key,entry[key]])):entry);
+}
+
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
 const appEl=document.getElementById('app'), noticeEl=document.getElementById('notice');
 const labels={drive:['🚕','乗務入力'],live:['◴','営業・集計'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],settings:['⚙','設定']};
@@ -1478,6 +1484,7 @@ const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScop
 const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
+let pendingMemberRecovery=null,memberRecoveryBusy=false;
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
 function setDeviceMode(next,previous='',detail=''){
@@ -1489,7 +1496,7 @@ function setDeviceMode(next,previous='',detail=''){
   save(true).catch(e=>console.warn('save-before-viewer',e));
  }
  if(next==='writer'&&prior!=='writer'){writerLoadGate=true;writerLoadError='Googleの乗務を取得中…';writerLoadEpoch++;}
- if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;}
+ if(next!=='writer'){writerLoadGate=true;writerLoadEpoch++;pendingMemberRecovery=null;}
  if(prior==='viewer'&&next!=='viewer'&&viewerLocalModel){
   model=viewerLocalModel;viewerLocalModel=null;
   viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
@@ -1521,7 +1528,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"], [data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -1758,6 +1765,8 @@ async function switchAccountScope(scope){
  memberTrashPreviewBusy=false;
  memberTrashSelection='';
  memberTrashPreviewToken++;
+ pendingMemberRecovery=null;
+ memberRecoveryBusy=false;
  trashLogin.cancel();trashActions.switchAccount(scope?.uid||'');
  trashClient.bind(null);memberTrashConnection=null;memberTrashLatestBackup=null;
  adminCutoverSheetAudit=null;
@@ -1801,6 +1810,23 @@ async function switchAccountScope(scope){
 }
 async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
+function renderMemberRecoveryPanel(){
+ const p=pendingMemberRecovery;
+ if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+    !p||p.uid!==accountScope.uid||p.epoch!==writerLoadEpoch)return '';
+ return '<section class="card" role="alert" style="margin:10px 0;border:2px solid #aa650d">'+
+  '<h2 class="h2">未同期の日報を保護しています</h2>'+
+  '<p>クラウドにない乗務：'+p.missingIds.length+'件／同じIDで内容が異なる乗務：'+p.conflictCount+'件。自動上書きは停止中です。</p>'+
+  '<p class="helper">最初に端末のJSONバックアップを保存してください。同一IDで内容が異なる場合は、どちらを採用するか個別に選択し、双方の原本を保護してから反映します。選択しなければ変更しません。</p>'+
+  '<div class="actions"><button class="btn" type="button" data-action="downloadLocalRecovery">⇩ 端末の日報をJSON保存</button>'+
+  (p.conflictCount?'':'<button class="btn primary" type="button" data-action="uploadLocalRecovery" '+(memberRecoveryBusy?'disabled':'')+'>＋ 未登録の乗務を本人のクラウドへ追加</button>')+
+  '</div>'+
+  (p.conflictIds||[]).map(id=>'<div class="card" style="margin-top:8px">'+
+   '<strong>競合ID：'+safeText(id)+'</strong><p class="helper">採用前に両版の件数・売上・差分を確認します。</p>'+
+   '<div class="actions"><button class="btn" type="button" data-action="takeLocalConflict" data-id="'+safeText(id)+'" '+(memberRecoveryBusy?'disabled':'')+'>端末版を採用（クラウド更新）</button>'+
+   '<button class="btn" type="button" data-action="takeCloudConflict" data-id="'+safeText(id)+'" '+(memberRecoveryBusy?'disabled':'')+'>クラウド版を採用（端末更新）</button></div></div>').join('')+
+  '</section>';
+}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
@@ -1847,7 +1873,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}${renderMemberRecoveryPanel()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -2800,16 +2826,47 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   }
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
+   // An ordinary driver's unpublished local records are not authoritative
+   // cloud data. Never discard or silently adopt them during first login.
+   if(memberDiary()){
+    const remoteById=new Map(shifts.map(shift=>[shift.id,shift]));
+    const unconfirmed=(previous.shifts||[]).filter(local=>
+     !remoteById.has(local.id)||
+     canonicalDutyJson(local)!==canonicalDutyJson(remoteById.get(local.id)));
+    if(unconfirmed.length){
+     const missing=unconfirmed.filter(local=>!remoteById.has(local.id));
+     pendingMemberRecovery={uid:accountScope.uid,epoch,
+      snapshot:JSON.stringify(previous.shifts),missingIds:missing.map(x=>x.id),
+      conflictIds:unconfirmed.filter(local=>remoteById.has(local.id)).map(x=>x.id),
+      conflictCount:unconfirmed.length-missing.length};
+     render();
+     throw Error('未同期の乗務が'+missing.length+'件、同一IDで内容が異なる乗務が'+(unconfirmed.length-missing.length)+'件あります。下の保護メニューで確認してください。');
+    }
+    pendingMemberRecovery=null;
+   }
+   const storageKey=scopedStorageKey();
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
    // multiple unfinished duties, which can display a stale zero-sale duty.
    const open=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
    next.activeId=open.length===1?open[0].id:null;
-   // A last-resort local recovery copy. It is never uploaded or counted.
-   try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy'),JSON.stringify(previous));}catch{}
-   if(db)await idbPut(db,next,scopedStorageKey());
-   else localStorage.setItem(scopedStorageKey(),JSON.stringify(next));
-   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+   // Never replace local records unless a separate recovery copy is durable.
+   // Preserve an existing recovery copy instead of overwriting it.
+   const recoveryBase='taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy');
+   const original=JSON.stringify(previous);
+   try{
+    const oldCopy=localStorage.getItem(recoveryBase);
+    const recoveryKey=oldCopy===null||oldCopy===original?recoveryBase:
+     recoveryBase+'-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+    localStorage.setItem(recoveryKey,original);
+    if(localStorage.getItem(recoveryKey)!==original)throw Error('保存内容が一致しません');
+   }catch(error){
+    throw Error('復旧コピーを保存できないため、クラウド受信による上書きを停止しました：'+String(error?.message||error));
+   }
+   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
    if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
    model=next;
@@ -2855,7 +2912,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
   try{
    await save(true);
-   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
    const savedShift=stored?.shifts?.find(x=>x.id===id);
    const expectedShift=model.shifts.find(x=>x.id===id);
    if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
@@ -2869,8 +2926,210 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  render:render,toast,escape:safeText,download,dateStamp
 });
 
+async function uploadMemberRecovery(){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
+    !writerLoadGate||pending.uid!==accountScope.uid||
+    pending.epoch!==writerLoadEpoch)return;
+ if(pending.conflictCount){
+  toast('同一IDで内容が異なる乗務があります。JSONバックアップを保存し、内容の確認が必要です。',true);return;
+ }
+ if(!pending.missingIds.length)return;
+ if(!confirm('クラウドにない'+pending.missingIds.length+'件の乗務を、この利用者専用の領域に追加します。\\n既存のクラウド記録は上書きしません。操作前に端末のJSONバックアップを保存し、ダウンロードを確認しましたか？'))return;
+ memberRecoveryBusy=true;render();
+ const uid=accountScope.uid,epoch=writerLoadEpoch,original=deepCopy(model);
+ const expected=JSON.stringify(original.shifts);
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     accountScope.uid!==uid||writerLoadEpoch!==epoch||
+     pendingMemberRecovery!==pending||JSON.stringify(model.shifts)!==expected)
+   throw Error('操作端末または日報が変更されました。追加を停止しました');
+ };
+ try{
+  check();
+  // Preserve the entire pre-recovery model under a separate UID-scoped key.
+  // A failed backup/readback always stops before the first cloud write.
+  const recoveryKey='taxiapp-account-recovery-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,original,recoveryKey);
+  else localStorage.setItem(recoveryKey,JSON.stringify(original));
+  const copy=db?await idbGet(db,recoveryKey):
+   JSON.parse(localStorage.getItem(recoveryKey)||'null');
+  if(JSON.stringify(copy)!==JSON.stringify(original))
+   throw Error('復旧用の保護コピーを正しく保存できませんでした');
+  check();
+  // On an enabled server, check every local-only ID for deletion history
+  // BEFORE attempting to re-upload anything. A failed read aborts all writes.
+  if(trashEnabled()){
+   const states=await trashClient.readDeletionMarkers(pending.missingIds);
+   check();
+   if(!states.markersComplete||states.uid!==uid||
+      states.markerStates.some(row=>row.state!=='none'))
+    throw Error('過去に削除・復元された日報IDがあります。再登録せず個別に確認してください');
+  }
+  // Detect newly created cloud records without a broad cloud read. CAS=0
+  // prevents overwriting even when a second device races this request.
+  const listed=await accountDiary.request('syncList',{shiftIds:pending.missingIds});
+  check();
+  if(!Array.isArray(listed?.shifts))throw Error('クラウド乗務の照合に失敗しました');
+  const found=new Map(listed.shifts.map(row=>[row.id,row]));
+  for(const id of pending.missingIds){
+   check();
+   const local=original.shifts.find(row=>row.id===id);
+   if(!local)throw Error('復旧対象の乗務が見つかりません');
+   if(found.has(id)){
+    const existing=await accountDiary.request('syncGet',{shiftId:id});
+    check();
+    if(canonicalDutyJson(existing?.shift)!==canonicalDutyJson(local))
+     throw Error('別端末に同じ乗務IDの異なる内容があります。自動上書きを停止しました：'+id);
+   }else{
+    await accountDiary.request('syncPut',{baseRevision:0,
+     payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:local})});
+    check();
+    const verified=await accountDiary.request('syncGet',{shiftId:id});
+    check();
+    if(canonicalDutyJson(verified?.shift)!==canonicalDutyJson(local))
+     throw Error('追加した乗務の読み戻しが一致しません：'+id);
+   }
+  }
+  check();
+  toast('未登録の乗務を確認しました。クラウドの全件照合をやり直します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('安全な復旧を保留しました。端末の日報は保持されています：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
+// Per-duty, permission-only conflict resolution. Back up BOTH originals first.
+async function resolveMemberConflict(id,useLocal){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
+    !writerLoadGate||pending.uid!==accountScope.uid||
+    pending.epoch!==writerLoadEpoch||!(pending.conflictIds||[]).includes(id))return;
+ const uid=accountScope.uid,epoch=writerLoadEpoch,scopeGeneration=accountScopeGeneration;
+ const before=deepCopy(model),source=JSON.stringify(before.shifts);
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     accountScope.uid!==uid||writerLoadEpoch!==epoch||
+     accountScopeGeneration!==scopeGeneration||pendingMemberRecovery!==pending||
+     JSON.stringify(model.shifts)!==source)
+   throw Error('操作権または乗務内容が変更されたため上書きを中止しました');
+ };
+ const local=before.shifts.find(x=>x.id===id);
+ if(!local)return;
+ memberRecoveryBusy=true;render();
+ try{
+  const remote=await accountDiary.request('syncGet',{shiftId:id});
+  check();
+  if(remote?.id!==id||remote?.shift?.id!==id||
+     !Number.isSafeInteger(remote.revision)||remote.revision<1)
+   throw Error('クラウド版の確認ができません');
+  if(canonicalDutyJson(local)===canonicalDutyJson(remote.shift)){
+   toast('両方の内容が一致しています。最新の乗務一覧を再取得します。');
+   await syncUI.bootstrapWriter();return;
+  }
+  const amount=x=>{try{return money(totals(x.records||[],x.settings||{},x.date||'').meter);}
+   catch{return '確認不可';}};
+  const compare=x=>'日付 '+String(x.date||'不明')+
+   ' ／ 営業 '+(x.records||[]).length+'件 ／ メーター売上 '+amount(x);
+  const first=useLocal?'端末版':'クラウド版';
+  const target=useLocal?'クラウド版':'端末版';
+  const message='【乗務ごとの上書き許可】\\n乗務ID：'+id+
+   '\\n端末版：'+compare(local)+
+   '\\nクラウド版：'+compare(remote.shift)+
+   '\\n\\n'+first+'を採用し、'+target+'を置き換えます。'+
+   '\\n両方の原本を端末内に別途退避し、保存を検証してから実施します。'+
+   '\\n他の乗務は変更しません。\\n本当にこの1乗務だけを上書きしますか？';
+  if(!confirm(message))return;
+  check();
+  const archive={format:'TAXIAPP_CONFLICT_BACKUP_V1',uid,shiftId:id,
+   createdAt:new Date().toISOString(),revision:remote.revision,
+   local:deepCopy(local),cloud:deepCopy(remote.shift)};
+  const archiveKey='taxiapp-account-conflict-copy-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,archive,archiveKey);
+  else localStorage.setItem(archiveKey,JSON.stringify(archive));
+  const copy=db?await idbGet(db,archiveKey):
+   JSON.parse(localStorage.getItem(archiveKey)||'null');
+  if(canonicalDutyJson(copy)!==canonicalDutyJson(archive))
+   throw Error('両版の復旧コピーを保存できなかったため停止しました');
+  // A discoverable, per-UID index allows later downloading either original.
+  const indexKey='taxiapp-account-conflict-index-v1-'+uid;
+  const index=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(index)||index.some(x=>typeof x!=='string'))
+   throw Error('復旧コピーの管理情報が不正です');
+  index.push(archiveKey);
+  localStorage.setItem(indexKey,JSON.stringify(index));
+  if(localStorage.getItem(indexKey)!==JSON.stringify(index))
+   throw Error('復旧コピーの管理情報を確認できません');
+  check();
+  // Re-read server revision immediately before choosing which side wins.
+  const latest=await accountDiary.request('syncGet',{shiftId:id});
+  check();
+  if(latest.revision!==remote.revision||
+     canonicalDutyJson(latest.shift)!==canonicalDutyJson(remote.shift))
+   throw Error('比較後にクラウド版が更新されたため、再確認が必要です');
+  if(useLocal){
+   const saved=await accountDiary.request('syncPut',{baseRevision:remote.revision,
+    payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:local})});
+   check();
+   if(saved?.id!==id||saved.revision!==remote.revision+1)
+    throw Error('クラウドへの上書きが確認できませんでした');
+   const verified=await accountDiary.request('syncGet',{shiftId:id});
+   check();
+   if(canonicalDutyJson(verified.shift)!==canonicalDutyJson(local))
+    throw Error('クラウドへの反映確認が一致しません');
+  }else{
+   const next=deepCopy(before),position=next.shifts.findIndex(x=>x.id===id);
+   if(position<0)throw Error('端末側の乗務が見つかりません');
+   next.shifts[position]=deepCopy(latest.shift);
+   const active=next.shifts.filter(x=>!x.endedAt&&!x.endedIso);
+   next.activeId=active.length===1?active[0].id:null;
+   const storageKey=scopedStorageKey();
+   check();
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):
+    JSON.parse(localStorage.getItem(storageKey)||'null');
+   if(canonicalDutyJson(stored)!==canonicalDutyJson(next))
+    throw Error('端末への上書きが確認できません。復旧コピーを保護してください');
+   check();
+   model=next;
+  }
+  toast('指定した乗務の採用を確認しました。残る競合を再照合します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('上書きを停止しました。両方の原本は保護対象です：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
+async function downloadMemberConflictArchive(key){
+ if(!memberDiary()||!accountScope.uid||typeof key!=='string')return;
+ const indexKey='taxiapp-account-conflict-index-v1-'+accountScope.uid;
+ try{
+  const keys=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(keys)||!keys.includes(key))throw Error('この利用者の保管履歴にありません');
+  const archive=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  if(archive?.format!=='TAXIAPP_CONFLICT_BACKUP_V1'||archive.uid!==accountScope.uid)
+   throw Error('現在の利用者の復旧コピーではありません');
+  download(JSON.stringify(archive,null,2),
+   'TAXIAPP_競合原本_'+dateStamp(new Date())+'_'+archive.shiftId+'.json',
+   'application/json;charset=utf-8');
+  toast('競合した両版の原本をJSONで書き出しました。保存先を確認してください。');
+ }catch(error){toast('復旧コピーの取り出しに失敗：'+String(error?.message||error),true);}
+}
+function renderMemberConflictArchives(){
+ if(!memberDiary())return '';
+ try{
+  const keys=JSON.parse(localStorage.getItem('taxiapp-account-conflict-index-v1-'+accountScope.uid)||'[]');
+  if(!Array.isArray(keys)||!keys.length)return '';
+  return '<section class="card"><h2 class="h2">競合時の保護コピー</h2>'+
+   '<p class="helper">上書き前に退避した端末版・クラウド版の原本です。双方の版を含むJSONを保存できます。</p>'+
+   '<div class="actions">'+keys.slice(-20).reverse().map(key=>
+    '<button class="btn" type="button" data-action="downloadMemberConflictArchive" data-id="'+safeText(key)+'">⇩ 保護コピー '+safeText(key.split('-').slice(-2).join('-'))+'</button>'
+   ).join('')+'</div></section>';
+ }catch{return '<p class="warn">復旧コピーの管理情報を確認できません。</p>';}
+}
 function renderSheetTargetSettings(){
- if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>'+renderMemberConflictArchives();
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
@@ -3832,6 +4091,21 @@ function handleAction(action,id){
  if(action==='memberTrashMove'){void performTrashAction('move',id);return;}
  if(action==='memberTrashRestore'){void performTrashAction('restore',id);return;}
  if(action==='memberTrashDownloadBackup'){void downloadTrashBackup(id);return;}
+ if(action==='downloadLocalRecovery'){
+  const p=pendingMemberRecovery;
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     p?.uid!==accountScope.uid)return;
+  const data={...deepCopy(model),exportedAt:new Date().toISOString()};
+  download(JSON.stringify(data,null,2),'TAXIAPP_未同期日報_'+dateStamp(new Date())+'.json',
+   'application/json;charset=utf-8');
+  toast('端末の日報をJSONで書き出しました。保存先を確認してください。');
+  return;
+ }
+ if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
+ if(action==='downloadMemberConflictArchive'){void downloadMemberConflictArchive(id);return;}
+ if(action==='takeLocalConflict'||action==='takeCloudConflict'){
+  void resolveMemberConflict(id,action==='takeLocalConflict');return;
+ }
 
  if(action==='highwayAdd'){
   const shift=getShift(),draft=shift?.draft;
