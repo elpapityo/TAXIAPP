@@ -228,7 +228,7 @@ const LOCAL_REMOVAL_TEST_CASE=true;
   'an unchanged local version may accept a newer cloud version');
  const noPrior=client('writerSame',svc,{shifts:[clone(original)]});
  assert.equal(noPrior.app.assertSafeWriterSnapshot([clone(original)]),true);
- assert.throws(()=>noPrior.app.assertSafeWriterSnapshot([{...original,startedAt:'12:00'}]),/未同期の変更/);
+ assert.throws(()=>noPrior.app.assertSafeWriterSnapshot([{...original,startedAt:'12:00'}]),/競合/);
  const recovered=client('writerHeld',svc,{shifts:[clone(original)]});
  assert.equal(await recovered.app.run(),true);
  svc.cloud.delete(original.id);
