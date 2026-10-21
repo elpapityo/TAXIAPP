@@ -102,7 +102,7 @@ assert.match(html,/data-admin-cutover-choice/);
  assert.match(panel(),/Google同期原本を照合/);
  assert.match(panel(),/TAXIAPP_同期原本/);
  await invoke('compareAdminCutoverSheet');
- assert.deepEqual(googleCalls.map(c=>c.action),['syncList','syncGet','syncGet']);
+ assert.deepEqual(googleCalls.map(c=>c.action),['syncList','syncGet','syncGet','syncList']);
  assert.ok(googleCalls.every(c=>['syncList','syncGet'].includes(c.action)));
  assert.equal(context.adminCutoverSheetAudit.sheetShifts.length,2);
  assert.match(sheetNode.innerHTML,/Google同期原本 2件/);
