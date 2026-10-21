@@ -1,0 +1,268 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn() { return request.auth != null; }
+  // admins/{uid} is bootstrapped by the Firebase Console / trusted server.
+  // Clients may NEVER assign, edit or delete administrator privileges.
+  function isAdmin() {
+   return signedIn() &&
+     exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+     get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+  }
+  match /admins/{uid} {
+   allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+   allow list: if isAdmin();
+   allow create, update, delete: if false;
+  }
+  match /users/{uid} {
+   allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+   allow list: if isAdmin();
+   // Future invitations and suspension must run on a trusted backend.
+   allow create, update, delete: if false;
+  }
+  // Only an active account can read/write its OWN settings document.
+  // Admin privileges cannot be granted here and other accounts stay private.
+  function activeUser(uid) {
+   return exists(/databases/$(database)/documents/users/$(uid)) &&
+    get(/databases/$(database)/documents/users/$(uid)).data.status == 'active';
+  }
+  function ownerEnabled(uid) {
+   return signedIn() && request.auth.uid == uid &&
+    (isAdmin() || activeUser(uid));
+  }
+  // Last-login-wins editing session. Older devices may only read.
+  // A server timestamp is required; no background heartbeat is needed.
+  match /deviceSessions/{uid} {
+   allow get: if ownerEnabled(uid);
+   allow list, delete: if false;
+   allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly(['sessionId','updatedAt']) &&
+    request.resource.data.keys().hasAll(['sessionId','updatedAt']) &&
+    request.resource.data.sessionId is string &&
+    request.resource.data.sessionId.size() >= 32 &&
+    request.resource.data.sessionId.size() <= 128 &&
+    request.resource.data.updatedAt == request.time;
+  }
+  function isCurrentEditor(uid) {
+   return exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+    request.resource.data.writerSessionId ==
+      get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId;
+  }
+  match /accountSettings/{uid} {
+   allow get: if ownerEnabled(uid);
+   allow list, delete: if false;
+   allow create, update: if ownerEnabled(uid) && isCurrentEditor(uid) &&
+    request.resource.data.keys().hasOnly(['format','schemaVersion','prefs','updatedAt','writerSessionId']) &&
+    request.resource.data.keys().hasAll(['format','schemaVersion','prefs','updatedAt','writerSessionId']) &&
+    request.resource.data.format == 'TAXIAPP_ACCOUNT_SETTINGS_V1' &&
+    request.resource.data.schemaVersion == 1 &&
+    request.resource.data.prefs is map &&
+    request.resource.data.writerSessionId is string &&
+    request.resource.data.updatedAt == request.time;
+  }
+  // Every ordinary driver's original duty is strictly private to their UID.
+  // An administrator cannot list or read another driver's private duties.
+  // Create/update requires the current server-confirmed editing session.
+  function validPrivateDuty(uid,shiftId) {
+   return ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+     'format','revision','shift','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.keys().hasAll([
+     'format','revision','shift','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.format == 'TAXIAPP_PRIVATE_SHIFT_V1' &&
+    request.resource.data.revision is int &&
+    request.resource.data.revision > 0 &&
+    request.resource.data.shift is map &&
+    request.resource.data.shift.id == shiftId &&
+    request.resource.data.shift.records is list &&
+    request.resource.data.shift.records.size() <= 60 &&
+    request.resource.data.shift.settings is map &&
+    request.resource.data.writerSessionId is string &&
+    request.resource.data.updatedAt == request.time &&
+    isCurrentEditor(uid);
+  }
+  // EXPERIMENTAL DRAFT: DO NOT DEPLOY WITHOUT FIRESTORE EMULATOR TESTS.
+  // All old clients must be rejected by the server if a tombstone exists.
+  function dutyPath(uid,shiftId) {
+   return /databases/$(database)/documents/privateDuties/$(uid)/shifts/$(shiftId);
+  }
+  function trashPath(uid,shiftId) {
+   return /databases/$(database)/documents/privateDuties/$(uid)/trash/$(shiftId);
+  }
+  function tombPath(uid,shiftId) {
+   return /databases/$(database)/documents/privateDuties/$(uid)/tombstones/$(shiftId);
+  }
+  function editingSession(uid,session) {
+   return ownerEnabled(uid) &&
+    session is string && session.size() >= 32 && session.size() <= 128 &&
+    exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+    get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId == session;
+  }
+  function validTrash(uid,shiftId) {
+   return ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+      'format','shift','sourceRevision','generation','writerSessionId',
+      'deletedAt','expiresAt'
+    ]) &&
+    request.resource.data.keys().hasAll([
+      'format','shift','sourceRevision','generation','writerSessionId',
+      'deletedAt','expiresAt'
+    ]) &&
+    request.resource.data.format == 'TAXIAPP_DUTY_TRASH_V1' &&
+    request.resource.data.shift is map &&
+    request.resource.data.shift.id == shiftId &&
+    request.resource.data.shift.records is list &&
+    request.resource.data.shift.records.size() <= 60 &&
+    request.resource.data.shift.settings is map &&
+    request.resource.data.sourceRevision is int &&
+    request.resource.data.sourceRevision > 0 &&
+    request.resource.data.generation is int &&
+    request.resource.data.generation > 0 &&
+    editingSession(uid,request.resource.data.writerSessionId) &&
+    request.resource.data.deletedAt == request.time &&
+    request.resource.data.expiresAt is timestamp &&
+    request.resource.data.expiresAt > request.time + duration.value(29,'d') &&
+    request.resource.data.expiresAt < request.time + duration.value(31,'d');
+  }
+  function validTomb(uid) {
+   return ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+     'format','state','generation','revision','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.keys().hasAll([
+     'format','state','generation','revision','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.format == 'TAXIAPP_DUTY_TOMBSTONE_V1' &&
+    request.resource.data.state in ['active','deleted'] &&
+    request.resource.data.generation is int &&
+    request.resource.data.generation > 0 &&
+    request.resource.data.revision is int &&
+    request.resource.data.revision > 0 &&
+    editingSession(uid,request.resource.data.writerSessionId) &&
+    request.resource.data.updatedAt == request.time;
+  }
+  // All three documents MUST change in the same transaction.
+  function isMove(uid,shiftId) {
+   return exists(dutyPath(uid,shiftId)) &&
+    !existsAfter(dutyPath(uid,shiftId)) &&
+    !exists(trashPath(uid,shiftId)) &&
+    existsAfter(trashPath(uid,shiftId)) &&
+    existsAfter(tombPath(uid,shiftId)) &&
+    getAfter(trashPath(uid,shiftId)).data.shift == get(dutyPath(uid,shiftId)).data.shift &&
+    getAfter(trashPath(uid,shiftId)).data.sourceRevision == get(dutyPath(uid,shiftId)).data.revision &&
+    getAfter(tombPath(uid,shiftId)).data.state == 'deleted' &&
+    getAfter(tombPath(uid,shiftId)).data.revision == get(dutyPath(uid,shiftId)).data.revision &&
+    getAfter(tombPath(uid,shiftId)).data.generation == getAfter(trashPath(uid,shiftId)).data.generation &&
+    getAfter(tombPath(uid,shiftId)).data.writerSessionId == getAfter(trashPath(uid,shiftId)).data.writerSessionId &&
+    (!exists(tombPath(uid,shiftId)) ||
+     (get(tombPath(uid,shiftId)).data.state == 'active' &&
+      getAfter(tombPath(uid,shiftId)).data.generation == get(tombPath(uid,shiftId)).data.generation + 1));
+  }
+  function isRestore(uid,shiftId) {
+   return !exists(dutyPath(uid,shiftId)) &&
+    existsAfter(dutyPath(uid,shiftId)) &&
+    exists(trashPath(uid,shiftId)) &&
+    !existsAfter(trashPath(uid,shiftId)) &&
+    exists(tombPath(uid,shiftId)) &&
+    existsAfter(tombPath(uid,shiftId)) &&
+    get(tombPath(uid,shiftId)).data.state == 'deleted' &&
+    getAfter(tombPath(uid,shiftId)).data.state == 'active' &&
+    getAfter(tombPath(uid,shiftId)).data.generation == get(tombPath(uid,shiftId)).data.generation &&
+    get(trashPath(uid,shiftId)).data.generation == get(tombPath(uid,shiftId)).data.generation &&
+    get(trashPath(uid,shiftId)).data.sourceRevision == get(tombPath(uid,shiftId)).data.revision &&
+    get(trashPath(uid,shiftId)).data.expiresAt > request.time &&
+    getAfter(dutyPath(uid,shiftId)).data.shift == get(trashPath(uid,shiftId)).data.shift &&
+    getAfter(dutyPath(uid,shiftId)).data.revision == get(tombPath(uid,shiftId)).data.revision + 1 &&
+    getAfter(tombPath(uid,shiftId)).data.revision == getAfter(dutyPath(uid,shiftId)).data.revision &&
+    getAfter(dutyPath(uid,shiftId)).data.writerSessionId == getAfter(tombPath(uid,shiftId)).data.writerSessionId;
+  }
+  function isExpiredPurge(uid,shiftId) {
+   return exists(tombPath(uid,shiftId)) &&
+    get(tombPath(uid,shiftId)).data.state == 'deleted' &&
+    get(tombPath(uid,shiftId)).data.generation == resource.data.generation &&
+    get(tombPath(uid,shiftId)).data.revision == resource.data.sourceRevision &&
+    getAfter(tombPath(uid,shiftId)).data.state == 'deleted' &&
+    getAfter(tombPath(uid,shiftId)).data.generation == resource.data.generation &&
+    getAfter(tombPath(uid,shiftId)).data.revision == resource.data.sourceRevision &&
+    getAfter(tombPath(uid,shiftId)).data.updatedAt == request.time &&
+    !exists(dutyPath(uid,shiftId)) &&
+    !existsAfter(dutyPath(uid,shiftId)) &&
+    resource.data.expiresAt is timestamp &&
+    resource.data.expiresAt <= request.time &&
+    editingSession(uid,getAfter(tombPath(uid,shiftId)).data.writerSessionId);
+  }
+  // Expired cleanup changes only the writerSessionId/timestamp of the
+  // tombstone: it never removes the anti-resurrection marker.
+  function isPurging(uid,shiftId) {
+   return exists(trashPath(uid,shiftId)) &&
+    !existsAfter(trashPath(uid,shiftId)) &&
+    !exists(dutyPath(uid,shiftId)) &&
+    !existsAfter(dutyPath(uid,shiftId)) &&
+    get(trashPath(uid,shiftId)).data.expiresAt <= request.time &&
+    get(trashPath(uid,shiftId)).data.generation == resource.data.generation &&
+    get(trashPath(uid,shiftId)).data.sourceRevision == resource.data.revision &&
+    resource.data.state == 'deleted' &&
+    request.resource.data.state == 'deleted' &&
+    request.resource.data.generation == resource.data.generation &&
+    request.resource.data.revision == resource.data.revision;
+  }
+  match /privateDuties/{uid}/shifts/{shiftId} {
+   allow get, list: if ownerEnabled(uid);
+   allow create: if validPrivateDuty(uid,shiftId) &&
+    (
+     (request.resource.data.revision == 1 &&
+      !exists(tombPath(uid,shiftId)) &&
+      !existsAfter(tombPath(uid,shiftId)) &&
+      !exists(trashPath(uid,shiftId)))
+     ||
+     (isRestore(uid,shiftId) &&
+      request.resource.data.revision > 1)
+    );
+   allow update: if validPrivateDuty(uid,shiftId) &&
+    (!exists(tombPath(uid,shiftId)) ||
+     get(tombPath(uid,shiftId)).data.state == 'active') &&
+    resource.data.revision is int &&
+    request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if ownerEnabled(uid) &&
+    isMove(uid,shiftId) &&
+    editingSession(uid,getAfter(trashPath(uid,shiftId)).data.writerSessionId);
+  }
+  match /privateDuties/{uid}/trash/{shiftId} {
+   allow get, list: if ownerEnabled(uid);
+   allow create: if validTrash(uid,shiftId) &&
+    isMove(uid,shiftId) &&
+    request.resource.data.generation == getAfter(tombPath(uid,shiftId)).data.generation;
+   allow update: if false;
+   allow delete: if ownerEnabled(uid) &&
+    (isRestore(uid,shiftId) || isExpiredPurge(uid,shiftId));
+  }
+  match /privateDuties/{uid}/tombstones/{shiftId} {
+   allow get: if ownerEnabled(uid);
+   allow list: if false;
+   allow create: if validTomb(uid) &&
+    request.resource.data.state == 'deleted' &&
+    request.resource.data.generation == 1 &&
+    isMove(uid,shiftId);
+   allow update: if validTomb(uid) &&
+    (
+     (resource.data.state == 'active' &&
+      request.resource.data.state == 'deleted' &&
+      request.resource.data.generation == resource.data.generation + 1 &&
+      isMove(uid,shiftId))
+     ||
+     (resource.data.state == 'deleted' &&
+      request.resource.data.state == 'active' &&
+      request.resource.data.generation == resource.data.generation &&
+      isRestore(uid,shiftId))
+     ||
+     (isPurging(uid,shiftId))
+    );
+   allow delete: if false;
+  }
+  // Protected user records, Drive file references and future features
+  // remain CLOSED until data-owner rules and backend are separately tested.
+  match /{document=**} { allow read, write: if false; }
+ }
+}

@@ -220,8 +220,9 @@ function compareOwnFirestore({uid,cloudUid,localShifts,cloudShifts,
    id,date:String(shift.date||''),selected:selected.has(id),
    recordCount:shift.records.length,cloudStatus,sheetStatus,
    cloudOverlap,sheetOverlap,timeIssue:time.reason||'',
+   // A missing or unchecked Google original is NOT proof of three-source parity.
    needsReview:cloudStatus!=='same'||
-    sheetStatus==='different'||cloudOverlap.length>0||
+    sheetStatus!=='same'||cloudOverlap.length>0||
     sheetOverlap.length>0||!!time.reason
   };
  });

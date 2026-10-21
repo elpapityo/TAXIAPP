@@ -41,7 +41,7 @@ const context={
  window:windowMock,appEl,storageStatus:'IndexedDB',
  operationPanelOpen:{live:true,summary:false},
  applyUi(){},selectedShift(){return null;},header(){return '';},
- renderNav(){return '';},renderDrive(){return 'test-drive';},
+ renderNav(){return '';},renderMemberRecoveryPanel(){return '';},renderDrive(){return 'test-drive';},
  renderOperations(){return '';},renderHistory(){return '';},
  renderHighwayReport(){return '';},renderPrint(){return '';},
  selectedPrintShift(){return null;},renderShiftManager(){return '';},

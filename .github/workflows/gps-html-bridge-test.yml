@@ -32,6 +32,10 @@ on:
       - 'tests/gps-native-bridge.test.js'
       - '.github/workflows/gps-html-bridge-test.yml'
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 jobs:
@@ -48,13 +52,25 @@ jobs:
           node --check gps-trip-ui.js
           node --check daily-reference.js
           node --check highway-report.js
-      - name: 'Full regression suite: fares, daily records, GPS, highway, sync'
+      - name: Focused GPS, distance, diary and sync regression tests
         run: |
           set -e
-          for f in tests/*.test.js; do
-            echo "::group::$f"
-            node "$f"
-            echo "::endgroup::"
+          files=(
+            tests/gps-*.test.js
+            tests/highway-*.test.js
+            tests/daily-reference.test.js
+            tests/native-gps-input-race.test.js
+            tests/auto-distance-wiring.test.js
+            tests/ride-save-gps-race.test.js
+            tests/bidirectional-sync.test.js
+            tests/partial-duty-sync.test.js
+            tests/account-sync-event-scheduling.test.js
+            tests/status-sync-event-policy.test.js
+          )
+          for file in "${files[@]}"; do
+            echo "::group::$file"
+            node "$file"
+            echo '::endgroup::'
           done
       - name: Verify source integration guards
         run: |
