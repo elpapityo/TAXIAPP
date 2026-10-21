@@ -122,6 +122,55 @@ async function main(){
   // Current writer can restore within 30 days; no unrelated ID overwrite.
   await assertSucceeds(restore(owner));
   assert.equal((await getDoc(refs(owner).shift)).data().revision,2);
+  // A restored duty may be edited again. A SECOND move must protect the
+  // newest original (revision 3), advance the marker generation to 2,
+  // and remain resistant to an old client's revision-1 resurrection.
+  const editedDuty={...duty,records:[{kind:'ride',raw:{K:1700}}]};
+  await assertSucceeds(setDoc(refs(owner).shift,{
+   format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:3,shift:editedDuty,
+   writerSessionId:SESSION_A,updatedAt:serverTimestamp()
+  }));
+  await assertSucceeds(runTransaction(owner,async tx=>{
+   const r=refs(owner);
+   const [current,oldTrash,marker]=await Promise.all([
+    tx.get(r.shift),tx.get(r.trash),tx.get(r.tomb)]);
+   assert.equal(current.data().revision,3);
+   assert.equal(oldTrash.exists(),false);
+   assert.equal(marker.data().state,'active');
+   assert.equal(marker.data().generation,1);
+   tx.set(r.trash,{format:'TAXIAPP_DUTY_TRASH_V1',
+    shift:current.data().shift,sourceRevision:3,generation:2,
+    writerSessionId:SESSION_A,deletedAt:serverTimestamp(),
+    expiresAt:Timestamp.fromMillis(Date.now()+30*DAY_MS)});
+   tx.set(r.tomb,{format:'TAXIAPP_DUTY_TOMBSTONE_V1',
+    state:'deleted',revision:3,generation:2,
+    writerSessionId:SESSION_A,updatedAt:serverTimestamp()});
+   tx.delete(r.shift);
+  }));
+  assert.equal((await getDoc(refs(owner).trash)).data().generation,2);
+  assert.equal((await getDoc(refs(owner).trash)).data().shift.records[0].raw.K,1700);
+  await assertFails(setDoc(refs(owner).shift,{
+   format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,
+   shift:duty,writerSessionId:SESSION_A,updatedAt:serverTimestamp()
+  }));
+  await assertSucceeds(runTransaction(owner,async tx=>{
+   const r=refs(owner);
+   const [current,trash,marker]=await Promise.all([
+    tx.get(r.shift),tx.get(r.trash),tx.get(r.tomb)]);
+   assert.equal(current.exists(),false);
+   assert.equal(trash.data().sourceRevision,3);
+   assert.equal(marker.data().generation,2);
+   tx.set(r.shift,{format:'TAXIAPP_PRIVATE_SHIFT_V1',
+    revision:4,shift:trash.data().shift,
+    writerSessionId:SESSION_A,updatedAt:serverTimestamp()});
+   tx.set(r.tomb,{format:'TAXIAPP_DUTY_TOMBSTONE_V1',
+    state:'active',revision:4,generation:2,
+    writerSessionId:SESSION_A,updatedAt:serverTimestamp()});
+   tx.delete(r.trash);
+  }));
+  assert.equal((await getDoc(refs(owner).shift)).data().revision,4);
+  assert.equal((await getDoc(refs(owner).shift)).data().shift.records[0].raw.K,1700);
+  assert.equal((await getDoc(refs(owner).tomb)).data().generation,2);
   await seed();
   await assertSucceeds(move(owner));
   // A premature purge, even from the owner, is NOT permitted.
