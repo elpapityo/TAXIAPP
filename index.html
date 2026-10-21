@@ -910,6 +910,9 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 <script src="./account-diary-store.js?v=20261020-1"></script>
 <script src="./admin-firestore-cutover.js?v=20261021-1"></script>
 <script src="./firebase-trash-review.js?v=20261021-1"></script>
+<script src="./firebase-duty-trash.js?v=20261021-1"></script>
+<script src="./firebase-trash-actions.js?v=20261021-1"></script>
+<script src="./firebase-trash-login.js?v=20261021-1"></script>
 <script>
 (async function () {
   'use strict';
@@ -1308,6 +1311,161 @@ let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
 let memberTrashPreview=null,memberTrashPreviewBusy=false,memberTrashPreviewToken=0;
 let memberTrashSelection='';
+let memberTrashConnection=null,memberTrashOperationBusy=false,memberTrashBackups=[];
+let memberTrashLatestBackup=null;
+// NEVER set true before production rules are separately approved and deployed.
+// All server mutations are gated here as well as by Firestore Rules.
+const TRASH_RULES_DEPLOYED_AND_APPROVED=false;
+const trashClient=window.TAXIAPP_DUTY_TRASH.create();
+const trashEnabled=()=>TRASH_RULES_DEPLOYED_AND_APPROVED&&memberDiary();
+function trashAccountCheck(uid,generation){
+ if(!memberDiary()||!canEditNow()||accountScope.uid!==uid||
+    accountScopeGeneration!==generation||memberTrashConnection?.auth?.currentUser?.uid!==uid)
+  throw Error('本人アカウントまたは編集端末の状態が変わりました');
+}
+// Do not trust a download event as a durable backup: save and read back the
+// entire original, with a per-UID discoverable index before allowing move.
+async function verifiedTrashBackup({uid,shiftId,revision,shift}){
+ const generation=accountScopeGeneration;
+ trashAccountCheck(uid,generation);
+ const local=(model.shifts||[]).find(x=>x.id===shiftId);
+ if(local&&JSON.stringify(local)!==JSON.stringify(shift))
+  throw Error('端末版とサーバー版の内容が違います。未同期記録を先に解決してください');
+ if(model.activeId===shiftId)throw Error('使用中の乗務は削除できません');
+ if(!shift.endedAt&&!shift.endedIso)throw Error('未入庫の乗務は削除できません');
+ const archived={format:'TAXIAPP_DUTY_TRASH_BACKUP_V1',uid,shiftId,
+  revision,shift:deepCopy(shift),savedAt:new Date().toISOString()};
+ const backupKey='taxiapp-trash-backup-v1-'+uid+'-'+shiftId+'-'+Date.now()+
+  '-'+Math.random().toString(36).slice(2);
+ if(db)await idbPut(db,archived,backupKey);
+ else localStorage.setItem(backupKey,JSON.stringify(archived));
+ const verified=db?await idbGet(db,backupKey):
+  JSON.parse(localStorage.getItem(backupKey)||'null');
+ trashAccountCheck(uid,generation);
+ if(JSON.stringify(verified)!==JSON.stringify(archived))
+  throw Error('ゴミ箱移動前の保護コピーを読み戻せません');
+ const indexKey='taxiapp-trash-backup-index-v1-'+uid;
+ const indexes=JSON.parse(localStorage.getItem(indexKey)||'[]');
+ if(!Array.isArray(indexes)||indexes.some(x=>typeof x!=='string'))
+  throw Error('保護コピーの管理一覧が不正です');
+ indexes.push(backupKey);
+ localStorage.setItem(indexKey,JSON.stringify(indexes));
+ if(localStorage.getItem(indexKey)!==JSON.stringify(indexes))
+  throw Error('保護コピーの管理一覧を保存できません');
+ trashAccountCheck(uid,generation);
+ memberTrashLatestBackup={uid,shiftId,shift:deepCopy(shift),key:backupKey};
+ return {verified:true,uid,shiftId,revision};
+}
+async function afterTrashChange({uid,shiftId,action}){
+ const generation=accountScopeGeneration;
+ trashAccountCheck(uid,generation);
+ if(action==='moved'){
+  // Only remove a local copy after the SERVER confirms successful trash.
+  // If a separate unsynced edit appeared meanwhile, leave it protected.
+  const local=(model.shifts||[]).find(x=>x.id===shiftId);
+  if(local){
+   if(memberTrashLatestBackup?.uid!==uid||
+      memberTrashLatestBackup.shiftId!==shiftId||
+      JSON.stringify(local)!==JSON.stringify(memberTrashLatestBackup.shift))
+    throw Error('端末日報が更新されました。保護したまま照合してください');
+   const current=deepCopy(model),next=deepCopy(model);
+   next.shifts=next.shifts.filter(x=>x.id!==shiftId);
+   if(next.activeId===shiftId)next.activeId=null;
+   const key=scopedStorageKey();
+   if(db)await idbPut(db,next,key);
+   else localStorage.setItem(key,JSON.stringify(next));
+   const stored=db?await idbGet(db,key):
+    JSON.parse(localStorage.getItem(key)||'null');
+   trashAccountCheck(uid,generation);
+   if(JSON.stringify(stored)!==JSON.stringify(next))
+    throw Error('端末の削除後状態を保存確認できません。保護コピーから確認してください');
+   if(JSON.stringify(model)!==JSON.stringify(current))
+    throw Error('端末で編集中の変更を検知しました。原本を上書きしません');
+   model=next;
+  }
+ }
+ memberTrashPreview=null;
+ memberTrashSelection='';
+ render();
+}
+const trashActions=window.TAXIAPP_TRASH_ACTIONS.create({
+ trash:trashClient,diary:accountDiary,enabled:trashEnabled,
+ isCurrentEditor:uid=>memberDiary()&&accountScope.uid===uid&&canEditNow(),
+ verifiedBackup:verifiedTrashBackup,confirmAction:message=>confirm(message),
+ afterChange:afterTrashChange
+});
+const trashLogin=window.TAXIAPP_TRASH_LOGIN.create({
+ trashFactory:()=>window.TAXIAPP_DUTY_TRASH.create(),
+ enabled:trashEnabled,
+ isCurrentEditor:uid=>memberDiary()&&accountScope.uid===uid&&canEditNow(),
+ onStatus:result=>{
+  if(result.state==='checked'&&result.purged.length)
+   toast('期限切れゴミ箱の日報 '+result.purged.length+'件を整理しました');
+  else if(result.state==='deferred')
+   toast('ゴミ箱の期限切れ整理は次回再試行します：'+result.error,true);
+ }
+});
+async function performTrashAction(action,shiftId){
+ if(!trashEnabled()||!canEditNow()||memberTrashOperationBusy)return;
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ const p=memberTrashPreview;
+ if(!p||p.uid!==uid||p.localSignature!==JSON.stringify(model.shifts)){
+  toast('最新のサーバー日報を確認してから選択してください',true);return;
+ }
+ if(action==='move'){
+  const candidate=p.rows.find(x=>x.id===shiftId);
+  if(!candidate||candidate.id!==memberTrashSelection||
+     !Number.isSafeInteger(candidate.revision)||
+     (!candidate.endedAt&&!candidate.endedIso)){
+   toast('入庫済みの日報を1件選択してください',true);return;
+  }
+  const local=(model.shifts||[]).find(x=>x.id===shiftId);
+  if(local&&JSON.stringify(local)!==JSON.stringify((({revision,...x})=>x)(candidate))){
+   toast('端末の未同期変更を先に照合してください。削除は行いません',true);return;
+  }
+ }
+ if(action==='restore'){
+  if(!p.trashRows?.some(x=>x.id===shiftId)){
+   toast('ゴミ箱にある日報を選択してください',true);return;
+  }
+  // Ask for explicit acknowledgement when the restored shift may
+  // overlap another scheduled duty; never delete the other duty.
+  // The final server restore CAS still refuses a same-ID overwrite.
+  if((model.shifts||[]).some(x=>x.id===shiftId)){
+   toast('同じIDの日報が端末に残っています。復元前に照合してください',true);return;
+  }
+ }
+ memberTrashOperationBusy=true;render();
+ try{
+  trashAccountCheck(uid,generation);
+  const result=action==='move'?await trashActions.moveSelected(shiftId):
+   await trashActions.restoreSelected(shiftId);
+  if(accountScope.uid!==uid||generation!==accountScopeGeneration)return;
+  if(result.status==='moved'||result.status==='restored'){
+   toast(result.status==='moved'?'選択した日報をサーバーのゴミ箱へ移動しました':'ゴミ箱の日報をサーバーへ復元しました');
+   await refreshMemberTrashPreview();
+  }else if(result.status==='deferred'){
+   toast('操作を完了確認できません。原本を保護して再照合してください：'+result.error,true);
+  }
+ }catch(error){if(accountScope.uid===uid)toast('ゴミ箱操作を停止しました：'+String(error?.message||error),true);}
+ finally{if(accountScope.uid===uid&&generation===accountScopeGeneration){
+  memberTrashOperationBusy=false;render();
+ }}
+}
+async function downloadTrashBackup(key){
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ if(!memberDiary()||typeof key!=='string')return;
+ try{
+  const index=JSON.parse(localStorage.getItem('taxiapp-trash-backup-index-v1-'+uid)||'[]');
+  if(!Array.isArray(index)||!index.includes(key))throw Error('本人の保護コピーではありません');
+  const copy=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  if(memberDiary()&&uid===accountScope.uid&&generation===accountScopeGeneration&&
+     copy?.format==='TAXIAPP_DUTY_TRASH_BACKUP_V1'&&copy.uid===uid){
+   download(JSON.stringify(copy,null,2),'TAXIAPP_ゴミ箱保護コピー_'+copy.shiftId+'.json',
+    'application/json;charset=utf-8');
+  }else throw Error('保存済み原本の本人確認ができません');
+ }catch(error){toast('保護コピーの取得を停止しました：'+String(error?.message||error),true);}
+}
 
 // Preview-only selection. Never persists or sends duty originals.
 let adminCutoverSelectionUid="",adminCutoverSelected=new Set();
@@ -1600,6 +1758,8 @@ async function switchAccountScope(scope){
  memberTrashPreviewBusy=false;
  memberTrashSelection='';
  memberTrashPreviewToken++;
+ trashLogin.cancel();trashActions.switchAccount(scope?.uid||'');
+ trashClient.bind(null);memberTrashConnection=null;memberTrashLatestBackup=null;
  adminCutoverSheetAudit=null;
  adminCutoverSheetBusy=false;
  adminCutoverSheetRequestToken++;
@@ -1613,7 +1773,13 @@ async function switchAccountScope(scope){
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
  syncUI.resetAccount();
- accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
+ accountDiary.bind(scope?{uid:scope.uid}:null,scope?{
+  ...scope.firebase,admin:scope.admin,protectDeletedIds:TRASH_RULES_DEPLOYED_AND_APPROVED&&!scope.admin
+ }:{});
+ if(scope&&!scope.admin&&TRASH_RULES_DEPLOYED_AND_APPROVED){
+  memberTrashConnection=scope.firebase;
+  trashClient.bind({uid:scope.uid},{...scope.firebase,readOnly:false});
+ }
  accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
  adminCutoverSelectionUid=legacyDiary()?accountScope.uid:'';
  const key=scopedStorageKey();
@@ -2653,6 +2819,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  },
  onWriterBootstrapReady:()=>{
   writerLoadGate=false;writerLoadError='';
+  if(trashEnabled()&&memberTrashConnection){
+   const uid=accountScope.uid,firebase=memberTrashConnection;
+   void trashLogin.afterLogin({uid,firebase});
+  }
   document.body.classList.remove('taxi-viewer');
   const label=document.getElementById('deviceSessionStatus');if(label)label.textContent='操作可能：Googleの乗務を取得済み';
   render();
@@ -2799,7 +2969,7 @@ function renderMemberTrashPanel(){
  if(valid&&!memberTrashPreviewBusy&&p.localSignature===JSON.stringify(model.shifts)){
   try{
    const report=window.TAXIAPP_TRASH_REVIEW.review({
-    uid:accountScope.uid,serverUid:p.uid,shifts:p.rows,trash:[],
+    uid:accountScope.uid,serverUid:p.uid,shifts:p.rows,trash:p.trashRows||[],
     selectedId:memberTrashSelection
    });
    const list=report.items.filter(x=>x.location==='normal').map(x=>
@@ -2812,9 +2982,19 @@ function renderMemberTrashPanel(){
    const localOnly=(model.shifts||[]).filter(x=>!p.rows.some(y=>y.id===x.id));
    panel='<p class="helper">表示される乗務は<strong>Firebaseサーバー側で実在を確認したもの</strong>だけです。</p>'+
     (list?'<ul>'+list+'</ul>':'<p>Firebase原本がありません。</p>')+
+    (trashEnabled()&&!memberTrashOperationBusy&&report.selection?.canChoose?
+     '<button class="btn red" type="button" data-action="memberTrashMove" data-id="'+safeText(memberTrashSelection)+'">選択した1件をゴミ箱へ移動（確認あり）</button>':'')+
+    (report.items.some(x=>x.location==='trash')?
+      '<h3>ゴミ箱に保管中</h3><ul>'+report.items.filter(x=>x.location==='trash').map(x=>
+       '<li>'+safeText(x.date)+'／'+x.recordCount+'件／期限：'+safeText(x.expiresAt)+
+       (trashEnabled()&&!memberTrashOperationBusy?
+        ' <button type="button" class="btn" data-action="memberTrashRestore" data-id="'+safeText(x.id)+'">復元（確認あり）</button>':'')+
+       '</li>').join('')+'</ul>':'')+
     (localOnly.length?'<p class="warn">端末だけにある乗務 '+localOnly.length+
      '件は削除候補にしません。未同期データを先に保護・照合してください。</p>':'')+
-    '<p class="warn">ゴミ箱への移動・復元は未接続です。この選択だけでは削除されません。</p>';
+    (trashEnabled()?
+      '<p>削除前に本人の最新日報とバックアップ保存を再確認します。復元も確認後に行います。</p>':
+      '<p class="warn">ゴミ箱への移動・復元は本番ルール公開前のため無効です。選択だけでは削除されません。</p>');
   }catch(error){panel='<p role="alert" class="warn">'+safeText(String(error?.message||error))+'</p>';}
  }
  return '<section class="card" data-member-trash-preview><h2 class="h2">サーバーの日報・ゴミ箱（検証中）</h2>'+
@@ -2822,7 +3002,16 @@ function renderMemberTrashPanel(){
   warning+panel+
   '<button type="button" class="btn" data-action="memberTrashPreview" '+
   (memberTrashPreviewBusy?'disabled':'')+'>↻ Firebase日報を確認（読取専用）</button>'+
-  '<p class="footnote">現在のFirestoreルールは削除禁止です。ゴミ箱の移動・復元・完全削除は、権限テストと既存の日報保護を統合後に公開します。</p></section>';
+  (trashEnabled()?
+   '<p class="footnote">サーバーの更新番号と本人の確認を行い、復元可能な30日間のゴミ箱へ移動します。</p>':
+   '<p class="footnote">現在のFirestore本番ルールは削除禁止です。ゴミ箱操作は公開承認まで無効です。</p>')+
+  '<div class="actions">'+(()=>{
+    try{
+     const keys=JSON.parse(localStorage.getItem('taxiapp-trash-backup-index-v1-'+accountScope.uid)||'[]');
+     return Array.isArray(keys)?keys.slice(-10).reverse().map(key=>
+       '<button type="button" class="btn" data-action="memberTrashDownloadBackup" data-id="'+safeText(key)+'">⇩ 保護コピーを保存</button>').join(''):'';
+    }catch{return '<p role="alert">保護コピーの一覧を読み込めません</p>';}
+   })()+'</div></section>';
 }
 async function refreshMemberTrashPreview(){
  if(!memberDiary()||!accountScope.uid||memberTrashPreviewBusy)return;
@@ -2863,7 +3052,9 @@ async function refreshMemberTrashPreview(){
   const finalMap=new Map(finalList.shifts.map(x=>[x.id,x.revision]));
   if(finalMap.size!==ids.size||list.shifts.some(x=>finalMap.get(x.id)!==x.revision))
    throw Error('読み取り中に日報の版が変わりました');
-  memberTrashPreview={uid,localSignature:signature,rows,
+  const trashRows=trashEnabled()?await trashClient.list():[];
+  check();
+  memberTrashPreview={uid,localSignature:signature,rows,trashRows,
    checkedAt:new Date().toLocaleString('ja-JP')};
   memberTrashSelection='';
  }catch(error){
@@ -3638,6 +3829,9 @@ function discardInvalidAutoDropDistance(draft){
 let gpsAlightPending=false;
 function handleAction(action,id){
  if(action==='memberTrashPreview'){void refreshMemberTrashPreview();return;}
+ if(action==='memberTrashMove'){void performTrashAction('move',id);return;}
+ if(action==='memberTrashRestore'){void performTrashAction('restore',id);return;}
+ if(action==='memberTrashDownloadBackup'){void downloadTrashBackup(id);return;}
 
  if(action==='highwayAdd'){
   const shift=getShift(),draft=shift?.draft;
