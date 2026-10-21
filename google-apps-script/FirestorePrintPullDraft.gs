@@ -70,8 +70,9 @@ function firestorePrintDocDraft_(cfg,id){
   throw Error('印刷する乗務IDが不正です');
  var path='privateDuties/'+encodeURIComponent(cfg.uid)+'/shifts/'+encodeURIComponent(id);
  var doc=firestorePrintRestDraft_(cfg,path);
- if(String(doc.name||'').slice(-id.length-1)!=='/'+id)
-  throw Error('Firestoreの本人原本が別の乗務です');
+ var expectedName='projects/'+cfg.project+'/databases/(default)/documents/'+path;
+ if(String(doc.name||'')!==expectedName)
+  throw Error('Firestoreの本人UID・乗務ID・プロジェクトが取得先と一致しません');
  var data=firestorePrintDecodeDraft_({mapValue:{fields:doc.fields||{}}},0);
  if(data.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
     !Number.isSafeInteger(data.revision)||data.revision<1||
