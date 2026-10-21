@@ -3118,8 +3118,9 @@ async function releaseVerifiedPreviousDuties(activeId){
    let server;
    try{server=await accountDiary.request('syncGet',{shiftId:old.id});}
    catch{continue;}
+   const confirmedRevision=syncUI.verifiedRevision(old.id);
    if(!sameOwner()||server?.id!==old.id||
-      !Number.isSafeInteger(server.revision)||server.revision<1||
+      confirmedRevision===null||server.revision!==confirmedRevision||
       JSON.stringify(canonicalStoredDuty(server.shift))!==
        JSON.stringify(canonicalStoredDuty(expected)))continue;
    const at=model.shifts.findIndex(item=>item.id===old.id);
