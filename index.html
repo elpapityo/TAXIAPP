@@ -3488,14 +3488,29 @@ function handleAction(action,id){
    // Capture the actual departure GPS baseline now, before the first fare.
    if(nativeDiaryGpsEnabled()){
     const departingId=newRecord.id,startedAt=newRecord.startedIso;
-    window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+    // Read the first fresh GPS fix even when this separate GPS service
+    // contains a gap from before the new duty. Never fabricate a missing
+    // interval after departure; a later/new gap still requires driver input.
+    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId:departingId,allowUnresolvedGap:true}).then(data=>{
      if(!canEditNow())return;
      const current=getShift();
      if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
-     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
+     const bridge=window.TAXIAPP_EXTERNAL_GPS;
+     const existing=bridge.baseline(localStorage,departingId);
+     const b=bridge.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
+     // A confirmed departure odometer of exactly 0km is a manual baseline.
+     // Accept only an already reported gap at the immediate departure fix;
+     // do not clear gaps raised later during actual driving.
+     const secondsSinceStart=(Date.now()-Date.parse(startedAt))/1000;
+     const confirmedZero=String(odometer).trim()!==''&&Number(odometer)===0;
+     const departureOnly=!existing&&confirmedZero&&data.unresolvedGap===true&&
+      secondsSinceStart>=0&&secondsSinceStart<=10;
+     if(departureOnly)bridge.acknowledgeGap(localStorage,departingId,data.gapCount);
      current.externalGpsSnapshot={tripKm:b.value,rawGpsKm:data.tripKm,at:new Date().toISOString()};
      saveLater();updateElapsedTimer();
-     toast('出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。');
+     toast(departureOnly?'出庫時0kmをGPS基準に登録しました。以後の欠測は手入力が必要です。':
+      data.unresolvedGap?'GPS基準は登録しましたが欠測があるため、最初の距離は車両トリップで確認してください。':
+      '出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。',Boolean(data.unresolvedGap&&!departureOnly));
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
    }
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
