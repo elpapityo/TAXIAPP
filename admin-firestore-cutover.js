@@ -192,5 +192,62 @@ function compareLegacySheet({uid,localShifts,sheetShifts,selectedIds}={}){
   migrationAuthorized:false,deleteAuthorized:false
  };
 }
-root.TAXIAPP_ADMIN_CUTOVER=Object.freeze({plan,previewLocal,compareLegacySheet,interval,overlaps});
+// Pure three-source preflight: NONE of the records is written, migrated or
+// removed. Caller must have fetched Firestore using the signed-in owner's UID.
+// The legacy Sheets source may be unavailable; unknown is not the same as empty.
+function compareOwnFirestore({uid,cloudUid,localShifts,cloudShifts,
+  sheetShifts=null,selectedIds}={}){
+ if(!uid||uid!==cloudUid)throw Error('Firebaseと照合するUIDが一致しません');
+ const local=readRows(localShifts,'端末内の日報');
+ const cloud=readRows(cloudShifts,'本人Firebase原本');
+ const sheets=sheetShifts===null?null:readRows(sheetShifts,'Google同期原本');
+ if(!Array.isArray(selectedIds)||new Set(selectedIds).size!==selectedIds.length)
+  throw Error('照合する日報IDを重複なく選択してください');
+ for(const id of selectedIds)if(!local.has(id))
+  throw Error('端末内に選択した日報がありません');
+ const selected=new Set(selectedIds);
+ const entries=[...local].map(([id,shift])=>{
+  const onCloud=cloud.get(id),onSheet=sheets?.get(id),time=interval(shift);
+  const cloudStatus=!onCloud?'not-in-firestore':
+   canonical(shift)===canonical(onCloud)?'same':'different';
+  const sheetStatus=sheets===null?'not-checked':!onSheet?'not-in-sheet':
+   canonical(shift)===canonical(onSheet)?'same':'different';
+  const cloudOverlap=[...cloud.values()].filter(row=>row.id!==id&&
+   overlaps(time,interval(row))).map(row=>row.id);
+  const sheetOverlap=sheets===null?[]:[...sheets.values()].filter(row=>row.id!==id&&
+   overlaps(time,interval(row))).map(row=>row.id);
+  return {
+   id,date:String(shift.date||''),selected:selected.has(id),
+   recordCount:shift.records.length,cloudStatus,sheetStatus,
+   cloudOverlap,sheetOverlap,timeIssue:time.reason||'',
+   needsReview:cloudStatus!=='same'||
+    sheetStatus==='different'||cloudOverlap.length>0||
+    sheetOverlap.length>0||!!time.reason
+  };
+ });
+ const cloudOnly=[...cloud].filter(([id])=>!local.has(id)).map(([id,shift])=>({
+  id,date:String(shift.date||''),recordCount:shift.records.length,
+  inSheet:sheets===null?'not-checked':sheets.has(id),
+  overlappingLocal:[...local.values()].filter(row=>
+   overlaps(interval(shift),interval(row))).map(row=>row.id)
+ }));
+ const sheetOnly=sheets===null?[]:[...sheets].filter(([id])=>
+  !local.has(id)&&!cloud.has(id)).map(([id,shift])=>({
+  id,date:String(shift.date||''),recordCount:shift.records.length
+ }));
+ return {
+  format:'TAXIAPP_THREE_SOURCE_PREFLIGHT_V1',
+  uid,firestoreVerified:true,sheetVerified:sheets!==null,
+  firebaseCount:cloud.size,localCount:local.size,
+  googleCount:sheets===null?null:sheets.size,
+  selectedCount:selected.size,
+  firestoreOnlyCount:cloudOnly.length,
+  selectedReviewCount:entries.filter(row=>row.selected&&row.needsReview).length,
+  entries,cloudOnly,sheetOnly,
+  migrationAuthorized:false,deleteAuthorized:false
+ };
+}
+root.TAXIAPP_ADMIN_CUTOVER=Object.freeze({
+ plan,previewLocal,compareLegacySheet,compareOwnFirestore,interval,overlaps
+});
 })(typeof window!=='undefined'?window:globalThis);
