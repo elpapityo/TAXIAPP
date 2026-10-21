@@ -1307,7 +1307,7 @@ let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
 // Preview-only selection. Never persists or sends duty originals.
 let adminCutoverSelectionUid="",adminCutoverSelected=new Set();
-let adminCutoverSheetAudit=null,adminCutoverSheetBusy=false;
+let adminCutoverSheetAudit=null,adminCutoverSheetBusy=false,adminCutoverSheetRequestToken=0;
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
@@ -1592,6 +1592,7 @@ async function switchAccountScope(scope){
  adminCutoverSelected=new Set();
  adminCutoverSheetAudit=null;
  adminCutoverSheetBusy=false;
+ adminCutoverSheetRequestToken++;
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
@@ -2825,9 +2826,11 @@ async function compareAdminCutoverSheet(){
   toast('Google Apps Scriptの接続先・接続キーを先に確認してください。',true);return;
  }
  const uid=accountScope.uid,generation=accountScopeGeneration;
+ const requestToken=++adminCutoverSheetRequestToken;
  const signature=JSON.stringify(model.shifts),MAX_AUDIT_SHIFTS=25;
  const assertAccount=()=>{
-  if(!legacyDiary()||!canEditNow()||accountScope.uid!==uid||
+  if(adminCutoverSheetRequestToken!==requestToken||
+     !legacyDiary()||!canEditNow()||accountScope.uid!==uid||
      accountScopeGeneration!==generation||
      adminCutoverSelectionUid!==uid||JSON.stringify(model.shifts)!==signature)
    throw Error('照合中に端末データ・ログイン利用者・操作権が変更されました');
@@ -2866,11 +2869,16 @@ async function compareAdminCutoverSheet(){
    checkedAt:new Date().toLocaleString('ja-JP'),sheetShifts:shifts};
   toast('Google同期原本 '+shifts.length+'件を読み取り専用で照合しました。');
  }catch(error){
-  adminCutoverSheetAudit=null;
-  toast('Google原本の照合を完了できません：'+String(error?.message||error),true);
+  if(adminCutoverSheetRequestToken===requestToken){
+   adminCutoverSheetAudit=null;
+   if(accountScope.uid===uid&&accountScopeGeneration===generation)
+    toast('Google原本の照合を完了できません：'+String(error?.message||error),true);
+  }
  }finally{
-  if(accountScope.uid===uid&&accountScopeGeneration===generation){
-   adminCutoverSheetBusy=false;updateAdminCutoverPreview();
+  if(adminCutoverSheetRequestToken===requestToken){
+   adminCutoverSheetBusy=false;
+   if(accountScope.uid===uid&&accountScopeGeneration===generation)
+    updateAdminCutoverPreview();
   }
  }
 }
