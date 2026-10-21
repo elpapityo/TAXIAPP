@@ -37,18 +37,24 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches){
   // Column T/U of TAXIAPP_乗務一覧 hold selector formulas; exclude them.
   var height=sheet.getMaxRows()-1;
   var scanned=sheet.getRange(2,1,height,headers.length).getValues();
-  var last=0;
+  var last=0,matching=[];
   scanned.forEach(function(row,index){
-   if(String(row[0])===shiftId)
-    throw Error('印刷元に同じ乗務IDがあります。修正版の転送は別途確認が必要です');
+   if(String(row[0])===shiftId)matching.push(row);
    if(row.some(function(cell){return cell!==''&&cell!==null;})){
     if(!String(row[0]))throw Error('所属不明の印刷元行を検出しました');
     last=index+1;
    }
   });
+  var prepared=batch.rows.map(function(row){return row.map(safeCell_);});
+  if(matching.length){
+   if(matching.length!==prepared.length||
+      matching.some(function(row,i){return JSON.stringify(row)!==JSON.stringify(prepared[i]);}))
+    throw Error('同じ乗務IDの印刷元とFirestore原本が異なります。自動上書きを停止しました：'+name);
+   plans.push({name:name,sheet:sheet,start:0,rows:[],width:headers.length,mode:'unchanged'});
+   return;
+  }
   if(last+batch.rows.length>height||last+batch.rows.length+1>1200)
    throw Error('印刷元の行数上限を超えています：'+name);
-  var prepared=batch.rows.map(function(row){return row.map(safeCell_);});
   if(prepared.length){
    var range=sheet.getRange(last+2,1,prepared.length,headers.length);
    var previous=range.getValues(),formulas=range.getFormulas();
