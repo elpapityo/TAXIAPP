@@ -24,7 +24,8 @@ const root={
 const context={
  window:root,accountScope:{uid},accountScopeGeneration:2,
  adminCutoverSelectionUid:uid,adminCutoverSheetAudit:null,adminCutoverSheetBusy:false,
- adminCutoverSelected:new Set(),model:{version:1,shifts:clone(rows),activeId:null,prefs:{}},
+ adminCutoverSelected:new Set(),adminCutoverSheetRequestToken:0,
+ model:{version:1,shifts:clone(rows),activeId:null,prefs:{}},
  legacyDiary:()=>isLegacy,canEditNow:()=>writer,googleIsConfigured:()=>true,
  async googlePostRequest(action,fields={}){
   googleCalls.push({action,fields});
