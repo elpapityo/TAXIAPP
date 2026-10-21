@@ -120,9 +120,14 @@ root.TAXIAPP_SYNC_UI=function(d){
     if(!await d.onWriterSnapshot(selected))return false;
     if(!stable())return false;
     observedDutyStates=dutyStates(d.getModel(),Boolean(d.remoteOnDemand?.()));queuedDutyIds.clear();
+    // Offline or unsent local duties must be retried after sign-in; never
+    // assume that a successful login means they reached Firestore.
+    local.forEach(shift=>queuedDutyIds.add(shift.id));
     writerFeedback='本人Firestoreへ接続済み／端末の日報'+(d.getModel()?.shifts?.length||0)+'件を保護';
     d.onWriterBootstrapReady?.();
-    d.setStatus(writerFeedback);return true;
+    d.setStatus(writerFeedback);
+    if(queuedDutyIds.size)queueSync(400);
+    return true;
    }
    if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
