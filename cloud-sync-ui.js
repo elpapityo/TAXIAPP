@@ -81,6 +81,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(timer!==null){clearTimeout(timer);timer=null;}
    writerFeedback='Googleから'+visible.length+'乗務を取得・保存しました';
    d.onWriterBootstrapReady?.();
+   if(engine.hasLocalRemovals())queueSync(400);
    d.setStatus(writerFeedback);return true;
   }catch(error){
    writerFeedback='操作待機：'+String(error?.message||error);
@@ -158,7 +159,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(viewEnabled()){viewSchedule();return;}
   if(!enabled())return;
   const current=dutyStates(d.getModel());
-  if(!observedDutyStates){observedDutyStates=current;return;}
+  if(!observedDutyStates){observedDutyStates=current;if(queuedDutyIds.size||engine.hasLocalRemovals())queueSync(250);return;}
   let changed=false;
   for(const [id,fingerprint] of current){
    if(observedDutyStates.get(id)!==fingerprint){
