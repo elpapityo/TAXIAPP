@@ -130,6 +130,13 @@ async function failure(h,arg,regex){
  assert.equal(virtual.pages[1].length,0);
  assert.deepEqual(virtual.rows['TAXIAPP_印刷データ'][0].slice(0,2),[id,1]);
  assert.equal(virtual.rows['TAXIAPP_印刷データ'][0][7],"'=IMPORTXML(example)");
+ assert.equal(virtual.pages[0][0][7],"'=IMPORTXML(example)",'page split must preserve formula escaping');
+ assert.ok(virtual.rows['TAXIAPP_乗務一覧'][0][2] instanceof Date,
+  'spreadsheet must receive native Date, not ISO text to avoid timezone doubling');
+ assert.equal(virtual.rows['TAXIAPP_乗務一覧'][0][2].toISOString(),
+  '2026-10-20T22:00:00.000Z','07:00 JST should be 22:00 previous UTC day');
+ assert.equal(virtual.rows['TAXIAPP_乗務一覧'][0][3].toISOString(),
+  '2026-10-21T07:00:00.000Z');
  assert.equal(virtual.rows['TAXIAPP_印刷データ'][1][4],0,'cancellation must be zero');
  assert.deepEqual(virtual.rows['TAXIAPP_決済内訳'][0].slice(0,7),[id,1,1,'現',1400,'',1400]);
  assert.equal(virtual.rows['TAXIAPP_決済内訳'][0][9],0,'GO is not deducted from remittance');
