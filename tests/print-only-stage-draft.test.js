@@ -59,7 +59,7 @@ const sourceShift={
 };
 const totals={meter:1400,discount:0,goFee:200,uberSurcharge:0,cashRemittance:1600,
  etcRemittance:0,totalRemittance:1600,cancellation:0,realToll:0,emptyToll:0};
-const make=(shift=sourceShift,rev=3,other={})=>({sourceUid:boundUid,sourceRevision:rev,
+const make=(shift=sourceShift,rev=3,other={})=>({sourceUid:boundUid,sourceRevision:rev,expectedStageRevision:0,
  packet:{kind:'TAXIAPP_SHIFT_V1',shift:clone(shift),summary:clone(totals)},...other});
 const prepare=r=>ctx.printStagePrepareV1_(r);
 const commit=(sheet,prepared,uid=boundUid)=>ctx.printStageAppendV1_(sheet,prepared,uid);
@@ -112,11 +112,15 @@ const existingModified=sheet();existingModified.rows.push([id,3,'wrong-transfer'
 assert.throws(()=>commit(existingModified,prepared),/異なる印刷データ/);
 const stale=prepare(make(sourceShift,2));
 assert.throws(()=>commit(s,stale),/古い更新番号/);
-const newVersion=prepare(make(sourceShift,4));
+const newVersion=prepare(make(sourceShift,4,{expectedStageRevision:3}));
 assert.equal(commit(s,newVersion).state,'staged');
 assert.equal(s.rows.length,3);
 assert.equal(read(s).revision,4,'latest immutable print revision must be selected');
 assert.equal(commit(s,newVersion).state,'already-staged');
+assert.throws(()=>commit(s,prepared),/古い更新番号/,'old idempotent replay must not be a success when newer version exists');
+const unexpected=prepare(make(sourceShift,5,{expectedStageRevision:3}));
+assert.throws(()=>commit(s,unexpected),/CAS_CONFLICT/);
+assert.equal(s.rows.length,3,'CAS conflict cannot append rows');
 const duplicate=sheet();duplicate.rows.push(s.rows[1].slice(),s.rows[1].slice());
 assert.throws(()=>commit(duplicate,prepared),/重複/);
 const failed=sheet();failed.setFailOnAppend(true);
@@ -151,6 +155,7 @@ for(const [item,error] of [
  [make({...sourceShift,records:[{...sourceShift.records[0],status:'draft'}]}),/未確定/],
  [make({...sourceShift,records:[{...sourceShift.records[0],raw:{...sourceShift.records[0].raw,K:'-1'}}]}),/メーター/],
  [make(sourceShift,0),/更新番号/],
+ [make(sourceShift,3,{expectedStageRevision:-1}),/期待する印刷ステージ更新番号/],
  [make(sourceShift,3,{sourceUid:'other-driver'}),null],
  [make(sourceShift,3,{packet:{kind:'unknown',shift:sourceShift,summary:totals}}),/パケット/],
  [make(sourceShift,3,{packet:{kind:'TAXIAPP_SHIFT_V1',shift:sourceShift,summary:{...totals,totalRemittance:1700}}}),/納金/],
