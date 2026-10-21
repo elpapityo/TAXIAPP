@@ -558,7 +558,8 @@ function applySelectedPrintShift() {
  // raw shift IDs directly to B17 cannot trigger false "not found" errors.
  var id=resolvePrintShiftId_(ss,operation);
  if(!id)throw Error('印刷対象が見つかりません。B15にチェックを入れるか、B17から乗務を選んでください');
- if(syncRevisionV2_(ss,id).deleted)throw Error('ゴミ箱内の乗務は印刷できません。復元してください');
+ if(typeof syncRevisionV2_==='function'&&syncRevisionV2_(ss,id).deleted)
+  throw Error('ゴミ箱内の乗務は印刷できません。復元してください');
  var originals=ss.getSheetByName('TAXIAPP_同期原本');
  var last=originals?originals.getLastRow():0;
  var legacy=last>1&&originals.getRange(2,1,last-1,1).getDisplayValues()
