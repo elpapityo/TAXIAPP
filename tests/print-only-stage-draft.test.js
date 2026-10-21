@@ -85,7 +85,7 @@ assert.equal(commit(s,prepared).state,'staged');
 assert.equal(s.rows.length,2);assert.equal(counts.append,before+1);
 assert.equal(s.rows[1][0],id);assert.equal(s.rows[1][1],3);
 assert.equal(s.rows[1][4],prepared.projectionJson);
-const read=(sheet,id=id,uid=boundUid)=>ctx.printStageReadLatestV1_(sheet,id,uid);
+const read=(stageSheet,shiftId=id,uid=boundUid)=>ctx.printStageReadLatestV1_(stageSheet,shiftId,uid);
 assert.equal(read(s).revision,3);
 assert.equal(read(s).projection.amounts.meter,1400);
 assert.equal(read(s).projection.printRows[1][2],'キャンセル');
