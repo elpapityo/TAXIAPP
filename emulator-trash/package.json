@@ -4,7 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "test": "node firestore-trash.test.cjs",
-    "emulator": "firebase emulators:exec --only firestore --project demo-taxiapp-trash --config firebase.json \"npm test\""
+    "emulator": "node -e \"require('node:fs').copyFileSync('../rules-drafts/firestore-trash.rules','firestore-trash.rules')\" && firebase emulators:exec --only firestore --project demo-taxiapp-trash --config firebase.json \"npm test\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.0",
