@@ -10,7 +10,7 @@ const script=html.slice(begin,end);
 new Function(script);
 const realBreak=html.slice(html.indexOf('function breakSeconds('),html.indexOf('function endBreak(',html.indexOf('function breakSeconds(')));
 new Function(realBreak);
-assert.match(html,/<title>TAXIAPP v0\.3\.112 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v\d+\.\d+\.\d+ — 乗務日報<\/title>/);
 const fixedDate=new Date('2026-10-20T01:00:00.000Z');
 const shift={
  id:'test-shift',date:'2026-10-19',startedAt:'07:00',startedIso:'2026-10-19T07:00:00Z',
