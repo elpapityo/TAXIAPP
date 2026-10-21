@@ -148,3 +148,22 @@ function client(name,svc,model,failReceive=false){
   'offline to online retry is for writer only');
  console.log('Bidirectional sync tests passed: send, receive, CAS, conflict hold and resolution, first-use guard, offline safety, web wiring.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+const LOCAL_REMOVAL_TEST_CASE=true;
+(async()=>{
+ const svc=server(),id='shift-2212212212212-removed';
+ svc.cloud.set(id,{revision:1,shift:{id,records:[],settings:{}}});
+ const C=client('localHide',svc,{shifts:[]});
+ assert.equal(await C.app.run(),true);
+ assert.equal(C.model.shifts.length,1);
+ assert.equal(C.app.markLocalRemoval(id),true);
+ C.model.shifts=[];
+ assert.equal(await C.app.run(),true);
+ assert.equal(C.model.shifts.length,0,'removed duty must never reappear after sync');
+ assert.equal(C.app.excludeLocalRemovals([svc.cloud.get(id).shift]).length,0);
+ assert.equal(svc.cloud.size,1,'the original remains on the server');
+ C.app.undoLocalRemoval(id);
+ assert.equal(await C.app.run(),true);
+ assert.equal(C.model.shifts.length,1,'explicit undo restores the hidden duty');
+ console.log('削除済み日報の再取得防止を合成検証');
+})().catch(e=>{console.error(e);process.exitCode=1;});
