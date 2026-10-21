@@ -313,4 +313,5 @@ function testRun(){
  assert.equal(/printV2ExistingPublishDraft_|PrintOnlyExistingSheetsDraft/.test(html),false);
  console.log('Existing sheet print-only draft PASS: 4 sources, original protection, no selector changes, interrupted retry and conflict rejection');
 }
-testRun();
+if(require.main===module)testRun();
+module.exports={make,sheet,fixtureId,uid,labels,originalSheets};
