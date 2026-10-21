@@ -3332,6 +3332,9 @@ function handleAction(action,id){
  if(action==='exportDevice'){exportDevice();return;}
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
+  if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
+  if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
+  if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
   if(action==='bidirectionalSyncNow'){syncUI.run(true);return;}
  if(action==='syncCurrentShift'){const target=tab==='print'?selectedPrintShift():latest;if(tab==='print'&&!target){toast('印刷する乗務が見つかりません。選び直してください',true);return;}googleSendShift(target,true);return;}
  if(action==='syncAllShifts'){googleSendAllShifts();return;}if(action==='checkGpsPermission'){requestGpsPermission();return;}if(action==='addWaitPlace'){addWaitingPlace(document.getElementById('newWaitPlace')?.value||'');return;}if(action==='resetUi'){model.prefs.ui={...UI_DEFAULTS};applyUi();saveLater();render();toast('表示設定を初期値に戻しました');return;}if(action==='resumeSyncedShift'){
@@ -4038,7 +4041,7 @@ async function deleteWholeShift(shiftId){
  const previous=deepCopy(model);
  let newlyMarked=false;
  try{
-  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId);
+  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId,shift);
  }catch(error){toast('削除を中止しました。再受信防止情報を保存できません：'+String(error?.message||error),true);return;}
  try{
   // Invalidate any pending save and GPS watch before removing an active duty.
@@ -4047,12 +4050,14 @@ async function deleteWholeShift(shiftId){
   if(shift.id===model.activeId)gpsTripUI?.clearWatch();
   model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId,{allowUnfinished:unfinished}).model;
   await save(true);
-  const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+  const key=scopedStorageKey();
+  const stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
   if(!stored||!Array.isArray(stored.shifts)||stored.shifts.some(s=>s.id===shiftId)||stored.activeId!==model.activeId)
    throw Error('削除後の記録を保存できません');
   if(historyShiftId===shiftId)historyShiftId='';
   if(printShiftId===shiftId)printShiftId='';
-  render();toast(display+' の乗務を削除しました。');
+  render();toast(display+' の乗務を端末から削除しました。クラウドとの削除状態を同期します。');
+  if(syncUI.enabled())void syncUI.run(true);
  }catch(e){
   model=previous;
   if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(markerError){
