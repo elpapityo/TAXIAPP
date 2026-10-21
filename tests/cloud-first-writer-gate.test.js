@@ -19,7 +19,7 @@ assert.match(adapter,/await d\.onWriterSnapshot\(planned\.shifts\)/);
 assert.match(adapter,/\.\.\.engine\.localRemovalIds\(\)/);
 assert.match(adapter,/!engine\.hasLocalRemovals\(\)/);
 assert.match(adapter,/const visible=engine\.excludeLocalRemovals\(shifts\)/);
-assert.match(adapter,/await d\.onWriterSnapshot\(visible\)/);
+assert.match(adapter,/await d\.onWriterSnapshot\(planned\.shifts\)/);
 assert.match(adapter,/engine\.adoptViewerBaseline\(\)/);
 assert.match(engine,/function adoptViewerBaseline\(\)/);
 assert.match(engine,/saved\[id\]=\{revision:entry\.revision,hash:remoteHash\(entry\.shift\)\}/);
