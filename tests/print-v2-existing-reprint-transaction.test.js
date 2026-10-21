@@ -133,7 +133,36 @@ assert.throws(()=>thirdParty.sandbox.printV2ReprintRecoverDraft_(
  fixture.uid,()=>true,()=>true),/第三者/);
 assert.equal(third.values[3][7],'OTHER_ADMIN_CHANGED_THIS_CELL',
  'do not overwrite an unrecognized third-party edit');
+third.values[3][7]='合成の編集済み地点';
+assert.equal(thirdParty.sandbox.printV2ReprintRecoverDraft_(
+ thirdParty.ss,thirdParty.stage,thirdParty.journal,fixture.fixtureId,
+ fixture.uid,()=>true,()=>true).state,'recovered-to-previous-print-version');
+assert.equal(third.values[3][7],'合成乗車');
+assert.deepEqual(statuses(thirdParty.journal),
+ ['BEGIN','RECOVERY_REQUIRED','ROLLED_BACK']);
 
+
+// A COMMIT might be durable even when the readback acknowledgement fails.
+const uncertain=setup(),journal=uncertain.journal,oldGet=journal.getRange;
+let corruptAck=true;
+journal.getRange=(...args)=>{
+ const range=oldGet(...args);
+ return {...range,getValues:()=>{
+  const rows=range.getValues();
+  if(corruptAck&&args[0]===3&&rows[0]?.[6]==='COMMIT'){
+   corruptAck=false;
+   const bad=rows.map(row=>[...row]);bad[0][0]='CORRUPTED_ACK_ONLY';
+   return bad;
+  }
+  return rows;
+ }};
+};
+assert.throws(()=>runPublish(uncertain),/COMMIT_CONFIRMATION_UNKNOWN/);
+assert.deepEqual(statuses(uncertain.journal),['BEGIN','COMMIT']);
+assert.equal(uncertain.book['TAXIAPP_印刷データ'].values[3][7],
+ '合成の編集済み地点','confirmed COMMIT must not be followed by automatic rollback');
+assert.equal(uncertain.sandbox.printV2ReprintHistory_(
+ uncertain.journal,fixture.fixtureId).active,null);
 const crashed=setup();
 const p=crashed.sandbox.printV2ExistingReprintPlan_(
  crashed.ss,crashed.stage,fixture.fixtureId,fixture.uid,3);
