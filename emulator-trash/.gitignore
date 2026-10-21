@@ -1,0 +1,4 @@
+firestore-trash.rules
+node_modules/
+firebase-debug.log
+ui-debug.log
