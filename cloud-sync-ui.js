@@ -217,6 +217,9 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(queuedDutyIds.size&&ok)queueSync(250);
   }
  }
+ function verifiedRevision(id){
+  return enabled()&&!queuedDutyIds.has(id)?engine.verifiedRevision(id):null;
+ }
  function resetAccount(){
   // Cancel older writer bootstrap without blocking the next UID's session.
   writerBootstrapEpoch++;writerBootstrapBusy=false;
@@ -577,7 +580,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
   markLocalRemoval:(id,shift)=>{const marked=engine.markLocalRemoval(id,shift);queuedDutyIds.add(id);return marked;},
   undoLocalRemoval:id=>{engine.undoLocalRemoval(id);queuedDutyIds.delete(id);},cloudAction};
 };
