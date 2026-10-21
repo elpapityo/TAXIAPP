@@ -65,3 +65,46 @@ const d=root.TAXIAPP_SYNC_UI({
  assert.equal(actions.filter(x=>x.startsWith('syncPut:')).length,1);
  console.log('初回受信：未同期日報を端末に保持してクラウド原本を追加し、操作権確認後に1件送信');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+(async()=>{
+ // A restored local duty whose old server copy is trashed or absent remains
+ // editable on login, but must never be resurrected by an automatic upload.
+ const local={id:'shift-1792640001000-held',date:'2026-10-21',
+  records:[],settings:{},startedAt:'06:00'};
+ const scope='isolated-held-local-original';
+ const store=new Map([[local.id,{revision:1,shift:JSON.parse(JSON.stringify(local))}]]);
+ const saved=new Map();
+ const root={localStorage:{
+  getItem:k=>saved.get(k)??null,
+  setItem:(k,v)=>saved.set(k,String(v))
+ }};
+ const vm2=require('node:vm');
+ const fs2=require('node:fs');
+ vm2.runInNewContext(fs2.readFileSync('bidirectional-sync.js','utf8'),
+  {window:root,globalThis:root,JSON,Date,Math,console});
+ const model={shifts:[JSON.parse(JSON.stringify(local))]};
+ const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
+  getModel:()=>model,
+  getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:JSON.parse(JSON.stringify(shift))}),
+  getEndpoint:()=>scope,
+  getScopeKey:()=> 'owner',
+  localStorage:root.localStorage,
+  request:async(action,params={})=>{
+   if(action==='syncList')return {shifts:[...store].map(([id,x])=>({id,revision:x.revision}))};
+   if(action==='syncGet'){
+    const x=store.get(params.shiftId);
+    return {id:params.shiftId,revision:x.revision,shift:x.shift};
+   }
+   if(action==='syncPut')throw Error('unexpected auto upload');
+   throw Error('unexpected '+action);
+  },
+  replaceRemoteShift:async()=>{}
+ });
+ assert.equal(await engine.run(),true,'establish original revision baseline');
+ store.clear();
+ const plan=engine.planSafeWriterSnapshot([]);
+ assert.deepEqual([...plan.heldIds],[local.id]);
+ assert.equal(plan.pendingIds.length,0);
+ assert.equal(plan.shifts.length,1);
+ console.log('復元済みの端末日報はサーバー不在でも保持し、自動再アップロードを防ぐ');
+})().catch(error=>{console.error(error);process.exitCode=1;});
