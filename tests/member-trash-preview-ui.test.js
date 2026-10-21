@@ -27,7 +27,7 @@ const state={
  accountDiary:{async request(action,fields={}){
   readCalls.push([action,fields]);
   if(fail)throw Error('offline');
-  if(blocked)state.accountScope={uid:'driver-B'};
+  if(blocked){state.accountScope={uid:'driver-B'};state.accountScopeGeneration++;state.memberTrashPreviewToken++;state.memberTrashPreviewBusy=false;}
   if(action==='syncList')return cloud;
   if(action==='syncGet')return {id,revision:3,shift:first};
   throw Error('must not write');
