@@ -372,7 +372,7 @@ function savePacket_(data,options) {
   }
   // Older TAXIAPP clients wrongly deducted the 200-yen GO collection fee
   // from the company portion of the tender. Restore it even on resends.
-  if(record.kind==='ride'&&record.status==='complete'&&record.raw&&record.raw.E==='G'&&numeric_(record.amounts&&record.amounts.goFee)>0){
+  if(!printOnly&&record.kind==='ride'&&record.status==='complete'&&record.raw&&record.raw.E==='G'&&numeric_(record.amounts&&record.amounts.goFee)>0){
    return {...record,payments:(record.payments||[]).map(function(p){
     var paid=numeric_(p.received),prior=numeric_(p.company);
     var missing=Math.max(0,paid-prior);
@@ -405,7 +405,7 @@ function savePacket_(data,options) {
   numeric_(summary.goFee),numeric_(summary.uberSurcharge),
   numeric_(summary.cashRemittance),numeric_(summary.etcRemittance),
   numeric_(summary.totalRemittance),now,'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
- replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
  var storage=[],payments=[],print=[];
  records.forEach(function(record) {
   var raw = record.raw||{},amounts=record.amounts||{};
@@ -433,15 +433,21 @@ function savePacket_(data,options) {
    meta.settledIso||'']);
  });
  if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務保管',id,storage,19);
- replaceRowsForShift_(ss,'TAXIAPP_決済内訳',id,payments,11);
- replaceRowsForShift_(ss,'TAXIAPP_印刷データ',id,print,14);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_決済内訳',id,payments,11);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_印刷データ',id,print,14);
  var items = ['meter','discount','goFee','uberSurcharge','cashRemittance',
   'etcRemittance','totalRemittance','realToll','emptyToll','cancellation','tip',
   'reservation','cashReceived','paymentAllocated'];
  var aggregate = items.map(function(key){
   return [id,key,numeric_(summary[key]),'TAXIAPP 計算済み',now];
  });
- replaceRowsForShift_(ss,'TAXIAPP_集計',id,aggregate,5);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_集計',id,aggregate,5);
+ else firestorePrintPublishRowsDraft_(ss,id,[
+  {name:'TAXIAPP_印刷データ',rows:print,width:14},
+  {name:'TAXIAPP_決済内訳',rows:payments,width:11},
+  {name:'TAXIAPP_集計',rows:aggregate,width:5},
+  {name:'TAXIAPP_乗務一覧',rows:shiftRows,width:19}
+ ]);
  // Save a lossless shift snapshot in 30,000-character chunks (under cell limit).
  var json = JSON.stringify(shift);
  var chunks = [];
