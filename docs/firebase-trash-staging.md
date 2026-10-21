@@ -62,8 +62,20 @@
 
 `tests/firebase-duty-trash.test.js` はモックFirestoreを使って版競合、本人の確認、再削除、復元、期限、UID変更、読み取り専用拒否、旧端末の再送信候補抑止などを検証する。モックテストはセキュリティルール実機試験の代わりにはならない。
 
+## 第4段階：ログイン時の無料整理・同期再送防止・権限ルール案
+- `firebase-trash-login.js`：`TAXIAPP_TRASH_LOGIN.create()` でログイン後の期限切れ本文整理を試作。**機能フラグが初期OFF**、本人UIDの認証、編集端末の確認に通った場合だけ最大20件を呼ぶ。アカウント切替時は停止し、失敗は「保留」と記録する。**index.htmlに読み込んでいないので、現在のアプリでは自動実行されない。**
+- `account-diary-store.js`：`protectDeletedIds:true` の**明示的オプトイン**で、`syncPut` のCASトランザクション内に本人UIDの削除履歴照合を追加。`deleted`なら `TRASH_DELETED` で拒否、矛盾や不正な履歴なら停止。**初期値OFF**で、既存アプリの動作・Firestore現在の読み取り権限を変えない。
+- `tests/account-diary-trash-sync-guard.test.js`、`tests/firebase-trash-sync-integration.test.js`：削除済み原本の再送拒否、30日後に本文を消しても墓標で再送拒否、別UID・ログイン切替・閲覧専用の拒否を合成データで確認。**旧クライアントはアプリ側のチェックを実行せず、現在のサーバールールでは原本を再作成できる問題が残ることも再現**。
+- `rules-drafts/firestore-trash.rules`：現在の `firestore.rules` を変更せず、本人UID、現行編集端末、`getAfter()` / `existsAfter()` による3文書トランザクション整合性、削除済みIDの新規作成拒否、30日後の本文整理を**権限ルール草案**として追加。**Emulator未検証のため本番公開禁止**。
+- `emulator-trash/firebase.json`、`emulator-trash/package.json`、`emulator-trash/firestore-trash.test.cjs`：実Firestore Emulatorに対し本人/他UID、3文書のアトミックなゴミ箱移動・復元、期限前削除拒否、古い端末からの復活拒否を確認する**実行用テスト**を準備。GitHub Actionsの通常のNode単体テストとは別で、**まだ実行できていない**（この環境はFirebase CLI/Emulator未インストール、npmアクセス不可）。Firebaseセキュリティルールにはドキュメントアクセス回数の上限（各操作10件、トランザクション全体20件）があるので、Emulator実行時に必ず検証する。
+- `tests/firebase-trash-rule-draft.test.js`：草案の静的保護項目と、本番用 `firestore.rules` が依然として削除禁止であることを確認。**静的テスト成功はFirebaseルールの実動作の保証ではない**。
+- 期限切れ本文の削除時には、元のゴミ箱投入端末と現在のログイン端末が異なっていても、**現在の認証済み編集セッション**を使って墓標のセッション・更新時刻を同一トランザクションで更新する。古い端末のセッションIDを承認根拠にしない。
+- Google Sheetsはまだ印刷専用に移行していない。管理者の既存Sheets原本は今回のFirestoreゴミ箱で削除できない。
+
+**本段階は開発用コードとテスト準備のみ。本番で「ログインすると30日後に自動削除」となる機能はまだ有効化していない。Rules公開・既存データ操作は事前承認が必要。**
+
 ## 本番切替までの残作業
-- 既存 `account-diary-store.js` と双方向同期の通常クライアント・旧端末で **墓標のある日報が再作成されないこと**を本物のRulesで検証。
+- `account-diary-store.js` のオプトインガードと双方向同期の通常クライアントを接続し、**墓標のある日報が旧端末から再作成されないこと**を本物のRulesで検証。
 - 削除済み日報をローカルIndexedDBの未同期データと見なして**自動復活しない**同期統合。PR #110の安全保護/競合確認との結合。
 - 利用者の「日報一覧から選ぶ → ゴミ箱 → 復元」UI、同ID/時間重複確認、各日報の保存状態を可視化。
 - Firebase Rules公開・本番データの選別削除・TTL設定、旧Google原本整理・印刷出力は**別々に承認**が必要。新規有料サービス導入時も承認。
