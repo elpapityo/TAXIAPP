@@ -97,7 +97,6 @@ function printV2ExistingPlan_(ss,stageSheet,shiftId,verifiedAdminUid){
   var scan=Math.max(0,sheet.getLastRow()-1);
   var existing=scan?sheet.getRange(2,1,scan,columns.length).getValues():[];
   var matching=existing.filter(function(r){return String(r[0])===shiftId;});
-  var other=existing.filter(function(r){return String(r[0])&&String(r[0])!==shiftId;});
   var targetPosition=existing.reduce(function(last,row,i){
    // Never reuse an occupied/unidentified row.
    return row.some(function(v){return v!==''&&v!==null;})?i+1:last;
@@ -150,20 +149,43 @@ function printV2ExistingPublishDraft_(ss,stageSheet,id,verifiedAdminUid,verifyAc
   var verified=verifyActive({uid:verifiedAdminUid,id:id,revision:plan.revision,
    digest:plan.digest,transferId:plan.transferId});
   if(verified!==true)throw Error('本人Firestore原本の更新番号の確認に失敗しました');
-  // Commit the index sheet LAST so selecting the new shift never sees
-  // partly written detail/payment/aggregate data.
+  // Complete detail/payment/aggregate before making the shift selectable.
+  var pendingIndex=null;
   plan.actions.forEach(function(action){
    if(action.mode!=='append')return;
+   if(action.name==='TAXIAPP_乗務一覧'){
+    if(verifyActive({uid:verifiedAdminUid,id:id,revision:plan.revision,
+       digest:plan.digest,transferId:plan.transferId})!==true)
+     throw Error('一覧へ公開する前にFirestore原本が更新されました');
+   }
    var target=ss.getSheetByName(action.name).getRange(
     action.position,1,action.count,TAXIAPP_PRINT_EXISTING_V2_HEADERS[action.name].length);
    target.setValues(action.rows);
+   if(action.name==='TAXIAPP_乗務一覧')pendingIndex=target;
    var actual=target.getValues();
    if(!actual.every(function(r,i){return printV2ExistingEqualRow_(r,action.rows[i]);}))
     throw Error('印刷元シートの書込照合に失敗しました：'+action.name);
   });
-  if(verifyActive({uid:verifiedAdminUid,id:id,revision:plan.revision,
-     digest:plan.digest,transferId:plan.transferId})!==true)
-   throw Error('印刷データ転送中に本人Firestore原本が更新されました');
+  // If the Firestore source changes immediately after the index update,
+  // unpublish ONLY the newly inserted A:S index cells, never any legacy row.
+  try{
+   if(verifyActive({uid:verifiedAdminUid,id:id,revision:plan.revision,
+      digest:plan.digest,transferId:plan.transferId})!==true)
+    throw Error('印刷データ転送中に本人Firestore原本が更新されました');
+  }catch(checkFailure){
+   if(pendingIndex){
+    try{
+     pendingIndex.clearContent();
+     if(pendingIndex.getValues().some(function(row){
+      return row.some(function(value){return value!==''&&value!==null;});
+     }))throw Error('差し戻し後の乗務一覧にデータが残っています');
+    }catch(restoreError){
+     throw Error('ROLLBACK_REQUIRED:印刷一覧の差し戻しに失敗しました。'+
+      String(restoreError&&restoreError.message||restoreError));
+    }
+   }
+   throw checkFailure;
+  }
   return {state:'print-source-staged-review-required',id:id,revision:plan.revision,
    changedSheets:plan.actions.filter(function(a){return a.mode==='append';}).map(function(a){return a.name;}),
    printAuthorized:false,cutoverAuthorized:false};
