@@ -15,15 +15,16 @@ var TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS={
   '支払金額','アプリ決済額','現金受取','高速料金','割引額','手数料','備考'],
  'TAXIAPP_集計':['乗務ID','種類','金額','計算根拠','更新日時']
 };
-function firestorePrintPublishRowsDraft_(ss,shiftId,batches){
+function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
  if(!ss||typeof ss.getSheetByName!=='function'||
     !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId)||
     !Array.isArray(batches)||batches.length!==4)
   throw Error('印刷元4シートの転送情報が不正です');
  var names={},plans=[];
- batches.forEach(function(batch){
+ var order=['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計','TAXIAPP_乗務一覧'];
+ batches.forEach(function(batch,position){
   var name=batch.name,headers=TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name];
-  if(!headers||names[name]||batch.width!==headers.length||
+  if(name!==order[position]||!headers||names[name]||batch.width!==headers.length||
      !Array.isArray(batch.rows)||batch.rows.some(function(row){
       return !Array.isArray(row)||row.length!==headers.length||row[0]!==shiftId;
      }))throw Error('印刷元の行形式が不正です：'+name);
@@ -64,6 +65,11 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches){
   }
   plans.push({name:name,sheet:sheet,start:last+2,rows:prepared,width:headers.length});
  });
+ // A prior partially written transfer requires manual reconciliation.
+ var active=plans.filter(function(x){return x.rows.length>0||x.mode==='unchanged';});
+ var unchanged=active.filter(function(x){return x.mode==='unchanged';}).length;
+ if(unchanged>0&&unchanged<active.length)
+  throw Error('同じ乗務IDの印刷元が一部だけ残っています。自動追記せず手作業で確認してください');
  // Complete printable detail/payment/aggregate FIRST, index LAST.
  // When a new duty fails mid-append, remove ONLY cells written by this
  // attempt. Google Sheets has no multi-sheet transaction: a competing manual
@@ -71,6 +77,9 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches){
  var attempted=[];
  try{
   plans.forEach(function(plan){
+   // Recheck Firestore after detail writes but before index publication.
+   if(plan.name==='TAXIAPP_乗務一覧'&&typeof verifyBeforeIndex==='function')
+    verifyBeforeIndex();
    if(!plan.rows.length)return;
    var range=plan.sheet.getRange(plan.start,1,plan.rows.length,plan.width);
    attempted.push(plan);
