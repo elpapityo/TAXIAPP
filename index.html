@@ -1451,9 +1451,9 @@ async function performTrashAction(action,shiftId){
   }
  }
  memberTrashOperationBusy=true;render();
- // Prevent delayed local saves from overwriting the verified post-delete state.
- if(persistTimer){clearTimeout(persistTimer);persistTimer=0;await save(true);}
  try{
+  // Prevent delayed local saves from overwriting the verified post-delete state.
+  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;await save(true);}
   trashAccountCheck(uid,generation);
   const result=action==='move'?await trashActions.moveSelected(shiftId):
    await trashActions.restoreSelected(shiftId);
@@ -1774,6 +1774,7 @@ async function switchAccountScope(scope){
  adminCutoverSelected=new Set();
  memberTrashPreview=null;
  memberTrashPreviewBusy=false;
+ memberTrashOperationBusy=false;
  memberTrashSelection='';
  memberTrashPreviewToken++;
  pendingMemberRecovery=null;
