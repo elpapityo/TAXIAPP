@@ -82,11 +82,37 @@ async function main(){
   await assertFails(deleteDoc(refs(owner).shift));
   await assertFails(getDoc(refs(other).shift));
   await assertSucceeds(getDoc(refs(owner).shift));
+  // Current editor rules must reject another session even on same UID.
+  await assertFails(move(owner,SESSION_B));
+  // A partial three-document operation must not silently delete the source.
+  await assertFails(runTransaction(owner,async tx=>{
+   const r=refs(owner);
+   tx.set(r.tomb,{format:'TAXIAPP_DUTY_TOMBSTONE_V1',
+    state:'deleted',generation:1,revision:1,
+    writerSessionId:SESSION_A,updatedAt:serverTimestamp()});
+   tx.delete(r.shift);
+  }));
+  // A user cannot forge a trash document without moving the original
+  // inside the same transaction.
+  await assertFails(setDoc(refs(owner).trash,{
+   format:'TAXIAPP_DUTY_TRASH_V1',shift:duty,sourceRevision:1,
+   generation:1,writerSessionId:SESSION_A,
+   deletedAt:serverTimestamp(),
+   expiresAt:Timestamp.fromMillis(Date.now()+30*DAY_MS)
+  }));
   await assertSucceeds(move(owner));
   assert.equal((await getDoc(refs(owner).shift)).exists(),false);
   assert.equal((await getDoc(refs(owner).trash)).exists(),true);
   await assertFails(getDoc(refs(other).trash));
+  await assertFails(deleteDoc(refs(other).trash));
   await assertSucceeds(getDocs(refs(owner).trashCollection));
+  await assertFails(restore(other));
+  // History markers may not be edited or removed independently.
+  await assertFails(setDoc(refs(owner).tomb,{
+   format:'TAXIAPP_DUTY_TOMBSTONE_V1',state:'active',
+   generation:1,revision:2,writerSessionId:SESSION_A,
+   updatedAt:serverTimestamp()
+  }));
   // Old apps try revision=1 after the duty was removed. The server must
   // deny resurrection even if that client does not read tombstones.
   await assertFails(setDoc(refs(owner).shift,{
@@ -111,6 +137,7 @@ async function main(){
     {sessionId:SESSION_B,updatedAt:Timestamp.now()});
   });
   await assertFails(purge(owner,SESSION_A));
+  await assertFails(purge(other,SESSION_B));
   await assertSucceeds(purge(owner,SESSION_B));
   assert.equal((await getDoc(refs(owner).trash)).exists(),false);
   assert.equal((await getDoc(refs(owner).tomb)).data().state,'deleted');
