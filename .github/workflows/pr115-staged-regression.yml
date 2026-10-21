@@ -33,7 +33,10 @@ jobs:
           node - <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
-          for(const [,code] of html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)){
+          for(const script of html.split('<script').slice(1)){
+            const start=script.indexOf('>'),end=script.indexOf('</script>',start+1);
+            if(start<0||end<0)throw Error('Unclosed script block');
+            const code=script.slice(start+1,end);
             if(code.trim())new Function(code);
           }
           console.log('Inline HTML script syntax passed');
