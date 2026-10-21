@@ -8,6 +8,7 @@ const from=html.indexOf('function renderSheetTargetSettings(){');
 const to=html.indexOf('function handleSheetTargetSetting(',from);
 assert.ok(from>0&&to>from,'日報保存先の設定画面が見つかりません');
 let uid='owner-A',canWrite=true,viewer=false,deleted=false,revision=1,cloudReads=0;
+let conflicts=[];
 const id='shift-1792600000000-member';
 const original={id,date:'2026-10-21',records:[],settings:{}};
 const clone=value=>JSON.parse(JSON.stringify(value));
@@ -17,7 +18,7 @@ const root={
  confirm:()=>true
 };
 root.TAXIAPP_BIDIRECTIONAL_SYNC={create:()=>({
- status:()=>({busy:false,conflicts:[],lastSyncAt:0,lastError:''}),
+ status:()=>({busy:false,conflicts,lastSyncAt:0,lastError:''}),
  viewerStatus:()=>({lastSyncAt:0,lastError:''}),
  resetAccount(){},undoLocalRemoval(){log.push('undo');},
  run:async ids=>{assert.deepEqual([...ids],[id]);log.push('receive');return true;}
@@ -54,6 +55,15 @@ assert.match(rendered,/data-action="cloudTrashList"/);
 assert.doesNotMatch(rendered,/data-cloud-token|data-cloud-setting="webAppUrl"/,
  'Firestore owners must not see the legacy Google administrator credentials');
 (async()=>{
+ conflicts=[{id,reason:'別端末の編集と競合',localRevision:1,remoteRevision:2}];
+ const conflictHtml=sync.privateDiaryPanel();
+ assert.match(conflictHtml,/data-sync-resolve="local"/);
+ assert.match(conflictHtml,/data-sync-resolve="remote"/);
+ assert.match(conflictHtml,/data-sync-resolve="hold"/);
+ const beforeHold=cloudReads;
+ await sync.resolve(id,null);
+ assert.equal(cloudReads,beforeHold,'保留では原本を読み書きしない');
+ conflicts=[];
  assert.equal(await sync.cloudAction('load'),true,'クラウド一覧取得：'+JSON.stringify(log));
  assert.match(sync.privateDiaryPanel(),/data-action="cloudTrash"/);
  assert.equal(await sync.cloudAction('trash',id),true);
