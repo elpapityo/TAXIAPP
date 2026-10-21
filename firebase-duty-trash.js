@@ -245,8 +245,14 @@ function create(){
       typeof t.expiresAt==='string'?new Date(t.expiresAt):null);
     if(!(expiry instanceof Date)||!Number.isFinite(expiry.getTime())||
        expiry>new Date())throw Error('まだ保管期間内の日報です');
-    // Keep ONLY the tiny marker to prevent an offline old client from
-    // resurrecting a discarded original. The full duty is deleted.
+    // Keep ONLY the tiny marker; refresh its writer session in the SAME
+    // transaction. The writer who originally trashed a duty may have since
+    // logged out, so Rules must verify the CURRENT owner editor here.
+    tx.set(markerRef,{
+     format:'TAXIAPP_DUTY_TOMBSTONE_V1',state:'deleted',
+     generation:m.generation,revision:m.revision,writerSessionId,
+     updatedAt:c.f.serverTimestamp()
+    });
     tx.delete(trashRef);
     return true;
    });
