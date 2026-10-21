@@ -121,6 +121,34 @@ assert.match(html,/data-admin-cutover-choice/);
  await invoke('compareAdminCutoverSheet');
  assert.equal(context.adminCutoverSheetAudit,null,'account switch cannot reveal another UID data');
  assert.ok(!context.adminCutoverSheetBusy,'old request completes without remaining busy');
+ // Google-side updates occurring DURING readback must invalidate an audit.
+ context.accountScope={uid:'admin-A'};
+ let finalListReads=0;
+ context.googlePostRequest=async(action,fields={})=>{
+  if(action==='syncList'){
+   finalListReads++;
+   return {data:{shifts:[{id:rows[0].id,revision:finalListReads===1?1:2}]}};
+  }
+  if(action==='syncGet'&&fields.shiftId===rows[0].id)
+   return {data:{id:rows[0].id,revision:1,shift:clone(rows[0])}};
+  throw Error('unexpected Google request '+action);
+ };
+ await invoke('compareAdminCutoverSheet');
+ assert.equal(context.adminCutoverSheetAudit,null,'revision change must not be published as complete');
+ assert.ok(toast.some(x=>String(x[0]).includes('更新番号')));
+ assert.equal(finalListReads,2);
+ // An oversized remote ledger is NOT partially presented as complete.
+ let getCalls=0;
+ context.googlePostRequest=async(action)=>{
+  if(action==='syncGet'){getCalls++;throw Error('should not request oversized ledger');}
+  return {data:{shifts:Array.from({length:26},(_,i)=>({
+   id:'shift-'+(1000+i)+'-a',revision:1
+  }))}};
+ };
+ await invoke('compareAdminCutoverSheet');
+ assert.equal(context.adminCutoverSheetAudit,null);
+ assert.equal(getCalls,0);
+ assert.ok(toast.some(x=>String(x[0]).includes('上限')));
  console.log('Admin cutover Sheets audit passed: read-only list/get, failure, account switch, local unchanged');
 })().catch(err=>{console.error(err);process.exitCode=1;});
 console.log('Admin cutover selection UI passed: five-to-two selection, UID split, no cloud write, no migration');
