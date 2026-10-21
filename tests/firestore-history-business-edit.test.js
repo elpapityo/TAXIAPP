@@ -11,6 +11,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 let priceCalls=0,validationCalls=0;
 const ctx={
  HISTORY_DEBUG:false,Set,Object,Number,String,JSON,Error,
+ number:v=>v===null||v===undefined||v===''?null:Number(v),
  TYPES:['G','D','乗','U'],
  PAYMENTS:[['現','現金'],['Q','QR決済'],['U','Uber'],['キ','キャンセル']],
  RAW_COLUMNS:[['K','メーター金額','精算']],
