@@ -16,7 +16,7 @@ const state={
  window:{TAXIAPP_TRASH_REVIEW:globalThis.TAXIAPP_TRASH_REVIEW,
   TAXIAPP_ADMIN_CUTOVER:{interval:x=>({start:0,end:1,reason:''}),overlaps:()=>false}},
  memberDiary:()=>true,legacyDiary:()=>false,trashEnabled:()=>false,
- memberTrashOperationBusy:false,
+ memberTrashOperationBusy:false,renderDeletedLocalArchives:()=>'',
  accountScope:{uid},accountScopeGeneration:2,memberTrashPreview:null,
  memberTrashPreviewBusy:false,memberTrashPreviewToken:0,memberTrashSelection:'',
  model:{shifts:[first,localOnly],prefs:{},activeId:null},
