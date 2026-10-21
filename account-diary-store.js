@@ -6,6 +6,15 @@
 (function(root){
 'use strict';
 const MAX_SHIFT_BYTES=850000, ID=/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/;
+// Firestore map fields may be returned in a different key order after a
+// server round-trip. Compare all values without relying on insertion order.
+function canonicalDuty(value){
+ if(Array.isArray(value))return value.map(canonicalDuty);
+ if(value&&typeof value==='object'){
+  return Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonicalDuty(value[key])]));
+ }
+ return value;
+}
 function create(){
  let current=null,revisionEpoch=0;
  const kind=()=>current?.kind||'pending';
@@ -136,7 +145,7 @@ function create(){
    const saved=confirmed.data();
    if(saved?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
       saved?.trashed===true||saved?.revision!==result.revision||
-      JSON.stringify(saved?.shift)!==JSON.stringify(shift))
+      JSON.stringify(canonicalDuty(saved?.shift))!==JSON.stringify(canonicalDuty(shift)))
     throw Error('Firestore保存後の原本に差異があります。端末の記録を保持し、競合を確認してください');
    return {...result,confirmed:true};
   }
