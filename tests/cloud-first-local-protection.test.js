@@ -44,7 +44,7 @@ const replace=(ctx)=>extract('replace:async(id,incoming,existing)=>{','root:appE
  // Never replace unpublished duty records with an empty cloud snapshot.
  {
   const {ctx,original}=harness(true),before=JSON.stringify(ctx.model);
-  await assert.rejects(snapshot(ctx)([]),/未同期の乗務/);
+  await assert.rejects(snapshot(ctx)([]),/未同期の日報/);
   assert.equal(JSON.stringify(ctx.model),before);
   assert.equal(ctx.writes.length,0,'local record must not be overwritten');
   assert.equal(ctx.backups.size,0,'do not attempt adoption of unmatched duties');
@@ -52,7 +52,7 @@ const replace=(ctx)=>extract('replace:async(id,incoming,existing)=>{','root:appE
  // Even a same-ID but changed local shift must not be silently accepted.
  {
   const {ctx,original}=harness(true);
-  await assert.rejects(snapshot(ctx)([{...original,startedIso:'2026-10-21T10:00'}]),/未同期の乗務/);
+  await assert.rejects(snapshot(ctx)([{...original,startedIso:'2026-10-21T10:00'}]),/未同期の日報/);
   assert.equal(ctx.writes.length,0);
  }
  // A failed recovery copy MUST abort the operation before any persistent write.
