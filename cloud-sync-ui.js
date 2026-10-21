@@ -42,7 +42,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
  let archiveRows=[],archiveDetail=null,archiveError='',archiving=false;
  let cloudRows=[],cloudError='',cloudBusy=false,cloudLoaded=false,cloudEpoch=0;
- let writerBootstrapBusy=false;
+ let writerBootstrapBusy=false,writerBootstrapEpoch=0;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace,
@@ -67,13 +67,16 @@ root.TAXIAPP_SYNC_UI=function(d){
  async function bootstrapWriter(){
   if(writerBootstrapBusy||!d.writerBootstrapAllowed?.())return false;
   writerBootstrapBusy=true;
-  const accountEndpoint=d.endpoint();
+  const token=++writerBootstrapEpoch;
+  const accountEndpoint=d.endpoint(),accountUid=String(d.scopeKey?.()||'');
+  const stable=()=>token===writerBootstrapEpoch&&
+   accountUid===String(d.scopeKey?.()||'')&&d.endpoint()===accountEndpoint;
   try{
    // Legacy managers intentionally run with bidirectional sync OFF by default.
    // Their locally persisted duties must remain editable in a confirmed
    // writer session, without a compulsory Google pull or data replacement.
    if(d.allowLegacyLocalWriter?.()&&d.prefs().syncMode!=='on'){
-    if(!d.writerBootstrapAllowed?.()||d.endpoint()!==accountEndpoint)return false;
+    if(!stable()||!d.writerBootstrapAllowed?.())return false;
     writerFeedback='端末内の日報を使用中（双方向同期OFF）';
     observedDutyStates=dutyStates(d.getModel());
     d.onWriterBootstrapReady?.();
@@ -83,11 +86,13 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
    const shifts=await engine.readOnly();
+   if(!stable())return false;
    if(shifts===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
    const visible=engine.excludeLocalRemovals(shifts);
-   if(!d.writerBootstrapAllowed?.()||d.endpoint()!==accountEndpoint)return false;
+   if(!stable()||!d.writerBootstrapAllowed?.())return false;
    engine.assertSafeWriterSnapshot(visible);
    if(!await d.onWriterSnapshot(visible))return false;
+   if(!stable())return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
    if(timer!==null){clearTimeout(timer);timer=null;}
@@ -96,10 +101,13 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(engine.hasLocalRemovals())queueSync(400);
    d.setStatus(writerFeedback);return true;
   }catch(error){
-   writerFeedback='操作待機：'+String(error?.message||error);
-   d.onWriterBootstrapStatus?.(writerFeedback);
-   d.setStatus(writerFeedback);return false;
-  }finally{writerBootstrapBusy=false;}
+   if(stable()){
+    writerFeedback='操作待機：'+String(error?.message||error);
+    d.onWriterBootstrapStatus?.(writerFeedback);
+    d.setStatus(writerFeedback);
+   }
+   return false;
+  }finally{if(token===writerBootstrapEpoch)writerBootstrapBusy=false;}
  }
  function queueSync(delay=250){
   if(timer!==null||!enabled()||writerRunBusy)return;
@@ -160,6 +168,8 @@ root.TAXIAPP_SYNC_UI=function(d){
   }
  }
  function resetAccount(){
+  // Cancel older writer bootstrap without blocking the next UID's session.
+  writerBootstrapEpoch++;writerBootstrapBusy=false;
   if(timer!==null)clearTimeout(timer);
   if(viewerTimer!==null)clearTimeout(viewerTimer);
   timer=null;viewerTimer=null;
