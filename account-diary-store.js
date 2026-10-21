@@ -1,5 +1,5 @@
 /* TAXIAPP: private per-account duty originals in Firestore.
- * Legacy owner/administrator keeps the existing Google Sheets workflow.
+ * Administrator retains the legacy Sheets workflow until explicit cutover.
  * Ordinary drivers never receive the legacy Sheets endpoint or access key.
  * No implicit adoption of another account's local data.
  */
@@ -13,7 +13,18 @@ function create(){
   revisionEpoch++;
   if(!user){current=null;return;}
   if(!user.uid||!options.f||!options.db||!options.auth)throw Error('アカウント認証が未完了です');
-  current={uid:user.uid,kind:options.admin?'legacy':'member',
+  // Administrators remain on their legacy backend unless a future,
+  // separately approved cutover explicitly requests Firestore originals.
+  // No UI caller currently passes storageBackend, so production is unchanged.
+  if(options.storageBackend!==undefined&&
+     !['legacy','firestore'].includes(options.storageBackend))
+   throw Error('日報の保存先指定が不正です');
+  if(!options.admin&&options.storageBackend==='legacy')
+   throw Error('一般利用者は旧Google Sheetsの日報保存先を使用できません');
+  const backend=options.admin&&options.storageBackend!=='firestore'?'legacy':'firestore';
+  current={uid:user.uid,kind:backend==='firestore'?'member':'legacy',
+   admin:options.admin===true,storageBackend:backend,
+   readOnly:options.readOnly===true,
    f:options.f,db:options.db,auth:options.auth,session:options.session};
  }
  function ready(){
@@ -84,6 +95,7 @@ function create(){
    return {id,revision,shift:validate(row.shift,id)};
   }
   if(action==='syncPut'){
+   if(c.readOnly)throw Error('照合用Firestore接続は読み取り専用のため日報を書き込めません');
    const parsed=JSON.parse(String(fields.payload||'null'));
    if(parsed?.kind!=='TAXIAPP_SHIFT_V1')throw Error('乗務データの種類が不正です');
    const id=String(parsed?.shift?.id||''),shift=validate(parsed.shift,id);
