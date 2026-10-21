@@ -85,7 +85,7 @@ function create(){
     if(!ID.test(id)||seen.has(id)||data?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
        !Number.isSafeInteger(revision)||revision<1||
        data?.shift?.id!==id)
-     throw Error('保存されている乗務一覧の形式・ID・更新番号が不正です。同期を停止しました');
+     throw Error('保存されている乗務一覧が不正です（形式・ID・更新番号）。同期を停止しました');
     seen.add(id);
     return {id,revision,deleted:data?.trashed===true};
    })};
