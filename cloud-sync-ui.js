@@ -46,7 +46,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
   localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace,
-  getScopeKey:d.scopeKey
+  getScopeKey:d.scopeKey,getRemoteOnDemand:d.remoteOnDemand
  });
  const enabled=()=>d.prefs().syncMode==='on'&&d.configured()&&(!d.canSync||d.canSync());
  const status=()=>engine.status();
@@ -82,6 +82,43 @@ root.TAXIAPP_SYNC_UI=function(d){
     d.onWriterBootstrapReady?.();
     d.setStatus(writerFeedback);
     return true;
+   }
+   if(d.remoteOnDemand?.()){
+    if(!d.configured()||d.prefs().syncMode!=='on')
+     throw Error('本人Firestoreの接続と同期設定を確認してください');
+    d.onWriterBootstrapStatus?.('本人Firestoreの乗務一覧を確認中…');
+    const listing=await d.request('syncList',{});
+    if(!stable())return false;
+    if(!Array.isArray(listing?.shifts))throw Error('Firestoreの日報一覧を確認できません');
+    const seen=new Set();
+    for(const row of listing.shifts){
+     if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(row?.id||''))||
+        seen.has(row.id)||!Number.isSafeInteger(Number(row.revision)))
+      throw Error('Firestoreの乗務一覧が不正です');
+     seen.add(row.id);
+    }
+    const local=[...(d.getModel()?.shifts||[])];
+    let selected=local;
+    if(!local.length){
+     const available=listing.shifts.filter(row=>!row.deleted);
+     const open=available.filter(row=>!row.ended);
+     if(open.length>1)throw Error('未入庫の乗務が複数あります。誤選択を避けるため自動受信を停止しました');
+     const candidate=open[0]||available.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))[0];
+     if(candidate){
+      const received=await d.request('syncGet',{shiftId:candidate.id});
+      if(!stable())return false;
+      if(received?.id!==candidate.id||received?.revision!==candidate.revision||
+         received.shift?.id!==candidate.id)throw Error('Firestoreの乗務が受信中に変更されました');
+      selected=[received.shift];
+     }
+    }
+    if(!stable()||!d.writerBootstrapAllowed?.())return false;
+    if(!await d.onWriterSnapshot(selected))return false;
+    if(!stable())return false;
+    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
+    writerFeedback='本人Firestoreへ接続済み／端末の日報'+(d.getModel()?.shifts?.length||0)+'件を保護';
+    d.onWriterBootstrapReady?.();
+    d.setStatus(writerFeedback);return true;
    }
    if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
