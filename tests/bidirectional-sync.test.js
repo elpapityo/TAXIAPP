@@ -210,3 +210,22 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  assert.notEqual(svc.cloud.get(changedId).deleted,true);
  console.log('クラウドの論理削除と復元：別端末へ復活しない／編集競合を保護');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+// Bootstrapping a writer must not silently discard a local-only or modified duty.
+(async()=>{
+ const svc=server();
+ const original={id:'shift-7777-protect',date:'2026-10-21',records:[],settings:{},startedAt:'10:00'};
+ const localOnly=client('writerLocalOnly',svc,{shifts:[clone(original)]});
+ assert.throws(()=>localOnly.app.assertSafeWriterSnapshot([]),/未同期の日報/);
+ const uploaded=client('writerEdited',svc,{shifts:[clone(original)]});
+ assert.equal(await uploaded.app.run(),true);
+ uploaded.model.shifts[0].startedAt='11:00';
+ assert.throws(()=>uploaded.app.assertSafeWriterSnapshot([original]),/未同期の変更/);
+ uploaded.model.shifts[0].startedAt='10:00';
+ assert.equal(uploaded.app.assertSafeWriterSnapshot([{...original,startedAt:'12:00'}]),true,
+  'an unchanged local version may accept a newer cloud version');
+ const noPrior=client('writerSame',svc,{shifts:[clone(original)]});
+ assert.equal(noPrior.app.assertSafeWriterSnapshot([clone(original)]),true);
+ assert.throws(()=>noPrior.app.assertSafeWriterSnapshot([{...original,startedAt:'12:00'}]),/未同期の変更/);
+ console.log('編集端末の起動受信：未同期と端末固有の日報を上書きしない');
+})().catch(error=>{console.error(error);process.exitCode=1;});
