@@ -151,6 +151,15 @@ function create(deps){
   try{
    const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
+   // Reject malformed/duplicated server listings before any writes or pulls.
+   // Map alone would silently retain only the last occurrence of an ID.
+   const seenRemoteIds=new Set();
+   for(const item of listing.shifts){
+    const id=String(item?.id||''),revision=Number(item?.revision);
+    if(!validId(id)||!Number.isSafeInteger(revision)||revision<1||seenRemoteIds.has(id))
+     throw Error('クラウドの日報一覧に不正または重複したIDがあります。同期を停止しました');
+    seenRemoteIds.add(id);
+   }
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
    const removed=localRemovals();
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
