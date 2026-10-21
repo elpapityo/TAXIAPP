@@ -193,3 +193,49 @@ function printStageAppendV1_(sheet,prepared,verifiedAdminUid) {
   return {state:'staged',id:prepared.id,revision:prepared.revision};
  }finally{lock.releaseLock();}
 }
+
+/**
+ * Verify and read back the latest committed print projection for a single
+ * administrator's shift. This NEVER reads TAXIAPP_同期原本 or alters any
+ * print formula. A separate, authenticated print projection consumer will
+ * be required before the actual paper-print sheets are connected.
+ */
+function printStageReadLatestV1_(sheet,id,verifiedAdminUid) {
+ if(!sheet||typeof sheet.getName!=='function'||
+    sheet.getName()!==TAXIAPP_PRINT_STAGE_TAB_V1)
+  throw Error('印刷専用ステージ以外は参照できません');
+ if(typeof verifiedAdminUid!=='string'||!verifiedAdminUid||
+    typeof id!=='string'||!TAXIAPP_PRINT_STAGE_ID_V1.test(id))
+  throw Error('本人UIDまたは乗務IDが不正です');
+ var width=TAXIAPP_PRINT_STAGE_COLUMNS_V1.length,last=sheet.getLastRow();
+ if(last<1)throw Error('ステージの見出しがありません');
+ var header=sheet.getRange(1,1,1,width).getValues()[0];
+ if(JSON.stringify(header)!==JSON.stringify(TAXIAPP_PRINT_STAGE_COLUMNS_V1))
+  throw Error('ステージの見出しが一致しません');
+ var rows=last>1?sheet.getRange(2,1,last-1,width).getValues():[];
+ var matches=rows.filter(function(row){return String(row[0])===id;});
+ if(!matches.length)return null;
+ var seen={},latest=null;
+ matches.forEach(function(row){
+  var revision=Number(row[1]),json=String(row[4]||''),digest=String(row[3]||'');
+  if(!Number.isSafeInteger(revision)||revision<1||json.length>30000||
+     printStageHashV1_(json)!==digest||
+     printStageHashV1_([verifiedAdminUid,id,revision,digest].join('|'))!==row[2])
+   throw Error('印刷派生データが改ざんまたは別人の版です');
+  if(Object.prototype.hasOwnProperty.call(seen,revision))
+   throw Error('印刷ステージの更新番号が重複しています');
+  seen[revision]=true;
+  var projection;
+  try{projection=JSON.parse(json);}
+  catch(e){throw Error('印刷派生JSONが不正です');}
+  if(projection?.format!=='TAXIAPP_PRINT_PROJECTION_V1'||
+     projection.id!==id||projection.sourceRevision!==revision||
+     !Array.isArray(projection.printRows)||
+     projection.printRows.length!==projection.recordCount||
+     projection.printRows.length>60||
+     projection.printRows.some(function(r){return !Array.isArray(r)||r.length!==13;}))
+   throw Error('印刷派生データの明細または版が不正です');
+  if(!latest||revision>latest.revision)latest={id:id,revision:revision,projection:projection};
+ });
+ return latest;
+}
