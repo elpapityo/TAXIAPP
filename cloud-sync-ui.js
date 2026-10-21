@@ -464,6 +464,13 @@ root.TAXIAPP_SYNC_UI=function(d){
   holder.innerHTML=conflictMarkup(status())+vaultMarkup();
   holder.dataset.syncSignature=signature;
  }
+ // Firestore members use the same verified trash/restore API but must never
+ // see the administrator's Google connection keys or legacy print controls.
+ function privateDiaryPanel(){
+  return '<section class="card"><h2 class="h2">本人専用クラウド日報の整理</h2>'+
+   '<p class="helper">現在ログインしている本人UIDの日報だけを確認します。ゴミ箱への移動後も原本は保持され、復元できます。</p>'+
+   '<div data-sync-cloud-trash>'+cloudTrashMarkup()+'</div></section>';
+ }
  function panel(){
   const on=d.prefs().syncMode==='on',s=status();
   return '<hr class="divider"><h3 class="subsection">端末間の双方向同期（ブラウザ版・Android版／試験）</h3>'+
@@ -477,7 +484,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
   markLocalRemoval:(id,shift)=>{const marked=engine.markLocalRemoval(id,shift);queuedDutyIds.add(id);return marked;},
   undoLocalRemoval:id=>{engine.undoLocalRemoval(id);queuedDutyIds.delete(id);},cloudAction};
 };
