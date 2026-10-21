@@ -29,7 +29,8 @@ const window={
  TAXIAPP_BIDIRECTIONAL_SYNC:{create:()=>({
   run:async ids=>{requested.push(ids);return true;},
   status:()=>state,viewerStatus:()=>({}),
-  resetAccount:()=>{},readOnly:async()=>[],adoptViewerBaseline:()=>true
+  resetAccount:()=>{},readOnly:async()=>[],adoptViewerBaseline:()=>true,
+  hasLocalRemovals:()=>false,localRemovalIds:()=>[]
  })}
 };
 vm.runInNewContext(moduleSource,{window,globalThis:window,console});
