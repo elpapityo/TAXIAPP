@@ -50,6 +50,10 @@ for(const [key,value] of [['K','-1'],['K','1.4'],['I','13'],['G','99:90'],['N','
  assert.throws(()=>ctx.applyHistoryBusinessEdits(clone(original),bad,{},'2026-10-22'),
   /不正|確認/,'不適切な値は拒否：'+key);
 }
+const negativeDistance=makeDraft();negativeDistance.fields.F='100';negativeDistance.fields.L='99';
+assert.throws(()=>ctx.applyHistoryBusinessEdits(clone(original),negativeDistance,{},'2026-10-22'),/実車距離/);
+const badDiscount=makeDraft();badDiscount.fields.AR='200';
+assert.throws(()=>ctx.applyHistoryBusinessEdits(clone(original),badDiscount,{},'2026-10-22'),/割引区分/);
 const dupe=makeDraft();dupe.splitSecond='現';dupe.splitAmount='500';dupe.splitSlot=0;
 assert.throws(()=>ctx.applyHistoryBusinessEdits(clone(original),dupe,{},'2026-10-22'),/重複/);
 console.log('Firestore過去日報：正式料金計算・複合決済・原本保護・不正値拒否を確認');
