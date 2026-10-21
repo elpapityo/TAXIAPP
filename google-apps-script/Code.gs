@@ -341,9 +341,24 @@ function selectLatestTAXIAPPShift() {
  try {SpreadsheetApp.getUi().alert('最新乗務を選択しました',latest,SpreadsheetApp.getUi().ButtonSet.OK);}
  catch(e){Logger.log('最新乗務を選択: '+latest);}
 }
-function savePacket_(data) {
+function savePacket_(data,options) {
+ var printOnly=options&&options.firestorePrintOnly===true;
  var ss = SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
- ensureStorageSheets_(ss);
+ if(printOnly){
+  // PC-only manual Firestore pull. Never create/touch original, old archive,
+  // legacy versions or the actual two paper-print sheets.
+  var originals=ss.getSheetByName('TAXIAPP_同期原本');
+  if(!originals)throw Error('既存Google同期原本が見つかりません');
+  var id=String(data&&data.shift&&data.shift.id||'');
+  if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('Firestoreの乗務IDが不正です');
+  var count=Math.max(0,originals.getLastRow()-1);
+  if(count&&originals.getRange(2,1,count,1).getValues().some(function(r){return String(r[0])===id;}))
+   throw Error('旧Google原本に同じ乗務があります。自動的に上書きしません');
+  ['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計',
+   'TAXIAPP_乗務一覧','TAXIAPP_印刷操作','補助簿印刷用','補助簿印刷用_2頁']
+   .forEach(function(name){if(!ss.getSheetByName(name))throw Error('既存の印刷シートがありません：'+name);});
+  validatePacket_(data);
+ }else ensureStorageSheets_(ss);
  // Ignore legacy 700-yen cancel fee values from older app versions.
  // A cancelled dispatch is recorded, but always has zero fare and zero revenue.
  var submitted=data.shift;
@@ -370,10 +385,18 @@ function savePacket_(data) {
  })};
  var id=String(shift.id);
  var summary={...(data.summary||{}),cancellation:0};
- summary.cashRemittance=numeric_(summary.cashRemittance)+restoredGoCash;
- summary.paymentAllocated=numeric_(summary.paymentAllocated)+restoredGoPayments;
- // GO fees already belong to the tender received; do not add them twice.
- summary.totalRemittance=summary.cashRemittance+numeric_(summary.etcRemittance);
+ if(!printOnly){
+  summary.cashRemittance=numeric_(summary.cashRemittance)+restoredGoCash;
+  summary.paymentAllocated=numeric_(summary.paymentAllocated)+restoredGoPayments;
+  // GO fees already belong to the tender received; do not add them twice.
+  summary.totalRemittance=summary.cashRemittance+numeric_(summary.etcRemittance);
+ }else{
+  // The smartphone's confirmed totals are the only source of amounts.
+  ['meter','discount','goFee','uberSurcharge','cashRemittance',
+    'etcRemittance','totalRemittance','cashReceived','paymentAllocated']
+   .forEach(function(k){if(typeof summary[k]!=='number'||!Number.isFinite(summary[k]))
+     throw Error('Firestoreの計算済み金額がありません：'+k);});
+ }
  var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
  var records = shift.records || [];
  var shiftRows = [[id,shift.date,shiftTimestamp_(shift.startedIso,shift.date,shift.startedAt),
@@ -409,7 +432,7 @@ function savePacket_(data) {
    raw.AL||'',raw.AM||'',raw.AQ||'',raw.W||'',raw.AI||'',raw.AR||'',
    meta.settledIso||'']);
  });
- replaceRowsForShift_(ss,'TAXIAPP_乗務保管',id,storage,19);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務保管',id,storage,19);
  replaceRowsForShift_(ss,'TAXIAPP_決済内訳',id,payments,11);
  replaceRowsForShift_(ss,'TAXIAPP_印刷データ',id,print,14);
  var items = ['meter','discount','goFee','uberSurcharge','cashRemittance',
@@ -426,7 +449,7 @@ function savePacket_(data) {
   chunks.push(json.slice(start,start+TAXIAPP_CHUNK_SIZE));
  if (chunks.length > TAXIAPP_MAX_CHUNKS) throw Error('乗務データが大きすぎます');
  var originals = [id,now,chunks.length].concat(chunks);
- replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
  return '保存完了：' + shift.date + ' / ' + records.length + '件';
 }
 
