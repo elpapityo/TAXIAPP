@@ -106,7 +106,7 @@ function doPost(e) {
   var key=PropertiesService.getScriptProperties().getProperty('TAXIAPP_WRITE_KEY');
   if(!key||String(params.key||'')!==key)throw Error('接続キーが違います');
   var action=String(params.action||'');
-  if(['syncList','syncGet','syncPut','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore'].indexOf(action)<0&&action!=='sync')
+  if(['syncList','syncGet','syncPut','syncTrash','syncRestore','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore'].indexOf(action)<0&&action!=='sync')
    throw Error('未対応の処理です');
   var lock=LockService.getScriptLock();
   if(!lock.tryLock(25000))throw Error('別の同期を処理中です');
@@ -118,6 +118,9 @@ function doPost(e) {
     if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('乗務IDが不正です');
     return replyToPhone_(nonce,true,'乗務を取得しました',syncGetV2_(id),audience);
    }
+   if(action==='syncTrash'||action==='syncRestore')return replyToPhone_(nonce,true,
+    action==='syncTrash'?'乗務をゴミ箱へ移しました':'乗務を復元しました',
+    syncSetTrashV2_(String(params.shiftId||''),params.baseRevision,action==='syncTrash'),audience);
    if(action==='conflictList')return replyToPhone_(nonce,true,'競合保管一覧',conflictVaultList_(),audience);
    if(action==='conflictGet')return replyToPhone_(nonce,true,'競合保管を取得しました',conflictVaultGet_(String(params.archiveId||'')),audience);
    if(action==='conflictTrash'||action==='conflictRestore')return replyToPhone_(nonce,true,'競合保管の状態を変更しました',conflictVaultSetTrash_(String(params.archiveId||''),action==='conflictTrash'),audience);
@@ -164,7 +167,8 @@ function syncRevisionV2_(ss,id) {
   var rows=s.getRange(2,1,s.getLastRow()-1,4).getValues();
   for(var i=0;i<rows.length;i++){
    if(String(rows[i][0])===id)
-    return {revision:Number(rows[i][1])||0,managed:String(rows[i][3])==='v2',updatedAt:String(rows[i][2]||'')};
+    return {revision:Number(rows[i][1])||0,managed:['v2','v2_deleted'].indexOf(String(rows[i][3]))>=0,
+     deleted:String(rows[i][3])==='v2_deleted',updatedAt:String(rows[i][2]||'')};
   }
  }
  var originals=ss.getSheetByName('TAXIAPP_同期原本');
@@ -182,15 +186,16 @@ function syncListV2_() {
  var rows=originals.getRange(2,1,originals.getLastRow()-1,2).getValues();
  var states=ss.getSheetByName(TAXIAPP_REVISION_SHEET),lookup={};
  if(states&&states.getLastRow()>1){
-  states.getRange(2,1,states.getLastRow()-1,3).getValues().forEach(function(r){
-   lookup[String(r[0])]={revision:Number(r[1])||1,updatedAt:String(r[2]||'')};
+  states.getRange(2,1,states.getLastRow()-1,4).getValues().forEach(function(r){
+   lookup[String(r[0])]={revision:Number(r[1])||1,updatedAt:String(r[2]||''),
+    deleted:String(r[3])==='v2_deleted'};
   });
  }
  var result=rows.filter(function(r){return /^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(r[0]));})
   .map(function(r){
    var id=String(r[0]),info=lookup[id];
    return {id:id,revision:info?info.revision:1,
-    updatedAt:info?info.updatedAt:String(r[1]||'')};
+    deleted:Boolean(info&&info.deleted),updatedAt:info?info.updatedAt:String(r[1]||'')};
   });
  return {shifts:result};
 }
@@ -198,6 +203,7 @@ function syncGetV2_(id) {
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var shift=loadShift_(ss,id);
  var rev=syncRevisionV2_(ss,id);
+ if(rev.deleted)throw Error('この乗務はクラウドのゴミ箱にあります。復元してください');
  return {id:id,revision:rev.revision,shift:shift,updatedAt:rev.updatedAt};
 }
 function syncPutV2_(packet,baseRevision) {
@@ -206,6 +212,7 @@ function syncPutV2_(packet,baseRevision) {
   throw Error('同期の基準版が不正です');
  var id=String(packet.shift.id),ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var current=syncRevisionV2_(ss,id);
+ if(current.deleted)throw Error('削除済みの原本は上書きできません。復元してください');
  if(current.revision!==base)
   throw Error('SYNC_CONFLICT:'+current.revision+':他端末で更新されたため、上書きを停止しました');
  // Validate the packet before changing sheet content, and only increment
@@ -215,7 +222,24 @@ function syncPutV2_(packet,baseRevision) {
  syncWriteRevisionV2_(ss,id,rev,true);
  return {id:id,revision:rev,updatedAt:now};
 }
-function syncWriteRevisionV2_(ss,id,revision,modern){
+// Reversible server-side deletion: original packet and printed sheets stay intact.
+function syncSetTrashV2_(id,baseRevision,deleteRequested){
+ if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('削除する乗務IDが不正です');
+ var base=Number(baseRevision);
+ if(!Number.isSafeInteger(base)||base<1)throw Error('同期の基準版が不正です');
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID),current=syncRevisionV2_(ss,id);
+ if(current.revision!==base)throw Error('SYNC_CONFLICT:'+current.revision+':他端末の更新を先に確認してください');
+ var orig=ss.getSheetByName('TAXIAPP_同期原本');
+ if(!orig||orig.getLastRow()<2||
+   !orig.getRange(2,1,orig.getLastRow()-1,1).getValues()
+     .some(function(r){return String(r[0])===id;}))
+  throw Error('クラウドに保存済みの原本がありません');
+ if(Boolean(current.deleted)===deleteRequested)
+  return {id:id,revision:base,deleted:deleteRequested};
+ syncWriteRevisionV2_(ss,id,base+1,true,deleteRequested);
+ return {id:id,revision:base+1,deleted:deleteRequested};
+}
+function syncWriteRevisionV2_(ss,id,revision,modern,deleted){
  var state=ss.getSheetByName(TAXIAPP_REVISION_SHEET);
  if(!state){
   state=ss.insertSheet(TAXIAPP_REVISION_SHEET);
@@ -226,7 +250,7 @@ function syncWriteRevisionV2_(ss,id,revision,modern){
  var index=rows.findIndex(function(row){return String(row[0])===id;});
  var rowNumber=index<0?state.getLastRow()+1:index+2;
  var now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
- state.getRange(rowNumber,1,1,4).setValues([[id,revision,now,modern?'v2':'legacy']]);
+ state.getRange(rowNumber,1,1,4).setValues([[id,revision,now,modern?(deleted?'v2_deleted':'v2'):'legacy']]);
 }
 function validatePacket_(packet) {
  if (!packet || packet.kind !== 'TAXIAPP_SHIFT_V1' || !packet.shift)
@@ -534,6 +558,7 @@ function applySelectedPrintShift() {
  // raw shift IDs directly to B17 cannot trigger false "not found" errors.
  var id=resolvePrintShiftId_(ss,operation);
  if(!id)throw Error('印刷対象が見つかりません。B15にチェックを入れるか、B17から乗務を選んでください');
+ if(syncRevisionV2_(ss,id).deleted)throw Error('ゴミ箱内の乗務は印刷できません。復元してください');
  var originals=ss.getSheetByName('TAXIAPP_同期原本');
  var last=originals?originals.getLastRow():0;
  var legacy=last>1&&originals.getRange(2,1,last-1,1).getDisplayValues()
