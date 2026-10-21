@@ -69,6 +69,17 @@ root.TAXIAPP_SYNC_UI=function(d){
   writerBootstrapBusy=true;
   const accountEndpoint=d.endpoint();
   try{
+   // Legacy managers intentionally run with bidirectional sync OFF by default.
+   // Their locally persisted duties must remain editable in a confirmed
+   // writer session, without a compulsory Google pull or data replacement.
+   if(d.allowLegacyLocalWriter?.()&&d.prefs().syncMode!=='on'){
+    if(!d.writerBootstrapAllowed?.()||d.endpoint()!==accountEndpoint)return false;
+    writerFeedback='端末内の日報を使用中（双方向同期OFF）';
+    observedDutyStates=dutyStates(d.getModel());
+    d.onWriterBootstrapReady?.();
+    d.setStatus(writerFeedback);
+    return true;
+   }
    if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
    const shifts=await engine.readOnly();
