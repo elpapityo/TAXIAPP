@@ -252,7 +252,7 @@ function printV2ReprintRecoverDraft_(ss,stage,journal,id,uid,
     throw Error('復旧対象の行数や配置が変更されています：'+name);
    if(positions.length){
     var first=positions[0],range=sheet.getRange(first,1,positions.length,header.length);
-    if(range.getFormulas().some(function(row){return row.some(function(f){return !!f;})))
+    if(range.getFormulas().some(function(row){return row.some(function(f){return !!f;});}))
      throw Error('復旧対象に保護すべき数式があります');
     var values=range.getValues();
     for(var n=0;n<values.length;n++){
