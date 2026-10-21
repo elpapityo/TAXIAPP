@@ -83,7 +83,7 @@ function create(){
     const data=row.data(),id=row.id,revision=Number(data?.revision);
     if(!ID.test(id)||!Number.isSafeInteger(revision)||revision<1)
      throw Error('保存されている乗務一覧が不正です');
-    return {id,revision};
+    return {id,revision,deleted:data?.trashed===true};
    })};
   }
   if(action==='syncGet'){
@@ -92,6 +92,7 @@ function create(){
    ownerCheck(c);
    if(!snapshot.exists())throw Error('指定された乗務がクラウドにありません');
    const row=snapshot.data(),revision=Number(row.revision);
+   if(row.trashed===true)throw Error('ゴミ箱内の日報です。復元してください');
    return {id,revision,shift:validate(row.shift,id)};
   }
   if(action==='syncPut'){
@@ -111,6 +112,7 @@ function create(){
     ownerCheck(c);
     const revision=existing.exists()?Number(existing.data().revision):0;
     if(revision!==baseRevision)throw Error('SYNC_CONFLICT:'+revision);
+    if(existing.exists()&&existing.data().trashed===true)throw Error('削除済み日報を上書きできません');
     // The Firestore rules additionally validate the active server session.
     tx.set(ref,{
      format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:revision+1,
@@ -120,6 +122,27 @@ function create(){
    });
    ownerCheck(c);
    return result;
+  }
+  if(action==='syncTrash'||action==='syncRestore'){
+   if(c.readOnly)throw Error('閲覧端末では日報の削除状態を変更できません');
+   const id=String(fields.shiftId||''),base=Number(fields.baseRevision);
+   if(!Number.isSafeInteger(base)||base<1)throw Error('削除の基準版が不正です');
+   const sessionId=c.session?.sessionId?.();
+   if(typeof sessionId!=='string'||sessionId.length<32)
+    throw Error('この端末に編集権がありません');
+   const ref=docRef(c,id),trashed=action==='syncTrash';
+   const result=await c.f.runTransaction(c.db,async tx=>{
+    const previous=await tx.get(ref);
+    ownerCheck(c);
+    if(!previous.exists())throw Error('保存済み日報が見つかりません');
+    const data=previous.data(),revision=Number(data.revision);
+    if(revision!==base)throw Error('SYNC_CONFLICT:'+revision);
+    if(Boolean(data.trashed)===trashed)return {id,revision,deleted:trashed};
+    tx.set(ref,{...data,revision:revision+1,trashed,
+      writerSessionId:sessionId,updatedAt:c.f.serverTimestamp()});
+    return {id,revision:revision+1,deleted:trashed};
+   });
+   ownerCheck(c);return result;
   }
   throw Error('未対応の個人用日報操作です');
  }
