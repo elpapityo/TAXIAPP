@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TAXIAPP 印刷V2 実機テスト｜合成データ専用</title>
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif;font-size:16px;background:#eef3f7;color:#182b3d}
+*{box-sizing:border-box}body{margin:0}main{max-width:1120px;margin:auto;padding:16px}
+h1{font-size:clamp(1.3rem,3.5vw,2rem);margin:6px 0}h2{font-size:1.18rem;margin:0 0 10px}.small{font-size:.82rem;color:#476074;line-height:1.5}
+.banner{padding:14px;border:2px solid #1b587d;border-radius:12px;background:#e8f6ff;margin:12px 0 18px;line-height:1.6}
+.card{background:white;border:1px solid #cbd9e3;border-radius:14px;margin:14px 0;padding:16px;box-shadow:0 3px 15px #19334d0d}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end}
+label{display:block;font-weight:650;margin-bottom:5px}select,input[type=text]{background:#fff;border:1px solid #7890a3;border-radius:9px;padding:10px;width:100%;font:inherit;color:inherit;min-height:44px}
+input[type=checkbox]{height:19px;width:19px;accent-color:#136b9e;vertical-align:middle}.check{display:flex;align-items:center;gap:9px;min-height:44px;font-weight:650}.check input{flex:none}
+button{background:#155b89;color:white;font:inherit;font-weight:650;border:0;border-radius:9px;padding:11px 15px;min-height:46px;cursor:pointer}
+button.secondary{background:#365667}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #efb344;outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.muted{color:#52687b}.status{padding:11px 12px;border-left:5px solid #155b89;background:#edf8ff;border-radius:7px;line-height:1.55;margin:12px 0}
+.ok{color:#12602e}.problem{color:#a13116}.pill{background:#e1f0f8;border-radius:100px;padding:3px 9px;font-size:.85rem;font-weight:650}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.stat{border:1px solid #d7e2e9;border-radius:10px;padding:12px}.stat b{font-size:1.3rem;display:block;margin-top:5px;font-variant-numeric:tabular-nums}
+.pages{display:grid;gap:18px}.paper{background:white;border:1px solid #becdda;border-radius:12px;padding:16px;overflow:auto}
+.paper h3{margin:0 0 8px;font-size:1rem}.paper .notice{color:#6a3514;font-size:.82rem}
+.table-scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:620px;font-size:.84rem}th,td{border:1px solid #8fa2b2;padding:6px 7px;text-align:left;white-space:nowrap}th{background:#e9eff4}td.num{text-align:right;font-variant-numeric:tabular-nums}
+footer{padding:16px;text-align:center;color:#536b7e;font-size:.82rem}
+@media(min-width:800px){.pages{grid-template-columns:1fr 1fr}}
+@media print{@page{size:A4 landscape;margin:8mm}body{background:#fff;color:#000}main{max-width:none;padding:0}header,.banner,.card.controls-card,.no-print,footer{display:none!important}.pages{display:block}.paper{border:0;border-radius:0;box-shadow:none;overflow:visible;break-after:page;page-break-after:always;padding:0;min-height:170mm}.paper:last-child{break-after:auto;page-break-after:auto}table{min-width:0;font-size:8pt}th,td{padding:3px}.paper h3{font-size:11pt}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>TAXIAPP 印刷V2・実機確認</h1><p class="small">スマホ縦／横・PC表示と印刷2ページのレイアウトを確認するための独立した試験画面です。</p></header>
+<div class="banner" role="note"><strong>合成データ専用・実運用禁止</strong><br>実際の日報・Google Sheets・Firebase・GPSには接続しません。データ保存・ログイン・送信も行いません。表示される売上・乗務ID・運転者・乗降地はすべて架空です。このHTMLの実機テストは本番データ連携の完了を意味しません。</div>
+<section class="card controls-card" aria-labelledby="options"><h2 id="options">印刷する乗務の確認（模擬 B15 / B17 / C17）</h2>
+<div class="controls">
+<div><label for="scenario">営業件数</label><select id="scenario" data-testid="scenario"><option value="1">1件：少数</option><option value="36">36件：1ページ上限</option><option value="37" selected>37件：2ページ目開始</option><option value="60">60件：最大営業件数</option></select></div>
+<div><label class="check" for="latest"><input id="latest" type="checkbox" checked data-testid="latest">B15：最新の乗務を自動選択</label><p class="small">チェックONの場合はB17より最新乗務を優先します。</p></div>
+<div><label for="selectDuty">B17：手動選択</label><select id="selectDuty" data-testid="selectDuty"></select></div>
+<div><label for="derived">C17：選択された内部ID</label><input id="derived" data-testid="derived" type="text" readonly></div>
+</div>
+<div class="actions"><button id="check" type="button" data-testid="runTests">模擬テストを実行</button><button id="copy" class="secondary" type="button">確認結果をコピー</button><button id="print" class="secondary" type="button">合成データを印刷プレビュー</button></div>
+<div id="status" role="status" aria-live="polite" class="status"></div>
+<p class="small">印刷ボタンはこのページの合成データについてブラウザの印刷画面を開きます。実際のGoogle補助簿や本番売上は印刷されません。</p>
+</section>
+<section class="card" aria-labelledby="figures"><h2 id="figures">選択乗務の集計（架空）</h2><div class="stats" id="stats" data-testid="stats"></div>
+<p id="payments" class="small"></p></section>
+<section aria-labelledby="sheets"><h2 id="sheets">2ページ帳票のレイアウト確認</h2><div class="pages" id="pages" data-testid="pages"></div></section>
+<section class="card no-print"><h2>実機で確認したいこと</h2><p>スマホを縦・横にしてレイアウトを確認し、36件から37件に変更したとき2ページ目へ移ることを確認してください。B15をOFFにしてB17から過去の乗務を選び、C17がそのIDになるか確認してください。60件で合成データの印刷プレビューを開き、2ページに分かれるか確認できます。</p><p class="small">ここでの手動確認は表示・操作・印刷レイアウトのみ。本番Firebase認証、Google印刷関数、実際の乗務データとの一致はこの画面では検証できません。</p></section>
+</main><footer>TAXIAPP V2 印刷検証ラボ — オフライン / 合成データ限定</footer>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const yen=n=>Number(n||0).toLocaleString('ja-JP')+'円';
+const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const counts=[1,36,37,60];let report='',lastError='';
+function makeDuty(count,older){
+ const id=older?'shift-1792103640000':'shift-1792124520000';
+ const date=older?'2026-10-20':'2026-10-21',time=older?'20:30':'08:15';
+ const rides=[];let cash=0,qr=0,meter=0,go=0,uber=0,remittance=0;
+ for(let i=1;i<=count;i++){
+  if(i===count&&count>1){rides.push({no:i,kind:'cancel',label:'キャンセル',time:'14:02',origin:'架空の迎車地',dest:'―',fare:0,cash:0,qr:0,go:0,uber:0,company:0});continue;}
+  const isGo=i===1,isUber=i===2,isMixed=i===3;
+  const fare=isGo?1200:1000,goFee=isGo?200:0,uberFee=isUber?100:0;
+  const paid=fare+goFee+uberFee, c=isMixed?500:paid, q=isMixed?500:0;
+  const company=paid-uberFee;
+  cash+=c;qr+=q;meter+=fare;go+=goFee;uber+=uberFee;remittance+=company;
+  rides.push({no:i,kind:'ride',label:isGo?'GO・現金':isUber?'Uber・現金':isMixed?'現金＋QR':'現金',time:('0'+(8+Math.floor(i/9))).slice(-2)+':'+('0'+((i*7)%60)).slice(-2),origin:'架空出発 '+i,dest:'架空到着 '+i,fare,cash:c,qr:q,go:goFee,uber:uberFee,company});
+ }
+ const label=date.slice(5).replace('-','/')+' '+time+'出庫・営業'+count+'件';
+ return {id,count,date,time,label,records:rides,totals:{meter,go,uber,cash,qr,remittance}};
+}
+function allDuties(){let count=Number($('scenario').value);return [makeDuty(count,false),makeDuty(count,true)];}
+function selected(duties){
+ if($('latest').checked)return duties[0];
+ const matches=duties.filter(d=>d.id===$('selectDuty').value);
+ if(matches.length!==1)throw Error('B17で選んだ乗務が見つかりません');
+ return matches[0];
+}
+function render(){
+ const duties=allDuties();const old=$('selectDuty').value;
+ $('selectDuty').innerHTML=duties.map(d=>'<option value="'+safe(d.id)+'">'+safe(d.label)+'</option>').join('');
+ if(duties.some(d=>d.id===old))$('selectDuty').value=old;
+ $('selectDuty').disabled=$('latest').checked;
+ const d=selected(duties);$('derived').value=d.id;
+ const t=d.totals;
+ const stats=[['営業件数',d.count+'件'],['メーター',yen(t.meter)],['GO手数料',yen(t.go)],['Uber配車手数料',yen(t.uber)],['現金受取',yen(t.cash)],['QR受取',yen(t.qr)],['会社納金対象',yen(t.remittance)],['キャンセル売上','0円']];
+ $('stats').innerHTML=stats.map(([k,v])=>'<div class="stat"><span>'+safe(k)+'</span><b>'+safe(v)+'</b></div>').join('');
+ $('payments').textContent='集計規則：GO車内回収手数料は会社納金対象に含み、Uber配車手数料のみ納金から除外しています。';
+ const groups=[d.records.slice(0,36),d.records.slice(36,60)];
+ $('pages').innerHTML=groups.map((rows,i)=>{
+  const header='<h3>補助簿 模擬 '+(i+1)+'/2ページ｜'+safe(d.date)+'｜'+safe(d.label)+'</h3>';
+  const htmlRows=rows.length?rows.map(r=>'<tr><td>'+r.no+'</td><td>'+safe(r.label)+'</td><td>'+safe(r.time)+'</td><td>'+safe(r.origin)+'</td><td>'+safe(r.dest)+'</td><td class="num">'+yen(r.fare)+'</td><td class="num">'+yen(r.company)+'</td></tr>').join(''):'<tr><td colspan="7">このページに営業記録はありません</td></tr>';
+  return '<article class="paper" aria-label="'+(i+1)+'ページ目">'+header+'<p class="notice">全件が架空の営業記録です。実際の補助簿書式とは異なる検証用レイアウトです。</p><p><span class="pill" data-testid="pageCount'+(i+1)+'">'+rows.length+'件</span></p><div class="table-scroll"><table><thead><tr><th>NO.</th><th>区分・決済</th><th>時刻</th><th>出発地</th><th>到着地</th><th>メーター</th><th>会社納金</th></tr></thead><tbody>'+htmlRows+'</tbody></table></div></article>';
+ }).join('');
+ return d;
+}
+function checks(){
+ const tests=[];const test=(name,fn)=>{try{if(fn()!==true)throw Error('期待値不一致');tests.push({name,ok:true});}catch(e){tests.push({name,ok:false,reason:String(e.message||e)});}};
+ for(const n of counts){const d=makeDuty(n,false),pages=[d.records.slice(0,36),d.records.slice(36,60)];
+  test(n+'件・ページ分割',()=>pages[0].length===Math.min(n,36)&&pages[1].length===Math.max(0,n-36));
+  test(n+'件・売上整合性',()=>d.totals.meter===d.records.reduce((s,r)=>s+r.fare,0)&&d.totals.remittance===d.records.reduce((s,r)=>s+r.company,0));
+ }
+ test('GOは会社納金対象',()=>makeDuty(3,false).records[0].company===1400);
+ test('Uber手数料100円は納金から除外',()=>makeDuty(3,false).records[1].company===1000);
+ test('キャンセルは売上0円',()=>makeDuty(60,false).records.at(-1).fare===0);
+ test('複合決済：現金500円・QR500円',()=>makeDuty(37,false).records[2].cash===500&&makeDuty(37,false).records[2].qr===500);
+ test('選択後の乗務IDが対応',()=>allDuties().some(d=>d.id===$('derived').value));
+ test('外部通信・端末保存を使わない構成',()=>!document.querySelector('script[src],link[rel=stylesheet],iframe,form'));
+ return tests;
+}
+function run(){const d=render(),test=checks(),failed=test.filter(t=>!t.ok);const details=failed.length?failed.map(t=>t.name+'：'+t.reason).join(' / '):'すべての模擬テストが成功しました';
+ report='TAXIAPP V2実機確認（合成データ）\n端末：'+navigator.userAgent+'\n画面：'+innerWidth+'×'+innerHeight+'\n選択：'+d.label+' / '+d.id+'\nページ数：'+Math.min(36,d.count)+'+'+Math.max(0,d.count-36)+'件\nチェック：'+(test.length-failed.length)+'/'+test.length+'件成功\n'+details;
+ $('status').innerHTML='<strong class="'+(failed.length?'problem':'ok')+'">'+(failed.length?'確認事項あり':'模擬テスト成功')+'</strong>｜'+(test.length-failed.length)+' / '+test.length+' 件<br>'+safe(details)+'<br><span class="small">操作結果はこの画面だけに表示し、送信・保存しません。</span>';
+ return !failed.length;
+}
+$('scenario').addEventListener('change',run);$('latest').addEventListener('change',run);$('selectDuty').addEventListener('change',run);$('check').addEventListener('click',run);
+$('copy').addEventListener('click',async()=>{run();try{if(!navigator.clipboard)throw Error('Clipboard API不可');await navigator.clipboard.writeText(report);$('status').textContent+='　結果をコピーしました。';}catch(e){$('status').textContent+='　この端末では自動コピー不可。画面をスクリーンショットで共有してください。';}});
+$('print').addEventListener('click',()=>{run();window.print();});
+run();
+})();
+</script>
+</body>
+</html>
