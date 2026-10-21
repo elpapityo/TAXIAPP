@@ -86,6 +86,7 @@ function create(deps){
   if(cloud.size!==incoming.length)throw Error('クラウドの乗務IDが重複しています');
   const saved=getSaved(),local=[...(getModel()?.shifts||[])];
   const pendingIds=[],heldIds=[],localIds=new Set();
+  const result=new Map(cloud);
   for(const shift of local){
    if(!shift||!validId(shift.id)||localIds.has(shift.id))
     throw Error('端末の日報IDが不正です。受信せず保持します');
@@ -102,12 +103,24 @@ function create(deps){
     continue;
    }
    const localValue=localHash(shift),remoteValue=remoteHash(remote);
-   if(localValue!==remoteValue&&base?.hash!==localValue)
-    throw Error('端末の乗務 '+shift.id+
-     ' に未同期の変更があります。クラウド受信で上書きせず停止しました');
+   if(localValue===remoteValue)continue;
+   // If the server's revision AND packet are unchanged from our previous
+   // confirmed baseline, only the phone has edits. Keep those edits, then
+   // enqueue the exact duty after the writer session is confirmed.
+   const serverRevision=viewerCache.get(shift.id)?.revision;
+   if(base?.hash===remoteValue&&base.revision===serverRevision){
+    result.set(shift.id,shift);
+    pendingIds.push(shift.id);
+    continue;
+   }
+   // Only the cloud changed. Local packet still matches the known baseline.
+   if(base?.hash===localValue)continue;
+   // Unknown ancestor or both sides edited: neither side is safe to replace.
+   throw Error('端末とクラウドの乗務 '+shift.id+
+    ' の変更が競合しています。双方の原本を保護し、受信を停止しました');
   }
   const extra=local.filter(shift=>!cloud.has(shift.id));
-  return {shifts:[...incoming,...extra],pendingIds,heldIds};
+  return {shifts:[...result.values(),...extra],pendingIds,heldIds};
  }
  function assertSafeWriterSnapshot(incoming){
   planSafeWriterSnapshot(incoming);return true;
