@@ -110,7 +110,7 @@ function projectTrustedPacket({packet,sourceRevision}={}){
   headers:COLUMNS,
   rows:Object.fromEntries(Object.entries(rows).map(([name,data])=>[
    name,data.map(line=>line.map(cell=>cell instanceof Date?new Date(cell):cell))])),
-  pages:[copy(detail.slice(0,36)),copy(detail.slice(36,60))],
+  pages:[copy(rows['TAXIAPP_印刷データ'].slice(0,36)),copy(rows['TAXIAPP_印刷データ'].slice(36,60))],
   meter:totals.meter,records:detail.length,
   sourceSheetsRequired:Object.keys(COLUMNS),
   stage6ProjectionHasAllSources:false,
