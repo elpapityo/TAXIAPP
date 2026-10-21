@@ -1637,7 +1637,7 @@ async function switchAccountScope(scope){
  if(!adminCutoverBusy&&deviceMode==='writer'&&writerLoadGate)
   void syncUI.bootstrapWriter();
 }
-async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
+async function save(localOnly=false){if(!canEditNow())return false;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);return false;}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
@@ -3127,8 +3127,14 @@ async function releaseVerifiedPreviousDuties(activeId){
    try{stillSame=JSON.stringify(canonicalStoredDuty(localFirestoreOriginal(model.shifts[at])))===
     JSON.stringify(canonicalStoredDuty(expected));}catch{continue;}
    if(!stillSame)continue;
-   model.shifts.splice(at,1);
-   await save(true); // local-only: archiving is NOT a cloud deletion marker
+   const released=model.shifts.splice(at,1)[0];
+   // A failed local write is NOT a completed archive. Reinsert the previous
+   // original in memory rather than silently dropping the last protected copy.
+   if(await save(true)!==true){
+    model.shifts.splice(Math.min(at,model.shifts.length),0,released);
+    await save(true);
+    return;
+   } // local-only; never move or delete the Firestore original
   }
  }finally{releasingVerifiedDuties=false;}
 }
@@ -4130,8 +4136,10 @@ function handleAction(action,id){
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
   const nativeGpsLinked=nativeDiaryGpsEnabled();
   const gpsOptIn=nativeAutoDistanceEnabled()||model.prefs.gpsTripAtStart!=='off';
-  save();
-  if(memberDiary())void releaseVerifiedPreviousDuties(newRecord.id);
+  const departureSaved=save();
+  if(memberDiary())void departureSaved.then(ok=>{
+   if(ok===true)return releaseVerifiedPreviousDuties(newRecord.id);
+  });
   // When native GPS is paired, don't start the older browser GPS tracker in parallel.
   if(!nativeGpsLinked&&gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
   else render();
