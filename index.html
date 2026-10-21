@@ -4051,6 +4051,14 @@ function rebaseNativeTripAfterManual(shift,value,stillCurrent){
  }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
+ if(target.id==='historyEditPickup'||target.id==='historyEditDropoff'){
+  if(historyLocationEdit&&historyLocationEdit.uid===accountScope.uid){
+   try{historyLocationInputs();}
+   catch(error){historyLocationEdit.message=String(error?.message||error);
+    toast('過去日報の修正控えを保存できません。端末容量を確認してください。',true);}
+  }
+  return;
+ }
  if(target.dataset.hwyIndex!==undefined&&target.dataset.hwyField){
   if(e.type!=='change')return;
   const draft=s?.draft,items=draft?.meta?.highwaySections;
