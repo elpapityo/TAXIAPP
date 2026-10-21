@@ -348,7 +348,11 @@ root.TAXIAPP_SYNC_UI=function(d){
     engine.undoLocalRemoval(id);
     cloudRows=cloudRows.map(x=>x.id===id?{id,revision:done.revision,deleted:false}:x);
     cloudLoaded=false;
-    d.toast('クラウド原本を復元しました。最新一覧を取得してください。');
+    // The recovered original is re-fetched only for this exact ID, with the
+    // normal per-duty revision checks and local-save confirmation.
+    const received=await engine.run([id]);
+    if(!received)throw Error(engine.status().lastError||'クラウドは復元しましたが端末への再受信は未完了です。手動照合してください');
+    d.toast('ゴミ箱の乗務を復元し、この端末へ受信しました。');
    }else throw Error('未対応のクラウド操作です');
    return true;
   }catch(error){
