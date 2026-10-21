@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feat/firebase-trash-staging-20261021
+      - feature/taxiapp-main-integration-preflight-20261021
     paths:
       - '.github/workflows/pr115-staged-regression.yml'
       - 'index.html'
