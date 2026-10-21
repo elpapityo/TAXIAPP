@@ -2621,6 +2621,7 @@ async function googleSendAllShifts(){
  * The current local dataset remains available even during internet outages.
  */
 const syncUI=window.TAXIAPP_SYNC_UI({
+ remoteOnDemand:()=>memberDiary(),
  canSync:()=>canEditNow(),
  allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
   accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
