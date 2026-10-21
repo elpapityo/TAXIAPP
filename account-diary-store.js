@@ -91,7 +91,10 @@ function create(){
    const snapshot=await c.f.getDocFromServer(docRef(c,id));
    ownerCheck(c);
    if(!snapshot.exists())throw Error('指定された乗務がクラウドにありません');
-   const row=snapshot.data(),revision=Number(row.revision);
+   const row=snapshot.data(),revision=Number(row?.revision);
+   if(row?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+      !Number.isSafeInteger(revision)||revision<1)
+    throw Error('Firestore日報原本の形式または更新番号が不正です。受信を停止しました');
    if(row.trashed===true)throw Error('ゴミ箱内の日報です。復元してください');
    return {id,revision,shift:validate(row.shift,id)};
   }
