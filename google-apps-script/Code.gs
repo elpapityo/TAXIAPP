@@ -406,7 +406,7 @@ function savePacket_(data,options) {
   shift.vehicle||'',records.length,numeric_(summary.meter),numeric_(summary.discount),
   numeric_(summary.goFee),numeric_(summary.uberSurcharge),
   numeric_(summary.cashRemittance),numeric_(summary.etcRemittance),
-  numeric_(summary.totalRemittance),now,'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
+  numeric_(summary.totalRemittance),now,printOnly?'Firestore印刷済':'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
  if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
  var storage=[],payments=[],print=[];
  records.forEach(function(record) {
@@ -514,7 +514,9 @@ function resolvePrintShiftId_(ss,operation) {
  for(var i=0;i<rows.length;i++){
   var id=String(rows[i][0]||'').trim();
   var label=String(rows[i][20]||'').trim();
-  if(!savedIds.has(id))continue;
+  // Legacy snapshots and verified Firestore print-source rows can both be selected.
+  // The Firestore-only path is independently rechecked at print time.
+  if(!savedIds.has(id)&&String(rows[i][16]||'').trim()!=='Firestore印刷済')continue;
   if(requested===id||requested===label)return id;
  }
  // Compatible with older sheets where the row-aligned U formula is absent.
@@ -532,16 +534,43 @@ function applySelectedPrintShift() {
  // raw shift IDs directly to B17 cannot trigger false "not found" errors.
  var id=resolvePrintShiftId_(ss,operation);
  if(!id)throw Error('印刷対象が見つかりません。B15にチェックを入れるか、B17から乗務を選んでください');
- var shift=loadShift_(ss,id);
+ var originals=ss.getSheetByName('TAXIAPP_同期原本');
+ var last=originals?originals.getLastRow():0;
+ var legacy=last>1&&originals.getRange(2,1,last-1,1).getDisplayValues()
+  .some(function(row){return String(row[0]||'').trim()===id;});
+ var shift,expected;
+ if(legacy){
+  // Preserve existing trusted legacy print confirmation unchanged.
+  shift=loadShift_(ss,id);
+  expected=shift.records.reduce(function(sum,r) {
+   return sum + (r.status==='complete'&&r.kind==='ride'?numeric_(r.raw&&r.raw.K):0);
+  },0);
+ }else{
+  // Firestore-only duties must never be loaded from the retired Google original.
+  // This branch is read-only and uses the application's EXISTING totals.
+  if(typeof firestorePrintConfigDraft_!=='function'||
+     typeof firestorePrintDocDraft_!=='function')
+   throw Error('Firestore印刷確認は未設定です。従来の印刷原本は変更しません');
+  var index=ss.getSheetByName('TAXIAPP_乗務一覧');
+  var rows=index.getLastRow()>1?index.getRange(2,1,index.getLastRow()-1,17).getDisplayValues():[];
+  var matching=rows.filter(function(row){return String(row[0]||'').trim()===id;});
+  if(matching.length!==1||String(matching[0][16]||'').trim()!=='Firestore印刷済')
+   throw Error('Firestore由来の印刷元を確認できません');
+  // A stale C17 formula must never confirm a different duty on paper.
+  if(String(operation.getRange('C17').getDisplayValue()||'').trim()!==id)
+   throw Error('印刷対象IDの式と選択中の乗務が一致しません');
+  var verified=firestorePrintDocDraft_(firestorePrintConfigDraft_(),id);
+  shift=verified.packet.shift;
+  expected=Number(verified.packet.summary.meter);
+  if(!Number.isFinite(expected)||Number(matching[0][7])!==shift.records.length)
+   throw Error('Firestoreの印刷件数・金額を確認できません');
+ }
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');
  var first=ss.getSheetByName('補助簿印刷用');
  var second=ss.getSheetByName('補助簿印刷用_2頁');
  if(!first||!second)throw Error('補助簿の印刷用シートがありません');
  SpreadsheetApp.flush();
- var expected=shift.records.reduce(function(sum,r) {
-  return sum + (r.status==='complete'&&r.kind==='ride'?numeric_(r.raw&&r.raw.K):0);
- },0);
  var actual=Number(first.getRange('X23').getValue()||0);
  if (Math.abs(expected-actual)>0.01)
   throw Error('集計表のメーター売上が一致しません。B17を再選択してください。');
