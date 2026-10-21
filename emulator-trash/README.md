@@ -38,8 +38,13 @@ npm run emulator
 - 管理者のGoogle Sheets原本・印刷には影響を与えないこと。
 - 本番公開には**ルール差分の説明と利用者承認が必要**。このテストだけで自動公開しない。
 
-## 現在の検証状況
-**未実行**：このチャット環境にはFirebase CLIとFirestore Emulatorがなく、npm依存関係の取得はネットワークエラーになったため。
-GitHub Actionsの一般Nodeテストは別で成功しているが、**Emulatorテストに成功したとは扱わない**。
+## 現在の検証状況（2026-10-21）
+**GitHub Actions上の実Firestore Emulatorで実行済み・成功。** 直近の追加不正操作テストを含むコミット `0ddbd599a9932d92ef0c13dc9c368e2f5175cd6b`、ワークフロー実行 `39530203662` が成功（`Firestore trash security emulator (draft only)`）。
+
+検証したのは、本人/他UID、古い編集端末、単独削除、部分的な3文書操作、偽造ゴミ箱、削除履歴改ざん、30日以内の完全削除禁止、期限切れ整理、復元、旧端末による削除済み日報の再作成拒否。
+
+**あくまで隔離した `demo-taxiapp-trash` の草案ルールテストの成功**。実運用中の本番Firebaseの権限変更・日報データ移行・削除・自動整理は行っていない。アプリのログイン／同期／画面への結合、PR #110とのローカル未同期記録の保護統合、実機による印刷確認は未実装／未検証。
+
+このチャット側のローカルコンテナにはEmulatorを入れていないため、引き続きGitHub Actionsで再現できる専用検証を使用する。
 
 Firebase Emulatorの公式資料：https://firebase.google.com/docs/emulator-suite/connect_firestore
