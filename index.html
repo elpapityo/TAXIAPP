@@ -2750,8 +2750,13 @@ async function startAdminFirestoreCutover(){
  if(!currentLoginScope?.admin||!legacyDiary()||!canEditNow()){
   toast('管理者の操作可能端末でログインしてから保存先を変更してください',true);return;
  }
- const uid=currentLoginScope.uid;
- if(currentLoginScope.firebase?.auth?.currentUser?.uid!==uid){
+ const uid=currentLoginScope.uid,sourceGeneration=accountScopeGeneration,
+  sourceScope=currentLoginScope;
+ const stableOwner=()=>accountScopeGeneration===sourceGeneration&&
+  currentLoginScope===sourceScope&&accountScope.uid===uid&&
+  legacyDiary()&&canEditNow()&&
+  sourceScope.firebase?.auth?.currentUser?.uid===uid;
+ if(!stableOwner()){
   toast('ログイン中の本人UIDを確認できません',true);return;
  }
  const selectedIds=[...appEl.querySelectorAll('[data-firestore-migrate-id]:checked')]
@@ -2782,10 +2787,11 @@ async function startAdminFirestoreCutover(){
   staging.bind({uid},{...currentLoginScope.firebase,admin:true,storageBackend:'firestore'});
   if(!staging.ready())throw Error('本人用Firestoreの認証が完了していません');
   const listing=await staging.request('syncList',{});
+  if(!stableOwner())throw Error('切替中にログインまたは操作権が変わりました');
   if(!Array.isArray(listing?.shifts))throw Error('Firestoreの保存済み原本を確認できません');
   const remote=new Map(listing.shifts.map(item=>[item.id,item]));
   for(const id of selectedIds){
-   if(!canEditNow()||currentLoginScope?.uid!==uid)throw Error('切替中に操作権またはログインが変わりました');
+   if(!stableOwner())throw Error('切替中に操作権またはログインが変わりました');
    const original=sourceModel.shifts.find(s=>s.id===id);
    const packet=googleShiftPacket(original);
    packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
@@ -2793,29 +2799,37 @@ async function startAdminFirestoreCutover(){
     const row=remote.get(id);
     if(row.deleted)throw Error('移行先でゴミ箱にある日報は上書きしません：'+id);
     const existing=await staging.request('syncGet',{shiftId:id});
+    if(!stableOwner())throw Error('既存原本の照合中にログインが変わりました');
     if(JSON.stringify(existing.shift)!==JSON.stringify(packet.shift))
      throw Error('Firestoreに異なる内容の同じ乗務IDがあります。移行を停止：'+id);
     continue;
    }
    const sent=await staging.request('syncPut',{baseRevision:0,payload:JSON.stringify(packet)});
+   if(!stableOwner())throw Error('保存中にログインが変わりました。Firestore原本を保持して切替は中止しました');
    if(sent?.id!==id||sent?.revision!==1)throw Error('Firestoreへの保存結果が不明：'+id);
    const verified=await staging.request('syncGet',{shiftId:id});
+   if(!stableOwner())throw Error('保存後の確認中にログインが変わりました');
    if(verified.id!==id||JSON.stringify(verified.shift)!==JSON.stringify(packet.shift))
     throw Error('Firestore原本の保存後検証に失敗しました：'+id);
   }
+  if(!stableOwner())throw Error('保存先の確定前にログインまたは操作権が変わりました');
   const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:selectedIds,at:Date.now()});
   localStorage.setItem(manifestKey,manifest);
-  if(localStorage.getItem(manifestKey)!==manifest)throw Error('保存先選択を端末に記録できません');
   applied=true;
-  await switchAccountScope(currentLoginScope);
+  if(localStorage.getItem(manifestKey)!==manifest)throw Error('保存先選択を端末に記録できません');
+  await switchAccountScope(sourceScope);
   const ready=await syncUI.bootstrapWriter();
   if(!ready)throw Error('Firestoreへ切替後、乗務を安全に表示できませんでした');
   toast('Firestoreに保存・読み戻し済み。本人UID専用の保存先へ切り替えました。');
  }catch(error){
   if(applied){
-   try{localStorage.removeItem(manifestKey);
-    await switchAccountScope(currentLoginScope);
-    if(deviceMode==='writer')void syncUI.bootstrapWriter();
+   try{
+    localStorage.removeItem(manifestKey);
+    // Never switch a newly logged-in account to the old owner's backend.
+    if(currentLoginScope===sourceScope&&accountScope.uid===uid){
+     await switchAccountScope(sourceScope);
+     if(deviceMode==='writer')void syncUI.bootstrapWriter();
+    }
    }catch(recovery){console.error('cutover-recovery',recovery);}
   }
   toast('保存先の切替を中止しました。旧Google原本はそのままです：'+String(error?.message||error),true);
@@ -2823,19 +2837,33 @@ async function startAdminFirestoreCutover(){
 }
 async function returnAdminToLegacy(){
  if(adminCutoverBusy||!accountScope.adminFirestore||!currentLoginScope?.admin||!canEditNow())return;
- const uid=accountScope.uid;
+ const uid=accountScope.uid,sourceGeneration=accountScopeGeneration,sourceScope=currentLoginScope;
  if(!confirm('旧Googleの保存先に戻しますか？\nFirestoreに保存した日報は消えませんが、新しく入力した乗務はGoogleには自動で移行しません。先にJSONバックアップを保存してください。'))return;
  const backup=JSON.stringify(model);
  download(backup,'TAXIAPP_Firestore切替前_'+dateStamp()+'.json','application/json;charset=utf-8');
  if(!confirm('Firestore内の日報のバックアップを保管しましたか？'))return;
+ if(accountScopeGeneration!==sourceGeneration||currentLoginScope!==sourceScope||
+    accountScope.uid!==uid||!accountScope.adminFirestore||!canEditNow()||
+    sourceScope.firebase?.auth?.currentUser?.uid!==uid){
+  toast('ログインまたは操作権が変わったため旧保存先への切替を中止しました',true);return;
+ }
  const key=ADMIN_FIRESTORE_PREF_PREFIX+uid,previous=localStorage.getItem(key);
  try{
   localStorage.removeItem(key);
-  await switchAccountScope(currentLoginScope);
-  if(deviceMode==='writer')await syncUI.bootstrapWriter();
+  await switchAccountScope(sourceScope);
+  if(currentLoginScope!==sourceScope||accountScope.uid!==uid)
+   throw Error('旧保存先への切替中にログインが変わりました');
+  if(deviceMode==='writer'&&!(await syncUI.bootstrapWriter()))
+   throw Error('旧Googleから日報を安全に受信できませんでした');
   toast('旧Google保存先に戻りました。Firestore原本は保持しています。');
  }catch(error){
-  try{if(previous!==null)localStorage.setItem(key,previous);}catch{}
+  try{
+   if(previous!==null)localStorage.setItem(key,previous);
+   if(currentLoginScope===sourceScope&&accountScope.uid===uid){
+    await switchAccountScope(sourceScope);
+    if(deviceMode==='writer')void syncUI.bootstrapWriter();
+   }
+  }catch(recovery){console.error('legacy-cutover-recovery',recovery);}
   toast('旧Googleへの切替を停止しました：'+String(error?.message||error),true);
  }
 }
