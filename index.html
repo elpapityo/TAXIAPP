@@ -2864,12 +2864,12 @@ function renderDataManagement(){
     <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
     ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
    </div>
-   ${memberDiary()?'<span class="helper">クラウドでの削除は未接続です。日報は保護しています。</span>:`<button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">この乗務を削除</button>`}
+   ${memberDiary()?'<span class="helper">クラウドでの削除は未接続です。日報は保護しています。</span>':'<button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'" aria-label="'+safeText((s.date||'日付不明')+' '+period+' の乗務を削除')+'">この乗務を削除</button>'}
   </article>`;
  }).join('');
  return `${renderAdminCutoverSelectionPanel()}${renderMemberTrashPanel()}<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
    <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
-   <p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>
+   ${memberDiary()?'<p class="warn">個人用の日報はFirebase原本に保存されます。端末だけの削除は同期で元に戻るため、ゴミ箱機能の正式有効化まで削除操作を停止しています。</p>':'<p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>'}
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
   </section>
   <section class="card"><h2 class="h2">乗務一覧</h2>
