@@ -2266,7 +2266,8 @@ async function commitHistoryLocationEdit(){
   const rec=updated.records.find(item=>item.id===draft.recordId);
   if(!rec)throw Error('修正対象の営業記録がありません');
   rec.raw={...rec.raw,AL:draft.al,AM:draft.am};
-  const packet=googleShiftPacket(updated);
+  const packet=accountScope.adminFirestore?googleShiftPacket(updated):
+   {kind:'TAXIAPP_SHIFT_V1',shift:updated};
   if(accountScope.adminFirestore)packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
   const saved=await accountDiary.request('syncPut',{
    baseRevision:draft.baseRevision,payload:JSON.stringify(packet)
@@ -3710,7 +3711,7 @@ function handleAction(action,id){
   found.gpsTrip??={};found.gpsTrip.enabled=false;model.activeId=id;tab='drive';
   save();render();toast('同期乗務を開きました。距離は実際の車両トリップを確認してください。');return;
  }if(action==='editHistoryLocation'){
-  try{startHistoryLocationEdit(button.dataset.shiftId,id);}
+  try{startHistoryLocationEdit(selectedHistoryShift()?.id,id);}
   catch(error){toast(String(error?.message||error),true);}
   return;
  }
