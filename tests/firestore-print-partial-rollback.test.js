@@ -18,13 +18,14 @@ function workbook(fail='',tamper=false){
     const key=(y,x)=>(r+y)+':'+(c+x),read=()=>
      Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>data.get(key(y,x))??''));
     return {
-     getValues:read,
+     getValues:()=>read().map(row=>row.map(v=>v==='=1'?1:v)),
      getFormulas:()=>read().map(row=>row.map(v=>typeof v==='string'&&v.startsWith('=')?v:'')),
      setValues(rows){
       rows.forEach((row,y)=>row.forEach((v,x)=>data.set(key(y,x),v)));
       if(name===fail){
        fail='';
-       if(tamper)data.set(key(0,1),'他端末による書換え');
+       if(tamper===true)data.set(key(0,1),'他端末による書換え');
+       if(tamper==='formula')data.set(key(0,1),'=1');
        throw Error('合成の途中書込失敗');
       }
      },
@@ -59,6 +60,12 @@ const oldOriginal='TAXIAPP_同期原本';
   'do not erase third-party edits during rollback');
  assert.equal(book.state.get('TAXIAPP_印刷データ').get('2:1')??'','',
   'other sheets can still be safely rolled back');
+}
+{
+ const book=workbook('TAXIAPP_決済内訳','formula');
+ assert.throws(()=>ctx.firestorePrintPublishRowsDraft_(book.ss,id,packages()),/手作業で確認してください/);
+ assert.equal(book.state.get('TAXIAPP_決済内訳').get('2:2'),'=1',
+  'rollback never removes a concurrent formula that evaluates to the intended amount');
 }
 {
  const book=workbook();
