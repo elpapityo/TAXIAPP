@@ -304,6 +304,35 @@ function harness(){
   await assert.rejects(h.api.purgeExpired(),/UID/);
   assert.equal(h.store.has('user-A/shifts/'+id),true);
  }
+ // The owner may be on a DIFFERENT authorized device 30 days later.
+ // Expiry purge must refresh the marker's editor session atomically.
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  h.store.get('user-A/trash/'+id).expiresAt='2020-01-01T00:00:00.000Z';
+  h.session.sessionId=()=> 'b'.repeat(36);
+  const result=await h.api.purgeExpired({max:20});
+  assert.deepEqual(result.purged,[id]);
+  assert.equal(h.store.get('user-A/tombstones/'+id).writerSessionId,'b'.repeat(36));
+  assert.equal(h.store.has('user-A/trash/'+id),false);
+ }
+ // Failure while writing a fresh tombstone session must not purge the duty.
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  h.store.get('user-A/trash/'+id).expiresAt='2020-01-01T00:00:00.000Z';
+  const run=h.fire.runTransaction;
+  h.fire.runTransaction=(db,fn)=>run(db,tx=>fn({
+   get:tx.get,delete:tx.delete,
+   set(ref,value){
+    if(ref.section==='tombstones')throw Error('marker write failed');
+    return tx.set(ref,value);
+   }
+  }));
+  await assert.rejects(h.api.purgeExpired({max:20}),/marker write failed/);
+  assert.equal(h.store.has('user-A/trash/'+id),true);
+  assert.equal(h.store.get('user-A/tombstones/'+id).state,'deleted');
+ }
  // A writer session that changes between selection and transaction commit
  // must never be allowed to delete or purge a duty.
  {
