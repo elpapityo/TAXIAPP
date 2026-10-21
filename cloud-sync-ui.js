@@ -296,7 +296,7 @@ root.TAXIAPP_SYNC_UI=function(d){
       (row.deleted?'クラウドから復元':'クラウドのゴミ箱へ移動')+'</button></div>';
   }).join('');
   return '<h3 class="subsection">クラウド保存済み日報の整理</h3>'+
-   '<p class="helper">現在のGoogle/Firebase保存先に残る日報を確認し、不要なものだけをゴミ箱へ移します。'+
+   '<p class="helper">自動同期が無効でも本人の操作端末から保存先の日報を確認できます。不要な乗務だけゴミ箱へ移します。'+
    '元の日報は消去せず復元可能です。端末にある日報は上の「乗務一覧」から削除してください。</p>'+
    '<button class="btn" type="button" data-action="cloudTrashList" '+(cloudBusy?'disabled':'')+'>'+
     (cloudBusy?'取得中…':'クラウドの保存一覧を取得')+'</button>'+
@@ -305,8 +305,12 @@ root.TAXIAPP_SYNC_UI=function(d){
  }
  async function cloudAction(kind,id=''){
   if(cloudBusy)return false;
-  if(!enabled()){d.toast('同期を有効にしてからクラウドの保存一覧を取得してください',true);return false;}
-  cloudBusy=true;cloudError='';refreshPanel();
+  // A manual owner-approved cleanup must work with automatic two-way sync OFF.
+  // Never enable background upload merely to reach an old Google-only duty.
+  if(!d.configured()||(d.canSync&&!d.canSync())||d.canView?.()){
+   d.toast('操作可能な本人端末でクラウド接続を確認してください',true);return false;
+  }
+  cloudBusy=true;cloudError='';refreshPanel(true);
   try{
    if(kind==='load'){
     const listing=await d.request('syncList',{});
@@ -327,7 +331,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     cloudRows=items;cloudLoaded=true;
     d.toast('クラウド保存 '+items.filter(x=>!x.deleted).length+'乗務／ゴミ箱 '+items.filter(x=>x.deleted).length+'乗務');
    }else if(kind==='trash'){
-    const row=cloudRows.find(x=>x.id===id&&!x.deleted);
+    const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&!x.deleted);
     if(!row||!row.shift)throw Error('削除対象が変化しました。一覧を再取得してください');
     if(d.getModel()?.shifts?.some(x=>x.id===id))
      throw Error('この日報は端末内にもあります。端末の「この乗務を削除」を先に実行してください');
@@ -343,7 +347,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     cloudRows=cloudRows.map(x=>x.id===id?{id,revision:done.revision,deleted:true}:x);
     d.toast('選択した乗務をクラウドのゴミ箱へ移しました。原本は保持しています。');
    }else if(kind==='restore'){
-    const row=cloudRows.find(x=>x.id===id&&x.deleted===true);
+    const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&x.deleted===true);
     if(!row)throw Error('復元対象を取得し直してください');
     if(!root.confirm('この乗務をクラウドのゴミ箱から復元しますか？\nID: '+id))return false;
     const done=await d.request('syncRestore',{shiftId:id,baseRevision:row.revision});
@@ -362,7 +366,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   }catch(error){
    cloudError='クラウド処理を中止：'+String(error?.message||error);
    d.toast(cloudError,true);return false;
-  }finally{cloudBusy=false;refreshPanel();}
+  }finally{cloudBusy=false;refreshPanel(true);}
  }
  function vaultMarkup(){
   const escape=d.escape;
@@ -401,11 +405,12 @@ root.TAXIAPP_SYNC_UI=function(d){
  }
  // Refresh the status in place after login or a manual viewer refresh.
  // Never rebuild Settings: that would collapse details and reset the scroll.
- function refreshPanel(){
+ function refreshPanel(forceCloud=false){
   const text=d.root.querySelector('[data-sync-status]');
   if(text)text.textContent=message();
   const cloudHolder=d.root.querySelector('[data-sync-cloud-trash]');
-  if(cloudHolder&&!cloudHolder.querySelector('button:focus'))cloudHolder.innerHTML=cloudTrashMarkup();
+  if(cloudHolder&&(forceCloud||!cloudHolder.querySelector('button:focus')))
+   cloudHolder.innerHTML=cloudTrashMarkup();
   const holder=d.root.querySelector('[data-sync-conflicts]');
   if(!holder)return;
   const signature=JSON.stringify([status().conflicts,archiveRows,archiveDetail,archiveError]);
