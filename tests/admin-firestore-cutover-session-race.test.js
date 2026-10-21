@@ -16,7 +16,7 @@ function context(mode){
  const c={
   adminCutoverBusy:false,accountScopeGeneration:4,currentLoginScope:scope,
   accountScope:{uid,kind:'legacy',adminFirestore:false},
-  model:data,JSON,Date,Set,Map,Error,console,
+  model:data,deviceMode:'writer',JSON,Date,Set,Map,Error,console,
   appEl:{querySelectorAll:()=>[{dataset:{firestoreMigrateId:id}}]},
   localStorage:{
    getItem:key=>saved.get(key)??null,
