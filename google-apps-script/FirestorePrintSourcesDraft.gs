@@ -15,6 +15,22 @@ var TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS={
   '支払金額','アプリ決済額','現金受取','高速料金','割引額','手数料','備考'],
  'TAXIAPP_集計':['乗務ID','種類','金額','計算根拠','更新日時']
 };
+// Google Sheets may turn a yyyy-MM-dd HH:mm:ss cell into a native Date.
+// Only accept the exact equivalent Japan-local timestamp, never a loose cast.
+function firestorePrintSameCellDraft_(actual,expected){
+ if(Object.prototype.toString.call(actual)==='[object Date]' &&
+    typeof expected==='string' && /^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$/.test(expected))
+  return Number.isFinite(actual.getTime()) &&
+   Utilities.formatDate(actual,'Asia/Tokyo','yyyy-MM-dd HH:mm:ss')===expected;
+ return JSON.stringify(actual)===JSON.stringify(expected);
+}
+function firestorePrintSameRowsDraft_(actual,expected){
+ return actual.length===expected.length&&actual.every(function(row,i){
+  return row.length===expected[i].length&&row.every(function(cell,j){
+   return firestorePrintSameCellDraft_(cell,expected[i][j]);
+  });
+ });
+}
 function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
  if(!ss||typeof ss.getSheetByName!=='function'||
     !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId)||
@@ -49,7 +65,7 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
   var prepared=batch.rows.map(function(row){return row.map(safeCell_);});
   if(matching.length){
    if(matching.length!==prepared.length||
-      matching.some(function(row,i){return JSON.stringify(row)!==JSON.stringify(prepared[i]);}))
+      !firestorePrintSameRowsDraft_(matching,prepared))
     throw Error('同じ乗務IDの印刷元とFirestore原本が異なります。自動上書きを停止しました：'+name);
    plans.push({name:name,sheet:sheet,start:0,rows:[],width:headers.length,mode:'unchanged'});
    return;
@@ -85,7 +101,7 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
    attempted.push(plan);
    range.setValues(plan.rows);
    var actual=range.getValues();
-   if(JSON.stringify(actual)!==JSON.stringify(plan.rows))
+   if(!firestorePrintSameRowsDraft_(actual,plan.rows))
     throw Error('印刷元の転送確認に失敗しました：'+plan.name);
   });
  }catch(writeError){
@@ -101,7 +117,7 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
      return row.length===plan.width&&formulas[i].length===plan.width&&
       row.every(function(cell,j){
        return !formulas[i][j]&&(cell===''||cell===null||
-        JSON.stringify(cell)===JSON.stringify(plan.rows[i][j]));
+        firestorePrintSameCellDraft_(cell,plan.rows[i][j]));
       });
     });
     if(!safe){recovery.push(plan.name);return;}
