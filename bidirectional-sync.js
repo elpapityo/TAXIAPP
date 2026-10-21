@@ -68,7 +68,8 @@ function create(deps){
   const state=localRemovals();
   if(Object.prototype.hasOwnProperty.call(state,id)){delete state[id];saveRemovals(state);}
  }
- function hasLocalRemovals(){return Object.keys(localRemovals()).length>0;}
+ function localRemovalIds(){return Object.keys(localRemovals());}
+ function hasLocalRemovals(){return localRemovalIds().length>0;}
  function excludeLocalRemovals(shifts){
   const removed=localRemovals();
   return (shifts||[]).filter(x=>!Object.prototype.hasOwnProperty.call(removed,x.id));
@@ -372,7 +373,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,assertSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
