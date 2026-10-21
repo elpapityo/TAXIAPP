@@ -33,6 +33,40 @@ function create(deps){
   try{storage.setItem(localKey(),JSON.stringify(saved));return true;}
   catch{lastError='同期の管理情報を端末に保存できません。データは上書きしません。';return false;}
  }
+ const REMOVAL_PREFIX='taxiapp-sync-v2-local-removals-';
+ const validId=id=>/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(id||''));
+ const removalKey=()=>REMOVAL_PREFIX+digest(String(getEndpoint()||'')+'|'+String(deps.getScopeKey?.()||''));
+ function localRemovals(){
+  if(!getEndpoint())throw Error('同期先が未設定のため削除状態を記録できません');
+  const raw=storage.getItem(removalKey());
+  if(!raw)return {};
+  let data;
+  try{data=JSON.parse(raw)}catch{throw Error('削除済み日報の管理情報が破損しています。再受信を停止しました');}
+  if(!data||typeof data!=='object'||Array.isArray(data)||
+    Object.keys(data).some(id=>!validId(id)||!Number.isSafeInteger(data[id])||data[id]<1))
+   throw Error('削除済み日報の管理情報が不正です。再受信を停止しました');
+  return data;
+ }
+ function saveRemovals(data){
+  const content=JSON.stringify(data);
+  storage.setItem(removalKey(),content);
+  if(storage.getItem(removalKey())!==content)
+   throw Error('削除済み日報の再受信防止情報を保存できません');
+ }
+ function markLocalRemoval(id){
+  if(!validId(id))throw Error('削除する日報IDが不正です');
+  const state=localRemovals();
+  if(Object.prototype.hasOwnProperty.call(state,id))return false;
+  saveRemovals({...state,[id]:Date.now()});return true;
+ }
+ function undoLocalRemoval(id){
+  const state=localRemovals();
+  if(Object.prototype.hasOwnProperty.call(state,id)){delete state[id];saveRemovals(state);}
+ }
+ function excludeLocalRemovals(shifts){
+  const removed=localRemovals();
+  return (shifts||[]).filter(x=>!Object.prototype.hasOwnProperty.call(removed,x.id));
+ }
  const localHash=shift=>digest(stable(getPacket(shift).shift));
  const remoteHash=shift=>digest(stable(getPacket(shift).shift));
  function status(){
@@ -60,6 +94,7 @@ function create(deps){
    const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
+   const removed=localRemovals();
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
    const present=new Map(shifts.map(s=>[s.id,s]));
    const nextConflict=selected?Object.fromEntries(Object.entries(conflict).filter(([id])=>!selected.has(id))):{};
@@ -67,6 +102,7 @@ function create(deps){
    // if the phone has its own active duty.
    for(const remote of listing.shifts){
     if(selected&&!selected.has(remote.id))continue;
+    if(Object.prototype.hasOwnProperty.call(removed,remote.id))continue;
     if(present.has(remote.id))continue;
     const received=await scopedRequest('syncGet',{shiftId:remote.id});
     if(!received?.shift||received.id!==remote.id)throw Error('クラウドから乗務を読み戻せません');
@@ -82,6 +118,7 @@ function create(deps){
    for(const original of shifts){
     const id=original.id;
     if(selected&&!selected.has(id))continue;
+    if(Object.prototype.hasOwnProperty.call(removed,id))continue;
     delete nextConflict[id];
     const remote=cloud.get(id),base=saved[id];
     let current=getModel()?.shifts?.find(s=>s.id===id);
@@ -279,7 +316,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
