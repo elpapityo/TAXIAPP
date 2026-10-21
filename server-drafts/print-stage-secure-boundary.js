@@ -99,8 +99,9 @@ function createPrintStageBoundary(deps){
   const stageRead=await deps.readLatestPrintStage(plan.shiftId,plan.uid);
   if(!stageRead||stageRead.id!==plan.shiftId||
      stageRead.revision!==plan.sourceRevision||
-     stageRead.projection?.sourceRevision!==plan.sourceRevision)
-   error('印刷ステージの読み戻しが古いか、不正です');
+     stageRead.projection?.sourceRevision!==plan.sourceRevision||
+     signature(stageRead.projection)!==signature(JSON.parse(plan.prepared.projectionJson)))
+   error('印刷ステージの読み戻しが古いか、転送内容と不一致です');
   // A concurrent edit after append invalidates print usability.
   // Keep the immutable staged snapshot as an audit trail; DO NOT print.
   await read(plan.uid,plan.shiftId,plan.sourceRevision);
