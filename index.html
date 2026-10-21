@@ -1539,7 +1539,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if((canEditNow()&&!memberTrashOperationBusy)||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"], [data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="resolveDeletedLocalShifts"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"], [data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="resolveDeletedLocalShifts"],[data-action="downloadDeletedLocalArchive"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -2953,6 +2953,34 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  render:render,toast,escape:safeText,download,dateStamp
 });
 
+async function downloadDeletedLocalArchive(key){
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ if(!memberDiary()||!uid||typeof key!=='string')return;
+ try{
+  const keys=JSON.parse(localStorage.getItem('taxiapp-deleted-local-index-v1-'+uid)||'[]');
+  if(!Array.isArray(keys)||!keys.includes(key))throw Error('本人の履歴にない保護コピーです');
+  const archive=db?await idbGet(db,key):
+   JSON.parse(localStorage.getItem(key)||'null');
+  if(uid!==accountScope.uid||generation!==accountScopeGeneration||
+     archive?.uid!==uid||archive.format!=='TAXIAPP_DELETED_LOCAL_ARCHIVE_V1')
+   throw Error('ログイン利用者または保護コピーの本人確認ができません');
+  download(JSON.stringify(archive,null,2),
+   'TAXIAPP_削除済み端末保護コピー_'+dateStamp(new Date())+'.json',
+   'application/json;charset=utf-8');
+  toast('削除済み端末日報の保護コピーを保存しました。');
+ }catch(error){toast('復旧コピーを取得できません：'+String(error?.message||error),true);}
+}
+function renderDeletedLocalArchives(){
+ if(!memberDiary())return '';
+ try{
+  const keys=JSON.parse(localStorage.getItem('taxiapp-deleted-local-index-v1-'+accountScope.uid)||'[]');
+  if(!Array.isArray(keys)||!keys.length)return '';
+  return '<section class="card"><h3 class="subsection">削除済み日報の保護コピー</h3>'+
+   '<p>サーバーで削除済みと判定された端末の記録です。復元や照合のため、JSONとして取り出せます。</p>'+
+   keys.slice(-10).reverse().map(key=>
+    '<button type="button" class="btn" data-action="downloadDeletedLocalArchive" data-id="'+safeText(key)+'">⇩ 端末日報の保護コピー</button>').join('')+'</section>';
+ }catch{return '<p role="alert" class="warn">削除済み日報の保護コピー一覧を確認できません。</p>';}
+}
 async function resolveDeletedLocalShifts(){
  const pending=pendingMemberRecovery;
  if(memberRecoveryBusy||!trashEnabled()||!pending||!memberDiary()||
@@ -2993,6 +3021,15 @@ async function resolveDeletedLocalShifts(){
   check();
   if(canonicalDutyJson(saved)!==canonicalDutyJson(archive))
    throw Error('端末の保護コピーを正しく読み戻せません');
+  const indexKey='taxiapp-deleted-local-index-v1-'+uid;
+  const keys=JSON.parse(localStorage.getItem(indexKey)||'[]');
+  if(!Array.isArray(keys)||keys.some(x=>typeof x!=='string'))
+   throw Error('削除済み日報の保護コピー一覧が不正です');
+  keys.push(key);
+  localStorage.setItem(indexKey,JSON.stringify(keys));
+  if(localStorage.getItem(indexKey)!==JSON.stringify(keys))
+   throw Error('削除済み日報の保護コピー一覧を確認できません');
+  check();
   const remaining=deepCopy(original);
   remaining.shifts=remaining.shifts.filter(x=>!ids.includes(x.id));
   if(ids.includes(remaining.activeId))remaining.activeId=null;
@@ -3359,6 +3396,7 @@ function renderMemberTrashPanel(){
   (trashEnabled()?
    '<p class="footnote">サーバーの更新番号と本人の確認を行い、復元可能な30日間のゴミ箱へ移動します。</p>':
    '<p class="footnote">現在のFirestore本番ルールは削除禁止です。ゴミ箱操作は公開承認まで無効です。</p>')+
+  renderDeletedLocalArchives()+
   '<div class="actions">'+(()=>{
     try{
      const keys=JSON.parse(localStorage.getItem('taxiapp-trash-backup-index-v1-'+accountScope.uid)||'[]');
@@ -4198,6 +4236,7 @@ function handleAction(action,id){
  }
  if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
  if(action==='resolveDeletedLocalShifts'){void resolveDeletedLocalShifts();return;}
+ if(action==='downloadDeletedLocalArchive'){void downloadDeletedLocalArchive(id);return;}
  if(action==='downloadMemberConflictArchive'){void downloadMemberConflictArchive(id);return;}
  if(action==='takeLocalConflict'||action==='takeCloudConflict'){
   void resolveMemberConflict(id,action==='takeLocalConflict');return;
