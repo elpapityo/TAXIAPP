@@ -54,3 +54,13 @@
 - 最終チェックでは、検証用コピーの `TAXIAPP_同期原本` と旧 `日報` の検査範囲は空欄、B15最新乗務の合成IDがC17へ選択、X23=36,000円、補助簿2ページ目37件目のキャンセル=0円。実Google V2ステージのApps Script実行や本番権限を付与したわけではない。
 
 - 次の本番に関わる段階は、認証済みサーバーの実配置、必要なFirestore RulesとApps Scriptのアクセス制御、V2印刷ステージ/監査タブの設置、本番原本のバックアップと移行計画、実日報を使った原本突合。**事前承認なく本番権限・デプロイ・実データ変更は行わない**。
+
+## 2026-10-21 第14段階：実アプリの集計と印刷V2金額契約の再確認
+
+- 最新の実アプリ `index.html` の `googleShiftPacket()`・`totals()`・`pricing()`・`settledTenderAmounts()` の関数本体を直接抜き出し、**合成データだけ**で実行する回帰テスト `tests/print-v2-production-packet-contract.test.js` を追加した。フロント内のDOM/GPS/UI依存・決済入力インタラクションは合成スタブに差し替えているため、**実ユーザーが端末で入力した全料金を証明するテストではない**。
+- 上記検証では、本番ブラウザが送る `TAXIAPP_SHIFT_V1` パケットに `meter`、`goFee`、`cashReceived`、`cashRemittance`、`etcRemittance`、`totalRemittance`、`paymentAllocated` の各金額が**存在する**ことを確認。第7段階V2のヘッダー列との項目欠損ではなく、独立した印刷側の**金額整合検証不足**が主要な課題だった。
+- `server-drafts/print-stage-legacy-rows.js` の変換前検査を強化。印刷用「決済内訳」の受取額・会社算入額を集計し、実アプリ `totals()` に対応する `cashReceived`、チケットを除く `paymentAllocated`、GO手数料を含みUber配車手数料等を反映する `cashRemittance`、`etcRemittance`、`totalRemittance` を再計算・照合。不一致ならSHA-256作成やGoogle転送より前に停止する。
+- `tests/print-stage-v2.test.js` に、現金受取・決済配分・納金合計・ETC等の集計を1円ずつ改ざんした場合や、GO手数料を誤って控除した決済内訳を拒否するテストを追加。従来の60件合成テストで `raw.AQ` にGO手数料がないのに集計 `goFee=200` を流用していた不整合も訂正した。
+- **キャッシュレス＋実車高速の特殊ケースを修正**。メーター1,000円＋GO手数料200円＋実車高速500円をQRで全額1,700円回収すると、実アプリの現金納金計算式により `cashRemittance=-500`円、`etcRemittance=500`円、`totalRemittance=0`円が正しい。従来の印刷V2変換は負数を拒否していたため、**現金納金と総納金のみ負数を許容し、その他の料金や受取の不正な負数は拒否**。合成パケット→4シート派生データ→V2転送・読戻しまでを検証する。
+- 依然として**印刷専用の信頼済みサーバー側料金計算そのものは実装・検証していない**。試験用ゲートウェイの `makeLegacyPrintPacket` は依存注入される抽象関数であり、ブラウザから送信されたJSONを正規原本として受け付けない。特に設定や日付によって計算が異なるGO/Uber・割引・高速/ETC・キャンセルと複合決済を、実Firebase原本から再計算する完成品にはまだなっていない。
+- このチャットから現在操作できるGoogle Drive/Sheets連携では**Apps Scriptの実行・デプロイ専用操作は提供されていない**。検証用コピーへ合成セルを書き込んだ試験と、GASをNode VMで疑似実行した試験を、実Apps Scriptに直接接続したテストと混同しない。実GASの権限許可・公開、本人認証接続を必要とする前段階は引き続き保留。元のGoogle原本、Firebase本番Rules、GAS公開版、既存2ページ帳票は無変更。
