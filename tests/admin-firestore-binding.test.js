@@ -38,6 +38,18 @@ const id='shift-123456-a',shift={id,records:[],settings:{},date:'2026-10-21',sta
  assert.equal((await admin.request('syncGet',{shiftId:id})).shift.date,'2026-10-21');
  assert.equal(shifts.size,1,'only explicitly opted-in admin can use this namespace');
  assert.equal((await admin.request('syncList')).shifts[0].id,id);
+ // Explicit admin preflight reader is forcibly read-only even with valid editor session.
+ const auditor=factory.create();
+ auditor.bind({uid:'admin-A'},{...opts,storageBackend:'firestore',readOnly:true});
+ assert.equal((await auditor.request('syncList')).shifts.length,1);
+ assert.equal((await auditor.request('syncGet',{shiftId:id})).shift.id,id);
+ await assert.rejects(()=>auditor.request('syncPut',{
+  baseRevision:1,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:{...shift,startedAt:'17:00'}})
+ }),/読み取り専用/);
+ assert.equal(shifts.get('admin-A/'+id).shift.startedAt,'08:00');
+ auditor.bind(null);
+ await assert.rejects(()=>auditor.request('syncList'),/ログイン/);
+
  const other=factory.create(),otherAuth={currentUser:{uid:'driver-B'}};
  other.bind({uid:'driver-B'},{f,db:{},auth:otherAuth,admin:false,session:opts.session});
  assert.deepEqual((await other.request('syncList')).shifts,[],'different UID cannot read administrator duties');
