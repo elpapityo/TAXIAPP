@@ -2322,15 +2322,26 @@ function startHistoryLocationEdit(shiftId,recordId){
    Array.isArray(saved.metaFields)||Object.keys(saved.metaFields).some(k=>
     !HISTORY_EDIT_META.includes(k)||typeof saved.metaFields[k]!=='string')))
   throw Error('過去日報の決済控えが不正です');
+ if(saved&&Object.prototype.hasOwnProperty.call(saved,'highwaySections')&&
+    saved.highwaySections!==null&&(!Array.isArray(saved.highwaySections)||
+    saved.highwaySections.length>20||saved.highwaySections.some(section=>
+     !section||!['実','空'].includes(section.mode)||
+     Object.keys(section).some(key=>!['mode',...HISTORY_HIGHWAY_FIELDS].includes(key))||
+     HISTORY_HIGHWAY_FIELDS.some(key=>typeof section[key]!=='string'||section[key].length>100))))
+  throw Error('高速区間の修正控えが不正です。原本を保持します');
+ const prepared=deepCopy(record);
+ if(['ride','empty'].includes(prepared.kind)&&typeof window!=='undefined'&&
+   window.TAXIAPP_HIGHWAY_SECTIONS?.initialize)
+  window.TAXIAPP_HIGHWAY_SECTIONS.initialize(prepared);
  const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
  const split=record.meta?.splitPayment||{};
  const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
   baseRevision:saved?.baseRevision??row.revision,al:saved?.al??String(record.raw?.AL??''),
   am:saved?.am??String(record.raw?.AM??''),busy:false,
-  sourceRecord:deepCopy(record),
+  sourceRecord:prepared,
   highwaySections:['ride','empty'].includes(record.kind)?
-   deepCopy(saved?.highwaySections??(Array.isArray(record.meta?.highwaySections)?record.meta.highwaySections:null)):null,
-  fields:historyEditableKeys(record).reduce((o,k)=>({...o,[k]:saved?.fields?.[k]??String(record.raw?.[k]??'')}),{}),
+   deepCopy(saved?.highwaySections??prepared.meta?.highwaySections??null):null,
+  fields:historyEditableKeys(prepared).reduce((o,k)=>({...o,[k]:saved?.fields?.[k]??String(record.raw?.[k]??'')}),{}),
   metaFields:record.kind==='ride'?Object.fromEntries(HISTORY_EDIT_META.map(k=>
    [k,saved?.metaFields?.[k]??String(record.meta?.[k]??'')])):{},
   splitSecond:saved?.splitSecond??String(split.second||''),
@@ -2384,7 +2395,7 @@ function applyHistoryBusinessEdits(record,draft,settings,date){
   if(value===String(draft.sourceRecord?.raw?.[key]??''))continue;
   if(HISTORY_EDIT_NUMERIC.has(key)&&value.trim()!==''){
    const numberValue=Number(value);
-   if(!/^\d+(?:\\.\d{1,3})?$/.test(value)||!Number.isFinite(numberValue)||
+   if(!/^\d+(?:\.\d{1,3})?$/.test(value)||!Number.isFinite(numberValue)||
       numberValue>9999999||(['I','J'].includes(key)&&(!Number.isInteger(numberValue)||numberValue>12))||
       (!['F','L','S','V','AB','AE'].includes(key)&&!Number.isInteger(numberValue)))
     throw Error('数値の形式が不正です：'+key);
@@ -2399,6 +2410,32 @@ function applyHistoryBusinessEdits(record,draft,settings,date){
  }
  const oldMeta=draft.sourceRecord?.meta||{};
  record.meta={...record.meta};
+ if(Array.isArray(draft.highwaySections)&&
+    JSON.stringify(draft.highwaySections)!==JSON.stringify(oldMeta.highwaySections)){
+  const items=draft.highwaySections;
+  if(items.length>20||items.some(section=>!section||!['実','空'].includes(section.mode)||
+      HISTORY_HIGHWAY_FIELDS.some(key=>typeof section[key]!=='string'||section[key].length>100)))
+   throw Error('高速道路の区間明細が不正です');
+  for(const section of items){
+   for(const key of ['entryKm','exitKm']){
+    const value=section[key];
+    if(value!==''&&(!/^\d+(?:\.\d{1,3})?$/.test(value)||Number(value)>9999999))
+     throw Error('高速区間の距離入力が不正です');
+   }
+   if(section.fee!==''&&(!/^\d{1,7}$/.test(section.fee)||Number(section.fee)>9999999))
+    throw Error('高速区間の料金入力が不正です');
+   for(const key of ['entryTime','exitTime']){
+    if(section[key]!==''&&!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(section[key]))
+     throw Error('高速区間の時刻入力が不正です');
+   }
+  }
+  const api=typeof window!=='undefined'?window.TAXIAPP_HIGHWAY_SECTIONS:null;
+  if(!api||!api.validate)throw Error('既存の高速区間計算を利用できません');
+  const issues=api.validate(items);
+  if(issues.length)throw Error('高速区間の入力を確認してください：'+issues.join('、'));
+  record.meta.highwaySections=deepCopy(items);
+  changed.add('highwaySections');
+ }
  if(record.kind==='ride'){
   for(const key of HISTORY_EDIT_META){
    const value=draft.metaFields?.[key];
