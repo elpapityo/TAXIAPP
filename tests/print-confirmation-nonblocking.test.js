@@ -18,7 +18,8 @@ const sheet={getRange:(k)=>({getValue:()=>k==='X23'?15100:undefined})};
 const operation={};
 const spreadsheet={
  getSheetByName:(n)=>n==='TAXIAPP_印刷操作'?operation:
-  n==='補助簿印刷用'||n==='補助簿印刷用_2頁'?sheet:null,
+  n==='補助簿印刷用'||n==='補助簿印刷用_2頁'?sheet:
+  n==='TAXIAPP_同期原本'?{getLastRow:()=>2,getRange:()=>({getDisplayValues:()=>[['shift-1792124520000']]})}:null,
  toast:(...args)=>notices.push(args)
 };
 const context={
