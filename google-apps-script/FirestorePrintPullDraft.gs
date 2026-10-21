@@ -132,3 +132,33 @@ function firestorePrintLatestDutyDraft_(){
  if(!latest)throw Error('Firestoreに印刷可能な入庫済み乗務が見つかりません');
  return firestorePrintSelectedDutyDraft_(latest);
 }
+
+/** Separate PC menu; does NOT override or replace existing onOpen macros. */
+function firestorePrintMenuDraft_(){
+ SpreadsheetApp.getUi().createMenu('TAXIAPP Firebase取込')
+  .addItem('Firestoreの最新乗務を取込','firestorePrintLatestMenuDraft_')
+  .addItem('選択済み乗務を照合（同じ版のみ）','firestorePrintChosenMenuDraft_')
+  .addToUi();
+}
+function firestorePrintLatestMenuDraft_(){
+ var result=firestorePrintLatestDutyDraft_();
+ SpreadsheetApp.openById(TAXIAPP_SHEET_ID).toast(result,'Firebase印刷取込',8);
+}
+function firestorePrintChosenMenuDraft_(){
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var operation=ss.getSheetByName('TAXIAPP_印刷操作');
+ if(!operation)throw Error('既存の印刷操作シートがありません');
+ var id=String(operation.getRange('C17').getDisplayValue()||'');
+ var result=firestorePrintSelectedDutyDraft_(id);
+ ss.toast(result,'Firebase印刷取込',8);
+}
+/** Optional installation; run only after the user approves the GAS changes. */
+function setupFirestorePrintMenuDraft_(){
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var present=ScriptApp.getProjectTriggers().some(function(t){
+  return t.getHandlerFunction()==='firestorePrintMenuDraft_';
+ });
+ if(!present)ScriptApp.newTrigger('firestorePrintMenuDraft_')
+  .forSpreadsheet(ss).onOpen().create();
+ firestorePrintMenuDraft_();
+}
