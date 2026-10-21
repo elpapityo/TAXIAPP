@@ -121,5 +121,44 @@ function harness(){
   await assert.rejects(h.api.restore({shiftId:id,confirmed:true}),/更新世代/);
   assert.equal(h.store.has('user-A/shifts/'+id),false);
  }
+ // A failed transaction write must not erase the sole original.
+ {
+  const h=harness(),originalRun=h.fire.runTransaction;
+  h.fire.runTransaction=(db,fn)=>originalRun(db,async tx=>fn({
+   get:tx.get,
+   delete:tx.delete,
+   set(ref,value){
+    if(ref.section==='tombstones')throw Error('disk unavailable');
+    return tx.set(ref,value);
+   }
+  }));
+  await assert.rejects(h.api.move({shiftId:id,expectedRevision:1,confirmed:true}),/disk unavailable/);
+  assert.equal(h.store.has('user-A/shifts/'+id),true);
+  assert.equal(h.store.has('user-A/trash/'+id),false);
+  assert.equal(h.store.has('user-A/tombstones/'+id),false);
+ }
+ // Logout while the Firestore read is pending must abort with no writes.
+ {
+  const h=harness(),originalRun=h.fire.runTransaction;
+  h.fire.runTransaction=(db,fn)=>originalRun(db,async tx=>fn({
+   ...tx,
+   async get(ref){
+    const result=await tx.get(ref);
+    h.auth.currentUser={uid:'user-B'};
+    return result;
+   }
+  }));
+  await assert.rejects(h.api.move({shiftId:id,expectedRevision:1,confirmed:true}),/アカウント/);
+  assert.equal(h.store.has('user-A/shifts/'+id),true);
+  assert.equal(h.store.has('user-A/trash/'+id),false);
+ }
+ // The reader is always scoped to the active UID.
+ {
+  const h=harness();
+  h.auth.currentUser={uid:'user-B'};
+  h.api.bind({uid:'user-B'},{f:h.fire,db:{},auth:h.auth,session:h.session});
+  assert.deepEqual(await h.api.list(),[]);
+  assert.equal(h.store.has('user-A/shifts/'+id),true);
+ }
  console.log('Firestore trash staging passed: CAS, UID isolation, 30-day expiry, move/restore and preservation');
 })().catch(error=>{console.error(error);process.exitCode=1;});
