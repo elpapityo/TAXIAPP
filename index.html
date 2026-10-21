@@ -3671,7 +3671,7 @@ function handleAction(action,id){
  if(action==='downloadCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportCsv(latest),exportFileName('入力_RAW_実車',latest),'text/csv;charset=utf-8');toast('44列のCSVを保存しました。');return;}
  if(action==='downloadPaymentsCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportPaymentsCsv(latest),exportFileName('決済内訳',latest),'text/csv;charset=utf-8');toast('決済内訳CSVを保存しました。');return;}
  if(action==='downloadFeesCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportFeesCsv(latest),exportFileName('GO_Uber手数料',latest),'text/csv;charset=utf-8');toast('GO・Uber手数料明細CSVを保存しました。');return;}
- if(action==='downloadJson'){const backup={...model,exportedAt:new Date().toISOString()};download(JSON.stringify(backup,null,2),exportFileName('全データ',latest),'application/json;charset=utf-8');toast('バックアップを保存しました。');return;}}
+ if(action==='downloadJson'){const backup={...model,ownerUid:accountScope.uid||null,exportedAt:new Date().toISOString()};download(JSON.stringify(backup,null,2),exportFileName('全データ',latest),'application/json;charset=utf-8');toast('バックアップを保存しました。');return;}}
 // Make a failed save visible next to the save button, not only in a brief toast.
 function showSaveProblem(message){
  const text=String(message||'保存できませんでした。入力を確認してください。');
@@ -4238,7 +4238,7 @@ async function deleteWholeShift(shiftId){
  if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
  // Download a single-duty recovery copy BEFORE local removal; it contains
  // no Google connection key or another driver's daily records.
- download(JSON.stringify({version:1,shifts:[deepCopy(shift)]}),
+ download(JSON.stringify({version:1,ownerUid:accountScope.uid||null,shifts:[deepCopy(shift)]}),
   'TAXIAPP_削除前_'+dateStamp()+'_'+shiftId+'.json','application/json;charset=utf-8');
  if(!confirm('この乗務のJSONバックアップを保存・保管したことを確認しましたか？\n未保存の場合はキャンセルしてください。'))return;
  const previous=deepCopy(model);
@@ -4291,8 +4291,11 @@ async function importBackup(file){
  let json;
  try{
   json=JSON.parse(await file.text());
+  if(json.ownerUid!==undefined&&json.ownerUid!==null&&json.ownerUid!==uid)
+   throw Error('バックアップの利用者UIDが現在のアカウントと一致しません');
   if(json.version!==1||!Array.isArray(json.shifts)||
-     json.shifts.some(shift=>!shift||typeof shift.id!=='string'||
+     json.shifts.some(shift=>!shift||
+      !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(shift.id||''))||
       !Array.isArray(shift.records)||shift.records.length>MAX_RECORDS||
       shift.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||
       !shift.settings))
