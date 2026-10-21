@@ -2755,6 +2755,34 @@ function handleSheetTargetSetting(target){const field=target.dataset.cloudSettin
 }
 // A single departure-to-return session is the unit of device data removal.
 // Render as full-width touch cards, not a horizontally scrollable table.
+function renderDataManagement(){
+ const sessions=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ const items=sessions.map(s=>{
+  const active=s.id===model.activeId;
+  const unfinished=active||!s.endedAt;
+  const count=(s.records||[]).length;
+  const fare=totals(s.records||[],s.settings||{},s.date||'').meter;
+  const period=shortTime(s.startedAt)+' ～ '+(s.endedAt?shortTime(s.endedAt):'未入庫');
+  return `<article class="duty-management-item">
+   <div class="duty-management-info">
+    <strong>${safeText(s.date||'日付不明')} <span class="pill ${unfinished?'amber':'mint'}">${active?'乗務中':unfinished?'未入庫':'入庫済み'}</span></strong>
+    <span>出庫 ～ 入庫：${safeText(period)}</span>
+    <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
+    ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
+   </div>
+   ${memberDiary()?'<span class="helper">クラウドでの削除は未接続です。日報は保護しています。</span>':'<button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'" aria-label="'+safeText((s.date||'日付不明')+' '+period+' の乗務を削除')+'">この乗務を削除</button>'}
+  </article>`;
+ }).join('');
+ return `${renderAdminCutoverSelectionPanel()}${renderMemberTrashPanel()}<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
+   <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
+   ${memberDiary()?'<p class="warn">個人用の日報はFirebase原本に保存されます。端末だけの削除は同期で元に戻るため、ゴミ箱機能の正式有効化まで削除操作を停止しています。</p>':'<p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>'}
+   <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
+  </section>
+  <section class="card"><h2 class="h2">乗務一覧</h2>
+   ${items||'<p class="empty-state">削除する乗務はありません。新しく出庫できます。</p>'}
+  </section>`;
+}
+
 // This preview reads ONLY this authenticated member's Firestore originals.
 // It never creates, updates or deletes remote or local diary records.
 function renderMemberTrashPanel(){
@@ -2849,34 +2877,6 @@ async function refreshMemberTrashPreview(){
   }
  }
 }
-function renderDataManagement(){
- const sessions=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
- const items=sessions.map(s=>{
-  const active=s.id===model.activeId;
-  const unfinished=active||!s.endedAt;
-  const count=(s.records||[]).length;
-  const fare=totals(s.records||[],s.settings||{},s.date||'').meter;
-  const period=shortTime(s.startedAt)+' ～ '+(s.endedAt?shortTime(s.endedAt):'未入庫');
-  return `<article class="duty-management-item">
-   <div class="duty-management-info">
-    <strong>${safeText(s.date||'日付不明')} <span class="pill ${unfinished?'amber':'mint'}">${active?'乗務中':unfinished?'未入庫':'入庫済み'}</span></strong>
-    <span>出庫 ～ 入庫：${safeText(period)}</span>
-    <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
-    ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
-   </div>
-   ${memberDiary()?'<span class="helper">クラウドでの削除は未接続です。日報は保護しています。</span>':'<button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'" aria-label="'+safeText((s.date||'日付不明')+' '+period+' の乗務を削除')+'">この乗務を削除</button>'}
-  </article>`;
- }).join('');
- return `${renderAdminCutoverSelectionPanel()}${renderMemberTrashPanel()}<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
-   <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
-   ${memberDiary()?'<p class="warn">個人用の日報はFirebase原本に保存されます。端末だけの削除は同期で元に戻るため、ゴミ箱機能の正式有効化まで削除操作を停止しています。</p>':'<p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>'}
-   <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
-  </section>
-  <section class="card"><h2 class="h2">乗務一覧</h2>
-   ${items||'<p class="empty-state">削除する乗務はありません。新しく出庫できます。</p>'}
-  </section>`;
-}
-
 // Preflight never calls accountDiary.request, googlePostRequest, save or sync.
 // The cloud-side comparison is a separate future step.
 function adminCutoverLocalPreview(){
