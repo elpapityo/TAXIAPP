@@ -32,6 +32,11 @@ const ctx={
  }},
  memberDiary:()=>true,canEditNow:()=>true,
  localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)||null,removeItem:k=>storage.delete(k)},
+ MAX_RECORDS:60,
+ makeDraft:(_shift,kind,when)=>({kind,status:'draft',id:'new-temporary',raw:{
+  A:2,E:'乗',G:'10:00',M:'10:10',K:'1800',N:'現',AL:'',AM:'',F:'1',L:'3'
+ },meta:{serviceDate:'2026-10-20',createdAt:when.toISOString()}}),
+ validateDraft:()=>[],validatePaymentBreakdown:()=>[],deriveRaw:row=>({...row.raw}),
  document:{getElementById:id=>fields[id]},
  deepCopy:clone,render:()=>{},toast:()=>{},safeText:s=>String(s),
  confirm:()=>true,googleShiftPacket:()=>{throw Error('一般利用者は印刷計算を行わない');},
@@ -65,5 +70,24 @@ vm.runInContext(source.slice(begin,end),ctx);
  // 端末に同じ乗務があるときは直接編集を止める。
  ctx.model.shifts.push(clone(original));
  assert.throws(()=>ctx.startHistoryLocationEdit(original.id,'ride-1'),/未同期/);
- console.log('Firestore過去日報編集：本人UID・現在乗務保護・変更箇所限定・競合控えを検証');
+ ctx.model.shifts.pop();
+ ctx.historyCloudRows=[{id:original.id,revision:4,shift:clone(server.get(original.id).shift)}];
+ ctx.historyLocationEdit=null;
+ ctx.startHistoryNewRecord('ride');
+ assert.equal(ctx.historyLocationEdit.addRecord,true,'過去の営業追加は独立控え');
+ assert.equal(storage.size>=2,true,'作成途中は端末に保存');
+ fields.historyEditPickup.value='新規の乗車地';
+ fields.historyEditDropoff.value='新規の降車地';
+ await ctx.commitHistoryLocationEdit();
+ assert.equal(server.get(original.id).shift.records.length,2,'既存原本に1営業を追加');
+ assert.equal(server.get(original.id).shift.records[1].raw.K,'1800');
+ assert.equal(ctx.model.shifts.length,1,'現在乗務は不変');
+ const newId=server.get(original.id).shift.records[1].id;
+ ctx.markHistoryRecordRemoval(newId);
+ assert.equal(ctx.historyLocationEdit.removeRecord,true);
+ await ctx.commitHistoryLocationEdit();
+ assert.equal(server.get(original.id).shift.records.length,1,'対象営業だけ削除');
+ assert.equal(server.get(original.id).shift.records[0].raw.A,1);
+ assert.equal(ctx.model.shifts[0].id,active.id,'営業削除後も現在乗務を維持');
+ console.log('Firestore過去日報：新規1営業追加・削除・CAS・端末原本分離を確認');
 })().catch(error=>{console.error(error);process.exitCode=1;});
