@@ -38,7 +38,7 @@ function server(){
  }
  return {cloud,request,events};
 }
-function client(name,svc,model,failReceive=false){
+function client(name,svc,model,failReceive=false,remoteOnDemand=false){
  const localStorage={
   getItem:key=>store.get(name+key)||null,
   setItem:(key,value)=>store.set(name+key,value)
@@ -49,6 +49,7 @@ function client(name,svc,model,failReceive=false){
   getPacket,
   request:svc.request,
   getEndpoint:()=>'/same-endpoint',
+  getRemoteOnDemand:()=>remoteOnDemand,
   localStorage,
   replaceRemoteShift:async(id,s)=>{
    if(failReceive)throw Error('local save refused');
@@ -70,6 +71,10 @@ function client(name,svc,model,failReceive=false){
  assert.equal(await B.app.run(),true);
  assert.equal(B.model.shifts.length,1);
  assert.equal(B.model.shifts[0].startingOdo,'0');
+ const onDemand=client('on-demand-reader',svc,{shifts:[]},false,true);
+ assert.equal(await onDemand.app.run(),true);
+ assert.equal(onDemand.model.shifts.length,0,
+  'オンデマンド方式では過去の日報を端末のモデルに自動取込しない');
  A.model.shifts[0].startingOdo='2';
  assert.equal(await A.app.run(),true);
  assert.equal(svc.cloud.get(id).revision,2);
