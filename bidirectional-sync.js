@@ -18,7 +18,7 @@ function digest(str){
 }
 function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
-  getEndpoint,toast,localStorage:storage}=deps;
+  getEndpoint,toast,localStorage:storage,getRemoteOnDemand}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
  let scopeEpoch=0;
  let viewerBusy=false,viewerPromise=null,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
@@ -190,9 +190,10 @@ function create(deps){
     if(!setSaved({...saved,[id]:next}))throw Error(lastError);
     saved[id]=next;
    }
-   // Pull cloud-only shifts first. Do not silently create an editing session
-   // if the phone has its own active duty.
-   for(const remote of listing.shifts){
+   // Firestore on-demand mode never pulls historical cloud-only duties
+   // into the phone's persistent working model during a routine sync.
+   // Explicit past-date viewing uses the separate read-only history API.
+   for(const remote of (getRemoteOnDemand?.()?[]:listing.shifts)){
     if(selected&&!selected.has(remote.id))continue;
     if(remote.deleted===true)continue;
     if(Object.prototype.hasOwnProperty.call(removed,remote.id))continue;
