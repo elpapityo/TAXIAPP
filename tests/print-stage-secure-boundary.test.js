@@ -157,7 +157,7 @@ async function failure(h,arg,regex){
   kind:'ride',status:'complete',raw:{A:i+1,K:1000,E:'G',N:'現'},
   payments:[{type:'現',received:1000,company:1000}]}));
  const bigRows=projectTrustedPacket({packet:{kind:'TAXIAPP_SHIFT_V1',shift:big,
-  summary:{...totals,meter:60000,cashReceived:60000,paymentAllocated:60000,
+  summary:{...totals,goFee:0,meter:60000,cashReceived:60000,paymentAllocated:60000,
    cashRemittance:60000,totalRemittance:60000}},sourceRevision:4});
  assert.equal(bigRows.pages[0].length,36);
  assert.equal(bigRows.pages[1].length,24);
