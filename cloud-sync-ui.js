@@ -120,7 +120,8 @@ root.TAXIAPP_SYNC_UI=function(d){
    // duties that had status, break or fare changes since the last sync.
    ok=await engine.run(requested|| (manual?undefined:batch));
    if(status().conflicts.length)await saveConflictCopies();
-   writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
+   writerFeedback=ok?(requested?'同期完了：選択した1乗務を照合':
+     '同期完了：現在の端末'+(d.getModel()?.shifts?.length||0)+'乗務と削除状態を照合'):
     '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
    if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
    d.setStatus(message());
@@ -336,6 +337,6 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
  return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
-  markLocalRemoval:id=>engine.markLocalRemoval(id),undoLocalRemoval:id=>engine.undoLocalRemoval(id)};
+  markLocalRemoval:(id,shift)=>engine.markLocalRemoval(id,shift),undoLocalRemoval:id=>engine.undoLocalRemoval(id)};
 };
 })(typeof window!=='undefined'?window:globalThis);
