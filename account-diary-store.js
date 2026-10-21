@@ -96,7 +96,9 @@ function create(){
        data?.shift?.id!==id)
      throw Error('保存されている乗務一覧が不正です（形式・ID・更新番号）。同期を停止しました');
     seen.add(id);
-    return {id,revision,deleted:data?.trashed===true};
+    return {id,revision,deleted:data?.trashed===true,
+     ended:Boolean(data?.shift?.endedAt||data?.shift?.endedIso),
+     startedIso:String(data?.shift?.startedIso||'')};
    })};
   }
   if(action==='syncHistoryDate'){
