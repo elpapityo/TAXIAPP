@@ -72,7 +72,7 @@ function adapter(){
 (async()=>{
  // Cleanup must be explicitly available while background synchronization is OFF.
  const state={shifts:[]};
- let calls=0,manualToasts=[],downloaded=0,revision=1,deleted=false;
+ let calls=0,manualToasts=[],downloaded=0,backupObject=null,revision=1,deleted=false;
  const cloudId='shift-1792600000020-older';
  const cloudShift={id:cloudId,date:'2026-10-20',records:[],settings:{}};
  const localStore=new Map();
@@ -104,7 +104,7 @@ function adapter(){
   configured:()=>true,prefs:()=>({syncMode:'off'}),canSync:()=>true,canView:()=>false,
   root:{querySelector:key=>key==='[data-sync-cloud-trash]'?holder:null},
   setStatus:()=>{},toast:text=>manualToasts.push(text),
-  escape:x=>String(x),download:()=>{downloaded++;},dateStamp:()=> '20261021'
+  escape:x=>String(x),download:text=>{downloaded++;backupObject=JSON.parse(text);},dateStamp:()=> '20261021'
  });
  assert.equal(await sync.cloudAction('load'),true);
  assert.equal(calls,2,'manual cleanup reads the listing and original without auto sync');
@@ -113,6 +113,10 @@ function adapter(){
  assert.equal(await sync.cloudAction('trash',cloudId),true,'one selected remote-only duty enters trash');
  assert.equal(deleted,true);
  assert.equal(downloaded,1,'before remote trash, a user-controlled backup is exported');
+ assert.equal(backupObject.version,1,'remote backup matches native JSON restore format');
+ assert.equal(backupObject.ownerUid,'uid-1','remote backup is scoped to the owner');
+ assert.equal(backupObject.shifts[0].id,cloudId);
+ assert.equal(backupObject.cloudBackup.revision,1);
  assert.deepEqual(state.shifts,[],'manual remote trash must not modify local data');
  assert.match(holder.innerHTML,/クラウドから復元/);
  assert.equal(await sync.cloudAction('restore',cloudId),true);
