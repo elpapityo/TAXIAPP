@@ -9,7 +9,6 @@
  * Firebase Admin Auth and transactional Firestore access separately.
  */
 const {createStageV2Gateway}=require('./print-stage-v2-gateway.js');
-const {makeTrustedPrintPacket}=require('./print-stage-v2-trusted-packet.js');
 const ID=/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/;
 function createFirebaseAdminV2ReadOnlyAdapter({
  adminAuth,firestore,projectId,makeLegacyPrintPacket,
@@ -20,7 +19,7 @@ function createFirebaseAdminV2ReadOnlyAdapter({
     typeof firestore.runTransaction!=='function')
   throw Error('信頼済みFirebase Admin認証とFirestoreトランザクションがありません');
  if(typeof projectId!=='string'||!projectId||
-    (makeLegacyPrintPacket!==undefined&&typeof makeLegacyPrintPacket!=='function')||
+    typeof makeLegacyPrintPacket!=='function'||
     typeof appendV2!=='function'||typeof readV2!=='function')
   throw Error('信頼済みV2接続先または印刷計算が未設定です');
  const isAuthorizedAdmin=async uid=>{
@@ -66,11 +65,9 @@ function createFirebaseAdminV2ReadOnlyAdapter({
    return adminAuth.verifyIdToken(token,true);
   },
   isAuthorizedAdmin,readFirestoreDuty,
-  // Production-safe default: recompute from the Firestore shift itself.
-  // An injected calculation callback is allowed for isolated tests only;
-  // never use one that accepts client-submitted totals as authoritative.
-  makeLegacyPrintPacket:makeLegacyPrintPacket||makeTrustedPrintPacket,
-  appendV2,readV2
+  // The caller must supply a trusted, previously confirmed packet.
+  // Do not add another server-side fare calculation engine here.
+  makeLegacyPrintPacket,appendV2,readV2
  });
  return Object.freeze({stage:gate.stage});
 }
