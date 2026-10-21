@@ -227,7 +227,7 @@ function testRun(){
  assert.equal(missingAuth.book['TAXIAPP_印刷データ'].writes.length,0);
  const mutateAfter=make();let checks=0;
  assert.throws(()=>mutateAfter.sandbox.printV2ExistingPublishDraft_(
-  mutateAfter.ss,mutateAfter.stage,fixtureId,uid,()=>++checks===1),/転送中/);
+  mutateAfter.ss,mutateAfter.stage,fixtureId,uid,()=>++checks===1),/一覧へ公開する前/);
  assert.equal(mutateAfter.book['TAXIAPP_乗務一覧'].writes.length,0,
   'an expired source before publishing must never create a selectable index');
  const afterIndex=make();let finalChecks=0;
