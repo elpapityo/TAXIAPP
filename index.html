@@ -2640,11 +2640,11 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     const legacy=db?await idbGet(db,KEY):
      JSON.parse(localStorage.getItem(KEY)||'null');
     const cloudById=new Map(shifts.map(x=>[x.id,x]));
-    const manifest=adminFirestoreManifest(accountScope.uid);
+    const manifest=typeof adminFirestoreManifest==='function'?adminFirestoreManifest(accountScope.uid):null;
     const allLegacy=Array.isArray(legacy?.shifts)?legacy.shifts:[];
     // Only user-selected, individually migrated duties block the cutover.
     // Excluded old test duties stay untouched in the original Google/local copy.
-    const selected=new Set(manifest?.sourceIds||[]);
+    const selected=new Set(manifest?.sourceIds||allLegacy.map(x=>x.id));
     const source=allLegacy.filter(x=>selected.has(x.id));
     const canonical=shift=>{
      // Compare the pre-existing raw duty using the SAME official app pricing
