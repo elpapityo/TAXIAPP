@@ -14,18 +14,33 @@ const rows=[1,2,3,4,5].map(i=>({
  records:[],settings:{}
 }));
 const clone=x=>JSON.parse(JSON.stringify(x));
-let uid='admin-A',isLegacy=true,writer=true,saved=[],toast=[],summaryNode={innerHTML:''},exportButton={disabled:true};
+let uid='admin-A',isLegacy=true,writer=true,saved=[],toast=[],summaryNode={innerHTML:''},sheetNode={innerHTML:''},exportButton={disabled:true};
+const googleCalls=[];let googleFail=false;
+const sheetOnly={id:'shift-777-a',date:'2026-10-21',startedIso:'2026-10-21T08:00:00+09:00',
+ endedIso:'2026-10-21T17:00:00+09:00',startedAt:'08:00',endedAt:'17:00',records:[],settings:{}};
 const root={
  TAXIAPP_ADMIN_CUTOVER:globalThis.TAXIAPP_ADMIN_CUTOVER
 };
 const context={
- window:root,accountScope:{uid},adminCutoverSelectionUid:uid,
+ window:root,accountScope:{uid},accountScopeGeneration:2,
+ adminCutoverSelectionUid:uid,adminCutoverSheetAudit:null,adminCutoverSheetBusy:false,
  adminCutoverSelected:new Set(),model:{version:1,shifts:clone(rows),activeId:null,prefs:{}},
- legacyDiary:()=>isLegacy,canEditNow:()=>writer,
+ legacyDiary:()=>isLegacy,canEditNow:()=>writer,googleIsConfigured:()=>true,
+ async googlePostRequest(action,fields={}){
+  googleCalls.push({action,fields});
+  if(googleFail)throw Error('read failed');
+  if(action==='syncList')return {data:{shifts:[{id:rows[0].id,revision:1},{id:sheetOnly.id,revision:2}]}};
+  if(action==='syncGet'&&fields.shiftId===rows[0].id)
+   return {data:{id:rows[0].id,shift:clone(rows[0]),revision:1}};
+  if(action==='syncGet'&&fields.shiftId===sheetOnly.id)
+   return {data:{id:sheetOnly.id,shift:clone(sheetOnly),revision:2}};
+  throw Error('unexpected action '+action);
+ },
  totals:()=>({meter:0}),money:n=>n+'円',shortTime:x=>String(x||''),dateStamp:()=> '20261021',
  safeText:s=>String(s??'').replace(/[<>"']/g,''),
  appEl:{
-  querySelector:selector=>selector==='[data-admin-cutover-summary]'?summaryNode:
+  querySelector:selector=>selector==='[data-admin-cutover-sheet-report]'?sheetNode:
+   selector==='[data-admin-cutover-summary]'?summaryNode:
    selector==='[data-action="adminCutoverExport"]'?exportButton:null,
   querySelectorAll:()=>[]
  },
@@ -77,4 +92,34 @@ assert.equal(preview(),null);
 assert.equal(context.model.shifts.length,5);
 assert.match(html,/data-action="adminCutoverExport"/);
 assert.match(html,/data-admin-cutover-choice/);
+// Read-only Google reconciliation. Never send syncPut, sync, delete, or
+// overwrite originals even if the administrator selects two local duties.
+(async()=>{
+ isLegacy=true;writer=true;context.accountScope={uid:'admin-A'};
+ context.adminCutoverSelectionUid='admin-A';
+ context.adminCutoverSelected=new Set(['shift-1-a','shift-2-a']);
+ assert.match(panel(),/Google同期原本を照合/);
+ assert.match(panel(),/TAXIAPP_同期原本/);
+ await invoke('compareAdminCutoverSheet');
+ assert.deepEqual(googleCalls.map(c=>c.action),['syncList','syncGet','syncGet']);
+ assert.ok(googleCalls.every(c=>['syncList','syncGet'].includes(c.action)));
+ assert.equal(context.adminCutoverSheetAudit.sheetShifts.length,2);
+ assert.match(sheetNode.innerHTML,/Google同期原本 2件/);
+ assert.match(sheetNode.innerHTML,/Googleのみ 1件/);
+ assert.match(sheetNode.innerHTML,/端末のみ 4件/);
+ assert.match(sheetNode.innerHTML,/shift-777-a/);
+ assert.match(sheetNode.innerHTML,/Firebaseは未照合/);
+ assert.equal(context.model.shifts.length,5,'no local deletion');
+ assert.equal(saved.length,1,'audit must not export sensitive shifts');
+ googleFail=true;await invoke('compareAdminCutoverSheet');
+ assert.equal(context.adminCutoverSheetAudit,null,'failed comparison cannot reuse stale data');
+ assert.ok(toast.some(x=>String(x[0]).includes('照合を完了できません')));
+ googleFail=false;
+ // A change to the logged-in UID after the list request must reject the result.
+ context.googlePostRequest=async()=>{context.accountScope={uid:'another-user'};return {data:{shifts:[]}};};
+ await invoke('compareAdminCutoverSheet');
+ assert.equal(context.adminCutoverSheetAudit,null,'account switch cannot reveal another UID data');
+ assert.ok(!context.adminCutoverSheetBusy,'old request completes without remaining busy');
+ console.log('Admin cutover Sheets audit passed: read-only list/get, failure, account switch, local unchanged');
+})().catch(err=>{console.error(err);process.exitCode=1;});
 console.log('Admin cutover selection UI passed: five-to-two selection, UID split, no cloud write, no migration');
