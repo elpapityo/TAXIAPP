@@ -13,7 +13,8 @@ const localOnly={...first,id:other};
 let uid='driver-A',readCalls=[],fail=false,blocked=false,notices=[];
 const cloud={shifts:[{id,revision:3}]};
 const state={
- window:{TAXIAPP_TRASH_REVIEW:globalThis.TAXIAPP_TRASH_REVIEW},
+ window:{TAXIAPP_TRASH_REVIEW:globalThis.TAXIAPP_TRASH_REVIEW,
+  TAXIAPP_ADMIN_CUTOVER:{interval:x=>({start:0,end:1,reason:''}),overlaps:()=>false}},
  memberDiary:()=>true,legacyDiary:()=>false,trashEnabled:()=>false,
  memberTrashOperationBusy:false,
  accountScope:{uid},accountScopeGeneration:2,memberTrashPreview:null,
