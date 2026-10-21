@@ -114,6 +114,28 @@ assert.equal(unknownSheet.sheetVerified,false);
 assert.equal(unknownSheet.googleCount,null);
 assert.equal(unknownSheet.entries[0].sheetStatus,'not-checked');
 assert.equal(unknownSheet.entries[0].cloudStatus,'not-in-firestore');
+const notChecked=p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a],
+ cloudShifts:[a],selectedIds:[a.id]
+});
+assert.equal(notChecked.entries[0].cloudStatus,'same');
+assert.equal(notChecked.entries[0].sheetStatus,'not-checked');
+assert.equal(notChecked.entries[0].needsReview,true,'unknown Google originals require review');
+assert.equal(notChecked.selectedReviewCount,1);
+const missingSheet=p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a],
+ cloudShifts:[a],sheetShifts:[],selectedIds:[a.id]
+});
+assert.equal(missingSheet.sheetVerified,true);
+assert.equal(missingSheet.entries[0].sheetStatus,'not-in-sheet');
+assert.equal(missingSheet.selectedReviewCount,1,'missing Google original requires review');
+const allMatch=p.compareOwnFirestore({
+ uid:'my-uid',cloudUid:'my-uid',localShifts:[a],
+ cloudShifts:[a],sheetShifts:[a],selectedIds:[a.id]
+});
+assert.equal(allMatch.selectedReviewCount,0,'all three originals match');
+assert.equal(allMatch.entries[0].needsReview,false);
+assert.equal(allMatch.migrationAuthorized,false);
 assert.throws(()=>p.compareOwnFirestore({
  uid:'my-uid',cloudUid:'another-uid',localShifts:[a],
  cloudShifts:[a],selectedIds:[a.id]

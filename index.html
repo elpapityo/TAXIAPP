@@ -3530,12 +3530,13 @@ function adminCutoverFirebaseHtml(){
    uid:accountScope.uid,cloudUid:audit.uid,localShifts:model.shifts,
    cloudShifts:audit.cloudShifts,sheetShifts:sheet,selectedIds:[...adminCutoverSelected]
   });
-  const lines=result.entries.filter(x=>x.cloudStatus!=='same'||
-   x.sheetStatus==='different'||x.cloudOverlap.length||x.sheetOverlap.length||x.timeIssue)
+  const lines=result.entries.filter(x=>x.needsReview)
    .map(x=>'<li>'+safeText(x.date)+'（'+safeText(x.id)+'）'+
     '／Firebase：'+(x.cloudStatus==='same'?'同ID内容一致':
      x.cloudStatus==='different'?'同ID内容違い':'Firebaseに存在しない')+
-    (x.sheetStatus==='different'?'／Google同ID内容違い':'')+
+    (x.sheetStatus==='different'?'／Google同ID内容違い':
+     x.sheetStatus==='not-in-sheet'?'／Google原本に存在しない':
+     x.sheetStatus==='not-checked'?'／Google原本未照合':'')+
     (x.cloudOverlap.length?'／Firebase側の別IDで時間重複 '+x.cloudOverlap.length+'件':'')+
     (x.sheetOverlap.length?'／Google側の別IDで時間重複 '+x.sheetOverlap.length+'件':'')+
     (x.timeIssue?'／'+safeText(x.timeIssue):'')+
@@ -3546,7 +3547,7 @@ function adminCutoverFirebaseHtml(){
   return '<p role="status">本人Firebase原本：'+result.firebaseCount+
    '件／端末：'+result.localCount+'件／Firebaseだけ：'+
    result.firestoreOnlyCount+'件／移行候補の要確認：'+result.selectedReviewCount+'件</p>'+
-   (lines.length?'<h3 class="subsection">Firebaseとの内容違い・重複</h3><ul>'+lines.join('')+'</ul>':'')+
+   (lines.length?'<h3 class="subsection">三者照合で要確認の日報</h3><ul>'+lines.join('')+'</ul>':'')+
    (cloudOnly.length?'<h3 class="subsection">Firebaseにだけ存在する日報</h3><ul>'+cloudOnly.join('')+'</ul>':'')+
    '<p class="helper">Google同期原本：'+(result.sheetVerified?'照合済み':'未照合')+
    '／確認時刻：'+safeText(audit.checkedAt)+

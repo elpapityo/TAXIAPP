@@ -80,6 +80,19 @@ const invoke=(name,...args)=>vm.runInContext(name,ctx)(...args);
  assert.equal(ctx.model.shifts.length,1);
  assert.equal(ctx.model.shifts[0].records.length,0,'local original is unchanged');
  assert.equal(ctx.adminCutoverFirebaseBusy,false);
+ // Matching Firestore alone must not mask an unknown/missing Google original.
+ ctx.adminCutoverFirebaseAudit.cloudShifts=[clone(shift)];
+ assert.match(invoke('adminCutoverFirebaseHtml'),/移行候補の要確認：1件/);
+ assert.match(invoke('adminCutoverFirebaseHtml'),/Google原本未照合/);
+ ctx.adminCutoverSheetAudit={
+  uid:'owner-A',localSignature:JSON.stringify(ctx.model.shifts),sheetShifts:[]
+ };
+ assert.match(invoke('adminCutoverFirebaseHtml'),/Google原本に存在しない/);
+ assert.match(invoke('adminCutoverFirebaseHtml'),/移行候補の要確認：1件/);
+ ctx.adminCutoverSheetAudit.sheetShifts=[clone(shift)];
+ assert.match(invoke('adminCutoverFirebaseHtml'),/移行候補の要確認：0件/);
+ assert.doesNotMatch(invoke('adminCutoverFirebaseHtml'),/Google原本に存在しない/);
+ ctx.adminCutoverSheetAudit=null;
  readFailure=true;
  await invoke('compareAdminCutoverFirebase');
  assert.equal(ctx.adminCutoverFirebaseAudit,null,'permission denied cannot be reported as empty');
