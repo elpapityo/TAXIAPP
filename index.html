@@ -2795,7 +2795,7 @@ async function startAdminFirestoreCutover(){
  const sourceModel=deepCopy(model),manifestKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
  let applied=false;
  try{
-  const backup=JSON.stringify(sourceModel),recoveryKey='taxiapp-admin-firestore-recovery-v1-'+uid;
+  const backup=JSON.stringify({...sourceModel,ownerUid:uid}),recoveryKey='taxiapp-admin-firestore-recovery-v1-'+uid;
   localStorage.setItem(recoveryKey,backup);
   if(localStorage.getItem(recoveryKey)!==backup)throw Error('切替前の端末バックアップを保存できません');
   download(backup,'TAXIAPP_保存先切替前_'+dateStamp()+'_全日報.json','application/json;charset=utf-8');
@@ -2857,7 +2857,7 @@ async function returnAdminToLegacy(){
  if(adminCutoverBusy||!accountScope.adminFirestore||!currentLoginScope?.admin||!canEditNow())return;
  const uid=accountScope.uid,sourceGeneration=accountScopeGeneration,sourceScope=currentLoginScope;
  if(!confirm('旧Googleの保存先に戻しますか？\nFirestoreに保存した日報は消えませんが、新しく入力した乗務はGoogleには自動で移行しません。先にJSONバックアップを保存してください。'))return;
- const backup=JSON.stringify(model);
+ const backup=JSON.stringify({...model,ownerUid:uid});
  download(backup,'TAXIAPP_Firestore切替前_'+dateStamp()+'.json','application/json;charset=utf-8');
  if(!confirm('Firestore内の日報のバックアップを保管しましたか？'))return;
  if(accountScopeGeneration!==sourceGeneration||currentLoginScope!==sourceScope||
