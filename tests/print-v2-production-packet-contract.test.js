@@ -85,4 +85,27 @@ assert.equal(decoded.rows['TAXIAPP_集計'].find(row=>row[1]==='paymentAllocated
 assert.equal(decoded.rows['TAXIAPP_印刷データ'][1][4],0);
 assert.equal(v2.chunks.join('').includes('syntheticSplit'),false,
  'debug-only synthetic payment data must not leak into print stage');
+// A fully cashless ride that includes tolls can legitimately have a
+// NEGATIVE cash remittance: meter 1000 + GO 200 - QR 1700 = -500,
+// while ETC remittance +500 brings total remittance to zero.
+const tollShift={...original,records:[{
+ kind:'ride',status:'complete',raw:{
+  A:1,E:'G',N:'QR',K:1000,AQ:200,W:500,AI:0,AR:0,
+  AL:'【合成】現金なし',AM:'【合成】到着'
+ },meta:{syntheticSplit:[{type:'QR',amount:1700}]}
+}]};
+const tollPacket=vm.runInContext('googleShiftPacket',ctx)(tollShift);
+assert.equal(tollPacket.summary.realToll,500);
+assert.equal(tollPacket.summary.cashRemittance,-500);
+assert.equal(tollPacket.summary.etcRemittance,500);
+assert.equal(tollPacket.summary.totalRemittance,0);
+assert.equal(tollPacket.summary.paymentAllocated,1700);
+const tollRows=projectTrustedPacket({packet:tollPacket,sourceRevision:12});
+assert.equal(tollRows.rows['TAXIAPP_乗務一覧'][0][12],-500);
+assert.equal(tollRows.rows['TAXIAPP_乗務一覧'][0][13],500);
+assert.equal(tollRows.rows['TAXIAPP_乗務一覧'][0][14],0);
+assert.equal(tollRows.rows['TAXIAPP_集計'].find(r=>r[1]==='cashRemittance')[2],-500);
+const tollPrepared=prepareV2({sourceUid:uid,sourceRevision:12,
+ expectedCommittedRevision:11,virtual:tollRows});
+assert.equal(decodeV2(tollPrepared,uid).rows['TAXIAPP_乗務一覧'][0][12],-500);
 console.log('Production googleShiftPacket/totals contract PASS: 2 payment parts, GO company deposit, cancelled dispatch zero, V2 conversion');
