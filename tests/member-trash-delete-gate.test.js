@@ -10,8 +10,8 @@ const shift={id:'shift-100-a',date:'2026-10-21',startedAt:'08:00',endedAt:'16:00
 const model={shifts:[shift],prefs:{},activeId:null};
 const mock={
  model,role:'member',
- memberDiary(){return this.role==='member'},
- legacyDiary(){return this.role==='legacy'},
+ memberDiary:()=>mock.role==='member',
+ legacyDiary:()=>mock.role==='legacy',
  renderAdminCutoverSelectionPanel:()=>'',renderMemberTrashPanel:()=>'<section>本人Firebaseの日報</section>',
  totals:()=>({meter:9000}),money:n=>n+'円',
  shortTime:s=>s,safeText:s=>String(s??'')
