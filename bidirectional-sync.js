@@ -189,7 +189,9 @@ function create(deps){
     if(Object.prototype.hasOwnProperty.call(removed,remote.id))continue;
     if(present.has(remote.id))continue;
     const received=await scopedRequest('syncGet',{shiftId:remote.id});
-    if(!received?.shift||received.id!==remote.id)throw Error('クラウドから乗務を読み戻せません');
+    if(!received?.shift||received.id!==remote.id||received.shift.id!==remote.id||
+       Number(received.revision)!==Number(remote.revision))
+     throw Error('クラウド受信中に乗務の更新番号が変わりました。端末の記録を保持して再照合してください');
     const local=getModel()?.shifts?.find(s=>s.id===remote.id);
     if(local){nextConflict[remote.id]={id:remote.id,reason:'受信中に同じIDの記録が追加されました',localRevision:0,remoteRevision:remote.revision};continue;}
     const clone=received.shift;
@@ -249,7 +251,9 @@ function create(deps){
     }
     if(remoteChanged){
      const got=await scopedRequest('syncGet',{shiftId:id});
-     if(!got?.shift||got.id!==id)throw Error('クラウドから乗務を読み込めません');
+     if(!got?.shift||got.id!==id||got.shift.id!==id||
+        Number(got.revision)!==Number(remote.revision))
+      throw Error('クラウド受信中に乗務の更新番号が変わりました。端末の記録を保持して再照合してください');
      const latest=getModel()?.shifts?.find(s=>s.id===id);
      if(!latest||localHash(latest)!==currentHash){
       nextConflict[id]={id,reason:'受信中に端末側で編集されました',localRevision:base.revision,remoteRevision:got.revision};
