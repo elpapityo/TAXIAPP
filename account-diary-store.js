@@ -25,6 +25,8 @@ function create(){
   current={uid:user.uid,kind:backend==='firestore'?'member':'legacy',
    admin:options.admin===true,storageBackend:backend,
    readOnly:options.readOnly===true,
+   // Off by default until Firestore rules + migration are verified.
+   protectDeletedIds:options.protectDeletedIds===true,
    f:options.f,db:options.db,auth:options.auth,session:options.session};
  }
  function ready(){
@@ -107,9 +109,28 @@ function create(){
    const ref=docRef(c,id);
    const result=await c.f.runTransaction(c.db,async tx=>{
     const existing=await tx.get(ref);
+    // Only when explicitly enabled after server Rules rollout, consult the
+    // authoritative UID-scoped tombstone INSIDE the CAS transaction.
+    // Old clients still require server-side Rules to reject resurrection.
+    let tombstone=null;
+    if(c.protectDeletedIds){
+     const markerRef=c.f.doc(c.db,'privateDuties',c.uid,'tombstones',id);
+     const marker=await tx.get(markerRef);
+     if(marker.exists()){
+      tombstone=marker.data();
+      if(tombstone?.format!=='TAXIAPP_DUTY_TOMBSTONE_V1'||
+         !['active','deleted'].includes(tombstone.state)||
+         !Number.isSafeInteger(tombstone.generation)||tombstone.generation<1)
+       throw Error('削除履歴の形式を確認できません。保存を中止しました');
+      if(tombstone.state==='deleted')
+       throw Error('TRASH_DELETED:サーバーで削除済みの日報を再登録できません');
+     }
+    }
     // The account may have changed while the server read was pending.
     ownerCheck(c);
     const revision=existing.exists()?Number(existing.data().revision):0;
+    if(tombstone?.state==='active'&&!existing.exists())
+     throw Error('削除履歴には復元済みとありますが原本がありません。保存を中止しました');
     if(revision!==baseRevision)throw Error('SYNC_CONFLICT:'+revision);
     // The Firestore rules additionally validate the active server session.
     tx.set(ref,{
