@@ -1486,7 +1486,7 @@ function getShift(){return model.shifts.find(x=>x.id===model.activeId)||null;}
 function selectedShift(){return getShift()||model.shifts[0]||null;}
 function historyMatches(){const date=historyDate||selectedShift()?.date||dateStamp();return (model.shifts||[]).filter(s=>s.date===date).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
 function selectedHistoryShift(){const a=historyMatches();return a.find(s=>s.id===historyShiftId)||a[0]||null;}
-function selectedPrintShift(){return model.shifts.find(s=>s.id===printShiftId)||selectedShift();}
+function selectedPrintShift(){return printShiftId?(model.shifts.find(s=>s.id===printShiftId)||null):selectedShift();}
 function lastPayment(shift){return (shift?.records||[]).filter(r=>r.kind==='ride'&&r.status==='complete'&&r.meta?.settledIso&&Number.isFinite(Date.parse(r.meta.settledIso))).sort((a,b)=>Date.parse(b.meta.settledIso)-Date.parse(a.meta.settledIso))[0]||null;}
 function durationSeconds(a,b=new Date()){const start=Date.parse(a),end=b instanceof Date?b.getTime():Date.parse(b);return Number.isFinite(start)&&Number.isFinite(end)?Math.max(0,Math.floor((end-start)/1000)):null;}
 function durationHms(total){if(total===null||!Number.isFinite(total))return '計測待ち';const h=Math.floor(total/3600),m=Math.floor(total%3600/60),sec=total%60;return [h,m,sec].map(x=>String(x).padStart(2,'0')).join(':');}
@@ -2371,7 +2371,7 @@ function renderHighwayReport(){
    '</section>';
 }
 
-function renderPrint(shift){if(!shift)return titleBlock('印刷準備','PRINT WORKFLOW','乗務データがありません。');let groups=pageGroups(shift.records),returned=Boolean(shift.endedAt),tt=totals(shift.records,shift.settings,shift.date);return `${titleBlock('印刷準備','PRINT WORKFLOW','出庫 → 営業 → 入庫 → 精算確認 → 印刷、という一日の流れで管理します。')}
+function renderPrint(shift){if(!shift)return titleBlock('印刷準備','PRINT WORKFLOW','選択した乗務が見つかりません。乗務一覧で確認してください。');let groups=pageGroups(shift.records),returned=Boolean(shift.endedAt),tt=totals(shift.records,shift.settings,shift.date);return `${titleBlock('印刷準備','PRINT WORKFLOW','出庫 → 営業 → 入庫 → 精算確認 → 印刷、という一日の流れで管理します。')}
 <section class="card"><label class="field"><span class="field-label">印刷前に確認する乗務（正式な印刷対象はPC側で選択）</span><select class="control" id="printShiftSelect">${model.shifts.map(s=>`<option value="${safeText(s.id)}" ${shift.id===s.id?'selected':''}>${safeText(s.date)}　出庫 ${shortTime(s.startedAt)}　${s.records.length}件</option>`).join('')}</select></label></section>
  <section class="card"><h2 class="h2">業務終了までの確認</h2><div class="statline"><span>出庫</span><b>${shortTime(shift.startedAt)}</b></div><div class="statline"><span>出庫距離</span><b>${number(shift.startingOdo)===null?'未記録':safeText(shift.startingOdo)+' km'}</b></div><div class="statline"><span>入庫距離</span><b>${number(shift.endingOdo)===null?'未記録':safeText(shift.endingOdo)+' km'}</b></div><div class="statline"><span>営業記録</span><b>${shift.records.length}件</b></div><div class="statline"><span>入庫</span><b>${returned?shortTime(shift.endedAt):'未実施'}</b></div><div class="statline"><span>精算額の差額</span><b>${money(tt.reconciliationDifference)}</b></div><div class="statline"><span>印刷完了の扱い</span><b>確認待ち</b></div><p class="warn">このアプリから直接印刷しません。上で選択した乗務をGoogleへ送信し、受信確認後に既存スプレッドシートで印刷対象の乗務を選んで印刷してください。既存の計算式・印刷書式をそのまま利用します。</p><div class="actions"><button class="btn primary big" data-action="syncCurrentShift" type="button">↥ 選択した乗務をGoogleへ送信</button>${validSheetUrl(sheetTargetPrefs().spreadsheetUrl)?`<a class="btn" href="${safeText(validSheetUrl(sheetTargetPrefs().spreadsheetUrl))}" target="_blank" rel="noopener noreferrer">↗ 既存の印刷シートを開く</a>`:''}<button class="btn" data-tab="settings">⚙ Google連携を設定</button><button class="btn" data-action="downloadJson">⇩ JSONバックアップ</button></div></section>
  <section class="card"><h2 class="h2">データの出力</h2><p class="helper">従来の44列CSVと、複合決済の詳細・手数料を別々に出力します。</p><div class="actions"><button class="btn" data-action="downloadCsv">⇩ 44列CSV</button><button class="btn" data-action="downloadPaymentsCsv">⇩ 決済内訳CSV</button><button class="btn" data-action="downloadFeesCsv">⇩ GO・Uber手数料CSV</button></div><p class="footnote">複合決済は44列CSVだけでは完全に表現できません。Googleシートへの転送状況は「設定 → Googleスプレッドシート」で確認してください。</p></section>
@@ -2523,7 +2523,7 @@ function googlePostShift(packet){return googlePostRequest('sync',{payload:JSON.s
 async function googleSendShift(shift,manual=false){
  if(!canEditNow())return false;
  if(memberDiary())return syncUI.run(manual);
- if(sheetTargetPrefs().syncMode==='on'){return syncUI.run(manual);}
+ if(sheetTargetPrefs().syncMode==='on'){return syncUI.run(manual,tab==='print'&&shift?.id?[shift.id]:null);}
  if(!shift){if(manual)toast('送信する乗務データがありません',true);return false;}
  if(!googleIsConfigured()){if(manual)toast('先にWebアプリURLと接続キーを設定してください',true);return false;}
  if(cloudRunning){if(manual)toast('送信中です。完了後に再試行してください');return false;}
@@ -3299,7 +3299,7 @@ function handleAction(action,id){
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
   if(action==='bidirectionalSyncNow'){syncUI.run(true);return;}
- if(action==='syncCurrentShift'){googleSendShift(tab==='print'?selectedPrintShift():latest,true);return;}
+ if(action==='syncCurrentShift'){const target=tab==='print'?selectedPrintShift():latest;if(tab==='print'&&!target){toast('印刷する乗務が見つかりません。選び直してください',true);return;}googleSendShift(target,true);return;}
  if(action==='syncAllShifts'){googleSendAllShifts();return;}if(action==='checkGpsPermission'){requestGpsPermission();return;}if(action==='addWaitPlace'){addWaitingPlace(document.getElementById('newWaitPlace')?.value||'');return;}if(action==='resetUi'){model.prefs.ui={...UI_DEFAULTS};applyUi();saveLater();render();toast('表示設定を初期値に戻しました');return;}if(action==='resumeSyncedShift'){
   if(getShift())return;
   const found=model.shifts.find(s=>s.id===id&&!s.endedAt&&!s.endedIso);
