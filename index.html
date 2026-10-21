@@ -5156,8 +5156,10 @@ appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fol
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
 appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{
  if(event.target.matches('[data-member-trash-choice]')){
-  if(memberDiary()&&memberTrashPreview?.uid===accountScope.uid)
+  if(memberDiary()&&memberTrashPreview?.uid===accountScope.uid){
    memberTrashSelection=event.target.dataset.memberTrashChoice;
+   render();
+  }
   return;
  }
 
