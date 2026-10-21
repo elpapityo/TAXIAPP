@@ -13,6 +13,9 @@ on:
       - '*.js'
       - 'emulator-trash/**'
       - 'rules-drafts/**'
+      - 'labs/**'
+      - 'server-drafts/**'
+      - 'google-apps-script/*Draft.gs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -151,6 +154,8 @@ jobs:
         run: python3 tests/operations_dashboard_browser_e2e.py
       - name: Diary fields and distance settings
         run: python3 tests/diary_field_settings_browser_e2e.py
+      - name: Offline V2 device lab - mobile and desktop synthetic-only
+        run: python3 tests/print_v2_device_browser_e2e.py
 
   firestore-emulator:
     name: Isolated draft Firestore security rules
