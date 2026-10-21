@@ -135,5 +135,62 @@ function previewLocal({uid,legacyShifts,selectedIds}={}){
   migrationAuthorized:false
  };
 }
-root.TAXIAPP_ADMIN_CUTOVER=Object.freeze({plan,previewLocal,interval,overlaps});
+// Read-only comparison of the legacy administrator's configured Google Sheets
+// sync originals and the SAME administrator's local records. A Google Sheet is
+// NOT UID-isolated; caller must first verify administrator role and connection.
+// This never grants migration, delete, overwrite, or sync permissions.
+function compareLegacySheet({uid,localShifts,sheetShifts,selectedIds}={}){
+ if(typeof uid!=='string'||!uid.trim())
+  throw Error('管理者本人のUIDを確認できません');
+ const local=readRows(localShifts,'端末内の日報');
+ const sheet=readRows(sheetShifts,'Google同期原本');
+ if(!Array.isArray(selectedIds)||new Set(selectedIds).size!==selectedIds.length)
+  throw Error('移行対象の日報を重複なく選択してください');
+ const chosen=new Set(selectedIds);
+ for(const id of chosen)if(!local.has(id))
+  throw Error('選択した日報が端末内に見つかりません');
+ const selected=selectedIds.map(id=>{
+  const current=local.get(id),original=sheet.get(id),span=interval(current);
+  const intersect=[...sheet.values()].filter(other=>other.id!==id&&
+   overlaps(span,interval(other))).map(other=>other.id);
+  const exact=!!original&&canonical(current)===canonical(original);
+  return {
+   id,source:'device',date:String(current.date||''),
+   selected:true,recordCount:current.records.length,
+   sheetStatus:!original?'device-only':exact?'same-id-identical':'same-id-different',
+   overlapsSheet:intersect,
+   timeIssue:span.reason||'',
+   needsReview:!original||!exact||intersect.length>0||!!span.reason
+  };
+ });
+ const all=[...local].map(([id,current])=>{
+  const remote=sheet.get(id),time=interval(current);
+  const peerOverlap=[...sheet.values()].filter(other=>other.id!==id&&
+   overlaps(time,interval(other))).map(other=>other.id);
+  return {id,source:'device',date:String(current.date||''),
+   recordCount:current.records.length,
+   selected:chosen.has(id),
+   status:!remote?'device-only':
+     canonical(current)===canonical(remote)?'same-id-identical':'same-id-different',
+   overlapsSheet:peerOverlap,timeIssue:time.reason||''};
+ });
+ const remoteOnly=[...sheet].filter(([id])=>!local.has(id)).map(([id,duty])=>({
+  id,source:'sheet-only',date:String(duty.date||''),
+  recordCount:duty.records.length,selected:false,
+  timeIssue:interval(duty).reason||'',
+  overlapsLocal:[...local.values()].filter(l=>overlaps(interval(duty),interval(l))).map(l=>l.id)
+ }));
+ return {
+  format:'TAXIAPP_LEGACY_SHEET_COMPARISON_V1',
+  uid,sheetSource:'TAXIAPP_同期原本',
+  firebaseVerified:false,comparisonScope:'configured-legacy-google-sync-originals',
+  localCount:local.size,sheetCount:sheet.size,selectedCount:chosen.size,
+  matchingCount:all.filter(x=>x.status==='same-id-identical').length,
+  changedCount:all.filter(x=>x.status==='same-id-different').length,
+  deviceOnlyCount:all.filter(x=>x.status==='device-only').length,
+  sheetOnlyCount:remoteOnly.length,selected,device:all,sheetOnly:remoteOnly,
+  migrationAuthorized:false,deleteAuthorized:false
+ };
+}
+root.TAXIAPP_ADMIN_CUTOVER=Object.freeze({plan,previewLocal,compareLegacySheet,interval,overlaps});
 })(typeof window!=='undefined'?window:globalThis);
