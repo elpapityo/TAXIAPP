@@ -128,7 +128,7 @@ function firestorePrintLatestDutyDraft_(){
     throw Error('Firestoreの印刷一覧に不正な乗務IDがあります');
    seen[id]=true;
    var data=firestorePrintDecodeDraft_({mapValue:{fields:doc.fields||{}}},0),shift=data.shift;
-   if(shift&&shift.id===id&&(shift.endedAt||shift.endedIso)&&
+   if(data.trashed!==true&&shift&&shift.id===id&&(shift.endedAt||shift.endedIso)&&
       shift.__taxiPrintSummary&&String(shift.startedIso||'')>latestStamp){
     latestStamp=String(shift.startedIso||'');latest=id;
    }
