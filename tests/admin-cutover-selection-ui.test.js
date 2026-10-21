@@ -25,6 +25,8 @@ const context={
  window:root,accountScope:{uid},accountScopeGeneration:2,
  adminCutoverSelectionUid:uid,adminCutoverSheetAudit:null,adminCutoverSheetBusy:false,
  adminCutoverSelected:new Set(),adminCutoverSheetRequestToken:0,
+ adminCutoverFirebaseAudit:null,adminCutoverFirebaseBusy:false,
+ adminCutoverFirebaseRequestToken:0,adminCutoverFirebaseConnection:null,
  model:{version:1,shifts:clone(rows),activeId:null,prefs:{}},
  legacyDiary:()=>isLegacy,canEditNow:()=>writer,googleIsConfigured:()=>true,
  async googlePostRequest(action,fields={}){
