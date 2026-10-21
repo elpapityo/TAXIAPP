@@ -1539,7 +1539,7 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if((canEditNow()&&!memberTrashOperationBusy)||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"], [data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"], [data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="resolveDeletedLocalShifts"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
    '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
  if(safe)return;
@@ -1828,10 +1828,11 @@ function renderMemberRecoveryPanel(){
     !p||p.uid!==accountScope.uid||p.epoch!==writerLoadEpoch)return '';
  return '<section class="card" role="alert" style="margin:10px 0;border:2px solid #aa650d">'+
   '<h2 class="h2">未同期の日報を保護しています</h2>'+
-  '<p>クラウドにない乗務：'+p.missingIds.length+'件／同じIDで内容が異なる乗務：'+p.conflictCount+'件。自動上書きは停止中です。</p>'+
+  '<p>クラウドにない乗務：'+p.missingIds.length+'件／サーバー削除済み：'+(p.deletedIds||[]).length+'件／同じIDで内容が異なる乗務：'+p.conflictCount+'件。自動上書きは停止中です。</p>'+
   '<p class="helper">最初に端末のJSONバックアップを保存してください。同一IDで内容が異なる場合は、どちらを採用するか個別に選択し、双方の原本を保護してから反映します。選択しなければ変更しません。</p>'+
   '<div class="actions"><button class="btn" type="button" data-action="downloadLocalRecovery">⇩ 端末の日報をJSON保存</button>'+
-  (p.conflictCount?'':'<button class="btn primary" type="button" data-action="uploadLocalRecovery" '+(memberRecoveryBusy?'disabled':'')+'>＋ 未登録の乗務を本人のクラウドへ追加</button>')+
+  (p.missingIds.length&&!p.conflictCount?'<button class="btn primary" type="button" data-action="uploadLocalRecovery" '+(memberRecoveryBusy?'disabled':'')+'>＋ 未登録の乗務を本人のクラウドへ追加</button>':'')+
+  ((p.deletedIds||[]).length?'<button class="btn" type="button" data-action="resolveDeletedLocalShifts" '+(memberRecoveryBusy?'disabled':'')+'>サーバーで削除済みの日報を端末から整理（保護コピーあり）</button>':'')+
   '</div>'+
   (p.conflictIds||[]).map(id=>'<div class="card" style="margin-top:8px">'+
    '<strong>競合ID：'+safeText(id)+'</strong><p class="helper">採用前に両版の件数・売上・差分を確認します。</p>'+
@@ -2828,7 +2829,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  writerBootstrapAllowed:()=>deviceMode==='writer'&&writerLoadGate,
  onWriterSnapshot:async shifts=>{
   if(deviceMode!=='writer'||!writerLoadGate)return false;
-  const epoch=writerLoadEpoch;
+  const epoch=writerLoadEpoch,scopeGenerationAtSnapshot=accountScopeGeneration,uidAtSnapshot=accountScope.uid;
   if(!Array.isArray(shifts))throw Error('Googleの乗務一覧が不正です');
   const ids=new Set();
   for(const shift of shifts){
@@ -2847,12 +2848,26 @@ const syncUI=window.TAXIAPP_SYNC_UI({
      canonicalDutyJson(local)!==canonicalDutyJson(remoteById.get(local.id)));
     if(unconfirmed.length){
      const missing=unconfirmed.filter(local=>!remoteById.has(local.id));
+     const allMissingIds=missing.map(x=>x.id);
+     let deletedIds=[];
+     if(trashEnabled()&&allMissingIds.length){
+      // Each server tombstone must be fetched for the current UID before
+      // offering any local-only shift for re-upload. Never guess absence.
+      const tombs=await trashClient.readDeletionMarkers(allMissingIds);
+      if(writerLoadEpoch!==epoch||accountScopeGeneration!==scopeGenerationAtSnapshot||
+         accountScope.uid!==uidAtSnapshot||deviceMode!=='writer')return false;
+      if(!tombs.markersComplete||tombs.uid!==accountScope.uid)
+       throw Error('本人の日報削除履歴を最後まで確認できません');
+      deletedIds=tombs.markerStates.filter(x=>x.state==='deleted').map(x=>x.id);
+     }
+     const deletions=new Set(deletedIds);
      pendingMemberRecovery={uid:accountScope.uid,epoch,
-      snapshot:JSON.stringify(previous.shifts),missingIds:missing.map(x=>x.id),
+      snapshot:JSON.stringify(previous.shifts),
+      deletedIds,missingIds:allMissingIds.filter(id=>!deletions.has(id)),
       conflictIds:unconfirmed.filter(local=>remoteById.has(local.id)).map(x=>x.id),
       conflictCount:unconfirmed.length-missing.length};
      render();
-     throw Error('未同期の乗務が'+missing.length+'件、同一IDで内容が異なる乗務が'+(unconfirmed.length-missing.length)+'件あります。下の保護メニューで確認してください。');
+     throw Error('未同期の日報が'+missing.length+'件（サーバーで削除済み：'+deletedIds.length+'件）、同一IDで内容の違う日報が'+(unconfirmed.length-missing.length)+'件あります。端末の記録を保護しました。');
     }
     pendingMemberRecovery=null;
    }
@@ -2875,7 +2890,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
    }catch(error){
     throw Error('復旧コピーを保存できないため、クラウド受信による上書きを停止しました：'+String(error?.message||error));
    }
-   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(writerLoadEpoch!==epoch||accountScopeGeneration!==scopeGenerationAtSnapshot||accountScope.uid!==uidAtSnapshot||deviceMode!=='writer')return false;
    if(db)await idbPut(db,next,storageKey);
    else localStorage.setItem(storageKey,JSON.stringify(next));
    const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
@@ -2938,6 +2953,64 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  render:render,toast,escape:safeText,download,dateStamp
 });
 
+async function resolveDeletedLocalShifts(){
+ const pending=pendingMemberRecovery;
+ if(memberRecoveryBusy||!trashEnabled()||!pending||!memberDiary()||
+    deviceMode!=='writer'||!writerLoadGate||
+    pending.uid!==accountScope.uid||pending.epoch!==writerLoadEpoch||
+    !(pending.deletedIds||[]).length)return;
+ const uid=accountScope.uid,epoch=writerLoadEpoch,generation=accountScopeGeneration;
+ const original=deepCopy(model),signature=JSON.stringify(original.shifts);
+ const ids=[...pending.deletedIds];
+ const check=()=>{
+  if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
+     uid!==accountScope.uid||epoch!==writerLoadEpoch||
+     generation!==accountScopeGeneration||pendingMemberRecovery!==pending||
+     JSON.stringify(model.shifts)!==signature)
+   throw Error('端末や日報が変更されたため整理を中止しました');
+ };
+ memberRecoveryBusy=true;render();
+ try{
+  check();
+  const state=await trashClient.readDeletionMarkers(ids);
+  check();
+  if(!state.markersComplete||state.uid!==uid||
+     state.markerStates.length!==ids.length||
+     state.markerStates.some(x=>x.state!=='deleted'))
+   throw Error('削除履歴を確認できない日報があります。端末データを保持します');
+  if(!confirm('サーバー側で削除済みの'+ids.length+
+    '件の日報を端末の通常一覧から除外します。'+
+    '\n本人UIDの保護コピーを保存し、読み戻し確認後に実施します。'+
+    '\nゴミ箱への復元は別途行えます。続けますか？'))return;
+  check();
+  const archive={format:'TAXIAPP_DELETED_LOCAL_ARCHIVE_V1',uid,
+   shiftIds:ids,createdAt:new Date().toISOString(),model:original};
+  const key='taxiapp-deleted-local-archive-v1-'+uid+'-'+Date.now()+
+   '-'+Math.random().toString(36).slice(2);
+  if(db)await idbPut(db,archive,key);
+  else localStorage.setItem(key,JSON.stringify(archive));
+  const saved=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  check();
+  if(canonicalDutyJson(saved)!==canonicalDutyJson(archive))
+   throw Error('端末の保護コピーを正しく読み戻せません');
+  const remaining=deepCopy(original);
+  remaining.shifts=remaining.shifts.filter(x=>!ids.includes(x.id));
+  if(ids.includes(remaining.activeId))remaining.activeId=null;
+  const storageKey=scopedStorageKey();
+  if(db)await idbPut(db,remaining,storageKey);
+  else localStorage.setItem(storageKey,JSON.stringify(remaining));
+  const stored=db?await idbGet(db,storageKey):
+   JSON.parse(localStorage.getItem(storageKey)||'null');
+  check();
+  if(canonicalDutyJson(stored)!==canonicalDutyJson(remaining))
+   throw Error('整理後の端末記録を保存確認できません');
+  model=remaining;
+  toast('削除済みの日報を通常一覧から除外しました。サーバーの状態を再照合します。');
+  await syncUI.bootstrapWriter();
+ }catch(error){
+  toast('サーバー削除済み日報の整理を中止：'+String(error?.message||error),true);
+ }finally{memberRecoveryBusy=false;render();}
+}
 async function uploadMemberRecovery(){
  const pending=pendingMemberRecovery;
  if(memberRecoveryBusy||!pending||!memberDiary()||deviceMode!=='writer'||
@@ -4124,6 +4197,7 @@ function handleAction(action,id){
   return;
  }
  if(action==='uploadLocalRecovery'){void uploadMemberRecovery();return;}
+ if(action==='resolveDeletedLocalShifts'){void resolveDeletedLocalShifts();return;}
  if(action==='downloadMemberConflictArchive'){void downloadMemberConflictArchive(id);return;}
  if(action==='takeLocalConflict'||action==='takeCloudConflict'){
   void resolveMemberConflict(id,action==='takeLocalConflict');return;
