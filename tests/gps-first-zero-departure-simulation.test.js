@@ -38,8 +38,8 @@ async function scenario({odometer='0',unresolvedGap=true,gapCount=3,elapsedSecon
  const normal=await scenario({unresolvedGap:false});
  assert.equal(normal.shift.externalGpsSnapshot.tripKm,0);
  assert.equal(bridge.gapAcknowledged(normal.localStorage,normal.id,3),false);
- const nonzero=await scenario({odometer:'305112'});
- assert.equal(nonzero.shift.externalGpsSnapshot.tripKm,305112);
+ const nonzero=await scenario({odometer:'30511'});
+ assert.equal(nonzero.shift.externalGpsSnapshot.tripKm,30511);
  assert.equal(bridge.gapAcknowledged(nonzero.localStorage,nonzero.id,3),false,
   'out-of-range gaps are never bypassed on ordinary odometer input');
  const delayed=await scenario({elapsedSeconds:11});
