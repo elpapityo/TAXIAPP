@@ -2272,10 +2272,25 @@ function startHistoryLocationEdit(shiftId,recordId){
  if(saved&&(saved.uid!==accountScope.uid||saved.id!==shiftId||saved.recordId!==recordId||
     saved.date!==row.shift.date||!Number.isSafeInteger(saved.baseRevision)))
   throw Error('端末内の修正控えが一致しません。自動上書きを停止しました');
+ if(saved?.fields&&(!saved.fields||typeof saved.fields!=='object'||Array.isArray(saved.fields)||
+   Object.keys(saved.fields).some(k=>!historyEditableKeys(record).includes(k)||typeof saved.fields[k]!=='string')))
+  throw Error('過去日報の修正控えの入力項目が不正です。原本は変更しません');
+ if(saved?.metaFields&&(record.kind!=='ride'||typeof saved.metaFields!=='object'||
+   Array.isArray(saved.metaFields)||Object.keys(saved.metaFields).some(k=>
+    !HISTORY_EDIT_META.includes(k)||typeof saved.metaFields[k]!=='string')))
+  throw Error('過去日報の決済控えが不正です');
  const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
+ const split=record.meta?.splitPayment||{};
  const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
   baseRevision:saved?.baseRevision??row.revision,al:saved?.al??String(record.raw?.AL??''),
   am:saved?.am??String(record.raw?.AM??''),busy:false,
+  sourceRecord:deepCopy(record),
+  fields:historyEditableKeys(record).reduce((o,k)=>({...o,[k]:saved?.fields?.[k]??String(record.raw?.[k]??'')}),{}),
+  metaFields:record.kind==='ride'?Object.fromEntries(HISTORY_EDIT_META.map(k=>
+   [k,saved?.metaFields?.[k]??String(record.meta?.[k]??'')])):{},
+  splitSecond:saved?.splitSecond??String(split.second||''),
+  splitAmount:saved?.splitAmount??String(split.manualAmount??''),
+  splitSlot:saved?.splitSlot??(split.manualSlot===1?1:0),
   message:mismatch?'Firestoreに新しい版があります。保存は停止中です。修正控えを確認し、不要なら「修正を取り消す」で原本へ戻してください。':''};
  saveHistoryLocationDraft(draft);
  historyLocationEdit=draft;
@@ -2288,6 +2303,21 @@ function historyLocationInputs(){
  const am=document.getElementById('historyEditDropoff');
  if(!al||!am)return false;
  draft.al=al.value;draft.am=am.value;
+ if(typeof document.querySelectorAll==='function'){
+  for(const input of document.querySelectorAll('[data-history-edit-field]')){
+   if(Object.prototype.hasOwnProperty.call(draft.fields||{},input.dataset.historyEditField))
+    draft.fields[input.dataset.historyEditField]=input.value;
+  }
+  for(const input of document.querySelectorAll('[data-history-edit-meta]')){
+   if(Object.prototype.hasOwnProperty.call(draft.metaFields||{},input.dataset.historyEditMeta))
+    draft.metaFields[input.dataset.historyEditMeta]=input.value;
+  }
+  for(const input of document.querySelectorAll('[data-history-edit-split]')){
+   if(input.dataset.historyEditSplit==='second')draft.splitSecond=input.value;
+   if(input.dataset.historyEditSplit==='amount')draft.splitAmount=input.value;
+   if(input.dataset.historyEditSplit==='slot')draft.splitSlot=Number(input.value);
+  }
+ }
  saveHistoryLocationDraft(draft);
  return true;
 }
@@ -4093,7 +4123,8 @@ function rebaseNativeTripAfterManual(shift,value,stillCurrent){
  }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
- if(target.id==='historyEditPickup'||target.id==='historyEditDropoff'){
+ if(target.id==='historyEditPickup'||target.id==='historyEditDropoff'||
+    target.matches?.('[data-history-edit-field],[data-history-edit-meta],[data-history-edit-split]')){
   if(historyLocationEdit&&historyLocationEdit.uid===accountScope.uid){
    try{historyLocationInputs();}
    catch(error){historyLocationEdit.message=String(error?.message||error);
