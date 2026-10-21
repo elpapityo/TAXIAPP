@@ -6,6 +6,7 @@ const {prepareV2}=require('../server-drafts/print-stage-v2.js');
 const base=path.join(__dirname,'..'),fixtureId='shift-1792501200000-a',uid='synthetic-admin-owner';
 const source=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyExistingSheetsDraft.gs'),'utf8');
 const stageJs=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyStageV2Draft.gs'),'utf8');
+const confirmJs=fs.readFileSync(path.join(base,'google-apps-script','PrintOnlyExistingSheetsConfirmDraft.gs'),'utf8');
 const production=fs.readFileSync(path.join(base,'google-apps-script','Code.gs'),'utf8');
 const html=fs.readFileSync(path.join(base,'index.html'),'utf8');
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -17,7 +18,7 @@ function ctx(){
    formatDate:()=> '2026-10-21 16:30:00'},
    LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
    Date,JSON,Math,Number,Object,Array,String,isFinite,Error,Set};
- vm.createContext(sandbox);vm.runInContext(stageJs+'\n'+source,sandbox);
+ vm.createContext(sandbox);vm.runInContext(stageJs+'\n'+source+'\n'+confirmJs,sandbox);
  return sandbox;
 }
 function sheet(name,header=[],maxRows=1200){
@@ -76,6 +77,32 @@ function make(){
  book['補助簿印刷用'].values[23]=['PRINT_1_PROTECTED'];
  book['補助簿印刷用_2頁'].values[11]=['PRINT_2_PROTECTED'];
  const ss={getSheetByName:name=>book[name]||null};
+ const ui={followLatest:true,selectedId:fixtureId,
+  selectedLabel:'10/21 08:15出庫・営業37件・合成',meter:37000};
+ const op=book['TAXIAPP_印刷操作'];
+ const opRange=op.getRange;
+ op.getRange=(ref,...rest)=>{
+  if(ref==='B15')return {getValue:()=>ui.followLatest};
+  if(ref==='B17')return {getDisplayValue:()=>ui.selectedLabel};
+  if(ref==='C17')return {getDisplayValue:()=>ui.selectedId};
+  return opRange(ref,...rest);
+ };
+ const index=book['TAXIAPP_乗務一覧'],indexRange=index.getRange;
+ index.getRange=(ref,col,count,width)=>{
+  if(ref==='T2')return {getDisplayValue:()=>ui.selectedLabel};
+  if(ref===2&&col===1&&width===21){
+   const range=indexRange(ref,col,count,width),getter=range.getValues;
+   return {...range,getDisplayValues:()=>getter().map(row=>{
+    const r=row.map(v=>String(v??''));
+    if(r[0]===fixtureId)r[20]=ui.selectedLabel;
+    return r;
+   })};
+  }
+  return indexRange(ref,col,count,width);
+ };
+ const printed=book['補助簿印刷用'],printRange=printed.getRange;
+ printed.getRange=(ref,...rest)=>
+  ref==='X23'?{getValue:()=>ui.meter}:printRange(ref,...rest);
  const sh={id:fixtureId,date:'2026-10-21',startedAt:'08:15',endedAt:'18:00',
   startedIso:'2026-10-20T23:15:00.000Z',endedIso:'2026-10-21T09:00:00.000Z',
   driver:'合成',records:[],settings:{secret:'DO_NOT_PRINT'},gpsTrack:[{lat:99}]};
@@ -91,7 +118,7 @@ function make(){
  const virtual=projectTrustedPacket({packet:{kind:'TAXIAPP_SHIFT_V1',shift:sh,summary:sums},sourceRevision:3});
  const prepared=prepareV2({sourceUid:uid,sourceRevision:3,expectedCommittedRevision:0,virtual,chunkSize:4000});
  sandbox.printV2AppendDraft_(stage,prepared,uid);
- return {sandbox,ss,book,stage,prepared,legacyId};
+ return {sandbox,ss,book,stage,prepared,legacyId,ui};
 }
 function testRun(){
  const z=make(),{sandbox,ss,book,stage}=z;
@@ -119,6 +146,25 @@ function testRun(){
  const updated=sandbox.printV2ExistingPlan_(ss,stage,fixtureId,uid);
  assert.equal(updated.needsWrite,0,'repeat is idempotent, no duplicate rows');
  assert.equal(sandbox.printV2ExistingPublishDraft_(ss,stage,fixtureId,uid,()=>true).changedSheets.length,0);
+ const confirmation=sandbox.printV2ConfirmExistingSelectedDraft_(ss,stage,uid,()=>true);
+ assert.equal(confirmation.state,'existing-paper-sheets-verified');
+ assert.equal(confirmation.records,37);
+ assert.equal(confirmation.meter,37000);
+ assert.equal(confirmation.printTriggered,false);
+ z.ui.meter=36999;
+ assert.throws(()=>sandbox.printV2ConfirmExistingSelectedDraft_(ss,stage,uid,()=>true),
+  /メーター売上/);
+ z.ui.meter=37000;
+ z.ui.selectedId='shift-999-a';
+ assert.throws(()=>sandbox.printV2ConfirmExistingSelectedDraft_(ss,stage,uid,()=>true),
+  /一致していません/);
+ z.ui.selectedId=fixtureId;
+ z.ui.followLatest=false;
+ assert.equal(sandbox.printV2ConfirmExistingSelectedDraft_(ss,stage,uid,()=>true).shiftId,
+  fixtureId,'manual B17 selection must also work');
+ assert.throws(()=>sandbox.printV2ConfirmExistingSelectedDraft_(ss,stage,uid,()=>false),
+  /Firestore原本/);
+ z.ui.followLatest=true;
  for(const name of originalSheets){
   assert.equal(JSON.stringify(book[name].values),before[name],'protected '+name+' must not change');
   assert.equal(book[name].writes.length,0,'no protected ranges must be written');
@@ -130,7 +176,9 @@ function testRun(){
  }
  assert.equal(book['TAXIAPP_乗務一覧'].formulaCells.has('2:20'),true);
  assert.equal(book['TAXIAPP_乗務一覧'].formulaCells.has('2:21'),true);
- assert.deepEqual([...book['TAXIAPP_乗務一覧'].writes[0].rows===undefined?[]:[]],[]);
+ assert.equal(book['TAXIAPP_乗務一覧'].writes[0].col,1);
+ assert.equal(book['TAXIAPP_乗務一覧'].writes[0].rows,1,
+  'only index A:S is written; T/U formulas remain untouched');
  assert.throws(()=>sandbox.printV2ExistingPlan_(ss,stage,fixtureId,'wrong-uid'),/SHA256|本人UID/);
  const sameOld=make();
  sameOld.book['TAXIAPP_同期原本'].values[3]=[fixtureId,'legit-old-original'];
