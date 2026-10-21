@@ -2617,6 +2617,57 @@ async function googleSendAllShifts(){
 }
 
 
+// Only the active or most recently returned duty belongs in the normal
+// working set. Older duties may be released ONLY after owner-scoped server
+// read-back proves the complete app-calculated packet is identical.
+// Unsent, conflicting, offline or un-migrated diaries are never released.
+let releasingVerifiedDuties=false;
+function canonicalStoredDuty(value){
+ if(Array.isArray(value))return value.map(canonicalStoredDuty);
+ if(value&&typeof value==='object')
+  return Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonicalStoredDuty(value[k])]));
+ return value;
+}
+function localFirestoreOriginal(shift){
+ if(memberDiary()&&accountScope.adminFirestore){
+  const packet=googleShiftPacket(shift);
+  packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  return packet.shift;
+ }
+ return deepCopy(shift);
+}
+async function releaseVerifiedPreviousDuties(activeId){
+ if(releasingVerifiedDuties||!memberDiary()||!accountDiary.ready()||
+    !canEditNow()||model.activeId!==activeId)return;
+ releasingVerifiedDuties=true;
+ const generation=accountScopeGeneration,uid=accountScope.uid;
+ const sameOwner=()=>accountScopeGeneration===generation&&
+  accountScope.uid===uid&&memberDiary()&&canEditNow()&&model.activeId===activeId;
+ try{
+  for(const old of [...model.shifts]){
+   if(!sameOwner())return;
+   if(old.id===activeId||!old.endedIso&&!old.endedAt||old.draft)continue;
+   // A blank/unfinished or legacy-only record must never be discarded.
+   let expected;
+   try{expected=localFirestoreOriginal(old);}catch{continue;}
+   let server;
+   try{server=await accountDiary.request('syncGet',{shiftId:old.id});}
+   catch{continue;}
+   if(!sameOwner()||server?.id!==old.id||
+      !Number.isSafeInteger(server.revision)||server.revision<1||
+      JSON.stringify(canonicalStoredDuty(server.shift))!==
+       JSON.stringify(canonicalStoredDuty(expected)))continue;
+   const at=model.shifts.findIndex(item=>item.id===old.id);
+   if(at<0||model.shifts[at].draft||model.shifts[at].id===model.activeId)continue;
+   let stillSame;
+   try{stillSame=JSON.stringify(canonicalStoredDuty(localFirestoreOriginal(model.shifts[at])))===
+    JSON.stringify(canonicalStoredDuty(expected));}catch{continue;}
+   if(!stillSame)continue;
+   model.shifts.splice(at,1);
+   await save(true); // local-only: archiving is NOT a cloud deletion marker
+  }
+ }finally{releasingVerifiedDuties=false;}
+}
 /* Cloud synchronization is per-duty, revision checked and opt-in.
  * The current local dataset remains available even during internet outages.
  */
@@ -3595,6 +3646,7 @@ function handleAction(action,id){
   const nativeGpsLinked=nativeDiaryGpsEnabled();
   const gpsOptIn=nativeAutoDistanceEnabled()||model.prefs.gpsTripAtStart!=='off';
   save();
+  if(memberDiary())void releaseVerifiedPreviousDuties(newRecord.id);
   // When native GPS is paired, don't start the older browser GPS tracker in parallel.
   if(!nativeGpsLinked&&gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
   else render();
