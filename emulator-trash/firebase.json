@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "../rules-drafts/firestore-trash.rules"
+    "rules": "firestore-trash.rules"
   },
   "emulators": {
     "firestore": {
