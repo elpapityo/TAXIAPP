@@ -253,7 +253,7 @@ function create(){
    guard(c);
    if(done){count++;purged.push(id);}
   }
-  return {purged,remainingNotChecked:Math.max(0,docs.length-purged.length-max)};
+  return {purged,totalTrashCountAtRead:docs.length,purgeLimit:max};
  }
  async function restore({shiftId,confirmed}={}){
   if(confirmed!==true)throw Error('復元対象の本人確認が必要です');
