@@ -71,12 +71,16 @@ function create(){
    if(!original.exists())throw Error('指定された日報はクラウド上にありません');
    if(trash.exists())throw Error('同じIDの日報がすでにゴミ箱にあります');
    const row=original.data(),revision=revisionOf(row);
+   if(row?.format!=='TAXIAPP_PRIVATE_SHIFT_V1')
+    throw Error('原本の保存形式を確認できません');
    if(revision!==expectedRevision)
     throw Error('SYNC_CONFLICT:'+revision+':日報の版が変更されています');
    const shift=getShift(row,id);
    const prior=marker.exists()?marker.data():null;
-   if(prior&&prior.state!=='active')
-    throw Error('削除マーカーが一致しません');
+   if(prior&&(prior.format!=='TAXIAPP_DUTY_TOMBSTONE_V1'||
+      prior.state!=='active'||prior.revision!==revision||
+      !Number.isSafeInteger(prior.generation)||prior.generation<1))
+    throw Error('削除マーカーの更新番号が一致しません');
    const generation=prior?prior.generation+1:1;
    if(!Number.isSafeInteger(generation)||generation<1)
     throw Error('削除履歴が不正です');
@@ -130,6 +134,7 @@ function create(){
    if(t?.format!=='TAXIAPP_DUTY_TRASH_V1'||
       m?.format!=='TAXIAPP_DUTY_TOMBSTONE_V1'||
       m.state!=='deleted'||!Number.isSafeInteger(m.generation)||
+      m.generation<1||
       t.generation!==m.generation||t.sourceRevision!==m.revision)
     throw Error('ゴミ箱の更新世代が一致しません');
    const shift=getShift(t,id);
