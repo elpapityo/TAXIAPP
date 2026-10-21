@@ -3013,13 +3013,13 @@ async function resolveDeletedLocalShifts(){
     pending.uid!==accountScope.uid||pending.epoch!==writerLoadEpoch||
     !(pending.deletedIds||[]).length)return;
  const uid=accountScope.uid,epoch=writerLoadEpoch,generation=accountScopeGeneration;
- const original=deepCopy(model),signature=JSON.stringify(original.shifts);
+ const original=deepCopy(model),signature=JSON.stringify(original);
  const ids=[...pending.deletedIds];
  const check=()=>{
   if(!memberDiary()||deviceMode!=='writer'||!writerLoadGate||
      uid!==accountScope.uid||epoch!==writerLoadEpoch||
      generation!==accountScopeGeneration||pendingMemberRecovery!==pending||
-     JSON.stringify(model.shifts)!==signature)
+     JSON.stringify(model)!==signature)
    throw Error('端末や日報が変更されたため整理を中止しました');
  };
  memberRecoveryBusy=true;render();
@@ -3063,6 +3063,22 @@ async function resolveDeletedLocalShifts(){
   else localStorage.setItem(storageKey,JSON.stringify(remaining));
   const stored=db?await idbGet(db,storageKey):
    JSON.parse(localStorage.getItem(storageKey)||'null');
+  // An unrelated settings/GPS edit during the async disk write must not
+  // disappear on the next login. Restore the newest entire local model,
+  // then force another server tombstone reconciliation.
+  if(memberDiary()&&deviceMode==='writer'&&writerLoadGate&&
+     uid===accountScope.uid&&epoch===writerLoadEpoch&&
+     generation===accountScopeGeneration&&pendingMemberRecovery===pending&&
+     JSON.stringify(model)!==signature){
+   const latest=deepCopy(model);
+   if(db)await idbPut(db,latest,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(latest));
+   const recovered=db?await idbGet(db,storageKey):
+    JSON.parse(localStorage.getItem(storageKey)||'null');
+   if(canonicalDutyJson(recovered)!==canonicalDutyJson(latest))
+    throw Error('端末の新しい記録を保存確認できません。保護コピーを確認してください');
+   throw Error('端末の入力・設定が変更されました。最新の端末原本を再保存し、日報の整理を中止しました');
+  }
   check();
   if(canonicalDutyJson(stored)!==canonicalDutyJson(remaining))
    throw Error('整理後の端末記録を保存確認できません');
