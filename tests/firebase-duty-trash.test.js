@@ -260,5 +260,49 @@ function harness(){
   };
   await assert.rejects(h.api.readDeletionMarkers([id]),/アカウント/);
  }
+ // Free-tier-first, app-initiated purge of EXPIRED archive originals.
+ // It never deletes an active duty or the tiny anti-resurrection marker.
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  assert.deepEqual((await h.api.purgeExpired()).purged,[]);
+  assert.equal(h.store.has('user-A/trash/'+id),true);
+  h.store.get('user-A/trash/'+id).expiresAt='2020-01-01T00:00:00.000Z';
+  const cleaned=await h.api.purgeExpired();
+  assert.deepEqual(cleaned.purged,[id]);
+  assert.equal(h.store.has('user-A/shifts/'+id),false);
+  assert.equal(h.store.has('user-A/trash/'+id),false);
+  assert.equal(h.store.get('user-A/tombstones/'+id).state,'deleted');
+  await assert.rejects(h.api.restore({shiftId:id,confirmed:true}),/そろっていません/);
+  const scan=await h.api.readDeletionMarkers([id]);
+  const recon=factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[clone(originalShift)],
+   serverShifts:[],...scan
+  });
+  assert.equal(recon.entries[0].action,'protect-local-copy');
+ }
+ // A bad marker or recovered original prevents irreversible purge.
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  h.store.get('user-A/trash/'+id).expiresAt='2020-01-01T00:00:00.000Z';
+  h.store.get('user-A/tombstones/'+id).generation=999;
+  await assert.rejects(h.api.purgeExpired(),/削除履歴/);
+  assert.equal(h.store.has('user-A/trash/'+id),true);
+  h.store.get('user-A/tombstones/'+id).generation=1;
+  h.store.set('user-A/shifts/'+id,{
+   format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,shift:clone(originalShift)
+  });
+  await assert.rejects(h.api.purgeExpired(),/通常一覧/);
+  assert.equal(h.store.has('user-A/trash/'+id),true);
+ }
+ // Invalid batch limits, changing UID and old editor sessions fail closed.
+ {
+  const h=harness();
+  await assert.rejects(h.api.purgeExpired({max:0}),/不正/);
+  h.auth.currentUser={uid:'user-B'};
+  await assert.rejects(h.api.purgeExpired(),/UID/);
+  assert.equal(h.store.has('user-A/shifts/'+id),true);
+ }
  console.log('Firestore trash staging passed: CAS, UID isolation, 30-day expiry, move/restore and preservation');
 })().catch(error=>{console.error(error);process.exitCode=1;});
