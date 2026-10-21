@@ -52,4 +52,40 @@ assert.equal(p.previewLocal({uid:'my-uid',legacyShifts:[a],selectedIds:[]}).sele
 assert.throws(()=>p.previewLocal({uid:'',legacyShifts:[a],selectedIds:[a.id]}),/UID/);
 assert.throws(()=>p.previewLocal({uid:'my-uid',legacyShifts:[a],selectedIds:[a.id,'shift-999-a']}),/ありません/);
 assert.throws(()=>p.previewLocal({uid:'my-uid',legacyShifts:[a],selectedIds:[a.id,a.id]}),/重複なく/);
+// Only the configured legacy Google sync originals are compared. No Firebase
+// ownership proof or write/delete authorization can be inferred from this.
+const sheetA={...a,records:[{kind:'ride',raw:{K:1200}}]};
+const sheetOnly=duty('shift-999-a','2026-10-20T14:00:00+09:00','2026-10-20T22:00:00+09:00');
+const compare=p.compareLegacySheet({
+ uid:'my-uid',localShifts:[a,b,extra1],sheetShifts:[sheetA,b,sheetOnly],
+ selectedIds:[a.id,b.id]
+});
+assert.equal(compare.sheetSource,'TAXIAPP_同期原本');
+assert.equal(compare.firebaseVerified,false);
+assert.equal(compare.migrationAuthorized,false);
+assert.equal(compare.deleteAuthorized,false);
+assert.equal(compare.localCount,3);
+assert.equal(compare.sheetCount,3);
+assert.equal(compare.changedCount,1);
+assert.equal(compare.matchingCount,1);
+assert.equal(compare.deviceOnlyCount,1);
+assert.equal(compare.sheetOnlyCount,1);
+assert.equal(compare.selectedCount,2);
+assert.equal(compare.selected[0].sheetStatus,'same-id-different');
+assert.equal(compare.selected[1].sheetStatus,'same-id-identical');
+assert.deepEqual(compare.sheetOnly.map(x=>x.id),[sheetOnly.id]);
+assert.ok(compare.selected[0].overlapsSheet.includes(sheetOnly.id));
+assert.ok(compare.sheetOnly[0].overlapsLocal.includes(a.id));
+assert.equal(p.compareLegacySheet({
+ uid:'my-uid',localShifts:[a],sheetShifts:[],selectedIds:[a.id]
+}).selected[0].sheetStatus,'device-only');
+assert.throws(()=>p.compareLegacySheet({
+ uid:'my-uid',localShifts:[a],sheetShifts:[sheetA,sheetA],selectedIds:[a.id]
+}),/重複する/);
+assert.throws(()=>p.compareLegacySheet({
+ uid:'',localShifts:[a],sheetShifts:[],selectedIds:[a.id]
+}),/UID/);
+assert.throws(()=>p.compareLegacySheet({
+ uid:'my-uid',localShifts:[a],sheetShifts:[],selectedIds:['shift-404-a']
+}),/見つかりません/);
 console.log('Administrator Firestore cutover preflight passed: selection, overlaps, UID isolation, no implicit migration');
