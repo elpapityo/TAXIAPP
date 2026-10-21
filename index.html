@@ -1606,6 +1606,8 @@ async function switchAccountScope(scope){
  writerLoadGate=true;accountScopeLoaded=false;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
+ historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';
+ historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;
  syncUI.cancelViewer();
  syncUI.resetAccount();
  currentLoginScope=scope||null;
@@ -2174,7 +2176,7 @@ function historyRecordDetails(record,shift){
 }
 async function loadHistoryFromCloud(date){
  const epoch=++historyCloudEpoch,uid=String(accountScope.uid||''),generation=accountScopeGeneration;
- historyCloudShifts=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';
+ historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';
  if(!memberDiary()||!accountDiary.ready())return;
  historyCloudBusy=true;historyCloudMessage='Firestoreから取得中…';render();
  try{
@@ -4610,7 +4612,7 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
   return;
  }
  if(event.target.id==='historyDate'){historyDate=event.target.value;historyShiftId='';
-  historyCloudEpoch++;historyCloudShifts=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';historyCloudBusy=false;
+  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';historyCloudBusy=false;
   render();if(memberDiary())void loadHistoryFromCloud(historyDate);return;}
  if(event.target.id==='printShiftSelect'){printShiftId=event.target.value;render();return;} if(event.target.id==='highwayShiftSelect'){highwayShiftId=event.target.value;render();return;}
  if(event.target.id==='historyShiftSelect'){historyShiftId=event.target.value;render();return;}
