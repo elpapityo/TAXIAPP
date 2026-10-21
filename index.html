@@ -1301,6 +1301,8 @@ let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicl
 const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDistance!=='off':['S','V','AB','AE','X','Y','AJ','AK'].includes(field)?model.prefs.highwayDistance!=='off':true;
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
+// 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
+const ADMIN_FIRESTORE_CUTOVER_ENABLED=false;
 const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
 let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
@@ -1590,8 +1592,9 @@ async function switchAccountScope(scope){
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
  syncUI.resetAccount();
- accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
- accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
+ const adminFirestore=Boolean(scope?.admin&&ADMIN_FIRESTORE_CUTOVER_ENABLED);
+ accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined}:{});
+ accountScope=scope?{kind:scope.admin&&!adminFirestore?'legacy':'member',uid:scope.uid,adminFirestore}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
  // Blank the previous account immediately, before any async IndexedDB read.
  model=emptyAccountModel();render();
@@ -2582,7 +2585,16 @@ const syncUI=window.TAXIAPP_SYNC_UI({
 
  canView:()=>deviceMode==='viewer'&&Boolean(accountSettingsAuto?.status().enabled),
  getModel:()=>model,
- getPacket:shift=>memberDiary()?{kind:'TAXIAPP_SHIFT_V1',shift:deepCopy(shift)}:googleShiftPacket(shift),
+ getPacket:shift=>{
+  if(memberDiary()&&accountScope.adminFirestore){
+   // The canonical app calculation is saved WITH the Firestore original.
+   // Google never recomputes fares or company remittance.
+   const packet=googleShiftPacket(shift);
+   packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+   return packet;
+  }
+  return memberDiary()?{kind:'TAXIAPP_SHIFT_V1',shift:deepCopy(shift)}:googleShiftPacket(shift);
+ },
  endpoint:()=>memberDiary()?accountDiary.endpoint():googleWebAppUrl(sheetTargetPrefs().webAppUrl),
  configured:()=>memberDiary()?accountDiary.ready():googleIsConfigured(),
  prefs:()=>memberDiary()?{syncMode:'on'}:sheetTargetPrefs(),
