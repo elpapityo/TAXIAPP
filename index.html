@@ -3551,7 +3551,7 @@ function handleAction(action,id){
   save();render();toast('同期乗務を開きました。距離は実際の車両トリップを確認してください。');return;
  }if(action==='loadCloudHistory'){
   const date=historyDate||selectedShift()?.date||dateStamp();
-  void loadHistoryFromCloud(date);return;
+  historyDate=date;void loadHistoryFromCloud(date);return;
  }
  if(action==='startShift'){
   if(shift)return;
