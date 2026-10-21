@@ -2581,6 +2581,7 @@ async function googleSendAllShifts(){
  */
 const syncUI=window.TAXIAPP_SYNC_UI({
  canSync:()=>canEditNow(),
+ scopeKey:()=>accountScope.uid,
  isEditing:()=>Boolean(appEl.querySelector('input:focus,textarea:focus,select:focus')),
 
  canView:()=>deviceMode==='viewer'&&Boolean(accountSettingsAuto?.status().enabled),
@@ -2784,7 +2785,7 @@ function renderDataManagement(){
  }).join('');
  return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
    <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
-   <p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>
+   <p class="warn">削除後は同じ保存先と同期しても端末へ復活しません。Google原本・他端末の記録は消しません。先にJSONバックアップを保存してください。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
   </section>
   <section class="card"><h2 class="h2">乗務一覧</h2>
@@ -4031,10 +4032,14 @@ async function deleteWholeShift(shiftId){
  const unfinished=shift.id===model.activeId||!shift.endedAt;
  const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
- if(!confirm('【テスト乗務1件をまとめて削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
-  '\nこの乗務の営業明細・編集中の記録・待機履歴・GPSもまとめて端末から削除します。\nGoogleシートへ送信したデータは残ります。\n本当に削除しますか？'))return;
+ if(!confirm('【乗務1件の削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
+  '\nこの端末から削除し、同じ保存先から再取得しても復活させません。\nGoogle・Firestoreの原本やほかの端末は消しません。\n本当に削除しますか？'))return;
  if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
  const previous=deepCopy(model);
+ let newlyMarked=false;
+ try{
+  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId);
+ }catch(error){toast('削除を中止しました。再受信防止情報を保存できません：'+String(error?.message||error),true);return;}
  try{
   // Invalidate any pending save and GPS watch before removing an active duty.
   clearTimeout(persistTimer);persistTimer=0;
@@ -4050,6 +4055,9 @@ async function deleteWholeShift(shiftId){
   render();toast(display+' の乗務を削除しました。');
  }catch(e){
   model=previous;
+  if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(markerError){
+   toast('削除状態の復旧が必要です：'+String(markerError?.message||markerError),true);
+  }
   try{
    await save(true);
    if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
