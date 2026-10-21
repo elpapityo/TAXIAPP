@@ -54,7 +54,7 @@ assert.match(rendered,/data-action="cloudTrashList"/);
 assert.doesNotMatch(rendered,/data-cloud-token|data-cloud-setting="webAppUrl"/,
  'Firestore owners must not see the legacy Google administrator credentials');
 (async()=>{
- assert.equal(await sync.cloudAction('load'),true);
+ assert.equal(await sync.cloudAction('load'),true,'クラウド一覧取得：'+JSON.stringify(log));
  assert.match(sync.privateDiaryPanel(),/data-action="cloudTrash"/);
  assert.equal(await sync.cloudAction('trash',id),true);
  assert.equal(deleted,true);
