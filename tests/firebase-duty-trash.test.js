@@ -13,6 +13,10 @@ function harness(){
   doc(_db,root,uid,section,id){assert.equal(root,'privateDuties');return {uid,section,id};},
   collection(_db,root,uid,section){assert.equal(root,'privateDuties');return {uid,section};},
   serverTimestamp:()=> 'server time',
+  async getDocFromServer(ref){
+   const value=store.get(key(ref));
+   return {exists:()=>value!==undefined,data:()=>clone(value)};
+  },
   async getDocsFromServer(collection){
    return {docs:[...store].filter(([k])=>k.startsWith(collection.uid+'/'+collection.section+'/')).map(([k,v])=>({
     id:k.split('/').pop(),data:()=>clone(v)
@@ -180,6 +184,81 @@ function harness(){
   h.api.bind({uid:'user-B'},{f:h.fire,db:{},auth:h.auth,session:h.session});
   assert.deepEqual(await h.api.list(),[]);
   assert.equal(h.store.has('user-A/shifts/'+id),true);
+ }
+ // A locally cached duty deleted on the server must NOT be treated as a
+ // new upload. The complete tombstone scan is explicitly required.
+ {
+  const h=harness(),original=clone(originalShift);
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  const markers=await h.api.readDeletionMarkers([id,'shift-888-a']);
+  assert.equal(markers.uid,'user-A');
+  assert.equal(markers.markersComplete,true);
+  assert.equal(markers.markerStates[0].state,'deleted');
+  assert.equal(markers.markerStates[1].state,'none');
+  const plan=factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[original],
+   serverShifts:[],...markers
+  });
+  assert.equal(plan.entries[0].action,'protect-local-copy');
+  assert.equal(plan.entries[0].uploadAuthorized,false);
+  assert.equal(plan.uploadAuthorized,false);
+  assert.equal(h.store.has('user-A/shifts/'+id),false);
+  await assert.rejects(h.api.readDeletionMarkers([id,id]),/不正/);
+  assert.throws(()=>factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[original],
+   serverShifts:[],markerStates:[],markersComplete:true
+  }),/不足/);
+  assert.throws(()=>factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[original],
+   serverShifts:[],...markers,markersComplete:false
+  }),/全件/);
+  assert.throws(()=>factory.planReconciliation({
+   uid:'user-A',serverUid:'user-B',localShifts:[original],
+   serverShifts:[],...markers
+  }),/UID/);
+  assert.throws(()=>factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[original],
+   serverShifts:[original],...markers
+  }),/矛盾/);
+ }
+ // Candidate new records never imply automatic upload consent.
+ {
+  const h=harness(),markers=await h.api.readDeletionMarkers(['shift-888-a']);
+  const newDuty={...originalShift,id:'shift-888-a'};
+  const plan=factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[newDuty],
+   serverShifts:[],...markers
+  });
+  assert.equal(plan.entries[0].action,'candidate-new');
+  assert.equal(plan.entries[0].uploadAuthorized,false);
+ }
+ // Restore records remain readable and a same-id change requires comparison.
+ {
+  const h=harness();
+  await h.api.move({shiftId:id,expectedRevision:1,confirmed:true});
+  await h.api.restore({shiftId:id,confirmed:true});
+  const markers=await h.api.readDeletionMarkers([id]);
+  assert.equal(markers.markerStates[0].state,'active');
+  const same=factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[clone(originalShift)],
+   serverShifts:[clone(originalShift)],...markers
+  });
+  assert.equal(same.entries[0].action,'same');
+  const changed=factory.planReconciliation({
+   uid:'user-A',serverUid:'user-A',localShifts:[{...originalShift,endedAt:'17:00'}],
+   serverShifts:[clone(originalShift)],...markers
+  });
+  assert.equal(changed.entries[0].action,'review-difference');
+ }
+ // Authentication changing between tombstone reads must invalidate the result.
+ {
+  const h=harness(),read=h.fire.getDocFromServer;
+  h.fire.getDocFromServer=async ref=>{
+   const response=await read(ref);
+   h.auth.currentUser={uid:'user-B'};
+   return response;
+  };
+  await assert.rejects(h.api.readDeletionMarkers([id]),/アカウント/);
  }
  console.log('Firestore trash staging passed: CAS, UID isolation, 30-day expiry, move/restore and preservation');
 })().catch(error=>{console.error(error);process.exitCode=1;});
