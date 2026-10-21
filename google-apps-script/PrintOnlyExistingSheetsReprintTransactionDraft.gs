@@ -57,7 +57,9 @@ function printV2ReprintHistory_(journal,id){
       active.next!==Number(row[2])||active.token!==token||
       active.previousDigest!==row[3]||active.nextDigest!==row[4])
     throw Error('再印刷監査履歴の段階が一致しません');
-   active=null;
+   // RECOVERY_REQUIRED must keep the transaction blocked and recoverable.
+   // Only a verified COMMIT or verified rollback may release the gate.
+   if(status==='COMMIT'||status==='ROLLED_BACK')active=null;
   }
  });
  return {active:active,rows:rows.length};
