@@ -7,7 +7,8 @@ const id='shift-1234567890123-demo',label='2026/10/21 09:00 合成1件';
 const shift={id,date:'2026-10-21',records:[{kind:'ride',status:'complete',raw:{K:1000}}],
  settings:{},startedAt:'09:00',endedAt:'10:00'};
 let selected=label,derived=id,latest=false,sourceAvailable=true,printMeter=1000;
-let rowState='Firestore印刷済',indexCount='1',legacy=false,reads=0,notices=[];
+let rowState='Firestore印刷済',indexCount='1',indexMeter='1000';
+let indexUpdatedAt='2026-10-21 11:00:00',legacy=false,reads=0,notices=[];
 function range(values){
  return {getDisplayValues:()=>values,getValues:()=>values,
  getDisplayValue:()=>String(values[0]?.[0]??''),getValue:()=>values[0]?.[0]};
@@ -19,10 +20,12 @@ const operation={getRange(key){if(key==='B15')return range([[latest]]);
 const index={getLastRow:()=>2,getRange(r,c,h,w){
  if(r===2&&c===1&&w===21){
   const row=Array(21).fill('');row[0]=id;row[7]=indexCount;
+  row[8]=indexMeter;row[15]=indexUpdatedAt;
   row[16]=rowState;row[20]=label;return range([row]);
  }
  if(r===2&&c===1&&w===17){const row=Array(17).fill('');
-  row[0]=id;row[7]=indexCount;row[16]=rowState;return range([row]);}
+  row[0]=id;row[7]=indexCount;row[8]=indexMeter;row[15]=indexUpdatedAt;
+  row[16]=rowState;return range([row]);}
  if(r==='T2')return range([[label]]);
  throw Error('unknown index range '+r+' '+c+' '+w);
 }};
@@ -33,10 +36,11 @@ const ss={getSheetByName:name=>({
  'TAXIAPP_同期原本':old,'補助簿印刷用':sheet,'補助簿印刷用_2頁':{}
 })[name]||null,toast:text=>notices.push(text)};
 const ctx={Date,console,SpreadsheetApp:{openById:()=>ss,flush:()=>{}},
+ Utilities:{formatDate:()=> '2026-10-21 11:00:00'},
  Logger:{log:()=>{}},Number,Error,Set,
  firestorePrintConfigDraft_:()=>({uid:'ownerSyntheticUID'}),
  firestorePrintDocDraft_:()=>{reads++;if(!sourceAvailable)throw Error('Firebase権限拒否');
-  return {packet:{shift,summary:{meter:1000}}};}
+  return {packet:{shift,summary:{meter:1000},printRecordedAt:'2026-10-21T02:00:00.000Z'}};}
 };
 vm.createContext(ctx);vm.runInContext(code,ctx);
 const good=ctx.applySelectedPrintShift();
@@ -52,7 +56,11 @@ rowState='Firestore印刷済';indexCount='99';
 assert.throws(()=>ctx.applySelectedPrintShift(),/印刷件数/);
 indexCount='1';printMeter=1200;
 assert.throws(()=>ctx.applySelectedPrintShift(),/メーター売上/);
-printMeter=1000;sourceAvailable=false;
+printMeter=1000;indexUpdatedAt='2026-10-20 11:00:00';
+assert.throws(()=>ctx.applySelectedPrintShift(),/更新日時/,'同額・同件数の修正済み日報を拒否する');
+indexUpdatedAt='2026-10-21 11:00:00';indexMeter='999';
+assert.throws(()=>ctx.applySelectedPrintShift(),/メーター売上/);
+indexMeter='1000';sourceAvailable=false;
 assert.throws(()=>ctx.applySelectedPrintShift(),/Firebase権限拒否/);
 sourceAvailable=true;legacy=true;rowState='受信済み';
 let legacyLoad=0;ctx.loadShift_=(spread,id0)=>{legacyLoad++;assert.equal(id0,id);return shift;};
