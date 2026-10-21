@@ -83,8 +83,11 @@ function firestorePrintDocDraft_(cfg,id){
   throw Error('Firestoreに既存アプリの計算済み印刷情報がありません');
  // Never recompute fares: raw, amounts, tender splits and summary were
  // created by googleShiftPacket() on the authenticated writer device.
+ var date=new Date(String(data.updatedAt||''));
+ if(!Number.isFinite(date.getTime()))
+  throw Error('Firestore原本の保存時刻を確認できません');
  var packet={kind:'TAXIAPP_SHIFT_V1',shift:data.shift,
-  summary:data.shift.__taxiPrintSummary};
+  summary:data.shift.__taxiPrintSummary,printRecordedAt:date.toISOString()};
  validatePacket_(packet);
  return {revision:data.revision,id:id,packet:packet};
 }
