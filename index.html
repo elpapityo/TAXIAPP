@@ -1320,6 +1320,7 @@ const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
 const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
+let accountScopeLoaded=false;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
@@ -1596,7 +1597,7 @@ async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)
 async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
  // Do not migrate a legacy owner's records to another user.
- writerLoadGate=true;
+ writerLoadGate=true;accountScopeLoaded=false;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  syncUI.cancelViewer();
@@ -1621,7 +1622,12 @@ async function switchAccountScope(scope){
   delete model.prefs.sheetTarget;
  }
  if(tab==='print'&&!legacyDiary())tab='drive';
+ accountScopeLoaded=true;
  render();
+ // The device-session callback may arrive before IndexedDB completes.
+ // Resume only after the correct account's local original is loaded.
+ if(!adminCutoverBusy&&deviceMode==='writer'&&writerLoadGate)
+  void syncUI.bootstrapWriter();
 }
 async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
@@ -2592,6 +2598,9 @@ async function googleSendAllShifts(){
  */
 const syncUI=window.TAXIAPP_SYNC_UI({
  canSync:()=>canEditNow(),
+ allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
+  accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
+  currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
  scopeKey:()=>accountScope.uid,
  isEditing:()=>Boolean(appEl.querySelector('input:focus,textarea:focus,select:focus')),
 
@@ -2680,7 +2689,9 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  onWriterBootstrapReady:()=>{
   writerLoadGate=false;writerLoadError='';
   document.body.classList.remove('taxi-viewer');
-  const label=document.getElementById('deviceSessionStatus');if(label)label.textContent='操作可能：Googleの乗務を取得済み';
+  const label=document.getElementById('deviceSessionStatus');
+  if(label)label.textContent=legacyDiary()&&sheetTargetPrefs().syncMode!=='on'?
+   '操作可能：端末内の乗務（双方向同期OFF）':'操作可能：クラウドの乗務を取得済み';
   render();
  },
  onWriterBootstrapStatus:message=>{writerLoadError=message;render();},
