@@ -2223,7 +2223,8 @@ function historyHighwayControls(draft){
     '<label class="field"><span class="field-label">'+labels[key]+'</span>'+
     '<input class="control" '+(draft.busy?'disabled ':'')+'data-history-highway-index="'+index+
     '" data-history-highway-field="'+key+'" type="'+(['entryTime','exitTime'].includes(key)?'time':'text')+
-    '" value="'+safeText(String(section[key]??''))+'" maxlength="100"></label>').join('')+
+    '" '+(['entryTime','exitTime'].includes(key)?'step="1" ':'')+
+    'value="'+safeText(String(section[key]??''))+'" maxlength="100"></label>').join('')+
    '</div><button class="btn red" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayRemove" data-id="'+index+
    '">この区間を削除</button></div>').join('')+
   '<div class="actions"><button class="btn" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayAdd" data-id="実">＋ 実車高速区間</button>'+
