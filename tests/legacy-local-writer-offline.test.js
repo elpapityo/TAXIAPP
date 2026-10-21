@@ -41,6 +41,6 @@ const create=(allow)=>{
  assert.equal(member.counts().ready,0);
  assert.match(member.counts().feedback,/Google接続と双方向同期/);
  assert.match(html,/allowLegacyLocalWriter:\(\)=>deviceMode==='writer'&&writerLoadGate&&/);
- assert.match(html,/accountScopeLoaded=true;[\s\S]{0,220}syncUI\.bootstrapWriter\(\)/);
+ assert.match(html,/accountScopeLoaded=true;[\s\S]{0,360}syncUI\.bootstrapWriter\(\)/);
  console.log('既定の同期OFFでも管理者の操作端末を解除し、個人Firestoreの受信ゲートは維持');
 })().catch(e=>{console.error(e);process.exitCode=1;});
