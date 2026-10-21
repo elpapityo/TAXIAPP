@@ -239,7 +239,9 @@ function create(deps){
      // A migrated device without a known common ancestor cannot decide
      // which distinct record is newer. Only identical content can be linked.
      const got=await scopedRequest('syncGet',{shiftId:id});
-     if(!got?.shift||got.id!==id)throw Error('既存乗務を照合できません');
+     if(!got?.shift||got.id!==id||got.shift.id!==id||
+        Number(got.revision)!==Number(remote.revision))
+      throw Error('既存乗務の照合中に更新番号が変わりました。自動同期せず再確認してください');
      if(remoteHash(got.shift)!==currentHash){
       nextConflict[id]={id,reason:'初回照合：端末とクラウドの内容が異なります',localRevision:null,remoteRevision:got.revision};
       continue;
