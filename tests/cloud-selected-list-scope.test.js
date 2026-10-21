@@ -11,16 +11,18 @@ const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
  request:async(action,params)=>{
   actions.push({action,params});
   if(action==='syncList')return {shifts:[{id:selected,revision:1},{id:other,revision:1}]};
+  if(action==='syncGet'&&params.shiftId===selected)return {id:selected,revision:1,shift:{id:selected,records:[],settings:{}}};
   throw Error('他の乗務に対する処理は禁止');
  },
- replaceRemoteShift:async()=>{throw Error('受信禁止');}
+ replaceRemoteShift:async(id)=>{assert.equal(id,selected);}
 });
 (async()=>{
- assert.equal(await engine.run([selected]),false);
- assert.match(engine.status().lastError,/指定した乗務以外/);
- assert.equal(actions.length,1);
+ assert.equal(await engine.run([selected]),true);
+ assert.equal(actions.length,2);
  assert.equal(actions[0].action,'syncList');
  assert.deepEqual([...actions[0].params.shiftIds],[selected]);
+ assert.deepEqual(actions.map(x=>x.action),['syncList','syncGet']);
+ assert.equal(actions[1].params.shiftId,selected);
  assert.equal(model.shifts.length,0);
- console.log('指定外の乗務が同期応答へ混入した場合は無変更で停止');
+ console.log('指定外の乗務が一覧に含まれていても選択IDだけを読み込み');
 })().catch(e=>{console.error(e);process.exitCode=1;});
