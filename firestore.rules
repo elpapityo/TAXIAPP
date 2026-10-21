@@ -66,7 +66,7 @@ service cloud.firestore {
   function validPrivateDuty(uid,shiftId) {
    return ownerEnabled(uid) &&
     request.resource.data.keys().hasOnly([
-     'format','revision','shift','writerSessionId','updatedAt'
+     'format','revision','shift','writerSessionId','updatedAt','trashed'
     ]) &&
     request.resource.data.keys().hasAll([
      'format','revision','shift','writerSessionId','updatedAt'
@@ -80,6 +80,7 @@ service cloud.firestore {
     request.resource.data.shift.records.size() <= 60 &&
     request.resource.data.shift.settings is map &&
     request.resource.data.writerSessionId is string &&
+    (!request.resource.data.keys().hasAny(['trashed']) || request.resource.data.trashed is bool) &&
     request.resource.data.updatedAt == request.time &&
     isCurrentEditor(uid);
   }
