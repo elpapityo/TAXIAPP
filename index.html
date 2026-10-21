@@ -2319,9 +2319,7 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
  if(saved&&(saved.uid!==accountScope.uid||saved.id!==shiftId||saved.recordId!==recordId||
     saved.date!==row.shift.date||!Number.isSafeInteger(saved.baseRevision)))
   throw Error('端末内の修正控えが一致しません。自動上書きを停止しました');
- if(saved?.fields&&(!saved.fields||typeof saved.fields!=='object'||Array.isArray(saved.fields)||
-   Object.keys(saved.fields).some(k=>!historyEditableKeys(record).includes(k)||typeof saved.fields[k]!=='string')))
-  throw Error('過去日報の修正控えの入力項目が不正です。原本は変更しません');
+
  if(saved?.metaFields&&(record.kind!=='ride'||typeof saved.metaFields!=='object'||
    Array.isArray(saved.metaFields)||Object.keys(saved.metaFields).some(k=>
     !HISTORY_EDIT_META.includes(k)||typeof saved.metaFields[k]!=='string')))
@@ -2337,6 +2335,9 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
  if(['ride','empty'].includes(prepared.kind)&&typeof window!=='undefined'&&
    window.TAXIAPP_HIGHWAY_SECTIONS?.initialize)
   window.TAXIAPP_HIGHWAY_SECTIONS.initialize(prepared);
+ if(saved?.fields&&(!saved.fields||typeof saved.fields!=='object'||Array.isArray(saved.fields)||
+   Object.keys(saved.fields).some(k=>!historyEditableKeys(prepared).includes(k)||typeof saved.fields[k]!=='string')))
+  throw Error('過去日報の修正控えに旧高速入力項目があります。控えを保護し、上書きを停止しました');
  const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
  const split=record.meta?.splitPayment||{};
  const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
