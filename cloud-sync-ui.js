@@ -41,7 +41,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  let observedDutyStates=null,queuedDutyIds=new Set(),writerRunBusy=false;
  let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
  let archiveRows=[],archiveDetail=null,archiveError='',archiving=false;
- let cloudRows=[],cloudError='',cloudBusy=false,cloudLoaded=false;
+ let cloudRows=[],cloudError='',cloudBusy=false,cloudLoaded=false,cloudEpoch=0;
  let writerBootstrapBusy=false;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
@@ -155,6 +155,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   observedDutyStates=null;queuedDutyIds.clear();
   writerFeedback='';viewerFeedback='';viewerFingerprint=null;
   archiveRows=[];archiveDetail=null;archiveError='';
+  cloudEpoch++;
   cloudRows=[];cloudError='';cloudLoaded=false;cloudBusy=false;
   engine.resetAccount();
  }
@@ -311,9 +312,22 @@ root.TAXIAPP_SYNC_UI=function(d){
    d.toast('操作可能な本人端末でクラウド接続を確認してください',true);return false;
   }
   cloudBusy=true;cloudError='';refreshPanel(true);
+  const epoch=cloudEpoch,uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||'');
+  const verifyScope=()=>{
+   if(cloudEpoch!==epoch||String(d.scopeKey?.()||'')!==uid||
+      String(d.endpoint()||'')!==endpoint||!d.configured()||
+      (d.canSync&&!d.canSync())||d.canView?.())
+    throw Error('ログイン利用者または保存先が変更されたため操作を停止しました');
+  };
+  const scopedRequest=async(action,payload)=>{
+   verifyScope();
+   const result=await d.request(action,payload);
+   verifyScope();
+   return result;
+  };
   try{
    if(kind==='load'){
-    const listing=await d.request('syncList',{});
+    const listing=await scopedRequest('syncList',{});
     if(!Array.isArray(listing?.shifts)||listing.shifts.length>120)
      throw Error('クラウドの乗務一覧を安全に確認できません');
     const items=[];
@@ -323,12 +337,12 @@ root.TAXIAPP_SYNC_UI=function(d){
         !Number.isSafeInteger(revision)||revision<1||
         items.some(entry=>entry.id===shiftId))throw Error('乗務一覧のIDが不正です');
      if(meta.deleted===true){items.push({id:shiftId,revision,deleted:true});continue;}
-     const result=await d.request('syncGet',{shiftId});
+     const result=await scopedRequest('syncGet',{shiftId});
      if(result?.id!==shiftId||result?.shift?.id!==shiftId||
         Number(result?.revision)!==revision)throw Error('取得中にクラウド原本が変化しました');
      items.push({id:shiftId,revision,deleted:false,shift:result.shift});
     }
-    cloudRows=items;cloudLoaded=true;
+    verifyScope();cloudRows=items;cloudLoaded=true;
     d.toast('クラウド保存 '+items.filter(x=>!x.deleted).length+'乗務／ゴミ箱 '+items.filter(x=>x.deleted).length+'乗務');
    }else if(kind==='trash'){
     const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&!x.deleted);
@@ -338,10 +352,12 @@ root.TAXIAPP_SYNC_UI=function(d){
     const date=row.shift.date||'日付不明',count=row.shift.records?.length||0;
     if(!root.confirm('【クラウド日報のゴミ箱移動】\n'+date+'／営業'+count+'件\nID: '+id+
        '\n\n復元できる状態で非表示にします。印刷対象からも除外します。続けますか？'))return false;
+    verifyScope();
     d.download(JSON.stringify({kind:'TAXIAPP_BEFORE_TRASH',shift:row.shift,revision:row.revision}),
       'TAXIAPP_削除前バックアップ_'+d.dateStamp()+'_'+id+'.json','application/json;charset=utf-8');
     if(!root.confirm('元の日報のバックアップを保存したことを確認しましたか？\nOKでゴミ箱へ移動します。'))return false;
-    const done=await d.request('syncTrash',{shiftId:id,baseRevision:row.revision});
+    verifyScope();
+    const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:row.revision});
     if(done?.id!==id||done?.deleted!==true||Number(done.revision)!==row.revision+1)
      throw Error('クラウドの削除完了を確認できません');
     cloudRows=cloudRows.map(x=>x.id===id?{id,revision:done.revision,deleted:true}:x);
@@ -350,23 +366,31 @@ root.TAXIAPP_SYNC_UI=function(d){
     const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&x.deleted===true);
     if(!row)throw Error('復元対象を取得し直してください');
     if(!root.confirm('この乗務をクラウドのゴミ箱から復元しますか？\nID: '+id))return false;
-    const done=await d.request('syncRestore',{shiftId:id,baseRevision:row.revision});
+    verifyScope();
+    const done=await scopedRequest('syncRestore',{shiftId:id,baseRevision:row.revision});
     if(done?.id!==id||done?.deleted!==false||Number(done.revision)!==row.revision+1)
      throw Error('復元した乗務の版番号を確認できません');
-    engine.undoLocalRemoval(id);
+    verifyScope();engine.undoLocalRemoval(id);
     cloudRows=cloudRows.map(x=>x.id===id?{id,revision:done.revision,deleted:false}:x);
     cloudLoaded=false;
     // The recovered original is re-fetched only for this exact ID, with the
     // normal per-duty revision checks and local-save confirmation.
     const received=await engine.run([id]);
+    verifyScope();
     if(!received)throw Error(engine.status().lastError||'クラウドは復元しましたが端末への再受信は未完了です。手動照合してください');
     d.toast('ゴミ箱の乗務を復元し、この端末へ受信しました。');
    }else throw Error('未対応のクラウド操作です');
    return true;
   }catch(error){
-   cloudError='クラウド処理を中止：'+String(error?.message||error);
-   d.toast(cloudError,true);return false;
-  }finally{cloudBusy=false;refreshPanel(true);}
+   // An old account's result must never render in the new account's panel.
+   if(cloudEpoch===epoch&&String(d.scopeKey?.()||'')===uid&&String(d.endpoint()||'')===endpoint){
+    cloudError='クラウド処理を中止：'+String(error?.message||error);
+    d.toast(cloudError,true);
+   }
+   return false;
+  }finally{
+   if(cloudEpoch===epoch){cloudBusy=false;refreshPanel(true);}
+  }
  }
  function vaultMarkup(){
   const escape=d.escape;
