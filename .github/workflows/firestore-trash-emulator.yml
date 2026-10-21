@@ -1,0 +1,35 @@
+name: Firestore trash security emulator (draft only)
+on:
+  push:
+    branches:
+      - feat/firebase-trash-staging-20261021
+    paths:
+      - ".github/workflows/firestore-trash-emulator.yml"
+      - "emulator-trash/**"
+      - "rules-drafts/firestore-trash.rules"
+      - "firebase-duty-trash.js"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GCLOUD_PROJECT: demo-taxiapp-trash
+      GOOGLE_CLOUD_PROJECT: demo-taxiapp-trash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install isolated test dependencies (no Firebase project credentials)
+        working-directory: emulator-trash
+        run: npm install --no-audit --no-fund
+      - name: Execute real Firestore Rules emulator against draft rules only
+        working-directory: emulator-trash
+        run: npm run emulator
