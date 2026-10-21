@@ -46,6 +46,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  let viewerFeedback='',viewerFingerprint=null,writerFeedback='';
  let archiveRows=[],archiveDetail=null,archiveError='',archiving=false;
  let cloudRows=[],cloudError='',cloudBusy=false,cloudLoaded=false,cloudEpoch=0;
+ let comparedDuties={};
  let writerBootstrapBusy=false,writerBootstrapEpoch=0;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
@@ -226,7 +227,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   writerFeedback='';viewerFeedback='';viewerFingerprint=null;
   archiveRows=[];archiveDetail=null;archiveError='';
   cloudEpoch++;
-  cloudRows=[];cloudError='';cloudLoaded=false;cloudBusy=false;
+  cloudRows=[];cloudError='';cloudLoaded=false;cloudBusy=false;comparedDuties={};
   engine.resetAccount();
  }
  function schedule(retry=false){
@@ -281,6 +282,31 @@ root.TAXIAPP_SYNC_UI=function(d){
  function cancelViewer(){
   if(viewerTimer!==null)clearTimeout(viewerTimer);
   viewerTimer=null;viewerFeedback='';viewerFingerprint=null;
+ }
+ async function compare(id){
+  if(!enabled()||!status().conflicts.some(x=>x.id===id))return false;
+  const uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||''),epoch=cloudEpoch;
+  const check=()=>uid===String(d.scopeKey?.()||'')&&endpoint===String(d.endpoint()||'')&&epoch===cloudEpoch;
+  try{
+   const local=d.getModel()?.shifts?.find(shift=>shift.id===id);
+   if(!local)throw Error('端末版の日報がありません');
+   const server=await d.request('syncGet',{shiftId:id});
+   if(!check()||server?.id!==id||server.shift?.id!==id)
+    throw Error('ログイン利用者または比較対象が変わりました');
+   const present=shift=>({
+    date:String(shift.date||''),started:String(shift.startedAt||''),
+    ended:String(shift.endedAt||''),count:shift.records?.length||0,
+    records:(shift.records||[]).map(r=>({
+     time:String(r.raw?.G||''),fare:String(r.raw?.K??''),
+     pickup:String(r.raw?.AL||''),dropoff:String(r.raw?.AM||'')
+    }))
+   });
+   comparedDuties[id]={local:present(local),remote:present(server.shift)};
+   refreshPanel();return true;
+  }catch(error){
+   if(check()){writerFeedback='競合比較エラー：'+String(error?.message||error);d.toast(writerFeedback,true);}
+   return false;
+  }
  }
  async function resolve(id,localWins){
   if(!enabled())return;
@@ -494,8 +520,19 @@ root.TAXIAPP_SYNC_UI=function(d){
    raw+(rows||'<p class="helper">一覧を取得してください。</p>');
  }
  function conflictMarkup(s){
+  const summary=(heading,info)=>'<div class="card"><strong>'+heading+'</strong>'+
+   '<p class="caption-note">乗務日 '+d.escape(info.date)+'　出庫 '+d.escape(info.started)+
+   '　入庫 '+d.escape(info.ended)+'　営業 '+info.count+'件</p>'+
+   '<details><summary>各営業の元データを表示</summary>'+
+   '<div>'+info.records.map((r,i)=>'<p class="caption-note">№'+(i+1)+
+    '　乗車 '+d.escape(r.time)+'　メーター入力 '+d.escape(r.fare)+
+    '円　'+d.escape(r.pickup)+' → '+d.escape(r.dropoff)+'</p>').join('')+
+   '</div></details></div>';
   const conflicts=s.conflicts.map(c=>'<div class="card"><strong>競合乗務 '+d.escape(c.id)+'</strong>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
+   '<button class="btn" type="button" data-sync-compare="'+d.escape(c.id)+'">端末版とサーバー版を比較</button>'+
+   (comparedDuties[c.id]?'<div class="form-grid">'+summary('端末版',comparedDuties[c.id].local)+
+     summary('Firestore版',comparedDuties[c.id].remote)+'</div>':'')+
    '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'">クラウド版を採用</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'">この端末版を採用</button>'+
    '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（変更しない）</button></div></div>').join('');
@@ -513,7 +550,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    cloudHolder.innerHTML=cloudTrashMarkup();
   const holder=d.root.querySelector('[data-sync-conflicts]');
   if(!holder)return;
-  const signature=JSON.stringify([status().conflicts,archiveRows,archiveDetail,archiveError]);
+  const signature=JSON.stringify([status().conflicts,archiveRows,archiveDetail,archiveError,comparedDuties]);
   if(holder.dataset.syncSignature===signature)return;
   if(holder.querySelector('input:focus,textarea:focus,select:focus'))return;
   holder.innerHTML=conflictMarkup(status())+vaultMarkup();
@@ -540,7 +577,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
   markLocalRemoval:(id,shift)=>{const marked=engine.markLocalRemoval(id,shift);queuedDutyIds.add(id);return marked;},
   undoLocalRemoval:id=>{engine.undoLocalRemoval(id);queuedDutyIds.delete(id);},cloudAction};
 };
