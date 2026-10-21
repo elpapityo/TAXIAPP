@@ -2629,8 +2629,13 @@ const syncUI=window.TAXIAPP_SYNC_UI({
      JSON.parse(localStorage.getItem(KEY)||'null');
     const cloudById=new Map(shifts.map(x=>[x.id,x]));
     const source=Array.isArray(legacy?.shifts)?legacy.shifts:[];
-    const canonical=shift=>JSON.stringify({...shift,__taxiPrintSummary:undefined,
-     records:(shift.records||[]).map(r=>({...r,amounts:undefined,payments:undefined}))});
+    const canonical=shift=>{
+     // Compare the pre-existing raw duty using the SAME official app pricing
+     // projection, not a second fare calculator or two different schemas.
+     const projected=googleShiftPacket(shift).shift;
+     return JSON.stringify({...projected,__taxiPrintSummary:undefined,
+      records:projected.records.map(r=>({...r,amounts:undefined,payments:undefined}))});
+    };
     const missing=source.filter(x=>!cloudById.has(x.id));
     const different=source.filter(x=>cloudById.has(x.id)&&
      canonical(x)!==canonical(cloudById.get(x.id)));
