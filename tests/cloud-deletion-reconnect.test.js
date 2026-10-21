@@ -72,7 +72,9 @@ function adapter(){
 (async()=>{
  // Cleanup must be explicitly available while background synchronization is OFF.
  const state={shifts:[]};
- let calls=0,holderHtml='',manualToasts=[];
+ let calls=0,manualToasts=[],downloaded=0,revision=1,deleted=false;
+ const cloudId='shift-1792600000020-older';
+ const cloudShift={id:cloudId,date:'2026-10-20',records:[],settings:{}};
  const localStore=new Map();
  const localStorage={getItem:k=>localStore.get(k)??null,setItem:(k,v)=>localStore.set(k,String(v))};
  const root={localStorage,confirm:()=>true,TAXIAPP_BIDIRECTIONAL_SYNC:globalThis.TAXIAPP_BIDIRECTIONAL_SYNC};
@@ -82,18 +84,40 @@ function adapter(){
  const holder={innerHTML:'',querySelector:()=>({active:true})};
  const sync=root.TAXIAPP_SYNC_UI({
   getModel:()=>state,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift}),
-  replace:async()=>{},request:async action=>{
-   calls++;if(action==='syncList')return {shifts:[]};throw Error('unexpected action '+action);
+  replace:async(_id,shift)=>{state.shifts.push(copy(shift));},
+  request:async(action,fields={})=>{
+   calls++;
+   if(action==='syncList')return {shifts:[{id:cloudId,revision,deleted}]};
+   if(action==='syncGet'){
+    if(deleted)throw Error('already trashed');
+    return {id:cloudId,revision,shift:copy(cloudShift)};
+   }
+   if(action==='syncTrash'||action==='syncRestore'){
+    assert.equal(fields.shiftId,cloudId);
+    assert.equal(Number(fields.baseRevision),revision);
+    deleted=action==='syncTrash';revision++;
+    return {id:cloudId,revision,deleted};
+   }
+   throw Error('unexpected action '+action);
   },
   endpoint:()=>'/synthetic-disabled-sync',scopeKey:()=> 'uid-1',
   configured:()=>true,prefs:()=>({syncMode:'off'}),canSync:()=>true,canView:()=>false,
   root:{querySelector:key=>key==='[data-sync-cloud-trash]'?holder:null},
   setStatus:()=>{},toast:text=>manualToasts.push(text),
-  escape:x=>String(x),download:()=>{},dateStamp:()=> '20261021'
+  escape:x=>String(x),download:()=>{downloaded++;},dateStamp:()=> '20261021'
  });
  assert.equal(await sync.cloudAction('load'),true);
- assert.equal(calls,1,'manual cleanup reads cloud without enabling auto sync');
- assert.match(holder.innerHTML,/クラウド保存済み日報/,'focused cloud button cannot block completion redraw');
+ assert.equal(calls,2,'manual cleanup reads the listing and original without auto sync');
+ assert.match(holder.innerHTML,/クラウドのゴミ箱へ移動/,'focused cloud button cannot block redraw');
  assert.ok(manualToasts.some(x=>x.includes('クラウド保存')));
+ assert.equal(await sync.cloudAction('trash',cloudId),true,'one selected remote-only duty enters trash');
+ assert.equal(deleted,true);
+ assert.equal(downloaded,1,'before remote trash, a user-controlled backup is exported');
+ assert.deepEqual(state.shifts,[],'manual remote trash must not modify local data');
+ assert.match(holder.innerHTML,/クラウドから復元/);
+ assert.equal(await sync.cloudAction('restore',cloudId),true);
+ assert.equal(deleted,false);
+ assert.equal(state.shifts.length,1,'the explicitly restored duty is received');
+ assert.equal(state.shifts[0].id,cloudId);
  console.log('手動クラウド日報整理：自動同期OFFでも一覧取得と表示が動作');
 })().catch(e=>{console.error(e);process.exitCode=1;});
