@@ -51,6 +51,8 @@ function printStagePrepareV1_(request) {
   throw Error('本人認証UIDが不正です');
  var revision=printStageIntegerV1_(request.sourceRevision,'Firestore更新番号');
  if(revision<1)throw Error('Firestore更新番号が不正です');
+ var expectedStageRevision=printStageIntegerV1_(
+  request.expectedStageRevision,'期待する印刷ステージ更新番号');
  var packet=request.packet,shift=packet&&packet.shift;
  if(!packet||packet.kind!=='TAXIAPP_SHIFT_V1'||!shift||
     typeof shift.id!=='string'||!TAXIAPP_PRINT_STAGE_ID_V1.test(shift.id))
@@ -118,7 +120,8 @@ function printStagePrepareV1_(request) {
  var digest=printStageHashV1_(json);
  // UID stays off the print sheet; this does NOT authenticate a request.
  var transferId=printStageHashV1_([uid,shift.id,revision,digest].join('|'));
- return {id:shift.id,sourceUid:uid,revision:revision,transferId:transferId,
+ return {id:shift.id,sourceUid:uid,revision:revision,
+  expectedStageRevision:expectedStageRevision,transferId:transferId,
   digest:digest,projectionJson:json};
 }
 /**
@@ -137,6 +140,8 @@ function printStageAppendV1_(sheet,prepared,verifiedAdminUid) {
     !verifiedAdminUid||prepared.sourceUid!==verifiedAdminUid)
   throw Error('本人認証された管理者UIDと一致しません');
  if(!TAXIAPP_PRINT_STAGE_ID_V1.test(String(prepared.id||''))||
+    !Number.isSafeInteger(prepared.expectedStageRevision)||
+    prepared.expectedStageRevision<0||
     !Number.isSafeInteger(prepared.revision)||prepared.revision<1||
     typeof prepared.projectionJson!=='string'||prepared.projectionJson.length>30000||
     printStageHashV1_(prepared.projectionJson)!==prepared.digest||
@@ -165,6 +170,13 @@ function printStageAppendV1_(sheet,prepared,verifiedAdminUid) {
   var sameId=rows.filter(function(row){return String(row[0])===prepared.id;});
   var identical=sameId.filter(function(row){return Number(row[1])===prepared.revision;});
   if(identical.length>1)throw Error('同一更新番号が重複しています');
+  var latest=sameId.reduce(function(max,row){
+   var rev=Number(row[1]);
+   if(!Number.isSafeInteger(rev)||rev<1)throw Error('過去の印刷版番号が不正です');
+   return Math.max(max,rev);
+  },0);
+  if(latest>prepared.revision)
+   throw Error('古い更新番号を印刷ステージへ反映できません');
   if(identical.length===1){
    if(identical[0][2]!==prepared.transferId||
       identical[0][3]!==prepared.digest||
@@ -172,13 +184,10 @@ function printStageAppendV1_(sheet,prepared,verifiedAdminUid) {
     throw Error('同じ更新番号に異なる印刷データが存在します');
    return {state:'already-staged',id:prepared.id,revision:prepared.revision};
   }
-  var latest=sameId.reduce(function(max,row){
-   var rev=Number(row[1]);
-   if(!Number.isSafeInteger(rev)||rev<1)throw Error('過去の印刷版番号が不正です');
-   return Math.max(max,rev);
-  },0);
-  if(latest>=prepared.revision)
-   throw Error('古い更新番号を印刷ステージへ反映できません');
+  if(latest===prepared.revision)
+   throw Error('同じ更新番号に異なる印刷データが存在します');
+  if(latest!==prepared.expectedStageRevision)
+   throw Error('印刷ステージの更新番号が変更されました。CAS_CONFLICT');
   var stamped=(typeof Utilities!=='undefined'&&Utilities.formatDate)?
    Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss'):
    new Date().toISOString();
