@@ -89,7 +89,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(timer!==null||!enabled()||writerRunBusy)return;
   timer=setTimeout(()=>{timer=null;void run(false);},delay);
  }
- async function run(manual=false){
+ async function run(manual=false,onlyIds=null){
   if(viewEnabled())return viewNow(manual);
   if(!enabled()){
    if(manual){
@@ -100,8 +100,14 @@ root.TAXIAPP_SYNC_UI=function(d){
   }
   if(writerRunBusy||status().busy)return false;
   if(!manual&&!queuedDutyIds.size)return true;
+  const requested=Array.isArray(onlyIds)?onlyIds:null;
+  if(requested&&(!manual||requested.length!==1||typeof requested[0]!=='string'||
+    !d.getModel()?.shifts?.some(shift=>shift.id===requested[0]))){
+   d.toast('選択した乗務が見つからないため、Google送信を停止しました',true);
+   return false;
+  }
   const batch=[...queuedDutyIds];
-  queuedDutyIds.clear();
+  if(!requested)queuedDutyIds.clear();
   writerRunBusy=true;
   writerFeedback='Googleと照合中…';
   d.setStatus(writerFeedback);
@@ -110,7 +116,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   try{
    // A manual verification checks every duty; normal operations touch only
    // duties that had status, break or fare changes since the last sync.
-   ok=await engine.run(manual?undefined:batch);
+   ok=await engine.run(requested|| (manual?undefined:batch));
    if(status().conflicts.length)await saveConflictCopies();
    writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
     '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
