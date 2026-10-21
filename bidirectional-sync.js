@@ -130,6 +130,19 @@ function create(deps){
  function status(){
   return {busy,conflicts:Object.values(conflict),lastError,lastSyncAt};
  }
+ // The phone may release a previous original only when its complete current
+ // packet still matches a confirmed, owner-scoped server revision.
+ function verifiedRevision(id){
+  if(!validId(id)||busy||conflict[id])return null;
+  const shift=getModel()?.shifts?.find(item=>item.id===id);
+  if(!shift)return null;
+  const base=getSaved()[id];
+  if(!base||base.receiving===true||!Number.isSafeInteger(base.revision)||
+     base.revision<1||base.hash!==localHash(shift))return null;
+  try{if(Object.prototype.hasOwnProperty.call(localRemovals(),id))return null;}
+  catch{return null;}
+  return base.revision;
+ }
  const isConflict=id=>Boolean(conflict[id]);
  function markConflict(id,reason,localRevision,remoteRevision){
   conflict[id]={id,reason,localRevision,remoteRevision};
@@ -421,7 +434,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,verifiedRevision,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
