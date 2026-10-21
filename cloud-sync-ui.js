@@ -44,7 +44,8 @@ root.TAXIAPP_SYNC_UI=function(d){
  let writerBootstrapBusy=false;
  const engine=root.TAXIAPP_BIDIRECTIONAL_SYNC.create({
   getModel:d.getModel,getPacket:d.getPacket,getEndpoint:d.endpoint,
-  localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace
+  localStorage:root.localStorage,request:d.request,replaceRemoteShift:d.replace,
+  getScopeKey:d.scopeKey
  });
  const enabled=()=>d.prefs().syncMode==='on'&&d.configured()&&(!d.canSync||d.canSync());
  const status=()=>engine.status();
@@ -71,12 +72,13 @@ root.TAXIAPP_SYNC_UI=function(d){
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
    const shifts=await engine.readOnly();
    if(shifts===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
+   const visible=engine.excludeLocalRemovals(shifts);
    if(!d.writerBootstrapAllowed?.()||d.endpoint()!==accountEndpoint)return false;
-   if(!await d.onWriterSnapshot(shifts))return false;
+   if(!await d.onWriterSnapshot(visible))return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
    observedDutyStates=dutyStates(d.getModel());queuedDutyIds.clear();
    if(timer!==null){clearTimeout(timer);timer=null;}
-   writerFeedback='Googleから'+shifts.length+'乗務を取得・保存しました';
+   writerFeedback='Googleから'+visible.length+'乗務を取得・保存しました';
    d.onWriterBootstrapReady?.();
    d.setStatus(writerFeedback);return true;
   }catch(error){
@@ -333,6 +335,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount};
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
+  markLocalRemoval:id=>engine.markLocalRemoval(id),undoLocalRemoval:id=>engine.undoLocalRemoval(id)};
 };
 })(typeof window!=='undefined'?window:globalThis);
