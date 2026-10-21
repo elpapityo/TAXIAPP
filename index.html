@@ -2487,6 +2487,42 @@ function applyHistoryBusinessEdits(record,draft,settings,date){
  if(changed.size)record.raw=deriveRaw(record,settings);
  return changed.size;
 }
+function historyPendingAdditionKey(uid,shiftId,kind){
+ return 'taxiapp-history-new-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(shiftId)+'-'+kind;
+}
+function startHistoryNewRecord(kind){
+ if(!['ride','cancel','empty'].includes(kind)||!memberDiary()||!canEditNow())
+  throw Error('過去日報を編集できません');
+ const shift=selectedHistoryShift();
+ const row=historyCloudRows.find(item=>item.id===shift?.id);
+ if(!row||historyCloudUid!==accountScope.uid||model.shifts.some(item=>item.id===shift.id))
+  throw Error('本人Firestoreの日報を取得し、端末の未同期記録を保護してください');
+ if(row.shift.records.length>=MAX_RECORDS)throw Error('60件に達したため追加できません');
+ const pointer=historyPendingAdditionKey(accountScope.uid,shift.id,kind);
+ let id=localStorage.getItem(pointer),candidate=null;
+ if(id){
+  let saved;
+  try{saved=JSON.parse(localStorage.getItem(historyEditStorageKey(accountScope.uid,shift.id,id))||'null');}
+  catch{throw Error('追加中の営業記録が破損しています。上書きせず保持します');}
+  if(!saved?.addRecord||saved.uid!==accountScope.uid||saved.id!==shift.id||
+     saved.recordId!==id||saved.sourceRecord?.id!==id||saved.sourceRecord.kind!==kind)
+   throw Error('追加中の営業記録を照合できません。端末の控えを保持します');
+  candidate=saved.sourceRecord;
+ }else{
+  const at=new Date(row.shift.startedIso||row.shift.date+'T00:00:00');
+  const start=Number.isFinite(at.getTime())?at:new Date(row.shift.date+'T00:00:00');
+  candidate=makeDraft(deepCopy(row.shift),kind,start,'乗');
+  candidate.id='record-'+Date.now()+'-'+Math.floor(Math.random()*100000);
+ }
+ startHistoryLocationEdit(shift.id,candidate.id,candidate);
+ try{
+  localStorage.setItem(pointer,candidate.id);
+  if(localStorage.getItem(pointer)!==candidate.id)throw Error('追加中の日報IDを保存できません');
+ }catch(error){
+  historyLocationEdit.message='追加中の営業記録IDの保護に失敗しました：'+String(error?.message||error);
+  render();return;
+ }
+}
 function markHistoryRecordRemoval(recordId){
  const shift=selectedHistoryShift();
  if(!shift||!historyCloudRows.some(row=>row.id===shift.id))
@@ -3977,7 +4013,12 @@ function handleAction(action,id){
   if(!found||!confirm('他の端末で入力中の場合は競合が発生します。'+found.date+'の乗務をこの端末で編集しますか？'))return;
   found.gpsTrip??={};found.gpsTrip.enabled=false;model.activeId=id;tab='drive';
   save();render();toast('同期乗務を開きました。距離は実際の車両トリップを確認してください。');return;
- }if(action==='historyMarkRecordRemoval'){
+ }if(action==='historyAddRecord'){
+  try{startHistoryNewRecord(id);}
+  catch(error){toast(String(error?.message||error),true);}
+  return;
+ }
+ if(action==='historyMarkRecordRemoval'){
   try{markHistoryRecordRemoval(id);}catch(error){toast(String(error?.message||error),true);}
   return;
  }
