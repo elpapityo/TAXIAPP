@@ -1413,6 +1413,7 @@ const trashLogin=window.TAXIAPP_TRASH_LOGIN.create({
 });
 async function performTrashAction(action,shiftId){
  if(!trashEnabled()||!canEditNow()||memberTrashOperationBusy)return;
+ if(model.activeId){toast('現在の乗務が終了するまでサーバー日報の整理はできません',true);return;}
  const uid=accountScope.uid,generation=accountScopeGeneration;
  const p=memberTrashPreview;
  if(!p||p.uid!==uid||p.localSignature!==JSON.stringify(model.shifts)){
@@ -1431,6 +1432,14 @@ async function performTrashAction(action,shiftId){
   }
  }
  if(action==='restore'){
+  const restoredRow=p.trashRows?.find(x=>x.id===shiftId);
+  if(restoredRow){
+   const targetSpan=window.TAXIAPP_ADMIN_CUTOVER.interval(restoredRow);
+   const overlapping=(p.rows||[]).filter(x=>x.id!==shiftId&&
+    window.TAXIAPP_ADMIN_CUTOVER.overlaps(targetSpan,window.TAXIAPP_ADMIN_CUTOVER.interval(x)));
+   if(overlapping.length&&!confirm('復元対象の乗務時間が既存の日報 '+overlapping.length+
+     '件と重複しています。重複を確認したうえで、復元処理を続けますか？'))return;
+  }
   if(!p.trashRows?.some(x=>x.id===shiftId)){
    toast('ゴミ箱にある日報を選択してください',true);return;
   }
@@ -1442,6 +1451,8 @@ async function performTrashAction(action,shiftId){
   }
  }
  memberTrashOperationBusy=true;render();
+ // Prevent delayed local saves from overwriting the verified post-delete state.
+ if(persistTimer){clearTimeout(persistTimer);persistTimer=0;await save(true);}
  try{
   trashAccountCheck(uid,generation);
   const result=action==='move'?await trashActions.moveSelected(shiftId):
@@ -1526,7 +1537,7 @@ function setDeviceMode(next,previous='',detail=''){
  }
 }
 function blockViewerEdit(event){
- if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
+ if((canEditNow()&&!memberTrashOperationBusy)||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
  const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"], [data-action="downloadLocalRecovery"],[data-action="uploadLocalRecovery"],[data-action="takeLocalConflict"],[data-action="takeCloudConflict"],[data-action="downloadMemberConflictArchive"]')||
   (['change','input'].includes(event.type)&&target.matches?.(
@@ -3228,7 +3239,9 @@ function renderMemberTrashPanel(){
  if(valid&&!memberTrashPreviewBusy&&p.localSignature===JSON.stringify(model.shifts)){
   try{
    const report=window.TAXIAPP_TRASH_REVIEW.review({
-    uid:accountScope.uid,serverUid:p.uid,shifts:p.rows,trash:p.trashRows||[],
+    uid:accountScope.uid,serverUid:p.uid,
+    shifts:p.rows.map(x=>({...x,fare:money(totals(x.records||[],x.settings||{},x.date||'').meter)})),
+    trash:p.trashRows||[],
     selectedId:memberTrashSelection
    });
    const list=report.items.filter(x=>x.location==='normal').map(x=>
@@ -3239,6 +3252,12 @@ function renderMemberTrashPanel(){
     '～入庫 '+safeText(x.endedAt||'未入庫')+'／営業 '+x.recordCount+
     '件／更新番号 '+safeText(x.revision??'未確認')+'</label></li>').join('');
    const localOnly=(model.shifts||[]).filter(x=>!p.rows.some(y=>y.id===x.id));
+   const spans=p.rows.map(x=>({id:x.id,span:window.TAXIAPP_ADMIN_CUTOVER.interval(x)}));
+   const overlapIds=new Set();
+   for(let i=0;i<spans.length;i++)for(let j=i+1;j<spans.length;j++)
+    if(window.TAXIAPP_ADMIN_CUTOVER.overlaps(spans[i].span,spans[j].span)){
+     overlapIds.add(spans[i].id);overlapIds.add(spans[j].id);
+    }
    panel='<p class="helper">表示される乗務は<strong>Firebaseサーバー側で実在を確認したもの</strong>だけです。</p>'+
     (list?'<ul>'+list+'</ul>':'<p>Firebase原本がありません。</p>')+
     (trashEnabled()&&!memberTrashOperationBusy&&report.selection?.canChoose?
@@ -3249,6 +3268,8 @@ function renderMemberTrashPanel(){
        (trashEnabled()&&!memberTrashOperationBusy?
         ' <button type="button" class="btn" data-action="memberTrashRestore" data-id="'+safeText(x.id)+'">復元（確認あり）</button>':'')+
        '</li>').join('')+'</ul>':'')+
+    (overlapIds.size?'<p class="warn">乗務時間が重複する日報 '+overlapIds.size+
+     '件があります。原本・出庫入庫時刻を確認し、必要なものだけ選択してください。</p>':'')+
     (localOnly.length?'<p class="warn">端末だけにある乗務 '+localOnly.length+
      '件は削除候補にしません。未同期データを先に保護・照合してください。</p>':'')+
     (trashEnabled()?
