@@ -69,8 +69,9 @@ root.TAXIAPP_SYNC_UI=function(d){
   try{
    if(!d.configured()||d.prefs().syncMode!=='on')throw Error('Google接続と双方向同期の設定が必要です');
    d.onWriterBootstrapStatus?.('Googleの最新乗務を取得中…');
-   const shifts=await engine.readOnly();
-   if(shifts===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
+   const received=await engine.readOnly();
+   if(received===null)throw Error(engine.viewerStatus().lastError||'Googleから乗務を読み込めません');
+   const shifts=engine.excludeLocalRemovals(received);
    if(!d.writerBootstrapAllowed?.()||d.endpoint()!==accountEndpoint)return false;
    if(!await d.onWriterSnapshot(shifts))return false;
    if(!engine.adoptViewerBaseline())throw Error('同期の管理情報を保存できません');
@@ -118,7 +119,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    // duties that had status, break or fare changes since the last sync.
    ok=await engine.run(requested|| (manual?undefined:batch));
    if(status().conflicts.length)await saveConflictCopies();
-   writerFeedback=ok?'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合':
+   writerFeedback=ok?(requested?'同期完了：選択した1乗務を照合':'同期完了：'+(d.getModel()?.shifts?.length||0)+'乗務を照合'):
     '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
    if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
    d.setStatus(message());
@@ -333,6 +334,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount};
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,resolve,status,message,archiveAction,loadArchives,bootstrapWriter,resetAccount,
+  markLocalRemoval:id=>engine.markLocalRemoval(id),undoLocalRemoval:id=>engine.undoLocalRemoval(id)};
 };
 })(typeof window!=='undefined'?window:globalThis);
