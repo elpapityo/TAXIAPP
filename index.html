@@ -3999,9 +3999,16 @@ async function deleteWholeShift(shiftId){
  const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
  if(!confirm('【テスト乗務1件をまとめて削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
-  '\nこの乗務の営業明細・編集中の記録・待機履歴・GPSもまとめて端末から削除します。\nGoogleシートへ送信したデータは残ります。\n本当に削除しますか？'))return;
+  '\nこの乗務は端末から削除し、同じ接続先からの自動復活も防ぎます。\nGoogle側の原本と印刷一覧、ほかの端末のデータは残ります。\n本当に削除しますか？'))return;
  if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
  const previous=deepCopy(model);
+ let newlyMarked=false;
+ try{
+  // The marker is local-only: Google/Firestore originals are not removed.
+  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId);
+ }catch(error){
+  toast('削除を中止しました：再受信防止の記録を保存できません。'+String(error?.message||error),true);return;
+ }
  try{
   // Invalidate any pending save and GPS watch before removing an active duty.
   clearTimeout(persistTimer);persistTimer=0;
@@ -4017,6 +4024,9 @@ async function deleteWholeShift(shiftId){
   render();toast(display+' の乗務を削除しました。');
  }catch(e){
   model=previous;
+  if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(undoError){
+   toast('同期の削除記録の復旧が必要です：'+String(undoError?.message||undoError),true);
+  }
   try{
    await save(true);
    if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
