@@ -43,10 +43,18 @@
 5. `expiresAt` は信頼できる基準時刻を中心に30日以内へ固定し、クライアント時計や改変による無期限保管を許さない。
 6. 本番の既存ルールを上書きせず、差分・バックアップ・ロールバック案を作成し、**EmulatorでUID、古いセッション、CAS、再同期、期限、TTL、復元、重複ケースの拒否/許可を検証**してから、事前承認で本番公開。
 
+## 同期復活防止の検証コード（今回追加）
+- `firebase-duty-trash.js` に `readDeletionMarkers(shiftIds)` を追加。本人UIDの `tombstones/{shiftId}` を**各IDごとにサーバー取得**し、欠損も含めて全件取得しなければ照合失敗とする。UIDの途中変更、通信失敗、不正な形式、重複IDは拒否。
+- `planReconciliation({uid,serverUid,localShifts,serverShifts,markerStates,markersComplete})` で**端末に残る日報の再送信可否を分類**する。削除済みマーカーは `protect-local-copy`、同ID内容違いは `review-difference`、新規候補も `candidate-new` として扱い、すべて `uploadAuthorized:false` を返す。**どの判定結果もアップロード・削除を自動許可しない**。
+- 復元後に通常の保存で更新番号が増えても、墓標が `active` であれば次のゴミ箱移動を行えるよう、更新番号は移動対象原本とユーザー確認の期待版で検証する。古い墓標の版番号だけを根拠に誤拒否しない。
+- 未入庫・精算中の日報は現段階のゴミ箱移動を拒否する。日報の内容に対する操作中の編集セッション変化も拒否。
+- `tests/firebase-duty-trash.test.js` に **削除→旧端末のローカル保持→再アップロード候補の抑止判定**、欠損マーカー、他UID、復元後編集→再削除、編集中拒否、通信中のUID変更を追加。
+- この判定コードは現時点の `bidirectional-sync.js` や `account-diary-store.js` には**接続していない**。現在の本番では依然として日報が復活する可能性がある。新旧クライアントの安全を担保するにはFirestore Rulesの `deleted` マーカー確認と同期UIへの結合が別途必要。
+
 ## 今回の試作コード
 `firebase-duty-trash.js` は `TAXIAPP_DUTY_TRASH.create()` を提供。本人UIDに `bind()` し、`move({shiftId,expectedRevision,confirmed:true})`、`list()`、`restore({shiftId,confirmed:true})` を試験可能。**未実装のUIやRules公開を迂回して本番で呼び出さない**。
 
-`tests/firebase-duty-trash.test.js` はモックFirestoreを使って版競合、本人の確認、再削除、復元、期限、UID変更、読み取り専用拒否などを検証する。モックテストはセキュリティルール実機試験の代わりにはならない。
+`tests/firebase-duty-trash.test.js` はモックFirestoreを使って版競合、本人の確認、再削除、復元、期限、UID変更、読み取り専用拒否、旧端末の再送信候補抑止などを検証する。モックテストはセキュリティルール実機試験の代わりにはならない。
 
 ## 本番切替までの残作業
 - 既存 `account-diary-store.js` と双方向同期の通常クライアント・旧端末で **墓標のある日報が再作成されないこと**を本物のRulesで検証。
