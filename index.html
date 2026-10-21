@@ -2221,13 +2221,13 @@ function historyHighwayControls(draft){
    (section.mode==='実'?'実車':'空車')+'高速 '+(index+1)+'区間</strong>'+
    '<div class="form-grid">'+HISTORY_HIGHWAY_FIELDS.map(key=>
     '<label class="field"><span class="field-label">'+labels[key]+'</span>'+
-    '<input class="control" data-history-highway-index="'+index+
+    '<input class="control" '+(draft.busy?'disabled ':'')+'data-history-highway-index="'+index+
     '" data-history-highway-field="'+key+'" type="'+(['entryTime','exitTime'].includes(key)?'time':'text')+
     '" value="'+safeText(String(section[key]??''))+'" maxlength="100"></label>').join('')+
-   '</div><button class="btn red" data-action="historyHighwayRemove" data-id="'+index+
+   '</div><button class="btn red" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayRemove" data-id="'+index+
    '">この区間を削除</button></div>').join('')+
-  '<div class="actions"><button class="btn" data-action="historyHighwayAdd" data-id="実">＋ 実車高速区間</button>'+
-  '<button class="btn" data-action="historyHighwayAdd" data-id="空">＋ 空車高速区間</button></div>'+
+  '<div class="actions"><button class="btn" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayAdd" data-id="実">＋ 実車高速区間</button>'+
+  '<button class="btn" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayAdd" data-id="空">＋ 空車高速区間</button></div>'+
   '<p class="caption-note">区間距離・料金は既存の高速明細計算で集計します。</p></details>';
 }
 function editHistoryHighwaySection(operation,modeOrIndex){
@@ -2270,8 +2270,8 @@ function historyLocationEditHtml(shift){
  return '<section class="card"><h3 class="h2">過去日報の営業明細修正</h3>'+
   (draft.removeRecord?'<p class="warn">この営業記録を削除する修正案です。Firestore保存時に確認します。</p>':
    '<p class="caption-note">乗務中の原本とは別に修正案を保持します。料金・距離・決済の変更は既存計算式で再確認します。</p>')+
-  '<label class="field"><span class="field-label">乗車地</span><input class="control" id="historyEditPickup" maxlength="160" value="'+safeText(draft.al)+'"></label>'+
-  '<label class="field"><span class="field-label">降車地</span><input class="control" id="historyEditDropoff" maxlength="160" value="'+safeText(draft.am)+'"></label>'+
+  '<label class="field"><span class="field-label">乗車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditPickup" maxlength="160" value="'+safeText(draft.al)+'"></label>'+
+  '<label class="field"><span class="field-label">降車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditDropoff" maxlength="160" value="'+safeText(draft.am)+'"></label>'+
   '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>'+(draft.removeRecord?'営業記録の削除を保存':'Firestoreへ保存')+'</button>'+
   '<button class="btn" data-action="cancelHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>修正を取り消す</button></div>'+
   (draft.message?'<p class="caption-note">'+safeText(draft.message)+'</p>':'')+
@@ -2283,25 +2283,25 @@ function historyLocationEditHtml(shift){
    const options=key==='E'?TYPES.map(k=>[k,k]):key==='N'?PAYMENTS:
     key==='O'?[['','なし'],['シ','シ'],['高','高']]:null;
    const control=options?
-    '<select class="control" data-history-edit-field="'+key+'">'+
+    '<select class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-field="'+key+'">'+
      options.map(pair=>'<option value="'+safeText(pair[0])+'" '+(value===pair[0]?'selected':'')+'>'+safeText(pair[1])+'</option>').join('')+'</select>':
-    '<input class="control" data-history-edit-field="'+key+'" maxlength="160" value="'+safeText(value)+'" '+(HISTORY_EDIT_NUMERIC.has(key)?'inputmode="decimal"':'')+'>';
+    '<input class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-field="'+key+'" maxlength="160" value="'+safeText(value)+'" '+(HISTORY_EDIT_NUMERIC.has(key)?'inputmode="decimal"':'')+'>';
    return '<label class="field"><span class="field-label">'+safeText(name)+'</span>'+control+'</label>';
   }).join('')+'</div>'+
   (draft.sourceRecord?.kind==='ride'?'<div class="form-grid">'+
     HISTORY_EDIT_META.map(key=>'<label class="field"><span class="field-label">'+
      safeText(({uberAppDisplayed:'Uberアプリ表示額',uberReservation:'Uber予約料',uberTip:'Uberチップ'})[key])+
-     '</span><input class="control" inputmode="decimal" data-history-edit-meta="'+key+
+     '</span><input class="control" inputmode="decimal" '+(draft.busy?'disabled ':'')+'data-history-edit-meta="'+key+
      '" value="'+safeText(draft.metaFields?.[key]??'')+'"></label>').join('')+
-    '<label class="field"><span class="field-label">追加決済金種</span><select class="control" data-history-edit-split="second">'+
+    '<label class="field"><span class="field-label">追加決済金種</span><select class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-split="second">'+
     [['','なし'],...PAYMENTS.filter(x=>x[0]!=='キ')].map(p=>'<option value="'+safeText(p[0])+'" '+
       (draft.splitSecond===p[0]?'selected':'')+'>'+safeText(p[1])+'</option>').join('')+'</select></label>'+
-    '<label class="field"><span class="field-label">手動指定の決済金額（円）</span><input class="control" inputmode="decimal" data-history-edit-split="amount" value="'+safeText(draft.splitAmount??'')+'"></label>'+
-    '<label class="field"><span class="field-label">金額を指定する金種</span><select class="control" data-history-edit-split="slot">'+
+    '<label class="field"><span class="field-label">手動指定の決済金額（円）</span><input class="control" inputmode="decimal" '+(draft.busy?'disabled ':'')+'data-history-edit-split="amount" value="'+safeText(draft.splitAmount??'')+'"></label>'+
+    '<label class="field"><span class="field-label">金額を指定する金種</span><select class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-split="slot">'+
     '<option value="" '+(draft.splitSlot===null?'selected':'')+'>未指定</option>'+
     '<option value="0" '+(draft.splitSlot===0?'selected':'')+'>最初の金種</option>'+
     '<option value="1" '+(draft.splitSlot===1?'selected':'')+'>追加金種</option></select></label></div>':'')+
-   '<p class="caption-note">料金・手数料・納金の再計算には、既存アプリの正式計算処理を使用します。高速の複数区間など一部の複雑な明細は、この画面で変更できません。</p></details></section>';
+   '<p class="caption-note">料金・手数料・納金の再計算には、既存アプリの正式計算処理を使用します。入力した高速の複数区間も既存の距離・料金集計を使用します。</p></details></section>';
 }
 function startHistoryLocationEdit(shiftId,recordId,addition=null){
  if(!memberDiary()||!accountDiary.ready()||!canEditNow()||historyCloudUid!==accountScope.uid)
@@ -2362,7 +2362,7 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
 }
 function historyLocationInputs(){
  const draft=historyLocationEdit;
- if(!draft)return false;
+ if(!draft||draft.busy)return false;
  const al=document.getElementById('historyEditPickup');
  const am=document.getElementById('historyEditDropoff');
  if(!al||!am)return false;
