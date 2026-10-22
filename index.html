@@ -2920,65 +2920,78 @@ function unchangedHistoryEdit(draft){
   JSON.stringify(original.meta?.highwaySections??null);
 }
 
-async function legacyCasSaveHistoricalShift(original,updated,sourceHash){
+async function legacyCasSaveHistoricalShift(original,updated,sourceHash,sourceRevision=0){
  if(!legacyDiary()||!canEditNow()||!googleIsConfigured()||
     !currentLoginScope?.admin||!accountScope.uid)
   throw Error('管理者のGoogle接続と操作権を確認してください。修正控えは保持します');
  const generation=accountScopeGeneration,uid=accountScope.uid,shiftId=original.id;
- const stable=()=>legacyDiary()&&canEditNow()&&accountScopeGeneration===generation&&accountScope.uid===uid;
- const current=()=>model.shifts.find(s=>s.id===shiftId);
- if(!current()||historyLegacyHash(current())!==sourceHash||
-    current().draft||model.activeId===shiftId)
-  throw Error('修正開始後に端末原本が変化しました。両方保護して停止します');
- const remoteResponse=await googlePostRequest('syncGet',{shiftId});
- if(!stable())throw Error('利用者が変わったため修正を中止しました');
- const remote=remoteResponse?.data;
+ const local=()=>model.shifts.find(s=>s.id===shiftId);
+ const detachedRow=!local()?legacyHistoryRemote:null;
+ const detached=Boolean(detachedRow?.uid===uid&&detachedRow.id===shiftId&&
+  detachedRow.shift?.id===shiftId&&historyLegacyHash(detachedRow.shift)===sourceHash&&
+  Number(detachedRow.revision)===sourceRevision&&sourceRevision>=1);
+ const stable=()=>legacyDiary()&&canEditNow()&&accountScopeGeneration===generation&&
+  accountScope.uid===uid&&(!detached||legacyHistoryRemote===detachedRow);
+ if(!detached&&(!local()||historyLegacyHash(local())!==sourceHash||
+    local().draft||model.activeId===shiftId))
+  throw Error('元の端末日報が変更されています。原本と修正控えを保護します');
+ if(detached&&model.shifts.some(shift=>shift.id===shiftId))
+  throw Error('同じ乗務IDの端末日報が増えました。双方を保護して編集を停止します');
+ const response=await googlePostRequest('syncGet',{shiftId});
+ if(!stable())throw Error('保存先または利用者が変わったため修正を中止しました');
+ const remote=response?.data;
  if(remote?.id!==shiftId||remote.shift?.id!==shiftId||
     !Number.isSafeInteger(Number(remote.revision))||Number(remote.revision)<1)
   throw Error('Google原本と更新番号を確認できません。修正控えを保持します');
  const equal=(a,b)=>JSON.stringify(canonicalStoredDuty(a))===JSON.stringify(canonicalStoredDuty(b));
- if(!equal(remote.shift,googleShiftPacket(original).shift))
-  throw Error('Google原本と端末の保存内容が異なります。他端末の変更を上書きせず修正控えを保護します');
- if(!current()||historyLegacyHash(current())!==sourceHash)
-  throw Error('確認中に端末原本が変化しました。修正控えを保持します');
+ const expected=detached?original:googleShiftPacket(original).shift;
+ if(!equal(remote.shift,expected)||(detached&&Number(remote.revision)!==sourceRevision))
+  throw Error('Google原本の内容または更新番号が変わりました。無断上書きせず修正控えを保持します');
+ if(!stable()||detached?model.shifts.some(x=>x.id===shiftId):
+    !local()||historyLegacyHash(local())!==sourceHash)
+  throw Error('確認中に端末原本または保存先が変更されました。修正控えを保持します');
  const packet=googleShiftPacket(updated),baseRevision=Number(remote.revision);
  let ack=null,sendError=null;
  try{
-  const response=await googlePostRequest('syncPut',{
-   baseRevision,payload:JSON.stringify(packet)
-  });
-  ack=response?.data;
+  const answer=await googlePostRequest('syncPut',{baseRevision,payload:JSON.stringify(packet)});
+  ack=answer?.data;
  }catch(error){sendError=error;}
- if(!stable())throw Error('送信中に利用者が変わりました。修正控えを保持します');
- // A reply can be lost after a successful write. Always check the original;
- // never retry with a guessed new revision.
+ if(!stable())throw Error('送信中に本人端末の操作権が変更されました。修正控えを保持します');
+ // An acknowledgement can be lost after the CAS commit. Read the original
+ // and compare the complete payload; NEVER retry an uncertain write blindly.
  let checked=null;
- try{const response=await googlePostRequest('syncGet',{shiftId});checked=response?.data;}
- catch(error){throw Error('Googleへ送信した結果を読戻しできません。修正控えを保持します：'+String(error.message||error));}
+ try{checked=(await googlePostRequest('syncGet',{shiftId}))?.data;}
+ catch(error){throw Error('Google送信結果を読戻しできません。修正控えを保持します：'+String(error.message||error));}
  if(!stable())throw Error('確認中に利用者が変わりました。修正控えを保持します');
  if(checked?.id!==shiftId||Number(checked.revision)!==baseRevision+1||
     !equal(checked.shift,packet.shift))
-  throw Error('Google原本の更新結果不明・競合です。修正控えを保持しました：'+String(sendError?.message||ack?.message||'改版が一致しません'));
- const index=model.shifts.findIndex(s=>s.id===shiftId);
- if(index<0||historyLegacyHash(model.shifts[index])!==sourceHash)
-  throw Error('Googleは保存確認済みですが、端末側が変更されています。修正控えを保持します');
- const previous=deepCopy(model.shifts[index]);
- model.shifts[index]=deepCopy(updated);
- if(await save(true)!==true){
-  model.shifts[index]=previous;
-  throw Error('Googleは保存確認済みですが端末の永続保存に失敗しました。修正控えを保持します');
+  throw Error('Google原本の更新結果不明・競合です。修正控えを保持しました：'+
+   String(sendError?.message||ack?.message||'更新番号・内容の不一致'));
+ if(detached){
+  if(model.shifts.some(x=>x.id===shiftId))
+   throw Error('Google原本は更新確認済みですが端末に同じIDが追加されました。修正控えを保持します');
+  legacyHistoryRemote={uid,id:shiftId,revision:baseRevision+1,shift:deepCopy(checked.shift)};
+ }else{
+  const index=model.shifts.findIndex(x=>x.id===shiftId);
+  if(index<0||historyLegacyHash(model.shifts[index])!==sourceHash)
+   throw Error('Google原本は更新確認済みですが端末の原本が変更されています。修正控えを保持します');
+  const previous=deepCopy(model.shifts[index]);
+  model.shifts[index]=deepCopy(updated);
+  if(await save(true)!==true){
+   model.shifts[index]=previous;
+   throw Error('Google原本は更新確認済みですが端末の永続保存に失敗しました。修正控えを保持します');
+  }
+  if(!stable())throw Error('保存中に利用者が変わりました。修正控えを保持します');
+  if(!syncUI.adoptHistoryDuty({id:shiftId,revision:baseRevision+1,shift:deepCopy(updated)}))
+   throw Error('Google原本は保存済みですが、端末の同期更新番号を確定できません。修正控えを保持します');
  }
- if(!stable())throw Error('保存中に利用者が変わりました。修正控えは保持しました');
- // Adopt the same confirmed CAS version without overwriting a different
- // active shift, and do not blindly send an older pending Google packet.
- syncUI.adoptHistoryDuty({id:shiftId,revision:baseRevision+1,shift:deepCopy(updated)});
  cloudLastDigest.set(shiftId,JSON.stringify(packet));
- setGoogleStatus('旧Google原本を更新・読戻し確認済み：'+updated.date+'／版'+(baseRevision+1));
+ setGoogleStatus('旧Google原本をCAS更新・読戻し確認済み：'+updated.date+'／版'+(baseRevision+1));
  return {revision:baseRevision+1};
 }
 async function commitLegacyHistoryLocationEdit(draft){
  if(!legacyDiary()||!canEditNow()||accountScope.uid!==draft.uid)return;
- const original=model.shifts.find(s=>s.id===draft.id);
+ const source=historySourceRow(draft.id),original=source?.shift;
  if(!original||!canEditLegacyHistory(original)||historyLegacyHash(original)!==draft.legacyHash||
     original.date!==draft.date){
   draft.message='端末の日報が変更されています。修正控えは保持しました';render();return;
@@ -3007,7 +3020,7 @@ async function commitLegacyHistoryLocationEdit(draft){
    updated.records=updated.records.filter(item=>item.id!==rec.id);
    updated.records.forEach((item,index)=>{item.raw.A=index+1;});
   }else applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
-  await legacyCasSaveHistoricalShift(original,updated,draft.legacyHash);
+  await legacyCasSaveHistoricalShift(original,updated,draft.legacyHash,source.revision);
   if(accountScopeGeneration!==generation||historyLocationEdit!==draft)return;
   try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));
    if(draft.addRecord)localStorage.removeItem(historyPendingAdditionKey(draft.uid,draft.id,draft.sourceRecord.kind));
@@ -3219,7 +3232,7 @@ async function saveHistoryDateCorrection(){
  d.busy=true;d.message='保存先へCAS保存・読戻し確認中';render();
  try{
   if(legacyDiary()){
-   await legacyCasSaveHistoricalShift(row.shift,corrected,d.legacyHash);
+   await legacyCasSaveHistoricalShift(row.shift,corrected,d.legacyHash,row.revision);
    if(!stable())return;
    historyDateCorrection=null;
    try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
