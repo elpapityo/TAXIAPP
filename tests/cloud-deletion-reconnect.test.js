@@ -239,8 +239,29 @@ function adapter(){
  assert.equal(adopt,1);
  const conflicting={...copy(next),startedAt:'10:00'};
  cloud.revision=3;cloud.shift.startedAt='11:00';
- await assert.rejects(context.legacyCasSaveHistoricalShift(copy(next),conflicting,hash(next)),/異なります/);
+ await assert.rejects(context.legacyCasSaveHistoricalShift(copy(next),conflicting,hash(next)),/内容または更新番号が変わりました/);
  assert.equal(cloud.shift.startedAt,'11:00','other device original must never be overwritten');
  assert.equal(state.shifts[0].startedAt,'09:00','local recovery original must be preserved');
- console.log('旧Google日報：既存原本のCAS保存・読戻し、別端末改版の無断上書き防止');
+ // Google-only original: retrieve by ID, work in a detached editor and never
+ // silently add it to the phone's daily-shift model.
+ state.shifts=[];
+ const detachedSource=copy(cloud.shift),detachedRevision=cloud.revision;
+ context.legacyHistoryRemote={uid:'owner-G',id,revision:detachedRevision,shift:copy(detachedSource)};
+ const corrected={...copy(detachedSource),startedAt:'12:00'};
+ assert.equal((await context.legacyCasSaveHistoricalShift(detachedSource,corrected,
+  hash(detachedSource),detachedRevision)).revision,4);
+ assert.equal(cloud.shift.startedAt,'12:00');
+ assert.equal(state.shifts.length,0,'Google-only history must not become an active local shift');
+ assert.equal(context.legacyHistoryRemote.revision,4);
+ assert.equal(adopt,1,'detached correction cannot claim a local sync baseline');
+ // Another device updates the remote revision after this owner fetched it.
+ const stale=copy(context.legacyHistoryRemote.shift);
+ const oldRevision=context.legacyHistoryRemote.revision;
+ cloud.revision++;cloud.shift.startedAt='14:00';
+ await assert.rejects(
+  context.legacyCasSaveHistoricalShift(stale,{...copy(stale),startedAt:'13:00'},hash(stale),oldRevision),
+  /内容または更新番号が変わりました/);
+ assert.equal(cloud.shift.startedAt,'14:00');
+ assert.equal(state.shifts.length,0);
+ console.log('旧Google日報：端末残存・Googleだけの原本をCAS保存、他端末改版の無断上書きを防止');
 })().catch(error=>{console.error(error);process.exitCode=1;});
