@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const a=html.indexOf('   if(accountScope.adminFirestore){',html.indexOf('onWriterSnapshot:async shifts=>'));
+const a=html.indexOf('   if(accountScope.adminFirestore&&!accountScope.adminFirestorePreview){',html.indexOf('onWriterSnapshot:async shifts=>'));
 // Limit execution to the real legacy-protection guard; the snapshot overwrite follows 'const next'.
 // The former storageKey anchor was removed when scoped storage was refactored.
 const b=html.indexOf('   const next={...previous,shifts:',a);
@@ -13,7 +13,7 @@ const sourceDuty={id,date:'2026-10-21',startedAt:'09:00',endedAt:'12:00',
  records:[{kind:'ride',raw:{A:1,K:1000},status:'complete'}],settings:{}};
 async function run(legacy,remote){
  const calls=[];
- const context={accountScope:{adminFirestore:true},currentScope:()=>true,db:{},
+ const context={accountScope:{adminFirestore:true,adminFirestorePreview:false},currentScope:()=>true,db:{},
  KEY:'taxiapp-v1',idbGet:async (db,key)=>{calls.push(key);return {shifts:clone(legacy)};},
  localStorage:{getItem:()=>null},JSON,Map,Error,
  googleShiftPacket:shift=>({shift:clone(shift)})};
