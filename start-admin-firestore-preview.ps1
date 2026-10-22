@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $Root = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $RootPrefix = $Root.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
 $Port = 8787
-$Url = 'http://localhost:8787/?adminFirestorePreview=1&build=v0.3.127-pr119'
+$Url = 'http://localhost:8787/?adminFirestorePreview=1&build=v0.3.128-pr119'
 $Allowed = @('.html', '.js', '.css', '.json', '.svg', '.png', '.jpg', '.jpeg', '.webp')
 $Mime = @{
     '.html'='text/html; charset=utf-8'; '.js'='application/javascript; charset=utf-8'
@@ -23,7 +23,7 @@ function Send-LocalResponse {
     $Stream.Flush()
 }
 
-Write-Host 'TAXIAPP v0.3.127 - development PR #119'
+Write-Host 'TAXIAPP v0.3.128 - development PR #119'
 Write-Host 'Local server: Windows PowerShell (no Python or Node.js needed)'
 $Listener = $null
 try {
