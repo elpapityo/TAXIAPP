@@ -24,7 +24,7 @@ function server(){
    if(prior?.deleted)throw Error('deleted');
    const entry={revision:version+1,shift:clone(shift)};
    cloud.set(shift.id,entry);
-   return {id:shift.id,revision:entry.revision};
+   return {id:shift.id,revision:entry.revision,confirmed:true};
   }
   if(action==='syncTrash'||action==='syncRestore'){
    const row=cloud.get(data.shiftId);
