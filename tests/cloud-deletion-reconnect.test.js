@@ -125,3 +125,71 @@ function adapter(){
  assert.equal(state.shifts[0].id,cloudId);
  console.log('手動クラウド日報整理：自動同期OFFでも一覧取得と表示が動作');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+
+(async()=>{
+ // A confirmed returned duty can be moved to the owner's trash, then
+ // released locally; unsynced edits must stop before syncTrash.
+ const id='shift-1792700000100-manual-trash';
+ const localShift={id,date:'2026-10-22',startedAt:'08:00',endedAt:'18:00',
+  records:[],settings:{},startedIso:'2026-10-21T23:00:00.000Z'};
+ const local={shifts:[copy(localShift)]};
+ let revision=0,trashed=false,original=null,trashCalls=0,cloudReads=0;
+ const events=[];
+ const request=async(action,fields={})=>{
+  events.push(action);
+  if(action==='syncList')return {shifts:revision?[{id,revision,deleted:trashed}]:[]};
+  if(action==='syncPut'){
+   assert.equal(fields.baseRevision,revision);
+   original=copy(JSON.parse(fields.payload).shift);
+   revision++;
+   return {id,revision,confirmed:true};
+  }
+  if(action==='syncGet'){
+   if(trashed)throw Error('already trashed');
+   return {id,revision,shift:copy(original)};
+  }
+  if(action==='syncTrash'){
+   assert.equal(fields.shiftId,id);
+   assert.equal(fields.baseRevision,revision);
+   trashCalls++;trashed=true;revision++;
+   return {id,revision,deleted:true};
+  }
+  throw Error('unexpected '+action);
+ };
+ const sync=globalThis.TAXIAPP_SYNC_UI({
+  getModel:()=>local,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:copy(shift)}),
+  replace:async()=>{throw Error('must not overwrite during trash')},
+  request,endpoint:()=> 'firestore://synthetic-trash-owner',
+  scopeKey:()=> 'synthetic-trash-owner',
+  remoteOnDemand:()=>true,prefs:()=>({syncMode:'on'}),
+  configured:()=>true,canSync:()=>true,canView:()=>false,
+  root:{querySelector:()=>null},setStatus:()=>{},toast:()=>{},
+  escape:x=>String(x),download:()=>{},dateStamp:()=> '20261022'
+ });
+ assert.equal(await sync.run(true,[id]),true);
+ assert.equal(sync.verifiedRevision(id),1);
+ assert.equal(await sync.cloudAction('trashLocal',id),true);
+ assert.equal(trashed,true);
+ assert.equal(trashCalls,1);
+ assert.equal(revision,2,'only one CAS trash revision');
+ assert.equal(local.shifts.length,1,'server trash does not silently erase local recovery copy');
+ assert.equal(sync.markLocalRemoval(id,local.shifts[0]),true);
+ assert.equal(sync.verifiedRevision(id),null,'manual delete marker prevents automatic reimport');
+ const id2='shift-1792700000200-unconfirmed-trash';
+ const local2={shifts:[{...localShift,id:id2}]};
+ let requests=0;
+ const blocked=globalThis.TAXIAPP_SYNC_UI({
+  getModel:()=>local2,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:copy(shift)}),
+  replace:async()=>{},request:async()=>{requests++;throw Error('network')},
+  endpoint:()=> 'firestore://synthetic-trash-unconfirmed',
+  scopeKey:()=> 'synthetic-trash-unconfirmed',remoteOnDemand:()=>true,
+  prefs:()=>({syncMode:'on'}),configured:()=>true,
+  canSync:()=>true,canView:()=>false,root:{querySelector:()=>null},
+  setStatus:()=>{},toast:()=>{},escape:x=>String(x),download:()=>{},dateStamp:()=> '20261022'
+ });
+ assert.equal(await blocked.cloudAction('trashLocal',id2),false);
+ assert.equal(requests,0,'unknown revision never contacts server to trash');
+ assert.equal(local2.shifts.length,1,'unconfirmed original remains on device');
+ console.log('Firestore明示削除：本人CAS・ゴミ箱読戻し・端末控え保護・未同期削除禁止');
+})().catch(error=>{console.error(error);process.exitCode=1;});
