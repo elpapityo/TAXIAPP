@@ -491,7 +491,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     ' ／ 更新番号 '+r.revision+' ／ '+esc(r.id)+'</p><div class="actions">'+
     (r.deleted?'<button class="btn" data-action="cloudRestore" data-id="'+esc(r.id)+'">クラウドから復元</button>':
     '<button class="btn" data-action="cloudIndexOpen" data-id="'+esc(r.id)+'">内容を確認・編集</button>'+
-    '<button class="btn red" data-action="cloudTrash" data-id="'+esc(r.id)+'">ゴミ箱へ移動</button>')+
+    '<button class="btn red" data-action="cloudTrash" data-id="'+esc(r.id)+'">クラウドのゴミ箱へ移動</button>')+
     '</div></div>';
   }).join('');
   return '<h3 class="subsection">Firestore日報一覧（1乗務1行）</h3>'+
