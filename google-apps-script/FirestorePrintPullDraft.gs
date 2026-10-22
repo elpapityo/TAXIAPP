@@ -140,10 +140,15 @@ function firestorePrintCandidatesDraft_(){
    if(data.trashed!==true&&data.format==='TAXIAPP_PRIVATE_SHIFT_V1'&&
       Number.isSafeInteger(data.revision)&&data.revision>=1&&
       shift&&shift.id===id&&(shift.endedAt||shift.endedIso)&&
-      shift.__taxiPrintSummary&&/^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||''))){
+      shift.__taxiPrintSummary&&Array.isArray(shift.records)&&
+      shift.records.length<=60&&
+      typeof shift.__taxiPrintSummary.meter==='number'&&
+      Number.isFinite(shift.__taxiPrintSummary.meter)&&
+      /^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||''))){
     candidates.push({id:id,date:String(shift.date),
      startedAt:String(shift.startedAt||''),startedIso:String(shift.startedIso||''),
-     records:Array.isArray(shift.records)?shift.records.length:0});
+     records:shift.records.length,meter:shift.__taxiPrintSummary.meter,
+     driver:String(shift.driver||'')});
    }
   });
   token=String(response.nextPageToken||'');
@@ -181,7 +186,8 @@ function firestorePrintDateMenuDraft_(){
  var options=firestorePrintDateChoicesDraft_(date);
  var lines=options.map(function(c,i){
   return (i+1)+'：出庫 '+(c.startedAt||'時刻不明')+
-   '／'+c.records+'件／乗務ID '+c.id;
+   '／'+c.records+'件／メーター '+c.meter.toLocaleString('ja-JP')+'円'+
+   (c.driver?'／'+c.driver:'')+'／乗務ID '+c.id;
  });
  var selection=ui.prompt('Firestoreから印刷用に取り込む乗務を選択',
   date+' の入庫済み乗務：\n'+lines.join('\n')+
