@@ -395,11 +395,17 @@ root.TAXIAPP_SYNC_UI=function(d){
    d.toast('競合の控えを暗号化する12文字以上のパスワードを入力してください',true);return;
   }
   if(!root.confirm('この端末とクラウドの双方を暗号化バックアップしてから、選択した版に置き換えます。続けますか？'))return;
-  const ok=await engine.resolve(id,localWins,async backup=>{
-   const encrypted=await root.TAXIAPP_TRANSFER.encrypt(backup,pass);
-   d.download(JSON.stringify(encrypted),'TAXIAPP_競合両版_'+d.dateStamp()+'_'+id+'.json','application/json;charset=utf-8');
-   return root.confirm('暗号化バックアップのダウンロード完了を確認しましたか？\n保存とパスワードを確認した場合のみ「OK」を押してください。');
-  });
+  let ok=false;
+  try{
+   ok=await engine.resolve(id,localWins,async backup=>{
+    const encrypted=await root.TAXIAPP_TRANSFER.encrypt(backup,pass);
+    d.download(JSON.stringify(encrypted),'TAXIAPP_競合両版_'+d.dateStamp()+'_'+id+'.json','application/json;charset=utf-8');
+    if(!root.confirm('暗号化バックアップのダウンロード完了を確認しましたか？\n保存とパスワードを確認した場合のみ「OK」を押してください。'))return false;
+    d.beginBootstrapConflictResolution?.(id);
+    return true;
+   });
+  }finally{d.endBootstrapConflictResolution?.();}
+  if(ok&&d.canReviewBlockedConflict?.())void bootstrapWriter();
   d.setStatus(message());refreshPanel();
   d.toast(ok?'競合を解決しました。暗号化バックアップを保管してください。':status().lastError||'競合はそのまま保留しました',!ok);
  }
