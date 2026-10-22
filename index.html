@@ -3695,6 +3695,17 @@ async function startAdminFirestoreCutover(){
   await switchAccountScope(sourceScope);
   const ready=await syncUI.bootstrapWriter();
   if(!ready)throw Error('Firestoreへ切替後、乗務を安全に表示できませんでした');
+  if(currentLoginScope!==sourceScope||accountScope.uid!==uid||
+     !accountScope.adminFirestore||!canEditNow())
+   throw Error('入力設定の引継ぎ中にログインまたは操作権が変わりました');
+  // Fresh Firestore storage must retain the owner's UI, waiting-place and
+  // business-input preferences, but never copy legacy Google credentials.
+  const ownPrefs=deepCopy(sourceModel.prefs||{});
+  delete ownPrefs.sheetTarget;
+  model.prefs={...model.prefs,...ownPrefs};
+  delete model.prefs.sheetTarget;
+  if(await save(true)!==true)
+   throw Error('Firestore用の入力設定を端末に保存できません');
   toast('Firestoreに保存・読み戻し済み。本人UID専用の保存先へ切り替えました。');
  }catch(error){
   if(applied){

@@ -12,7 +12,9 @@ function context(mode){
  const saved=new Map(),cloud=new Map(),events=[];
  const uid='uid-owner-A',scope={uid,admin:true,firebase:{auth:{currentUser:{uid}}}};
  const shift={id,date:'2026-10-21',records:[],settings:{},endedAt:'11:00'};
- const data={version:1,shifts:[shift],activeId:null};
+ const data={version:1,shifts:[shift],activeId:null,
+  prefs:{driver:'利用者本人',waitPlaces:['登録済み待機所'],ui:{screenMode:'phone'},
+   sheetTarget:{webAppUrl:'legacy-url'}}};
  const c={
   adminCutoverBusy:false,accountScopeGeneration:4,currentLoginScope:scope,
   accountScope:{uid,kind:'legacy',adminFirestore:false},
@@ -59,6 +61,7 @@ function context(mode){
   canEditNow:()=>true,
   googleShiftPacket:sh=>({kind:'TAXIAPP_SHIFT_V1',
    shift:JSON.parse(JSON.stringify(sh)),summary:{meter:1000}}),
+  save:async()=>true,
   async switchAccountScope(target){
    events.push('switch');
    c.accountScopeGeneration++;
@@ -80,6 +83,9 @@ function context(mode){
  assert.equal(ok.cloud.size,1);
  assert.equal(ok.saved.has('test-admin-firestore-optin:'+ok.uid),true);
  assert.ok(ok.events.some(x=>x.includes('切り替えました')));
+ assert.equal(ok.c.model.prefs.driver,'利用者本人','正式切替で本人の表示・業務設定を維持');
+ assert.deepEqual(JSON.parse(JSON.stringify(ok.c.model.prefs.waitPlaces)),['登録済み待機所']);
+ assert.equal(ok.c.model.prefs.sheetTarget,undefined,'旧Google接続情報は新Firestoreへ持ち込まない');
  for(const mode of ['switch-on-list','switch-on-write']){
   const t=context(mode);
   await vm.runInContext('startAdminFirestoreCutover()',t.c);
