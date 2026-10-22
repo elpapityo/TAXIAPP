@@ -74,6 +74,16 @@ vm.runInContext('let adminFirestorePreviewActive=false,adminFirestorePreviewOwne
  await vm.runInContext('verifyAdminFirestorePreviewDuty()',c);
  assert.match(vm.runInContext('adminFirestorePreviewMessage',c),/保存未確認/,
   'サーバー内容の不一致では成功を表示しない');
+ // After approved production cutover, the same UID/revision/content
+ // verification must remain available without entering development preview.
+ c.accountScope.adminFirestorePreview=false;
+ c.accountScope.adminFirestore=true;
+ c.accountDiary.request=async()=>({id,revision:3,shift:clone(shift)});
+ await vm.runInContext('verifyAdminFirestorePreviewDuty()',c);
+ assert.match(vm.runInContext('adminFirestorePreviewMessage',c),/保存確認済み/,
+  '正式Firestore運用画面からも原本の読戻しを確認できる');
+ assert.match(html,/現在の原本：本人専用Firestore[\\s\\S]*?adminFirestorePreviewVerify/,
+  '正式版の保存先画面に読戻し確認操作を表示する');
 
  // The remote reception handler must use the UID/preview-scoped IndexedDB
  // key, NOT the legacy owner's 'taxiapp' key.

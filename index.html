@@ -3489,7 +3489,9 @@ function renderAdminBackendSettings(){
  if(accountScope.adminFirestore){
   return '<section class="card"><h2 class="h2">現在の原本：本人専用Firestore</h2>'+
    '<p class="helper">保存先はログイン中の本人UID専用です。元のGoogle原本は残しています。新しい乗務の印刷にはPC側のFirestore取込が必要です。</p>'+
-   '<button class="btn" type="button" data-action="adminFirestoreLegacy">以前のGoogle保存先に戻る</button>'+
+   '<div class="actions"><button class="btn primary" type="button" data-action="adminFirestorePreviewVerify" '+(adminCutoverBusy?'disabled':'')+'>現在の乗務をFirestore読戻し確認</button>'+
+   '<button class="btn" type="button" data-action="adminFirestoreLegacy">以前のGoogle保存先に戻る</button></div>'+
+   (adminFirestorePreviewMessage?'<p class="caption-note" role="status">'+safeText(adminFirestorePreviewMessage)+'</p>':'')+
    '<p class="warn">戻してもFirestore内の日報は削除されません。未転記の新しい乗務はGoogleには自動移行しません。</p></section>';
  }
  if(!legacyDiary())return '<section class="card"><h2 class="h2">本人専用Firestore</h2><p>乗務員の保存先は本人UIDに固定されています。</p></section>';
@@ -3513,16 +3515,16 @@ function renderAdminBackendSettings(){
   (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
   '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
 }
-// Explicit server verification for the administrator's preview duty.
-// All monetary calculations reuse the app's existing packet functions.
+// Verify the administrator's current duty in either approved production
+// Firestore mode or the separate development preview, using official totals.
 async function verifyAdminFirestorePreviewDuty(){
- if(!accountScope.adminFirestorePreview||!canEditNow()||
+ if(!accountScope.adminFirestore||!canEditNow()||
     !accountDiary.ready()||adminCutoverBusy)return;
  const generation=accountScopeGeneration,uid=accountScope.uid;
  const duty=getShift()||selectedShift();
  if(!duty){adminFirestorePreviewMessage='確認する乗務がありません。先に検証用乗務を作成してください';render();return;}
  const id=duty.id,stable=()=>accountScopeGeneration===generation&&
-  accountScope.uid===uid&&accountScope.adminFirestorePreview&&canEditNow();
+  accountScope.uid===uid&&accountScope.adminFirestore&&canEditNow();
  adminFirestorePreviewMessage='端末保存→Firestore送信→原本読戻しを確認中…';render();
  try{
   if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
