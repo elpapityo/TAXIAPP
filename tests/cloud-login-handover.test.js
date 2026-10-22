@@ -60,7 +60,11 @@ const shift={id:'shift-111-xyz',date:'2026-10-20',startedIso:'2026-10-20T06:00:0
  const session=fs.readFileSync(path.join(__dirname,'..','device-session.js'),'utf8');
  assert.match(index,/syncUI\.bootstrapWriter\(\)/);
  assert.match(index,/function canEditNow\(\)\{return deviceMode==='writer'&&!writerLoadGate;\}/);
- assert.match(account,/deviceSession\.begin\(next,\{viewer:false,claimOnLogin:explicitWriterLogin\}\)/);
+ assert.match(account,/deviceSession\.begin\(next,\{\s*viewer:printViewerMode,claimOnLogin:!printViewerMode&&explicitWriterLogin\s*\}\)/);
+ assert.match(account,/if\(!printViewerMode&&deviceSession\?\.state\(\)==='viewer'\)await deviceSession\.claim\(\)/);
+ assert.match(account,/if\(printViewerMode\)return;/);
+ assert.match(index,/TAXIAPP_PRINT_VIEWER_MODE/);
+ assert.match(index,/firestorePrintGooglePostRequest/);
  assert.match(session,/claimedOnce=Boolean\(oldId\)\|\|!claimOnLogin/);
  console.log('Cloud login handover race and offline retry tests passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
