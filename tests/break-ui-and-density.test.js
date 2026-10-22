@@ -7,7 +7,7 @@ assert.match(html,/<title>TAXIAPP v\d+\.\d+\.\d+ — 乗務日報<\/title>/);
 const action=html.slice(html.indexOf("if(action==='beginBreak')"),html.indexOf("if(action==='breakBoard'"));
 assert.match(action,/const now=new Date\(\);shift\.breakActive=\{id:'break-'\+now\.getTime\(\),startedAt:stamp\(now\),startedIso:now\.toISOString\(\),place:''\}/,
   'break starts with local clock and an ISO timestamp');
-assert.match(action,/save\(\);render\(\);getBreakPlaceGps\(/,
+assert.match(action,/saveOperationalEvent\(shift\);render\(\);getBreakPlaceGps\(/,
   'break timestamp is saved before the independent GPS reverse-geocode');
 assert.match(html,/safeText\(shortTime\(resting\.startedAt\)\)/,
   'break start timestamp must remain in the displayed dashboard');
