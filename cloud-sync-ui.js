@@ -194,7 +194,8 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(viewEnabled())return viewNow(manual);
   if(!enabled()){
    if(manual){
-    writerFeedback='同期停止：Google接続情報または双方向同期設定を確認してください';
+    writerFeedback=d.remoteOnDemand?.()?'同期停止：本人Firestoreの接続と編集端末の設定を確認してください':
+     '同期停止：Google接続情報または双方向同期設定を確認してください';
     d.setStatus(writerFeedback);d.toast(writerFeedback,true);
    }
    return false;
@@ -211,7 +212,8 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(!manual&&!requested&&!queuedDutyIds.size&&!engine.hasLocalRemovals())return true;
   if(requested&&(requested.length!==1||typeof requested[0]!=='string'||
     !d.getModel()?.shifts?.some(shift=>shift.id===requested[0]))){
-   d.toast('選択した乗務が見つからないため、Google送信を停止しました',true);
+   d.toast('選択した乗務が見つからないため、'+
+    (d.remoteOnDemand?.()?'本人Firestore同期':'Google送信')+'を停止しました',true);
    return false;
   }
   const pending=[...new Set([...queuedDutyIds,...engine.localRemovalIds()])];
@@ -229,7 +231,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    deferred.forEach(id=>queuedDutyIds.add(id));
   }
   writerRunBusy=true;
-  writerFeedback='Googleと照合中…';
+  writerFeedback=(d.remoteOnDemand?.()?'本人Firestore':'Google')+'と照合中…';
   d.setStatus(writerFeedback);
   const before=status().lastSyncAt;
   let ok=false;
@@ -239,7 +241,10 @@ root.TAXIAPP_SYNC_UI=function(d){
    ok=await engine.run(requested|| (manual?undefined:batch));
    if(status().conflicts.length)await saveConflictCopies();
    writerFeedback=ok?(requested?'同期完了：選択した1乗務を照合':
-     '同期完了：現在の端末'+(d.getModel()?.shifts?.length||0)+'乗務と削除状態を照合'):
+     d.remoteOnDemand?.()&&!manual?
+      '同期完了：'+batch.length+'乗務を照合'+
+      (deferred.length?'／残り'+deferred.length+'乗務は再送待ち':''):
+      '同期完了：現在の端末'+(d.getModel()?.shifts?.length||0)+'乗務と削除状態を照合'):
     '同期失敗：'+(status().lastError||status().conflicts.map(c=>c.reason).join('／')||'同期処理が完了していません');
    if(status().lastSyncAt>before)await d.onWriterSynced?.(status().conflicts);
    d.setStatus(message());
