@@ -225,7 +225,7 @@ function create(deps){
      }
      sendingId=id;
      const sent=await scopedRequest('syncPut',{baseRevision:0,payload:JSON.stringify(getPacket(current))});
-     if(!sent||sent.id!==id||sent.revision!==1)throw Error('新規送信の応答が不正です');
+     if(!sent||sent.id!==id||sent.revision!==1||(getRemoteOnDemand?.()&&sent.confirmed!==true))throw Error('新規送信のサーバー読戻し確認が完了していません');
      const savedHash=currentHash;
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:savedHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:savedHash};
@@ -299,8 +299,8 @@ function create(deps){
      const sentHash=currentHash;
      sendingId=id;
      const sent=await scopedRequest('syncPut',{baseRevision:base.revision,payload:JSON.stringify(payload)});
-     if(!sent||sent.id!==id||sent.revision!==base.revision+1)
-      throw Error('送信の更新番号を確認できません');
+     if(!sent||sent.id!==id||sent.revision!==base.revision+1||(getRemoteOnDemand?.()&&sent.confirmed!==true))
+      throw Error('送信の更新番号とサーバー読戻しを確認できません');
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:sentHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:sentHash};
      sendingId=null;unknownSendIds.delete(id);
