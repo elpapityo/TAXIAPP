@@ -3877,7 +3877,7 @@ function renderSettings(shift){const active=getShift();return `${titleBlock('設
 <option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：自動入力しない（手入力・GPS取得ボタンは利用可能）</option></select></label>${nativeAutoDistanceEnabled()?`<div class="gps-source-choice"><h2 class="h2">③ 自動入力に使うGPSを選択</h2><p class="helper">ブラウザGPS：Chromeで測定。GPS距離ラボ：Android専用アプリで測定（別途アプリの起動が必要）。</p><label class="field"><span class="field-label">GPSの取得方法</span><select class="control" data-native-diary-gps>
  <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>ブラウザGPS（Chromeの位置情報を利用）</option>
  <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>GPS距離ラボ（Android専用アプリ）</option>
- </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">本番の従来データ保存先を継続します。入力はログインと操作権の確認後に利用できます。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
+ </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">${accountScope.adminFirestore?'現在の原本は本人UID専用Firestoreです。旧Google原本はそのまま保持します。':'従来のGoogle原本を継続します。入力はログインと操作権の確認後に利用できます。'}</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider">${accountScope.adminFirestore&&!accountScope.adminFirestorePreview?'<label class="field"><span class="field-label">本人Firestoreへ保存済みJSON日報を1乗務取り込む</span><input class="control" style="font-size:13px" type="file" id="importFirestoreBackup" accept=".json,application/json"></label><p class="footnote">入庫済みの1乗務を日付で選択し、本人UIDのFirestoreに新規保存します。現行の営業中データ・設定・旧Google原本は変更しません。既存の同じ乗務IDは上書きしません。</p>':'<label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p>'}</section><div class="danger-note">※ 端末への保存にはIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。${accountScope.adminFirestore?'Firestore原本のGoogle補助簿印刷元への転記はPC側で明示操作します。':'従来のGoogle原本と印刷用シートは維持します。'}</div></div></details>`;}
 function download(textData,file,type){const blob=new Blob([textData],{type}),link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download=file;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 let gpsPermissionText='';
 function setGpsPermissionStatus(message){gpsPermissionText=String(message);const el=appEl.querySelector('[data-gps-permission-status]');if(el)el.textContent=gpsPermissionText;}
@@ -5233,6 +5233,110 @@ async function deleteWholeShift(shiftId){
   render();toast('削除を取り消しました：'+String(e.message||e),true);
  }
 }
+// A JSON export can be re-used without importing every historical duty
+// into the phone's one-duty working storage. Never overwrite a remote ID.
+async function importFirestoreBackup(file){
+ if(!file)return;
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    !currentLoginScope?.admin||!canEditNow()||!accountDiary.ready()){
+  toast('管理者本人のFirestore操作端末で取り込んでください',true);return;
+ }
+ const uid=accountScope.uid,generation=accountScopeGeneration,scope=currentLoginScope;
+ const sameOwner=()=>accountScopeGeneration===generation&&accountScope.uid===uid&&
+  currentLoginScope===scope&&accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+  scope.firebase?.auth?.currentUser?.uid===uid&&canEditNow()&&accountDiary.ready();
+ if(file.size>5*1024*1024){toast('JSONバックアップは5MB以内で選択してください',true);return;}
+ let backup,eligible;
+ try{
+  backup=JSON.parse(await file.text());
+  if(backup?.version!==1||!Array.isArray(backup.shifts)||
+     backup.shifts.some(shift=>!shift||
+      !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(shift.id||''))||
+      !Array.isArray(shift.records)||shift.records.length>MAX_RECORDS||
+      shift.records.some(rec=>!rec?.raw||!['ride','empty','cancel'].includes(rec.kind))||
+      !shift.settings||typeof shift.settings!=='object'))
+   throw Error('このTAXIAPPの日報JSON形式ではありません');
+  if(new Set(backup.shifts.map(shift=>shift.id)).size!==backup.shifts.length)
+   throw Error('JSONに同じ乗務IDが複数あります');
+  if(backup.ownerUid!==undefined&&backup.ownerUid!==null&&backup.ownerUid!==uid)
+   throw Error('別の利用者のUIDが記録されています。取込を停止しました');
+  eligible=backup.shifts.filter(shift=>Boolean(shift.endedAt||shift.endedIso)&&
+   /^\\d{4}-\\d{2}-\\d{2}$/.test(String(shift.date||'')));
+  if(!eligible.length)throw Error('入庫済みの日報が見つかりません。元ファイルを保管してください');
+ }catch(error){toast('JSON取込を停止：'+String(error?.message||error),true);return;}
+ if(!sameOwner()){toast('取込準備中にログインまたは操作権が変わりました',true);return;}
+ if((backup.ownerUid===undefined||backup.ownerUid===null)&&
+    !confirm('このバックアップには本人UIDが記録されていません。現在の本人UIDで作成した日報だけを取り込んでください。本人の日報であることを確認しますか？'))return;
+ const dates=[...new Set(eligible.map(shift=>shift.date))].sort().reverse();
+ const date=prompt('取込する乗務日をYYYY-MM-DDで入力してください。候補：\\n'+
+  dates.slice(0,20).join(' ／ ')+(dates.length>20?' ほか'+(dates.length-20)+'日':''),dates[0]);
+ if(date===null)return;
+ const options=eligible.filter(shift=>shift.date===date.trim()).sort((a,b)=>
+  String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ if(!options.length){toast('選択した日付の日報はJSONにありません',true);return;}
+ let selected=options[0];
+ if(options.length>1){
+  const selection=prompt('取込する乗務番号を入力してください。\\n'+options.map((shift,i)=>
+   (i+1)+'：出庫 '+String(shift.startedAt||'不明')+' ／ '+shift.records.length+
+   '件 ／ ID '+shift.id).join('\\n'));
+  if(selection===null)return;
+  if(!/^[1-9][0-9]*$/.test(selection)||Number(selection)>options.length){
+   toast('取込する乗務番号が不正です',true);return;
+  }
+  selected=options[Number(selection)-1];
+ }
+ if(!confirm('本人Firestoreへ新規取込\\n日付：'+selected.date+
+   '\\n乗務ID：'+selected.id+'\\n営業記録：'+selected.records.length+
+   '件\\n\\n現在の営業中データ、旧Google原本、バックアップJSONは変更しません。続けますか？'))return;
+ if(!sameOwner()){toast('取込開始前にログインが変わりました',true);return;}
+ let packet,attempted=false,confirmed=false,problem='';
+ try{
+  const existing=await accountDiary.request('syncList',{shiftIds:[selected.id]});
+  if(!sameOwner())throw Error('照合中にログインまたは操作権が変わりました');
+  if(!Array.isArray(existing?.shifts))throw Error('既存の日報IDを確認できません');
+  if(existing.shifts.length)throw Error('Firestoreに同じ乗務IDがあります。上書きしません');
+  packet=googleShiftPacket(selected);
+  packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  // Only the serialized packet is sent. Compare against the same JSON form.
+  packet=JSON.parse(JSON.stringify(packet));
+  attempted=true;
+  const sent=await accountDiary.request('syncPut',{
+   baseRevision:0,payload:JSON.stringify(packet)
+  });
+  if(!sameOwner())throw Error('送信中に操作端末が変更されました。原本を確認してください');
+  if(!sent?.confirmed||sent.id!==selected.id||sent.revision!==1)
+   throw Error('保存後の版番号が未確認です');
+  const read=await accountDiary.request('syncGet',{shiftId:selected.id});
+  if(!sameOwner())throw Error('読戻し中に操作端末が変更されました');
+  confirmed=read?.id===selected.id&&read.revision===1&&
+   JSON.stringify(canonicalStoredDuty(read.shift))===
+    JSON.stringify(canonicalStoredDuty(packet.shift));
+  if(!confirmed)throw Error('Firestore原本の内容が一致しません');
+ }catch(error){
+  problem=String(error?.message||error);
+  // The transaction can commit even if its response is lost. A read-only
+  // check is safe; never blindly retry creation or overwrite the remote ID.
+  if(attempted&&sameOwner()){
+   try{
+    const read=await accountDiary.request('syncGet',{shiftId:selected.id});
+    if(sameOwner()&&read?.id===selected.id&&read.revision===1&&packet&&
+       JSON.stringify(canonicalStoredDuty(read.shift))===
+        JSON.stringify(canonicalStoredDuty(packet.shift)))confirmed=true;
+   }catch{/* Keep the original backup when delivery is unknown. */}
+  }
+ }
+ if(!sameOwner())return;
+ if(!confirmed){
+  toast((attempted?'取込結果不明：':'取込を中止：')+problem+
+   '。元のJSONを保管し、同じIDを上書きしないでください',true);
+  return;
+ }
+ historyDate=selected.date;historyShiftId=selected.id;tab='history';
+ await loadHistoryFromCloud(selected.date);
+ if(!sameOwner())return;
+ historyCloudMessage='JSONから本人Firestoreへ1乗務を新規保存・読戻し確認しました';
+ render();
+}
 async function importBackup(file){
  if(!file)return;
  if(!canEditNow()){toast('バックアップの復元は認証済みの操作端末で行ってください',true);return;}
@@ -5351,7 +5455,7 @@ appEl.addEventListener('click',event=>{
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
-appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
+appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importFirestoreBackup'){void importFirestoreBackup(event.target.files?.[0]);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
  if(event.target.matches('[data-ride-field]')){const key=event.target.dataset.rideField;if(!RIDE_FIELD_PREFS.some(([name])=>name===key))return;model.prefs.rideFieldVisibility??={};model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-mode]')){model.prefs.cancelMeterMode=event.target.value==='reset'?'reset':'retain';saveLater();render();return;}
