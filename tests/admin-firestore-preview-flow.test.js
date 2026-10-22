@@ -2,7 +2,7 @@
 // 管理者の開発用Firestore検証モード：旧Google運用を維持しながら1乗務を確認。
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const beginning=html.indexOf('// Explicit server verification for the administrator');
+const beginning=html.indexOf('// Verify the administrator\'s current duty');
 const ending=html.indexOf('async function startAdminFirestoreCutover(){',beginning);
 assert.ok(beginning>0&&ending>beginning);
 const functions=html.slice(beginning,ending);
@@ -82,7 +82,7 @@ vm.runInContext('let adminFirestorePreviewActive=false,adminFirestorePreviewOwne
  await vm.runInContext('verifyAdminFirestorePreviewDuty()',c);
  assert.match(vm.runInContext('adminFirestorePreviewMessage',c),/保存確認済み/,
   '正式Firestore運用画面からも原本の読戻しを確認できる');
- assert.match(html,/現在の原本：本人専用Firestore[\\s\\S]*?adminFirestorePreviewVerify/,
+ assert.match(html,/現在の原本：本人専用Firestore[\s\S]*?adminFirestorePreviewVerify/,
   '正式版の保存先画面に読戻し確認操作を表示する');
 
  // The remote reception handler must use the UID/preview-scoped IndexedDB
