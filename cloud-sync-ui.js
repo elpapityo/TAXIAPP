@@ -538,6 +538,50 @@ root.TAXIAPP_SYNC_UI=function(d){
      throw Error('クラウドの削除完了を確認できません');
     cloudRows=cloudRows.map(x=>x.id===id?{id,revision:done.revision,deleted:true}:x);
     d.toast('選択した乗務をクラウドのゴミ箱へ移しました。原本は保持しています。');
+   }else if(kind==='trashLocal'){
+    // Explicit manual deletion only. Do not confuse normal verified-device
+    // retention cleanup with a server trash operation.
+    if(!d.remoteOnDemand?.())throw Error('本人Firestore保存中の日報のみゴミ箱へ移動できます');
+    const local=d.getModel()?.shifts?.find(shift=>shift.id===id);
+    if(!local||local.draft||(!local.endedAt&&!local.endedIso))
+     throw Error('入庫済みの日報だけをゴミ箱へ移動できます');
+    const baseline=verifiedRevision(id);
+    if(baseline===null||engine.isSendUnknown(id)||engine.isConflict(id))
+     throw Error('保存確認済みでないため削除しません。未同期・競合の原本は保持してください');
+    const metaList=await scopedRequest('syncList',{shiftIds:[id]});
+    if(!Array.isArray(metaList?.shifts))throw Error('サーバー一覧を確認できません');
+    const matches=metaList.shifts.filter(row=>row.id===id);
+    if(matches.length!==1||matches[0].deleted===true||
+       Number(matches[0].revision)!==baseline)
+     throw Error('サーバー原本の更新番号またはゴミ箱状態が変わりました');
+    const remote=await scopedRequest('syncGet',{shiftId:id});
+    if(remote?.id!==id||remote?.shift?.id!==id||Number(remote.revision)!==baseline)
+     throw Error('サーバー原本の読戻し内容が不正です');
+    const normalized=(value)=>{
+     if(Array.isArray(value))return value.map(normalized);
+     if(value&&typeof value==='object')
+      return Object.fromEntries(Object.keys(value).sort().map(key=>[key,normalized(value[key])]));
+     return value;
+    };
+    const remoteText=JSON.stringify(normalized(remote.shift));
+    const originalText=JSON.stringify(normalized(d.getPacket(local).shift));
+    if(remoteText!==originalText||verifiedRevision(id)!==baseline)
+     throw Error('端末とFirestoreの内容が一致しません。双方の原本を保持します');
+    // Validate again immediately before the CAS: an in-flight edit cannot be
+    // silently moved to trash even if it started while the confirmation was open.
+    const current=d.getModel()?.shifts?.find(shift=>shift.id===id);
+    if(!current||JSON.stringify(normalized(d.getPacket(current).shift))!==originalText||
+       verifiedRevision(id)!==baseline)
+     throw Error('確認中に端末原本が変更されたため削除を中止しました');
+    const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:baseline});
+    const verified=await scopedRequest('syncList',{shiftIds:[id]});
+    const resulting=verified?.shifts?.filter(row=>row.id===id);
+    if(done?.id!==id||done?.deleted!==true||
+       Number(done.revision)!==baseline+1||resulting?.length!==1||
+       resulting[0].deleted!==true||Number(resulting[0].revision)!==baseline+1)
+     throw Error('サーバーのゴミ箱移動結果を確認できません。端末原本は保持してください');
+    cloudLoaded=false;
+    d.toast('本人Firestore原本をゴミ箱へ移動・確認しました。続けて端末の整理を行います。');
    }else if(kind==='restore'){
     const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&x.deleted===true);
     if(!row)throw Error('復元対象を取得し直してください');
