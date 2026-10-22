@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const source=fs.readFileSync('index.html','utf8');
 assert.match(source,/let focusDispatchSourceAfterRender=false;/);
 assert.match(source,/data-dispatch-source/);
-assert.match(source,/shift\.draft=makeDispatch\(shift,new Date\(\),'G'\);save\(\);focusDispatchSourceAfterRender=true;render\(\);/);
+assert.match(source,/shift\.draft=makeDispatch\(shift,new Date\(\),'G'\);saveOperationalEvent\(shift\);focusDispatchSourceAfterRender=true;render\(\);/);
 assert.match(source,/if\(tab==='drive'&&typeof focusDispatchSourceAfterRender!=='undefined'&&focusDispatchSourceAfterRender\)/);
 assert.match(source,/appEl\.querySelector\('#main-content \[data-dispatch-source\]'\)/);
 assert.match(source,/window\.scrollTo\(0,Math\.max\(0,group\.getBoundingClientRect\(\)\.top\+window\.scrollY-offset\)\);/);
