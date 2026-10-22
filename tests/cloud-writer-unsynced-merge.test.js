@@ -241,3 +241,35 @@ const d=root.TAXIAPP_SYNC_UI({
  assert.equal(adapter.verifiedRevision(duties[60].id),1);
  console.log('未同期61件：端末原本を減らさず60件と1件へ分割再送');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+// Administrator's localhost-only development preview starts with an empty
+// synthetic work area. It must not download the actual owner UID's existing
+// Firestore original when the preview device has no locally created duty.
+(async()=>{
+ const uid='admin-preview-fixture',model={shifts:[]},calls=[];
+ let gated=true;
+ const adapter=root.TAXIAPP_SYNC_UI({
+  getModel:()=>model,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:clone(shift)}),
+  endpoint:()=>'/privateDuties/'+uid+'/shifts',scopeKey:()=> 'firestore-preview-'+uid,
+  remoteOnDemand:()=>true,previewFreshOnly:()=>true,
+  request:async(action,params)=>{
+   calls.push({action,params});
+   if(action!=='syncList'||!Array.isArray(params.shiftIds))
+    throw Error('プレビューから既存原本を自動取得してはいけません');
+   return {shifts:[]};
+  },
+  configured:()=>true,prefs:()=>({syncMode:'on'}),canSync:()=>!gated,
+  canView:()=>false,writerBootstrapAllowed:()=>gated,
+  onWriterSnapshot:async shifts=>{model.shifts=clone(shifts);return true;},
+  onWriterBootstrapReady:()=>{gated=false;},
+  setStatus:()=>{},toast:()=>{},dateStamp:()=> '20261022'
+ });
+ assert.equal(await adapter.bootstrapWriter(),true,'管理者の検証専用空領域で開始可能');
+ assert.equal(model.shifts.length,0,'旧Firestore原本をプレビューへ持ち込まない');
+ assert.equal(calls.length,0,'検証開始時は既存Firestore原本を検索しない');
+ assert.equal(await adapter.run(true),true,'手動確認も既知の乗務IDだけ照合');
+ assert.equal(calls.length,1);
+ assert.deepEqual([...calls[0].params.shiftIds],[],'空の検証画面では全件一覧を送信しない');
+ console.log('管理者Firestore検証：既存本人日報0件を誤受信せず、手動でも過去全件照会しない');
+})().catch(error=>{console.error(error);process.exitCode=1;});
