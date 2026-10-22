@@ -41,7 +41,7 @@ const model={version:1,activeId:'shift-open',prefs:{driver:'他の設定は保�
  shifts:[closed,ongoing]};
 const before=JSON.stringify(model);
 const ctx={
- model,Array,String,
+ model,Array,String,memberDiary:()=>false,
  titleBlock:(title)=>'<h1>'+title+'</h1>',
  shortTime:(s)=>String(s||'').slice(0,5),
  safeText:s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;')
@@ -64,7 +64,7 @@ assert.equal((displayed.match(/data-action="deleteShift"/g)||[]).length,2);
 assert.ok(displayed.indexOf('shift-open')<displayed.indexOf('shift-closed'));
 assert.ok(!displayed.includes('<script>alert(1)</script>'));
 assert.ok(displayed.includes('JSONバックアップ'));
-assert.ok(displayed.includes('クラウドのゴミ箱は変更しません'));
+assert.ok(displayed.includes('手動削除では本人Firestore原本をゴミ箱へ移して確認'));
 assert.equal(JSON.stringify(model),before);
 ctx.model={...model,activeId:null,shifts:[]};
 const empty=ctx.renderDataManagement();
