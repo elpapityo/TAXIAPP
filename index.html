@@ -5203,6 +5203,24 @@ function handleAction(action,id){
  if(action==='historyDateEditStart'){try{beginHistoryDateCorrection();}catch(e){toast(String(e.message||e),true);}return;}
  if(action==='historyDateSave'){void saveHistoryDateCorrection();return;}
  if(action==='historyDateCancel'){cancelHistoryDateCorrection();return;}
+  if(action==='historyIndexLoad'){
+   if(!memberDiary()||!canEditNow())return;
+   void syncUI.cloudAction('load').then(()=>render());return;
+  }
+  if(action==='historyIndexOpen'||action==='cloudIndexOpen'){
+   const cloud=memberDiary()?syncUI.cloudEntry(id):null;
+   const local=model.shifts.find(s=>s.id===id);
+   const chosen=cloud&&!cloud.deleted?{id,date:cloud.date,fromCloud:true}:
+    local?{id,date:local.date,fromCloud:false}:null;
+   if(!chosen?.date){toast('日付を確認できません。Firestore一覧を更新してください',true);return;}
+   try{protectOpenHistoryEdit();}catch(e){
+    toast('編集内容を保護できないため切替を停止しました：'+String(e?.message||e),true);return;
+   }
+   historyDate=chosen.date;historyShiftId=id;tab='history';
+   if(chosen.fromCloud)void loadHistoryFromCloud(chosen.date);
+   else render();
+   return;
+  }
   if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
   if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
   if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
