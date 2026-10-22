@@ -1653,7 +1653,11 @@ async function switchAccountScope(scope){
  const adminFirestore=Boolean(scope?.admin&&
   (adminFirestorePreview||ADMIN_FIRESTORE_CUTOVER_ENABLED||
    adminFirestoreManifest(scope.uid)||TAXIAPP_PRINT_VIEWER_MODE));
- accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined}:{});
+ // Print-viewer PCs may fetch the owner's Firestore history but must
+ // never become a writer, even if a future UI handler is invoked directly.
+ accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,
+  admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined,
+  readOnly:TAXIAPP_PRINT_VIEWER_MODE}:{});
  accountScope=scope?{kind:scope.admin&&!adminFirestore?'legacy':'member',uid:scope.uid,
   adminFirestore,adminFirestorePreview}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
