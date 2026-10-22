@@ -116,6 +116,8 @@ try:
         assert x[2][1]>x[0][1]+15,(mode,orientation,'cruising rows',result)
         assert x[4][2]>=x[0][2]*1.8,(mode,orientation,'history spans full row',result)
     # Separate Settings menus can be opened individually or together.
+    WebDriverWait(browser,20).until(lambda d: d.execute_script(
+        "return !!document.querySelector('[data-tab=settings]')"))
     browser.execute_script("document.querySelector('[data-tab=settings]').click()")
     topLevel=[
       'data-business-field-settings','data-appearance-settings'
