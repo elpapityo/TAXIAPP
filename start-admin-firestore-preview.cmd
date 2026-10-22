@@ -2,81 +2,66 @@
 setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
-if errorlevel 1 goto invalid_folder
-
-echo ==========================================
-echo TAXIAPP v0.3.126 - 開発検証版 PR #119
-echo ==========================================
 echo.
-echo 開発サーバーが起動したら、自動でブラウザを開きます。
-echo この黒いウィンドウは検証中ずっと開いたままにしてください。
+echo ==============================================
+echo TAXIAPP v0.3.126  [Development PR #119]
+echo ==============================================
 echo.
-if not exist "index.html" goto incomplete_zip
-
-rem Never silently reuse another ZIP's http://localhost:8787 server.
-netstat -ano | findstr /C:":8787 " | findstr /I "LISTENING" >nul
-if not errorlevel 1 goto already_running
-
-rem Use a single foreground process. Both servers launch the browser
-rem ONLY after port 8787 is listening; errors remain in this window.
-where py >nul 2>nul
-if not errorlevel 1 (
-  py -3 -c "import sys; assert sys.version_info >= (3, 9)" >nul 2>nul
-  if not errorlevel 1 goto python_launcher
-)
-where python >nul 2>nul
-if not errorlevel 1 (
-  python -c "import sys; assert sys.version_info >= (3, 9)" >nul 2>nul
-  if not errorlevel 1 goto python_launcher_path
-)
-where node >nul 2>nul
-if not errorlevel 1 (
-  node -e "require('node:http')" >nul 2>nul
-  if not errorlevel 1 goto node_launcher
-)
-echo エラー：Python 3.9以降またはNode.jsが見つかりません。
-echo 何もインストール・変更せず終了します。
-goto failed
-
-:python_launcher
-echo Pythonを使って起動します。
-py -3 "start-admin-firestore-preview-server.py"
-goto finished
-
-:python_launcher_path
-echo Pythonを使って起動します。
-python "start-admin-firestore-preview-server.py"
-goto finished
-
-:node_launcher
-echo Node.jsを使って起動します。
-node "start-admin-firestore-preview-server.js"
-goto finished
-
-:already_running
-echo エラー：8787番ポートが使用中です。
-echo 以前のTAXIAPP検証用の黒いウィンドウを閉じてください。
-echo 古いZIPを誤表示しないため、今回のブラウザ起動を中止しました。
-goto failed
-
-:incomplete_zip
-echo エラー：このBATと同じフォルダにindex.htmlがありません。
-echo ZIPをすべて展開してからBATを起動してください。
-goto failed
-
-:invalid_folder
-echo エラー：展開先のフォルダを開けません。
-goto failed
-
-:finished
+echo This is the startup window. Please keep it open.
+echo No Firebase or Google production data will be changed.
 echo.
-echo 検証用サーバーが終了しました。エラーが出ていれば上の内容を確認してください。
-echo 本番の日報・Google保存先・Firebase設定は変更していません。
+echo Press any key to START. If this window closes
+echo BEFORE this prompt, this file is not running correctly.
 pause
-exit /b %ERRORLEVEL%
+if not exist "index.html" goto missing_index
+if not exist "start-admin-firestore-preview-server.py" goto missing_server
+where py >nul 2>nul
+if errorlevel 1 goto try_python
+py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3,9) else 1)" >nul 2>nul
+if errorlevel 1 goto try_python
+echo Starting local server with Python launcher...
+py -3 "start-admin-firestore-preview-server.py"
+goto server_stopped
+
+:try_python
+where python >nul 2>nul
+if errorlevel 1 goto try_node
+python -c "import sys; sys.exit(0 if sys.version_info >= (3,9) else 1)" >nul 2>nul
+if errorlevel 1 goto try_node
+echo Starting local server with Python...
+python "start-admin-firestore-preview-server.py"
+goto server_stopped
+
+:try_node
+where node >nul 2>nul
+if errorlevel 1 goto missing_runtime
+if not exist "start-admin-firestore-preview-server.js" goto missing_server
+echo Starting local server with Node.js...
+node "start-admin-firestore-preview-server.js"
+goto server_stopped
+
+:missing_index
+echo ERROR: index.html is not in the same folder.
+echo Extract the complete GitHub ZIP before running the CMD file.
+goto failed
+
+:missing_server
+echo ERROR: the preview server file is missing from this ZIP.
+goto failed
+
+:missing_runtime
+echo ERROR: Python 3.9 or newer, or Node.js, was not detected.
+goto failed
+
+:server_stopped
+echo.
+echo The local preview server ended or could not start.
+echo Check the error lines above. Port 8787 may be used by an old server.
+goto failed
 
 :failed
 echo.
-echo 原因が分かるよう、この画面を閉じずに停止しています。
+echo Please take a screenshot of THIS WINDOW and send it to ChatGPT.
+echo The window stays open until you press a key.
 pause
 exit /b 1
