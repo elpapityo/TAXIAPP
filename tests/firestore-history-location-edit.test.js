@@ -37,6 +37,8 @@ const ctx={
   return {id:shift.id,revision:item.revision,confirmed:true};
  }},
  memberDiary:()=>true,canEditNow:()=>true,
+ syncUI:{verifiedRevision:()=>null},
+ localFirestoreOriginal:shift=>clone(shift),save:async()=>true,
  selectedHistoryShift:()=>ctx.historyCloudRows[0]?.shift,
  localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)||null,removeItem:k=>storage.delete(k)},
  MAX_RECORDS:60,
@@ -84,7 +86,7 @@ vm.runInContext(source.slice(begin,end),ctx);
  assert.equal(storage.size,0,'競合控えを本人が取り消した場合だけ解放');
  // 端末に同じ乗務があるときは直接編集を止める。
  ctx.model.shifts.push(clone(original));
- assert.throws(()=>ctx.startHistoryLocationEdit(original.id,'ride-1'),/未同期/);
+ assert.throws(()=>ctx.startHistoryLocationEdit(original.id,'ride-1'),/保存確認済みでは/);
  ctx.model.shifts.pop();
  ctx.historyCloudRows=[{id:original.id,revision:4,shift:clone(server.get(original.id).shift)}];
  ctx.historyLocationEdit=null;
@@ -128,5 +130,24 @@ vm.runInContext(source.slice(begin,end),ctx);
  await ctx.commitHistoryLocationEdit();
  assert.equal(server.get(original.id).revision,beforeNoop,'変更なしではFirestore更新番号を増やさない');
  assert.equal(ctx.historyLocationEdit,null,'変更なしの修正控えも整理');
+ // The phone normally keeps the most recent returned duty. Allow its
+ // historical edit only after local content and server CAS revision match.
+ const retained=clone(server.get(original.id).shift);
+ ctx.model.shifts.push(retained);
+ ctx.historyCloudRows=[{id:original.id,revision:server.get(original.id).revision,
+  shift:clone(retained)}];
+ ctx.syncUI.verifiedRevision=()=>server.get(original.id).revision;
+ let adopted=null,localSaves=0;
+ ctx.syncUI.adoptHistoryDuty=info=>{adopted=info;return true;};
+ ctx.save=async()=>{localSaves++;return true;};
+ ctx.startHistoryLocationEdit(original.id,'ride-1');
+ fields.historyEditPickup.value='端末の直近日報を修正';
+ await ctx.commitHistoryLocationEdit();
+ assert.equal(ctx.historyLocationEdit,null,'直近入庫済みの同一原本を安全に修正');
+ assert.equal(ctx.model.shifts[0].id,active.id,'進行中の乗務を維持');
+ assert.equal(ctx.model.shifts[1].records[0].raw.AL,'端末の直近日報を修正');
+ assert.equal(server.get(original.id).shift.records[0].raw.AL,'端末の直近日報を修正');
+ assert.equal(adopted.revision,server.get(original.id).revision,'改版したCASを端末へ採用');
+ assert.ok(localSaves>=1,'サーバー保存後の修正版を端末へ永続保存');
  console.log('Firestore過去日報：追加・削除、送信不明の再確認、変更なしの無駄な同期防止を検証');
 })().catch(error=>{console.error(error);process.exitCode=1;});
