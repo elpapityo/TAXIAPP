@@ -5261,14 +5261,14 @@ async function importFirestoreBackup(file){
   if(backup.ownerUid!==undefined&&backup.ownerUid!==null&&backup.ownerUid!==uid)
    throw Error('別の利用者のUIDが記録されています。取込を停止しました');
   eligible=backup.shifts.filter(shift=>Boolean(shift.endedAt||shift.endedIso)&&
-   /^\\d{4}-\\d{2}-\\d{2}$/.test(String(shift.date||'')));
+   /^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||'')));
   if(!eligible.length)throw Error('入庫済みの日報が見つかりません。元ファイルを保管してください');
  }catch(error){toast('JSON取込を停止：'+String(error?.message||error),true);return;}
  if(!sameOwner()){toast('取込準備中にログインまたは操作権が変わりました',true);return;}
  if((backup.ownerUid===undefined||backup.ownerUid===null)&&
     !confirm('このバックアップには本人UIDが記録されていません。現在の本人UIDで作成した日報だけを取り込んでください。本人の日報であることを確認しますか？'))return;
  const dates=[...new Set(eligible.map(shift=>shift.date))].sort().reverse();
- const date=prompt('取込する乗務日をYYYY-MM-DDで入力してください。候補：\\n'+
+ const date=prompt('取込する乗務日をYYYY-MM-DDで入力してください。候補：\n'+
   dates.slice(0,20).join(' ／ ')+(dates.length>20?' ほか'+(dates.length-20)+'日':''),dates[0]);
  if(date===null)return;
  const options=eligible.filter(shift=>shift.date===date.trim()).sort((a,b)=>
@@ -5276,18 +5276,18 @@ async function importFirestoreBackup(file){
  if(!options.length){toast('選択した日付の日報はJSONにありません',true);return;}
  let selected=options[0];
  if(options.length>1){
-  const selection=prompt('取込する乗務番号を入力してください。\\n'+options.map((shift,i)=>
+  const selection=prompt('取込する乗務番号を入力してください。\n'+options.map((shift,i)=>
    (i+1)+'：出庫 '+String(shift.startedAt||'不明')+' ／ '+shift.records.length+
-   '件 ／ ID '+shift.id).join('\\n'));
+   '件 ／ ID '+shift.id).join('\n'));
   if(selection===null)return;
   if(!/^[1-9][0-9]*$/.test(selection)||Number(selection)>options.length){
    toast('取込する乗務番号が不正です',true);return;
   }
   selected=options[Number(selection)-1];
  }
- if(!confirm('本人Firestoreへ新規取込\\n日付：'+selected.date+
-   '\\n乗務ID：'+selected.id+'\\n営業記録：'+selected.records.length+
-   '件\\n\\n現在の営業中データ、旧Google原本、バックアップJSONは変更しません。続けますか？'))return;
+ if(!confirm('本人Firestoreへ新規取込\n日付：'+selected.date+
+   '\n乗務ID：'+selected.id+'\n営業記録：'+selected.records.length+
+   '件\n\n現在の営業中データ、旧Google原本、バックアップJSONは変更しません。続けますか？'))return;
  if(!sameOwner()){toast('取込開始前にログインが変わりました',true);return;}
  let packet,attempted=false,confirmed=false,problem='';
  try{
