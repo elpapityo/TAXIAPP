@@ -72,6 +72,197 @@ function firestorePrintVerifyRowsDraft_(ss,shiftId,batches){
  });
  return {id:shiftId,verifiedSheets:order.slice(),readOnly:true};
 }
+
+/**
+ * The four existing source sheets have no cross-sheet transaction. A private
+ * ScriptProperties revision journal ties a previously verified row footprint
+ * to the Firestore revision. Unknown/partially transferred data stop instead
+ * of being silently rewritten. Only the already existing print-source cells
+ * are edited; legacy original, selectors and two paper forms remain untouched.
+ */
+function firestorePrintJournalDraft_(uid,id){
+ if(typeof PropertiesService==='undefined'||
+    typeof PropertiesService.getScriptProperties!=='function')
+  throw Error('Firestore再印刷の版管理が利用できません');
+ var p=PropertiesService.getScriptProperties();
+ if(typeof p.getProperty!=='function'||typeof p.setProperty!=='function'||
+    typeof p.deleteProperty!=='function')
+  throw Error('Firestore再印刷の版管理が利用できません');
+ var key='TAXIAPP_FS_PRINT_REV1_'+uid+'_'+id;
+ var raw=p.getProperty(key),row=null;
+ if(raw){
+  try{row=JSON.parse(raw);}catch(e){throw Error('印刷元の版管理記録が不正です。自動更新しません');}
+  if(!row||row.uid!==uid||row.id!==id||
+     !Number.isSafeInteger(row.revision)||row.revision<1||
+     !['ready','writing'].includes(row.state)||typeof row.digest!=='string')
+   throw Error('印刷元の版管理記録が不正です。自動更新しません');
+  if(row.state!=='ready')throw Error('印刷元の更新が中断されています。内容を手動で照合してください');
+ }
+ return {properties:p,key:key,record:row};
+}
+function firestorePrintDigestDraft_(batches){
+ if(typeof Utilities==='undefined'||typeof Utilities.computeDigest!=='function'||
+    typeof Utilities.base64EncodeWebSafe!=='function')
+  throw Error('Firestore印刷元の厳密な照合機能が利用できません');
+ var plain=JSON.stringify(batches.map(function(batch){
+  return [batch.name,batch.rows];
+ }));
+ var bytes=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,plain,
+  Utilities.Charset.UTF_8);
+ return Utilities.base64EncodeWebSafe(bytes);
+}
+function firestorePrintSnapshotDraft_(ss,shiftId,batches){
+ var results=[];
+ batches.forEach(function(batch){
+  var name=batch.name,headers=TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name];
+  if(!headers||!ss.getSheetByName(name)||
+     !Array.isArray(batch.rows)||batch.width!==headers.length)
+   throw Error('印刷元の版管理対象が不正です：'+name);
+  var sheet=ss.getSheetByName(name),width=headers.length;
+  if(sheet.getMaxRows()<2||sheet.getMaxColumns()<width||
+     JSON.stringify(sheet.getRange(1,1,1,width).getValues()[0])!==JSON.stringify(headers))
+   throw Error('印刷元の構造が変わっています：'+name);
+  var n=sheet.getMaxRows()-1,area=sheet.getRange(2,1,n,width);
+  var values=area.getValues(),forms=area.getFormulas();
+  var matches=[],first=-1,last=-1,lastOccupied=-1;
+  values.forEach(function(row,i){
+   if(row.some(function(cell,j){return (cell!==''&&cell!==null)||Boolean(forms[i][j]);}))
+    lastOccupied=i;
+   if(String(row[0])!==shiftId)return;
+   if(forms[i].some(Boolean))
+    throw Error('印刷元の本人乗務行に数式があります。変更しません：'+name);
+   if(first===-1)first=i;
+   last=i;matches.push(row);
+  });
+  if(matches.length&&last-first+1!==matches.length)
+   throw Error('同じ乗務IDの行が離れています。自動更新しません：'+name);
+  results.push({name:name,rows:matches,width:width,start:first<0?0:first+2,
+   lastOccupied:lastOccupied+2,sheet:sheet,hasRows:matches.length>0});
+ });
+ return results;
+}
+function firestorePrintJournalRowsDraft_(snapshot){
+ return snapshot.map(function(p){return {name:p.name,rows:p.rows};});
+}
+function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyBeforeIndex){
+ if(!Number.isSafeInteger(revision)||revision<1||!uid||
+    !Array.isArray(batches)||batches.length!==4)
+  throw Error('Firestore再印刷のUID・更新番号が不正です');
+ var order=['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計','TAXIAPP_乗務一覧'];
+ if(batches.some(function(b,i){return b.name!==order[i]||
+    b.rows.some(function(r){return r[0]!==id;});}))
+  throw Error('Firestore再印刷の明細行が不正です');
+ var journal=firestorePrintJournalDraft_(uid,id);
+ var previous=firestorePrintSnapshotDraft_(ss,id,batches);
+ var existingDigest=firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(previous));
+ var planned=batches.map(function(b){return {name:b.name,rows:b.rows.map(function(row){
+   return row.map(safeCell_);
+  })};});
+ var incomingDigest=firestorePrintDigestDraft_(planned);
+ var recorded=journal.record;
+ if(recorded&&recorded.digest!==existingDigest)
+  throw Error('前回の確認後に印刷元が変更されています。自動上書きせず手動照合してください');
+ if(recorded&&revision<recorded.revision)
+  throw Error('Firestoreの更新番号が前回印刷した原本より古いため停止しました');
+ var unchanged=previous.every(function(old,i){
+  return firestorePrintSameRowsDraft_(old.rows,planned[i].rows);
+ });
+ if(unchanged){
+  if(!recorded||revision>recorded.revision){
+   journal.properties.setProperty(journal.key,JSON.stringify({
+    uid:uid,id:id,revision:revision,digest:existingDigest,state:'ready'
+   }));
+  }else if(revision===recorded.revision&&incomingDigest!==existingDigest){
+   throw Error('同じ更新番号で印刷明細が変わっています');
+  }
+  return {id:id,changedSheets:[],oldOriginalUnchanged:true,paperFormsUnchanged:true};
+ }
+ if(!recorded)
+  throw Error('同一乗務IDの旧印刷元に確認済み更新番号がありません。初回の原本と照合し、手動復旧してください');
+ if(revision===recorded.revision)
+  throw Error('同じ更新番号で印刷明細が変わっています。自動上書きしません');
+ // A growing block is safe only when it is the last occupied block. No
+ // row insertion or shifting of another duty is ever attempted.
+ var plans=previous.map(function(old,i){
+  var next=planned[i].rows,len=Math.max(old.rows.length,next.length),start=old.start;
+  if(!old.rows.length)start=old.lastOccupied+1;
+  if(next.length>old.rows.length&&old.rows.length&&
+     old.start+old.rows.length-1!==old.lastOccupied)
+   throw Error('別の乗務の後ろにある明細は行を増やせません。手動調整せず更新を保留：'+old.name);
+  if(start<2||start+len-1>old.sheet.getMaxRows()||start+len-1>1200)
+   throw Error('既存印刷元の空き行が不足しています：'+old.name);
+  var range=len?old.sheet.getRange(start,1,len,old.width):null;
+  var before=len?range.getValues():[],formulas=len?range.getFormulas():[];
+  if(formulas.some(function(row){return row.some(Boolean);}))
+   throw Error('再印刷の更新先に数式があります。変更しません：'+old.name);
+  if(!firestorePrintSameRowsDraft_(before.slice(0,old.rows.length),old.rows)||
+     before.slice(old.rows.length).some(function(row){
+      return row.some(function(cell){return cell!==''&&cell!==null;});
+     }))
+   throw Error('再印刷の更新先が前回の確認内容と異なります：'+old.name);
+  var rows=next.map(function(row){return row.slice();});
+  while(rows.length<len)rows.push(Array(old.width).fill(''));
+  return {name:old.name,sheet:old.sheet,range:range,before:before,rows:rows,
+   width:old.width};
+ });
+ journal.properties.setProperty(journal.key,JSON.stringify({
+  uid:uid,id:id,revision:recorded.revision,digest:existingDigest,state:'writing'
+ }));
+ var attempted=[];
+ try{
+  plans.forEach(function(plan){
+   if(plan.name==='TAXIAPP_乗務一覧'&&typeof verifyBeforeIndex==='function')
+    verifyBeforeIndex();
+   if(!plan.rows.length)return;
+   attempted.push(plan);
+   plan.range.setValues(plan.rows);
+   if(!firestorePrintSameRowsDraft_(plan.range.getValues(),plan.rows))
+    throw Error('更新した印刷明細を読み戻せません：'+plan.name);
+  });
+  var checked=firestorePrintSnapshotDraft_(ss,id,batches);
+  if(!checked.every(function(old,i){
+   return firestorePrintSameRowsDraft_(old.rows,planned[i].rows);
+  }))throw Error('4印刷元の更新結果が不一致です');
+  journal.properties.setProperty(journal.key,JSON.stringify({
+   uid:uid,id:id,revision:revision,
+   digest:firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(checked)),
+   state:'ready'
+  }));
+ }catch(error){
+  var needsManual=[];
+  attempted.reverse().forEach(function(plan){
+   try{
+    // Formulas or outside edits can appear during a failed write. Never
+    // delete them; leave the pending journal to block unsafe retries.
+    if(plan.range.getFormulas().some(function(row){return row.some(Boolean);}))
+     throw Error('数式あり');
+    var now=plan.range.getValues();
+    if(!now.every(function(row,i){
+      return row.every(function(cell,j){
+       return cell===''||cell===null||
+        firestorePrintSameCellDraft_(cell,plan.rows[i][j]);
+      });
+    }))throw Error('他者の変更あり');
+    plan.range.setValues(plan.before);
+    if(!firestorePrintSameRowsDraft_(plan.range.getValues(),plan.before))
+     throw Error('復元後の値が違います');
+   }catch(e){needsManual.push(plan.name);}
+  });
+  try{
+   var restored=firestorePrintSnapshotDraft_(ss,id,batches);
+   if(firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(restored))!==existingDigest)
+    needsManual.push('版管理の再照合');
+  }catch(e){needsManual.push('版管理の再照合');}
+  if(!needsManual.length){
+   journal.properties.setProperty(journal.key,JSON.stringify(recorded));
+   throw Error('Firestore再印刷の更新を中止し、旧印刷元に戻しました：'+String(error.message||error));
+  }
+  throw Error('Firestore再印刷が中断され、印刷元の一部に復旧が必要です。自動再送しません：'+needsManual.join('、'));
+ }
+ return {id:id,changedSheets:plans.filter(function(p){return p.rows.length;})
+  .map(function(p){return p.name;}),oldOriginalUnchanged:true,paperFormsUnchanged:true};
+}
+
 function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
  if(!ss||typeof ss.getSheetByName!=='function'||
     !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId)||
