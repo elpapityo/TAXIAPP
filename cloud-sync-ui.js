@@ -110,9 +110,10 @@ root.TAXIAPP_SYNC_UI=function(d){
           throw Error('Firestoreの日報一覧を確認できません');
         listRows.push(...listing.shifts);
       }
-    }else{
-      // A new device has no local duty ID. Select only the owner's unfinished
-      // duty (or most recent returned duty), never fetch the whole archive.
+    }else if(!d.previewFreshOnly?.()){
+      // A normal new device resumes just one owner duty. A development-only
+      // administrator preview is different: never import an unrelated live
+      // owner original into the isolated synthetic-data editor.
       const listing=await d.request('syncList',{resumeOnly:true});
       if(!stable())return false;
       if(!Array.isArray(listing?.shifts))
