@@ -214,11 +214,20 @@ root.TAXIAPP_SYNC_UI=function(d){
    d.toast('選択した乗務が見つからないため、Google送信を停止しました',true);
    return false;
   }
-  const batch=[...new Set([...queuedDutyIds,...engine.localRemovalIds()])];
+  const pending=[...new Set([...queuedDutyIds,...engine.localRemovalIds()])];
+  // Exceptional unsynced originals have no count limit, but the Firestore
+  // per-duty metadata API is intentionally bounded to 60 IDs per request.
+  // Drain the queue in batches without removing originals or dropping the
+  // remaining duty IDs when many offline shifts are restored together.
+  const batch=!manual&&!requested&&d.remoteOnDemand?.()?pending.slice(0,60):pending;
+  const deferred=!manual&&!requested&&d.remoteOnDemand?.()?pending.slice(batch.length):[];
   // A required single-duty event can run without a manual dialog. Leave
   // other pending duties untouched, and requeue this one if the upload fails.
   if(requested)requested.forEach(id=>queuedDutyIds.delete(id));
-  else queuedDutyIds.clear();
+  else {
+   queuedDutyIds.clear();
+   deferred.forEach(id=>queuedDutyIds.add(id));
+  }
   writerRunBusy=true;
   writerFeedback='Googleと照合中…';
   d.setStatus(writerFeedback);
