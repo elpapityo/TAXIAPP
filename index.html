@@ -2836,12 +2836,116 @@ function unchangedHistoryEdit(draft){
  return JSON.stringify(draft.highwaySections??null)===
   JSON.stringify(original.meta?.highwaySections??null);
 }
+
+async function legacyCasSaveHistoricalShift(original,updated,sourceHash){
+ if(!legacyDiary()||!canEditNow()||!googleIsConfigured()||
+    !currentLoginScope?.admin||!accountScope.uid)
+  throw Error('管理者のGoogle接続と操作権を確認してください。修正控えは保持します');
+ const generation=accountScopeGeneration,uid=accountScope.uid,shiftId=original.id;
+ const stable=()=>legacyDiary()&&canEditNow()&&accountScopeGeneration===generation&&accountScope.uid===uid;
+ const current=()=>model.shifts.find(s=>s.id===shiftId);
+ if(!current()||historyLegacyHash(current())!==sourceHash||
+    current().draft||model.activeId===shiftId)
+  throw Error('修正開始後に端末原本が変化しました。両方保護して停止します');
+ const remoteResponse=await googlePostRequest('syncGet',{shiftId});
+ if(!stable())throw Error('利用者が変わったため修正を中止しました');
+ const remote=remoteResponse?.data;
+ if(remote?.id!==shiftId||remote.shift?.id!==shiftId||
+    !Number.isSafeInteger(Number(remote.revision))||Number(remote.revision)<1)
+  throw Error('Google原本と更新番号を確認できません。修正控えを保持します');
+ const equal=(a,b)=>JSON.stringify(canonicalStoredDuty(a))===JSON.stringify(canonicalStoredDuty(b));
+ if(!equal(remote.shift,googleShiftPacket(original).shift))
+  throw Error('Google原本と端末の保存内容が異なります。他端末の変更を上書きせず修正控えを保護します');
+ if(!current()||historyLegacyHash(current())!==sourceHash)
+  throw Error('確認中に端末原本が変化しました。修正控えを保持します');
+ const packet=googleShiftPacket(updated),baseRevision=Number(remote.revision);
+ let ack=null,sendError=null;
+ try{
+  const response=await googlePostRequest('syncPut',{
+   baseRevision,payload:JSON.stringify(packet)
+  });
+  ack=response?.data;
+ }catch(error){sendError=error;}
+ if(!stable())throw Error('送信中に利用者が変わりました。修正控えを保持します');
+ // A reply can be lost after a successful write. Always check the original;
+ // never retry with a guessed new revision.
+ let checked=null;
+ try{const response=await googlePostRequest('syncGet',{shiftId});checked=response?.data;}
+ catch(error){throw Error('Googleへ送信した結果を読戻しできません。修正控えを保持します：'+String(error.message||error));}
+ if(!stable())throw Error('確認中に利用者が変わりました。修正控えを保持します');
+ if(checked?.id!==shiftId||Number(checked.revision)!==baseRevision+1||
+    !equal(checked.shift,packet.shift))
+  throw Error('Google原本の更新結果不明・競合です。修正控えを保持しました：'+String(sendError?.message||ack?.message||'改版が一致しません'));
+ const index=model.shifts.findIndex(s=>s.id===shiftId);
+ if(index<0||historyLegacyHash(model.shifts[index])!==sourceHash)
+  throw Error('Googleは保存確認済みですが、端末側が変更されています。修正控えを保持します');
+ const previous=deepCopy(model.shifts[index]);
+ model.shifts[index]=deepCopy(updated);
+ if(await save(true)!==true){
+  model.shifts[index]=previous;
+  throw Error('Googleは保存確認済みですが端末の永続保存に失敗しました。修正控えを保持します');
+ }
+ if(!stable())throw Error('保存中に利用者が変わりました。修正控えは保持しました');
+ // Adopt the same confirmed CAS version without overwriting a different
+ // active shift, and do not blindly send an older pending Google packet.
+ syncUI.adoptHistoryDuty({id:shiftId,revision:baseRevision+1,shift:deepCopy(updated)});
+ cloudLastDigest.set(shiftId,JSON.stringify(packet));
+ setGoogleStatus('旧Google原本を更新・読戻し確認済み：'+updated.date+'／版'+(baseRevision+1));
+ return {revision:baseRevision+1};
+}
+async function commitLegacyHistoryLocationEdit(draft){
+ if(!legacyDiary()||!canEditNow()||accountScope.uid!==draft.uid)return;
+ const original=model.shifts.find(s=>s.id===draft.id);
+ if(!original||!canEditLegacyHistory(original)||historyLegacyHash(original)!==draft.legacyHash||
+    original.date!==draft.date){
+  draft.message='端末の日報が変更されています。修正控えは保持しました';render();return;
+ }
+ if(!googleIsConfigured()){
+  draft.message='旧Googleへの接続情報が未設定です。修正控えは端末に保護しています。接続確認後に再保存してください';render();return;
+ }
+ draft.busy=true;draft.message='既存Google原本をCAS照合し保存中…';render();
+ const generation=accountScopeGeneration;
+ try{
+  const updated=deepCopy(original);
+  const rec=draft.addRecord?deepCopy(draft.sourceRecord):updated.records.find(r=>r.id===draft.recordId);
+  if(!rec)throw Error('修正対象の営業記録がありません');
+  if(draft.addRecord){
+   if(updated.records.length>=MAX_RECORDS||updated.records.some(r=>r.id===rec.id))
+    throw Error('営業記録の件数・IDを確認してください');
+   rec.status='complete';rec.meta??={};rec.meta.serviceDate=updated.date;
+   applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
+   const issues=[...validateDraft(rec),...validatePaymentBreakdown(rec,updated.settings,updated.date)];
+   if(issues.length)throw Error('営業内容を確認してください：'+issues.join('、'));
+   rec.raw=deriveRaw(rec,updated.settings);
+   updated.records.push(rec);
+   updated.records.forEach((item,index)=>{item.raw.A=index+1;});
+  }else if(draft.removeRecord){
+   if(!confirm('営業№'+String(rec.raw?.A||'')+'を旧Google原本からCAS更新で除きますか？復旧用JSONは事前に保管してください'))return;
+   updated.records=updated.records.filter(item=>item.id!==rec.id);
+   updated.records.forEach((item,index)=>{item.raw.A=index+1;});
+  }else applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
+  await legacyCasSaveHistoricalShift(original,updated,draft.legacyHash);
+  if(accountScopeGeneration!==generation||historyLocationEdit!==draft)return;
+  try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));
+   if(draft.addRecord)localStorage.removeItem(historyPendingAdditionKey(draft.uid,draft.id,draft.sourceRecord.kind));
+  }catch{
+   draft.message='Google原本は保存確認済みですが、端末の修正控えは保護したままです';render();return;
+  }
+  historyLocationEdit=null;historyCloudMessage='旧Google原本の営業明細を更新・読戻し確認しました';render();
+ }catch(error){
+  if(historyLocationEdit===draft&&accountScope.uid===draft.uid){
+   draft.message='保存未確認：'+String(error.message||error)+'。端末の修正控えを保持しています';render();
+  }
+ }finally{draft.busy=false;if(historyLocationEdit===draft)render();}
+}
 async function commitHistoryLocationEdit(){
  const draft=historyLocationEdit;
  if(!draft||draft.busy)return;
  try{if(!historyLocationInputs())throw Error('修正入力が見つかりません');}
  catch(error){draft.message=String(error?.message||error);render();return;}
- if(!accountDiary.ready()||!canEditNow()||accountScope.uid!==draft.uid)return;
+ if(!canEditNow()||accountScope.uid!==draft.uid)return;
+ if(legacyDiary()){await commitLegacyHistoryLocationEdit(draft);return;}
+ if(!accountDiary.ready())return;
  if(unchangedHistoryEdit(draft)){
   try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));}
   catch{draft.message='変更なしですが、端末の修正控えを整理できません';render();return;}
@@ -2946,7 +3050,7 @@ async function commitHistoryLocationEdit(){
 function discardHistoryLocationEdit(){
  const draft=historyLocationEdit;
  if(!draft||draft.busy)return;
- if(!confirm('端末に保護した過去日報の修正案を取り消しますか？Firestoreの原本は変更しません。'))return;
+ if(!confirm('端末に保護した過去日報の修正案を取り消しますか？サーバー原本は変更しません。'))return;
  try{
   const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
   const snapshot=localStorage.getItem(key);
