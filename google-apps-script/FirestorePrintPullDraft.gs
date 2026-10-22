@@ -94,9 +94,11 @@ function firestorePrintDocDraft_(cfg,id){
  return {revision:data.revision,id:id,packet:packet};
 }
 /** Manual PC operation only. Never registered in public doPost. */
-function firestorePrintSelectedDutyDraft_(id){
+function firestorePrintSelectedDutyDraft_(id,expectedDate){
  var cfg=firestorePrintConfigDraft_();
  var first=firestorePrintDocDraft_(cfg,id);
+ if(expectedDate&&first.packet.shift.date!==expectedDate)
+  throw Error('日付指定した乗務と取得したFirestore原本の日付が一致しません');
  var lock=LockService.getScriptLock();
  if(!lock.tryLock(25000))throw Error('別の印刷転送が実行中です');
  try{
@@ -116,11 +118,14 @@ function firestorePrintSelectedDutyDraft_(id){
    }});
  }finally{lock.releaseLock();}
 }
-/** Convenience for new duties not yet present in the print dropdown. */
-function firestorePrintLatestDutyDraft_(){
+/** PC-only listing of this authenticated owner's completed Firestore duties.
+ * No sheet reads/writes and no changes to B15/B17/C17. Date filtering is only
+ * for the explicit PC menu, never for app startup or phone synchronization.
+ */
+function firestorePrintCandidatesDraft_(){
  var cfg=firestorePrintConfigDraft_();
  var path='privateDuties/'+encodeURIComponent(cfg.uid)+'/shifts';
- var token='',seen={},latest='',latestStamp='';
+ var token='',seen={},candidates=[];
  for(var page=0;page<10;page++){
   var response=firestorePrintRestDraft_(cfg,path+'?pageSize=100'+(token?'&pageToken='+encodeURIComponent(token):''));
   (response.documents||[]).forEach(function(doc){
@@ -132,22 +137,70 @@ function firestorePrintLatestDutyDraft_(){
     throw Error('Firestoreの印刷一覧に不正な乗務IDがあります');
    seen[id]=true;
    var data=firestorePrintDecodeDraft_({mapValue:{fields:doc.fields||{}}},0),shift=data.shift;
-   if(data.trashed!==true&&shift&&shift.id===id&&(shift.endedAt||shift.endedIso)&&
-      shift.__taxiPrintSummary&&String(shift.startedIso||'')>latestStamp){
-    latestStamp=String(shift.startedIso||'');latest=id;
+   if(data.trashed!==true&&data.format==='TAXIAPP_PRIVATE_SHIFT_V1'&&
+      Number.isSafeInteger(data.revision)&&data.revision>=1&&
+      shift&&shift.id===id&&(shift.endedAt||shift.endedIso)&&
+      shift.__taxiPrintSummary&&/^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||''))){
+    candidates.push({id:id,date:String(shift.date),
+     startedAt:String(shift.startedAt||''),startedIso:String(shift.startedIso||''),
+     records:Array.isArray(shift.records)?shift.records.length:0});
    }
   });
   token=String(response.nextPageToken||'');
   if(!token)break;
   if(page===9)throw Error('Firestoreの件数が多く、未確認の乗務があります');
  }
+ candidates.sort(function(a,b){
+  return b.startedIso.localeCompare(a.startedIso)||b.id.localeCompare(a.id);
+ });
+ return candidates;
+}
+/** Convenience for new duties not yet present in the print dropdown. */
+function firestorePrintLatestDutyDraft_(){
+ var latest=firestorePrintCandidatesDraft_()[0];
  if(!latest)throw Error('Firestoreに印刷可能な入庫済み乗務が見つかりません');
- return firestorePrintSelectedDutyDraft_(latest);
+ return firestorePrintSelectedDutyDraft_(latest.id);
+}
+/** Take a specific date and selected candidate instead of guessing "latest".
+ * A new Firestore duty is NOT in B17's list until it is imported once.
+ */
+function firestorePrintDateChoicesDraft_(date){
+ var input=String(date||'').trim();
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(input)||
+    new Date(input+'T12:00:00Z').toISOString().slice(0,10)!==input)
+  throw Error('乗務日はYYYY-MM-DD形式の正しい日付を入力してください');
+ var items=firestorePrintCandidatesDraft_().filter(function(x){return x.date===input;});
+ if(!items.length)throw Error('指定日に入庫済みのFirestore日報はありません');
+ return items;
+}
+function firestorePrintDateMenuDraft_(){
+ var ui=SpreadsheetApp.getUi();
+ var entry=ui.prompt('Firestore印刷用の乗務日','YYYY-MM-DD形式で入力してください。例：2026-10-22',ui.ButtonSet.OK_CANCEL);
+ if(entry.getSelectedButton()!==ui.Button.OK)return;
+ var date=String(entry.getResponseText()||'').trim();
+ var options=firestorePrintDateChoicesDraft_(date);
+ var lines=options.map(function(c,i){
+  return (i+1)+'：出庫 '+(c.startedAt||'時刻不明')+
+   '／'+c.records+'件／乗務ID '+c.id;
+ });
+ var selection=ui.prompt('Firestoreから印刷用に取り込む乗務を選択',
+  date+' の入庫済み乗務：\n'+lines.join('\n')+
+  '\n取り込む番号（1〜'+options.length+'）を入力してください。既存B15/B17/C17は変更しません。',
+  ui.ButtonSet.OK_CANCEL);
+ if(selection.getSelectedButton()!==ui.Button.OK)return;
+ var picked=String(selection.getResponseText()||'').trim();
+ if(!/^[1-9][0-9]*$/.test(picked)||Number(picked)>options.length)
+  throw Error('乗務の選択番号が不正です。既存印刷元は変更していません');
+ var chosen=options[Number(picked)-1];
+ var result=firestorePrintSelectedDutyDraft_(chosen.id,date);
+ SpreadsheetApp.openById(TAXIAPP_SHEET_ID).toast(result,'Firestore印刷取込',8);
+ return result;
 }
 
 /** Separate PC menu; does NOT override or replace existing onOpen macros. */
 function firestorePrintMenuDraft_(){
  SpreadsheetApp.getUi().createMenu('TAXIAPP Firebase取込')
+  .addItem('日付・乗務を選んで取込','firestorePrintDateMenuDraft_')
   .addItem('Firestoreの最新乗務を取込','firestorePrintLatestMenuDraft_')
   .addItem('選択済み乗務を照合（同じ版のみ）','firestorePrintChosenMenuDraft_')
   .addToUi();
