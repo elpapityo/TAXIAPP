@@ -1849,7 +1849,7 @@ function header(){
   ?`<div class="viewer-sync-controls"><button class="btn" style="min-height:34px;padding:5px 10px;font-size:12px;border-radius:8px" type="button" data-action="writerRefresh" ${syncUI.status().busy?'disabled aria-busy="true"':''}>${writerLoadGate?'↻ 再試行':syncUI.status().busy?'◌ 照合中':'↻ 同期'}</button><span class="viewer-sync-time" role="status">${safeText(writerLoadGate?writerLoadError:syncUI.message())}</span></div>`:'';
  const viewerTools=deviceMode==='viewer'
   ?`<div class="viewer-sync-controls"><button class="btn" type="button" data-action="viewerRefresh" ${syncUI.message()==='取得中…'?'disabled aria-busy="true"':''}>${syncUI.message()==='取得中…'?'◌ 取得中…':'↻ 最新データを取得'}</button><span class="viewer-sync-time">${safeText(syncUI.message())}</span></div>`:'';
- return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>${renderDutySaveStatus()}`;
+ return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>`;
 }
 let pendingRender=false, renderAfterKeypad=false;
 let focusDispatchSourceAfterRender=false;
