@@ -1640,12 +1640,12 @@ async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)
 // Administrator's next *new* duty uses exactly the member Firestore backend.
 // The old Google original and local duty store are not migrated or deleted.
 // This runs only on the authenticated owner's actual browser after validation.
-async function ensureAdminFreshFirestore(scope){
+async function ensureAdminFreshFirestore(scope,generation){
  if(!scope?.admin||!scope.uid||TAXIAPP_PRINT_VIEWER_MODE||
     adminFirestoreManifest(scope.uid)||ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive)
   return;
  const uid=scope.uid;
- if(scope.firebase?.auth?.currentUser?.uid!==uid)
+ if(scope.firebase?.auth?.currentUser?.uid!==uid||generation!==accountScopeGeneration||currentLoginScope!==scope)
   throw Error('本人UIDの認証を確認できないため保存先を維持しました');
  const source=db?await idbGet(db,KEY):JSON.parse(localStorage.getItem(KEY)||'null');
  const old=source?.version===1&&Array.isArray(source.shifts)?source:emptyAccountModel();
@@ -1672,7 +1672,7 @@ async function ensureAdminFreshFirestore(scope){
  const existing=new Map(remote.shifts.map(x=>[x.id,x]));
  if(existing.size!==remote.shifts.length)throw Error('Firestore一覧の乗務IDが重複しています');
  for(const shift of old.shifts){
-  if(scope.firebase?.auth?.currentUser?.uid!==uid)
+  if(scope.firebase?.auth?.currentUser?.uid!==uid||generation!==accountScopeGeneration||currentLoginScope!==scope)
    throw Error('日報移行中に本人認証が変わりました');
   if(!shift.id||!(shift.endedAt||shift.endedIso))
    throw Error('未入庫の旧日報が含まれるため移行を保留しました');
@@ -1713,6 +1713,8 @@ async function ensureAdminFreshFirestore(scope){
   if(!checked||JSON.stringify(checked)!==JSON.stringify(seed))
    throw Error('本人Firestore端末領域へ運転者設定を保護できません');
  }
+ if(scope.firebase?.auth?.currentUser?.uid!==uid||generation!==accountScopeGeneration||currentLoginScope!==scope)
+  throw Error('保存先確定直前に本人認証が変更されました');
  const manifestKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
  // Do not mark old or synthetic Firestore duties as the current open duty.
  const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:old.shifts.map(x=>x.id),
@@ -1738,7 +1740,7 @@ async function switchAccountScope(scope){
  adminFirestorePreviewMessage='';
  currentLoginScope=scope||null;cloudManagementDate='';legacyHistoryRemote=null;legacyHistoryBusy=false;legacyHistoryMessage='';
  if(scope?.admin&&!TAXIAPP_PRINT_VIEWER_MODE&&!adminFirestoreManifest(scope.uid)){
-  try{await ensureAdminFreshFirestore(scope);}
+  try{await ensureAdminFreshFirestore(scope,generation);}
   catch(e){console.warn('管理者のFirestore切替を安全に保留:',e);}
   if(generation!==accountScopeGeneration)return;
  }
