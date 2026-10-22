@@ -4213,7 +4213,6 @@ async function migrateOctober16GoogleDuty(){
      !Array.isArray(shift.records)||!shift.settings||
      !(shift.endedAt||shift.endedIso))
    throw Error('Google原本の乗務ID・日付・更新番号・入庫状態を照合できません');
-  const snapshot=JSON.stringify(shift);
   const backup=JSON.stringify({uid,id,googleRevision:Number(row.revision),shift});
   const backupKey='taxiapp-legacy-one-duty-recovery-v1-'+uid+'-'+id;
   localStorage.setItem(backupKey,backup);
@@ -4226,7 +4225,7 @@ async function migrateOctober16GoogleDuty(){
   const fresh=(await googlePostRequest('syncGet',{shiftId:id}))?.data;
   if(!stable())throw Error('操作権が変更されました');
   if(fresh?.id!==id||Number(fresh.revision)!==Number(row.revision)||
-     JSON.stringify(fresh.shift)!==snapshot)
+     JSON.stringify(canonicalStoredDuty(fresh.shift))!==JSON.stringify(canonicalStoredDuty(shift)))
    throw Error('移行準備中にGoogle原本が変わりました。転送を停止します');
   const packet=googleShiftPacket(shift);
   packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
@@ -4240,14 +4239,15 @@ async function migrateOctober16GoogleDuty(){
   if(found?.deleted)throw Error('移行先に削除済み記録があります。再作成しません');
   if(found){
    const existing=await staging.request('syncGet',{shiftId:id});
-   if(!stable()||JSON.stringify(canonicalStoredDuty(existing?.shift))!==JSON.stringify(canonicalStoredDuty(packet.shift)))
+   if(!stable()||existing?.id!==id||!Number.isSafeInteger(Number(existing.revision))||Number(existing.revision)<1||
+      JSON.stringify(canonicalStoredDuty(existing?.shift))!==JSON.stringify(canonicalStoredDuty(packet.shift)))
     throw Error('Firestore側に異なる同一乗務IDがあります。上書きしません');
    legacyOctoberMigrationMessage='10月16日の原本はFirestoreと内容一致を確認済み（上書きなし）';
    return;
   }
   const sent=await staging.request('syncPut',{baseRevision:0,payload:JSON.stringify(packet)});
   if(!stable())throw Error('送信後に認証状態が変わりました。再送せず確認してください');
-  if(sent?.id!==id||Number(sent.revision)!==1)
+  if(sent?.id!==id||Number(sent.revision)!==1||sent.confirmed!==true)
    throw Error('Firestoreの保存結果が不明です。再送せず原本を確認してください');
   const verified=await staging.request('syncGet',{shiftId:id});
   if(!stable()||verified?.id!==id||Number(verified.revision)!==1||
