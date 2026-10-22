@@ -148,7 +148,7 @@ function client(name,svc,model,failReceive=false,remoteOnDemand=false){
   assert.ok(html.includes(literal),'missing '+literal);
  }
  const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+(?:-dev\.\d+)?) — 乗務日報<\/title>/)?.[1];
- assert.equal(pageVersion,'v0.3.131','10月16日日報のFirestore移行操作を含む正式版を識別する');
+ assert.equal(pageVersion,'v0.3.132','Google読込待ちでも10月16日の移行操作を実行できる版を識別する');
  assert.ok(html.includes('乗務日報 · ${displayVersion}'),
   '画面上部にバージョンを表示する');
  assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+(?:-dev\\.\\d+)?/)'),
