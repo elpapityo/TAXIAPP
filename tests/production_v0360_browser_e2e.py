@@ -51,11 +51,16 @@ try:
     js("document.querySelector('[data-tab=settings]').click()")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-gps-settings]')))
     js("document.querySelector('details[data-gps-settings]').open=true")
-    auto=driver.find_elements(By.CSS_SELECTOR,'[data-native-auto-distance]')
-    assert auto, 'auto-distance preference should remain configurable'
+    # Read both controls in one DOM snapshot. Account/sync status can redraw
+    # settings between separate Selenium WebElement calls.
+    options=wait.until(lambda _: driver.execute_script("""
+      const auto=document.querySelector('[data-native-auto-distance]');
+      if(!auto)return null;
+      return {on:auto.value==='on',native:!!document.querySelector('[data-native-diary-gps]')};
+    """))
+    assert options is not None, 'auto-distance preference should remain configurable'
     # The native-source selector is intentionally hidden when auto fill is OFF.
-    native=driver.find_elements(By.CSS_SELECTOR,'[data-native-diary-gps]')
-    assert bool(native)==(auto[0].get_attribute('value')=='on')
+    assert options['native']==options['on']
     assert not driver.find_elements(By.CSS_SELECTOR,'[data-preview-simulator]')
     # Functions are private inside the app closure. Verify the actual production
     # fetch URL from the same browser origin, without mutating user records.

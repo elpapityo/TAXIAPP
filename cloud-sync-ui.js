@@ -359,7 +359,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   viewerTimer=null;viewerFeedback='';viewerFingerprint=null;
  }
  async function compare(id){
-  if(!enabled()||!status().conflicts.some(x=>x.id===id))return false;
+  if(!(enabled()||(d.canReviewBlockedConflict?.()&&status().conflicts.length))||!status().conflicts.some(x=>x.id===id))return false;
   const uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||''),epoch=cloudEpoch;
   const check=()=>uid===String(d.scopeKey?.()||'')&&endpoint===String(d.endpoint()||'')&&epoch===cloudEpoch;
   try{
@@ -384,7 +384,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   }
  }
  async function resolve(id,localWins){
-  if(!enabled())return;
+  if(!(enabled()||d.canReviewBlockedConflict?.()))return;
   if(localWins===null){
    writerFeedback='競合を保留しました。端末・Firestoreの双方は変更していません。';
    d.setStatus(message());d.toast(writerFeedback);return;
@@ -697,7 +697,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,dutySyncStatus,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
+ return {conflictPanel:()=>conflictMarkup(status()),enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,dutySyncStatus,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
   // A history CAS edit may also affect the retained last returned duty.
   // Called only after that exact server-confirmed version is durable locally.
   adoptHistoryDuty:received=>{
