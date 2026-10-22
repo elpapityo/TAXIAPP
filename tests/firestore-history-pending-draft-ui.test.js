@@ -23,7 +23,7 @@ let localSaveCalls=0,inputCalls=0,visible=true,allowSave=true;
 const ctx={
  accountScope:{uid},historyCloudUid:uid,historyCloudDate:shift.date,
  historyCloudRows:[{id,revision:3,shift:copy(shift)}],historyLocationEdit:null,
- memberDiary:()=>true,historyEditStorageKey:editKey,historyPendingAdditionKey:addKey,
+ memberDiary:()=>true,legacyDiary:()=>false,historyEditStorageKey:editKey,historyPendingAdditionKey:addKey,
  localStorage:{getItem:k=>map.has(k)?map.get(k):null,setItem:(k,v)=>map.set(k,v)},
  safeText:s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;'),
  document:{getElementById:()=>visible?{value:'編集中'}:null},
