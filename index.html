@@ -4185,7 +4185,23 @@ function handleAction(action,id){
   const ended=new Date();
   shift.startingOdo=startText;shift.endingOdo=endText;
   pauseWaiting(shift,ended,'return');endBreak(shift,ended);shift.endedAt=stamp(ended);shift.endedIso=ended.toISOString();gpsTripUI?.stop(shift,true);model.activeId=null;
-  save();render();toast('入庫距離と帰庫時刻を保存しました。');return;
+  const completedId=shift.id;
+  // Persist the final duty before requesting its one-duty Firestore sync.
+  // Offline / unknown-result originals remain in the device recovery queue.
+  const savedReturn=save();render();
+  void savedReturn.then(async persisted=>{
+   if(!persisted){toast('入庫の日報を端末に保存できません。JSONバックアップを保護してください。',true);return;}
+   if(memberDiary()){
+    const confirmed=await syncUI.run(false,[completedId]);
+    const revision=syncUI.verifiedRevision(completedId);
+    if(confirmed&&revision!==null){toast('入庫日報を端末・本人Firestore原本に保存確認済みです。');return;}
+    toast('入庫日報は端末保存済み。クラウドは未確認のため原本を保持し、次回再照合します。',true);
+    return;
+   }
+   toast('入庫距離と帰庫時刻を端末へ保存しました。');
+  }).catch(error=>{console.error('TAXIAPP final duty save failed:',error);
+   toast('入庫の日報保存を確認できません。端末原本を保持してバックアップしてください。',true);});
+  return;
  }
  if(action==='chooseWaitPlace'){
   const shift=getShift();if(!shift?.waiting||shift.draft)return;
