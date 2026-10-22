@@ -468,12 +468,18 @@ function savePacket_(data,options) {
   return [id,key,numeric_(summary[key]),'TAXIAPP 計算済み',now];
  });
  if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_集計',id,aggregate,5);
- else firestorePrintPublishRowsDraft_(ss,id,[
-  {name:'TAXIAPP_印刷データ',rows:print,width:14},
-  {name:'TAXIAPP_決済内訳',rows:payments,width:11},
-  {name:'TAXIAPP_集計',rows:aggregate,width:5},
-  {name:'TAXIAPP_乗務一覧',rows:shiftRows,width:19}
- ],options&&options.verifyCurrentSource);
+ else {
+  var printBatches=[
+   {name:'TAXIAPP_印刷データ',rows:print,width:14},
+   {name:'TAXIAPP_決済内訳',rows:payments,width:11},
+   {name:'TAXIAPP_集計',rows:aggregate,width:5},
+   {name:'TAXIAPP_乗務一覧',rows:shiftRows,width:19}
+  ];
+  if(options&&options.verifyFirestorePrintOnly===true)
+   firestorePrintVerifyRowsDraft_(ss,id,printBatches);
+  else firestorePrintPublishRowsDraft_(ss,id,printBatches,
+   options&&options.verifyCurrentSource);
+ }
  // Save a lossless shift snapshot in 30,000-character chunks (under cell limit).
  var json = JSON.stringify(shift);
  var chunks = [];
@@ -598,6 +604,18 @@ function applySelectedPrintShift() {
    throw Error('Firestore原本の更新日時と印刷元が一致しません。再取込内容を確認してください');
   if(Number(matching[0][8])!==expected)
    throw Error('Firestore印刷元のメーター売上が原本と一致しません');
+  // Count, totals and second-resolution timestamps cannot prove that
+  // corrected pickup/payment/highway details are the same. Use the SAME
+  // savePacket_ projection in read-only mode, never a new fare calculator.
+  if(typeof firestorePrintVerifyRowsDraft_!=='function')
+   throw Error('Firestore印刷元の明細照合が未設定です。印刷を停止しました');
+  savePacket_(verified.packet,{firestorePrintOnly:true,verifyFirestorePrintOnly:true});
+  // A second edit can commit during the read-only four-sheet comparison.
+  // Do not confirm an obsolete snapshot just because it matched the sheets.
+  var again=firestorePrintDocDraft_(firestorePrintConfigDraft_(),id);
+  if(again.revision!==verified.revision||
+     JSON.stringify(again.packet)!==JSON.stringify(verified.packet))
+   throw Error('印刷確認中にFirestore原本が更新されました。印刷を停止します');
  }
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');
