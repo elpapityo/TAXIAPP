@@ -218,12 +218,16 @@ root.TAXIAPP_SYNC_UI=function(d){
    return false;
   }
   const pending=[...new Set([...queuedDutyIds,...engine.localRemovalIds()])];
-  // Exceptional unsynced originals have no count limit, but the Firestore
-  // per-duty metadata API is intentionally bounded to 60 IDs per request.
-  // Drain the queue in batches without removing originals or dropping the
-  // remaining duty IDs when many offline shifts are restored together.
-  const batch=!manual&&!requested&&d.remoteOnDemand?.()?pending.slice(0,60):pending;
-  const deferred=!manual&&!requested&&d.remoteOnDemand?.()?pending.slice(batch.length):[];
+  const firestore=Boolean(d.remoteOnDemand?.());
+  // Even an explicit manual check must not enumerate the owner's entire
+  // Firestore archive. Check local duty IDs plus pending removal markers,
+  // using the same bounded query batches as event-triggered sync.
+  const selectedNow=firestore&&manual&&!requested?
+   [...new Set([...(d.getModel()?.shifts||[]).map(shift=>shift.id),...pending])]:pending;
+  // Exceptional unsynced originals have no count limit; only each network
+  // request is limited to 60 known IDs. Preserve the remainder for retry.
+  const batch=firestore&&!requested?selectedNow.slice(0,60):pending;
+  const deferred=firestore&&!requested?selectedNow.slice(batch.length):[];
   // A required single-duty event can run without a manual dialog. Leave
   // other pending duties untouched, and requeue this one if the upload fails.
   if(requested)requested.forEach(id=>queuedDutyIds.delete(id));
@@ -239,10 +243,10 @@ root.TAXIAPP_SYNC_UI=function(d){
   try{
    // A manual verification checks every duty; normal operations touch only
    // duties that had status, break or fare changes since the last sync.
-   ok=await engine.run(requested|| (manual?undefined:batch));
+   ok=await engine.run(requested|| (firestore?batch:(manual?undefined:batch)));
    if(status().conflicts.length)await saveConflictCopies();
    writerFeedback=ok?(requested?'同期完了：選択した1乗務を照合':
-     d.remoteOnDemand?.()&&!manual?
+     firestore?
       '同期完了：'+batch.length+'乗務を照合'+
       (deferred.length?'／残り'+deferred.length+'乗務は再送待ち':''):
       '同期完了：現在の端末'+(d.getModel()?.shifts?.length||0)+'乗務と削除状態を照合'):
