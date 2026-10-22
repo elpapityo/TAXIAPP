@@ -193,3 +193,54 @@ function adapter(){
  assert.equal(local2.shifts.length,1,'unconfirmed original remains on device');
  console.log('Firestore明示削除：本人CAS・ゴミ箱読戻し・端末控え保護・未同期削除禁止');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+(async()=>{
+ // Actual legacy CAS update handler, with synthetic Google responses.
+ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+ const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ const from=index.indexOf('async function legacyCasSaveHistoricalShift(');
+ const to=index.indexOf('async function commitHistoryLocationEdit(',from);
+ assert.ok(from>0&&to>from,'旧GoogleのCAS更新経路が実装されている');
+ const id='shift-1792700000300-google-edit';
+ const original={id,date:'2026-10-20',startedAt:'08:00',endedAt:'18:00',records:[],settings:{}};
+ const next={...copy(original),startedAt:'09:00'};
+ const state={shifts:[copy(original)],activeId:null};
+ const cloud={revision:1,shift:copy(original)};
+ let calls=0,adopt=0,localWrites=0;
+ const canon=x=>Array.isArray(x)?x.map(canon):x&&typeof x==='object'?
+  Object.fromEntries(Object.keys(x).sort().map(k=>[k,canon(x[k])])):x;
+ const hash=shift=>JSON.stringify(shift);
+ const context={
+  model:state,accountScope:{uid:'owner-G'},accountScopeGeneration:1,
+  currentLoginScope:{admin:true},canEditNow:()=>true,legacyDiary:()=>true,googleIsConfigured:()=>true,
+  historyLegacyHash:hash,googleShiftPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:copy(shift),summary:{}}),
+  googlePostRequest:async(action,payload)=>{
+   calls++;
+   if(action==='syncGet')return {data:{id,revision:cloud.revision,shift:copy(cloud.shift)}};
+   if(action==='syncPut'){
+    assert.equal(payload.baseRevision,cloud.revision);
+    const updated=JSON.parse(payload.payload).shift;
+    cloud.revision++;cloud.shift=copy(updated);
+    return {data:{id,revision:cloud.revision}};
+   }
+   throw Error('unexpected legacy request');
+  },
+  canonicalStoredDuty:canon,deepCopy:copy,save:async()=>{localWrites++;return true;},
+  syncUI:{adoptHistoryDuty:()=>{adopt++;return true;}},
+  cloudLastDigest:new Map(),setGoogleStatus:()=>{},JSON,Number,String,Error,Object
+ };
+ vm.createContext(context);
+ vm.runInContext(index.slice(from,to),context);
+ assert.equal((await context.legacyCasSaveHistoricalShift(copy(original),next,hash(original))).revision,2);
+ assert.equal(state.shifts[0].startedAt,'09:00');
+ assert.equal(cloud.shift.startedAt,'09:00');
+ assert.equal(localWrites,1);
+ assert.equal(adopt,1);
+ const conflicting={...copy(next),startedAt:'10:00'};
+ cloud.revision=3;cloud.shift.startedAt='11:00';
+ await assert.rejects(context.legacyCasSaveHistoricalShift(copy(next),conflicting,hash(next)),/異なります/);
+ assert.equal(cloud.shift.startedAt,'11:00','other device original must never be overwritten');
+ assert.equal(state.shifts[0].startedAt,'09:00','local recovery original must be preserved');
+ console.log('旧Google日報：既存原本のCAS保存・読戻し、別端末改版の無断上書き防止');
+})().catch(error=>{console.error(error);process.exitCode=1;});
