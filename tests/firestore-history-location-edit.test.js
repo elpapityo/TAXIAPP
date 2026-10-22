@@ -36,7 +36,7 @@ const ctx={
   if(sendUnknown){sendUnknown=false;throw Error('通信断で保存結果不明');}
   return {id:shift.id,revision:item.revision,confirmed:true};
  }},
- memberDiary:()=>true,canEditNow:()=>true,
+ memberDiary:()=>true,legacyDiary:()=>false,canEditNow:()=>true,
  getShift:()=>ctx.model.shifts.find(item=>item.id===ctx.model.activeId)||null,
  syncUI:{verifiedRevision:()=>null},
  localFirestoreOriginal:shift=>clone(shift),save:async()=>true,
