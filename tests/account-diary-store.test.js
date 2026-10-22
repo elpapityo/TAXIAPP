@@ -166,5 +166,42 @@ const id='shift-1234-abc',shift={id,date:'2026-10-22',records:[],settings:{},sta
   /全件の取得は行わず保留/,'インデックス取得が使えなければ全件検索に退避しない');
  console.log('Firestore新端末：未入庫優先、複数停止、ゴミ箱除外、別UID保護、全件取得禁止を確認');
  console.log('本人専用Firestoreゴミ箱：原本保持・CAS復元・他UID分離を合成確認');
+ // Explicit administrator UID in the development Firestore backend: same
+ // canonical storage/readback/history/CAS as a regular signed-in driver.
+ const admin=factory.create(),adminUid='owner-synthetic-uid';
+ const adminAuth={currentUser:{uid:adminUid}};
+ admin.bind({uid:adminUid},{f:fire,db:{},auth:adminAuth,session:fakeSession,
+  admin:true,storageBackend:'firestore'});
+ assert.equal(admin.kind(),'member','管理者の開発Firestoreは本人専用領域へ');
+ const adminId='shift-1792711000000-preview';
+ const adminDuty={id:adminId,date:'2026-10-22',settings:{},records:[{
+  id:'record-1792711000050',kind:'ride',status:'complete',
+  raw:{A:1,AL:'合成乗車地',AM:'合成降車地',K:2200},
+  amounts:{meter:2200},payments:[{type:'現',received:2200,company:2200}]
+ }],endedAt:'18:00:00',endedIso:'2026-10-22T09:00:00Z',
+  startedAt:'09:00:00',startedIso:'2026-10-22T00:00:00Z',
+  __taxiPrintSummary:{meter:2200,totalRemittance:2200}};
+ const a1=await admin.request('syncPut',{baseRevision:0,
+  payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:adminDuty})});
+ assert.deepEqual({id:a1.id,revision:a1.revision,confirmed:a1.confirmed},
+  {id:adminId,revision:1,confirmed:true});
+ const same=await admin.request('syncGet',{shiftId:adminId});
+ assert.equal(same.id,adminId);assert.equal(same.revision,1);
+ assert.deepEqual(same.shift,adminDuty,'読戻したFirestore原本の全内容が一致');
+ const dateRows=await admin.request('syncHistoryDate',{date:'2026-10-22'});
+ assert.deepEqual(dateRows.shifts.map(x=>x.id),[adminId],'管理者も日付指定のみで過去日報取得');
+ const corrected=clone(same.shift);
+ corrected.records[0].raw.AL='修正済みの合成乗車地';
+ const a2=await admin.request('syncPut',{baseRevision:1,
+  payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:corrected})});
+ assert.equal(a2.revision,2);assert.equal(a2.confirmed,true);
+ const reloaded=await admin.request('syncGet',{shiftId:adminId});
+ assert.equal(reloaded.revision,2);assert.deepEqual(reloaded.shift,corrected);
+ assert.equal((await B.request('syncHistoryDate',{date:'2026-10-22'})).shifts
+  .some(x=>x.id===adminId),false,'他UIDに管理者原本は見えない');
+ await assert.rejects(()=>admin.request('syncPut',{baseRevision:1,
+  payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:adminDuty})}),/SYNC_CONFLICT/,
+  '古い更新番号による上書きを拒否');
+ console.log('管理者本人Firestore：保存→ID・版・内容読戻し→指定日過去日報→修正CAS再保存を合成確認');
  console.log('Private duty store tests passed: UID isolation, CAS, auth changes, owner legacy separation.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
