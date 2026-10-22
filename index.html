@@ -4111,12 +4111,12 @@ function renderDataManagement(){
     <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
     ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
    </div>
-   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">端末からこの乗務を削除</button>
+   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">${memberDiary()?"この乗務をゴミ箱へ移動":"端末の乗務を整理（旧Google原本は保持）"}</button>
   </article>`;
  }).join('');
  return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
-   <p class="helper">端末内の対象乗務だけを整理します。未同期・競合・送信結果不明の原本は消さずに保護してください。</p>
-   <p class="warn">端末の削除マーカーは再受信を停止しますが、クラウドのゴミ箱は変更しません。本人Firestoreの読戻しとJSONバックアップを確認してから操作してください。</p>
+   <p class="helper">本人Firestoreの保存確認済み日報は、明示削除でゴミ箱へ移し、復元できる状態を維持します。保存未確認・競合中の日報は削除できません。旧Google原本は移行・削除しません。</p>
+   <p class="warn">端末の通常保持を自動整理する操作は、ゴミ箱には移しません。手動削除では本人Firestore原本をゴミ箱へ移して確認してから端末を整理します。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
   </section>
   <section class="card"><h2 class="h2">乗務一覧</h2>
@@ -5494,30 +5494,54 @@ async function deleteWholeShift(shiftId){
  if(!canEditNow()){toast('乗務の削除は認証済みの操作端末で行ってください',true);return;}
  const shift=model.shifts.find(s=>s.id===shiftId);
  if(!shift){toast('削除対象が見つかりません',true);return;}
- if(cloudRunning){toast('Google送信中は削除できません',true);return;}
- const unfinished=shift.id===model.activeId||!shift.endedAt;
+ if(cloudRunning||syncUI.status().busy){toast('同期中は削除できません。完了後に再確認してください',true);return;}
+ const firestore=memberDiary();
+ const unfinished=shift.id===model.activeId||!shift.endedAt&&!shift.endedIso;
  const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
- if(!confirm('【乗務1件の削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
-  '\nこの端末から削除し、同じ保存先から再取得しても復活させません。\nGoogle・Firestoreの原本やほかの端末は消しません。\n本当に削除しますか？'))return;
- if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
- // Download a single-duty recovery copy BEFORE local removal; it contains
- // no Google connection key or another driver's daily records.
+ if(firestore){
+  if(unfinished||shift.draft){
+   toast('未入庫・編集中の日報は削除できません。営業記録と下書きを保護しています',true);return;
+  }
+  if(syncUI.verifiedRevision(shiftId)===null){
+   toast('Firestoreの保存確認ができていないため削除しません。未同期・競合・送信結果不明を確認してください',true);return;
+  }
+ }
+ const deletionSummary=firestore?
+  '\n本人Firestoreのゴミ箱へ移動してから端末を整理します。原本は復元可能ですが通常の履歴・印刷対象から外れます。':
+  '\n現行のGoogle原本・印刷元は変更せず、この端末だけを整理します。';
+ if(!confirm('【乗務1件の手動削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
+   deletionSummary+'\n実行しますか？'))return;
+ if(unfinished&&!confirm('【未入庫データの整理を最終確認】\n入庫前の端末記録を整理します。旧Google原本は変更しません。続けますか？'))return;
+ // Download a recovery copy BEFORE contacting the server or changing the
+ // local model. Real earnings, location and payment records remain protected.
  download(JSON.stringify({version:1,ownerUid:accountScope.uid||null,shifts:[deepCopy(shift)]}),
   'TAXIAPP_削除前_'+dateStamp()+'_'+shiftId+'.json','application/json;charset=utf-8');
- if(!confirm('この乗務のJSONバックアップを保存・保管したことを確認しましたか？\n未保存の場合はキャンセルしてください。'))return;
+ if(!confirm('この乗務のJSONバックアップを端末外にも保管しましたか？\n未保存ならキャンセルしてください。'))return;
  const previous=deepCopy(model);
- let newlyMarked=false;
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ let serverTrashed=false,newlyMarked=false;
+ if(firestore){
+  const verified=await syncUI.cloudAction('trashLocal',shiftId);
+  if(!verified){toast('Firestoreのゴミ箱移動を確認できなかったため端末原本は残しました',true);return;}
+  serverTrashed=true;
+  if(accountScopeGeneration!==generation||accountScope.uid!==uid){
+   toast('ログイン利用者が変化しました。サーバー側をゴミ箱に移した後、端末原本は保護しました。本人のクラウド日報管理で確認してください',true);
+   return;
+  }
+ }
  try{
-  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId,shift);
- }catch(error){toast('削除を中止しました。再受信防止情報を保存できません：'+String(error?.message||error),true);return;}
+  if(firestore||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId,shift);
+ }catch(error){
+  toast((serverTrashed?'Firestoreはゴミ箱へ移動済みです。':'')+'端末原本は保持しています。再受信防止情報を保存できません：'+String(error?.message||error),true);
+  return;
+ }
  try{
-  // Invalidate any pending save and GPS watch before removing an active duty.
   clearTimeout(persistTimer);persistTimer=0;
   clearTimeout(cloudTimer);cloudTimer=null;
   if(shift.id===model.activeId)gpsTripUI?.clearWatch();
   model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId,{allowUnfinished:unfinished}).model;
-  await save(true);
+  if(await save(true)!==true)throw Error('端末への削除状態の保存に失敗しました');
   const key=scopedStorageKey();
   const stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
   if(!stored||!Array.isArray(stored.shifts)||stored.shifts.some(s=>s.id===shiftId)||stored.activeId!==model.activeId)
@@ -5525,20 +5549,17 @@ async function deleteWholeShift(shiftId){
   if(historyShiftId===shiftId)historyShiftId='';
   if(printShiftId===shiftId)printShiftId='';
   render();
-  toast(display+' の乗務を端末から削除しました。クラウド原本とゴミ箱は変更していません。');
- }catch(e){
+  toast(firestore?display+'を本人Firestoreのゴミ箱へ移動しました。復元可能です。':
+   display+'を端末から整理しました。旧Google原本は変更していません。');
+ }catch(error){
   model=previous;
-  if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(markerError){
-   toast('削除状態の復旧が必要です：'+String(markerError?.message||markerError),true);
-  }
-  try{
-   await save(true);
-   if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
-  }catch(restoreError){
-   toast('削除・復元とも失敗しました。事前のJSONバックアップを確認してください：'+String(restoreError.message||restoreError),true);
-   return;
-  }
-  render();toast('削除を取り消しました：'+String(e.message||e),true);
+  // A successful CAS trash must not be hidden by silently rolling back its
+  // marker; retain the old local original as an exceptional protected copy.
+  if(!serverTrashed&&newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch{}
+  try{await save(true);}catch{}
+  render();
+  toast((serverTrashed?'Firestoreはゴミ箱へ移動済みです。端末原本を復旧用に保持しました。本人の日報管理で復元できます。':
+   '端末の削除を取り消しました。')+String(error?.message||error),true);
  }
 }
 // A JSON export can be re-used without importing every historical duty
