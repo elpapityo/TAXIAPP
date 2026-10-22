@@ -72,7 +72,8 @@ function create(){
  // Server-side projection: fetch only the original's identity and version,
  // never the GPS/routes/records in a whole-account listing.
  const listFields=['format','revision','trashed','shift.id','shift.date','shift.startedIso',
-  'shift.endedAt','shift.endedIso','shift.__taxiPrintSummary.meter'];
+  'shift.endedAt','shift.endedIso','shift.__taxiPrintSummary.meter',
+  'shift.__taxiPrintSummary.records'];
  function listValue(fields,path){
   let x={mapValue:{fields}};
   for(const part of path.split('.')){x=x?.mapValue?.fields?.[part];if(!x)return undefined;}
@@ -122,7 +123,8 @@ function create(){
   return items.map(doc=>{
    if(!String(doc?.name||'').startsWith(prefix))throw Error('本人以外の日報が含まれています');
    const id=doc.name.slice(prefix.length),v=doc.fields||{};
-   const revision=listValue(v,'revision'),meter=listValue(v,'shift.__taxiPrintSummary.meter');
+   const revision=listValue(v,'revision'),meter=listValue(v,'shift.__taxiPrintSummary.meter'),
+    count=listValue(v,'shift.__taxiPrintSummary.records');
    if(!ID.test(id)||seen.has(id)||listValue(v,'format')!=='TAXIAPP_PRIVATE_SHIFT_V1'||
       !Number.isSafeInteger(revision)||revision<1||listValue(v,'shift.id')!==id)
     throw Error('Firestore原本のID・形式・更新番号が不正です');
@@ -131,7 +133,8 @@ function create(){
     date:String(listValue(v,'shift.date')||''),
     startedIso:String(listValue(v,'shift.startedIso')||''),
     ended:Boolean(listValue(v,'shift.endedAt')||listValue(v,'shift.endedIso')),
-    meter:Number.isFinite(meter)?meter:null,recordsCount:null,
+    meter:Number.isFinite(meter)?meter:null,
+    recordsCount:Number.isSafeInteger(count)&&count>=0?count:null,
     updateTime:String(doc.updateTime||'')};
   });
  }
