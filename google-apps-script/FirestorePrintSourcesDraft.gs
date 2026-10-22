@@ -167,6 +167,10 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   return firestorePrintSameRowsDraft_(old.rows,planned[i].rows);
  });
  if(unchanged){
+  // Even an unchanged print projection must be compared with the current
+  // Firestore original before recording this revision as verified.
+  // A concurrently changed duty cannot be silently marked as printed.
+  if(typeof verifyBeforeIndex==='function')verifyBeforeIndex();
   if(!recorded||revision>recorded.revision){
    journal.properties.setProperty(journal.key,JSON.stringify({
     uid:uid,id:id,revision:revision,digest:existingDigest,state:'ready'
