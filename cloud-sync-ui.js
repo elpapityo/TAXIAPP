@@ -175,15 +175,18 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(writerRunBusy||status().busy)return false;
   // Deletion markers persist across logout/restart even when the in-memory
   // event queue is cleared. Include them in each required retry batch.
-  if(!manual&&!queuedDutyIds.size&&!engine.hasLocalRemovals())return true;
   const requested=Array.isArray(onlyIds)?onlyIds:null;
-  if(requested&&(!manual||requested.length!==1||typeof requested[0]!=='string'||
+  if(!manual&&!requested&&!queuedDutyIds.size&&!engine.hasLocalRemovals())return true;
+  if(requested&&(requested.length!==1||typeof requested[0]!=='string'||
     !d.getModel()?.shifts?.some(shift=>shift.id===requested[0]))){
    d.toast('選択した乗務が見つからないため、Google送信を停止しました',true);
    return false;
   }
   const batch=[...new Set([...queuedDutyIds,...engine.localRemovalIds()])];
-  if(!requested)queuedDutyIds.clear();
+  // A required single-duty event can run without a manual dialog. Leave
+  // other pending duties untouched, and requeue this one if the upload fails.
+  if(requested)requested.forEach(id=>queuedDutyIds.delete(id));
+  else queuedDutyIds.clear();
   writerRunBusy=true;
   writerFeedback='Googleと照合中…';
   d.setStatus(writerFeedback);
