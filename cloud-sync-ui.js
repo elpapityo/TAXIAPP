@@ -280,6 +280,18 @@ root.TAXIAPP_SYNC_UI=function(d){
  function verifiedRevision(id){
   return enabled()&&!queuedDutyIds.has(id)?engine.verifiedRevision(id):null;
  }
+ function dutySyncStatus(shift){
+  if(!d.remoteOnDemand?.())return {state:'legacy',label:'Google原本運用中（Firestore未確認）',revision:null};
+  if(!shift?.id)return {state:'none',label:'日報がありません',revision:null};
+  const id=String(shift.id);
+  if(status().conflicts.some(c=>c.id===id)||engine.isConflict(id))
+   return {state:'conflict',label:'競合：端末とサーバーを保護中',revision:null};
+  if(engine.isSendUnknown(id))return {state:'unknown',label:'送信結果不明：原本を保持',revision:null};
+  const revision=verifiedRevision(id);
+  if(revision!==null)return {state:'confirmed',label:'保存確認済み（更新番号 '+revision+'）',revision};
+  if(writerRunBusy||status().busy)return {state:'pending',label:'同期中・保存未確認',revision:null};
+  return {state:'pending',label:'未同期（Firestore保存未確認）',revision:null};
+ }
  function resetAccount(){
   // Cancel older writer bootstrap without blocking the next UID's session.
   writerBootstrapEpoch++;writerBootstrapBusy=false;
@@ -640,7 +652,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<div data-sync-conflicts>'+conflictMarkup(s)+vaultMarkup()+'</div>'+
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
- return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
+ return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,dutySyncStatus,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
   // A history CAS edit may also affect the retained last returned duty.
   // Called only after that exact server-confirmed version is durable locally.
   adoptHistoryDuty:received=>{
