@@ -1697,6 +1697,22 @@ async function ensureAdminFreshFirestore(scope){
     throw Error('旧日報のFirestore保存確認に失敗しました：'+shift.id);
   }
  }
+ // Preserve the administrator's practical input preferences on the new
+ // per-UID device store, without copying legacy Google credentials.
+ const newStoreKey='taxiapp-account-state-v1-'+uid;
+ const previousNew=db?await idbGet(db,newStoreKey):
+  JSON.parse(localStorage.getItem(newStoreKey)||'null');
+ if(!previousNew){
+  const prefs=deepCopy(old.prefs||{});
+  delete prefs.sheetTarget;
+  const seed={...emptyAccountModel(),prefs:{...emptyAccountModel().prefs,...prefs}};
+  if(db)await idbPut(db,seed,newStoreKey);
+  else localStorage.setItem(newStoreKey,JSON.stringify(seed));
+  const checked=db?await idbGet(db,newStoreKey):
+   JSON.parse(localStorage.getItem(newStoreKey)||'null');
+  if(!checked||JSON.stringify(checked)!==JSON.stringify(seed))
+   throw Error('本人Firestore端末領域へ運転者設定を保護できません');
+ }
  const manifestKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
  // Do not mark old or synthetic Firestore duties as the current open duty.
  const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:old.shifts.map(x=>x.id),
