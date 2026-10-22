@@ -3624,7 +3624,7 @@ async function startAdminFirestoreCutover(){
  }
  const selectedIds=[...appEl.querySelectorAll('[data-firestore-migrate-id]:checked')]
   .map(e=>e.dataset.firestoreMigrateId);
- const startFresh=Boolean(appEl.querySelector('[data-firestore-new-only]:checked'));
+ const startFresh=Boolean(appEl.querySelector?.('[data-firestore-new-only]:checked'));
  if(startFresh&&selectedIds.length){
   toast('新規開始と既存日報の移行を同時には選べません',true);return;
  }
