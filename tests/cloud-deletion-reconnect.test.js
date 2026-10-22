@@ -1,6 +1,6 @@
 'use strict';
-// Synthetic end-to-end UI test: a locally deleted duty is remotely trashed
-// after a new writer session, even though the in-memory edit queue is empty.
+// Device-only duty cleanup must not trash a server original after reconnect.
+// An explicit cloudAction('trash') remains a separate owner operation.
 const assert=require('node:assert/strict');
 require('../bidirectional-sync.js');
 require('../cloud-sync-ui.js');
@@ -61,12 +61,12 @@ function adapter(){
  const restarted=adapter();
  assert.equal(await restarted.bootstrapWriter(),true);
  await new Promise(resolve=>setTimeout(resolve,750));
- assert.equal(deleted,true,'pending delete must reach cloud on reconnect');
- assert.equal(revision,2);
- assert.equal(actions.filter(x=>x==='syncTrash').length,1);
+ assert.equal(deleted,false,'local deletion must never trash a cloud duty');
+ assert.equal(revision,1,'local cleanup must not update the remote revision');
+ assert.equal(actions.filter(x=>x==='syncTrash').length,0);
  assert.equal(actions.filter(x=>x==='syncPut').length,0);
  assert.deepEqual(model.shifts,[],'must not reimport the deleted duty');
- console.log('再ログイン後の削除同期：端末キューが空でも原本を保持してゴミ箱へ移動');
+ console.log('再ログイン後も端末の削除マーカーはサーバー原本を変更しない');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 
 (async()=>{
