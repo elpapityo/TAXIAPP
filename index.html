@@ -5331,10 +5331,23 @@ async function importFirestoreBackup(file){
    '。元のJSONを保管し、同じIDを上書きしないでください',true);
   return;
  }
+ let resumeProtected=true;
+ try{
+  // This is historical import, not the phone's ordinary working duty.
+  // Keep it available by day-scoped history, but never auto-resume it.
+  const manifest=adminFirestoreManifest(uid);
+  if(!manifest)throw Error('正式保存先の切替記録がありません');
+  const excluded=[...new Set([...(manifest.excludedIds||[]),selected.id])];
+  const text=JSON.stringify({...manifest,excludedIds:excluded});
+  const prefKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
+  localStorage.setItem(prefKey,text);
+  if(localStorage.getItem(prefKey)!==text)throw Error('履歴保持区分を端末へ記録できません');
+ }catch(error){resumeProtected=false;}
  historyDate=selected.date;historyShiftId=selected.id;tab='history';
  await loadHistoryFromCloud(selected.date);
  if(!sameOwner())return;
- historyCloudMessage='JSONから本人Firestoreへ1乗務を新規保存・読戻し確認しました';
+ historyCloudMessage='JSONから本人Firestoreへ1乗務を新規保存・読戻し確認しました'+
+  (resumeProtected?'':'。ただし通常乗務からの除外が保存できません。バックアップを保持し、再起動前に設定を確認してください');
  render();
 }
 async function importBackup(file){
