@@ -73,7 +73,7 @@ const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
     'TAXIAPP_FIRESTORE_OWNER_UID':uid})[k]||journalStorage.get(k)||'',
   setProperty:(k,v)=>journalStorage.set(k,v),deleteProperty:k=>journalStorage.delete(k)
  })},
- ScriptApp:{getOAuthToken:()=> 'synthetic-oauth'},
+ ScriptApp:{getOAuthToken:()=>{throw Error('Google IAMトークンの利用は禁止');}},
  UrlFetchApp:{fetch:(url,opts)=>{
   fetches.push({url,auth:opts.headers.Authorization});
   const legacy=url.endsWith('/shift-999-legacy');
@@ -88,6 +88,17 @@ const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
   computeDigest:(_algo,value)=>[...crypto.createHash('sha256').update(value).digest()],
   base64EncodeWebSafe:bytes=>Buffer.from(bytes).toString('base64url')}};
 vm.createContext(ctx);vm.runInContext(script,ctx);
+// Owner Firebase tokens alone authorize the Firestore read. The print bridge
+// never falls back to a Google project-wide IAM credential.
+const syntheticToken='signed.'+'synthetic-uid-ownerSyntheticUID'.repeat(5)+'.signature';
+assert.throws(()=>ctx.firestorePrintDocDraft_({project,uid},id),
+ /本人のFirebase認証/,'本人IDトークンのないFirestore要求は拒否');
+const originalPull=ctx.firestorePrintSelectedDutyDraft_;
+const originalDocument=ctx.firestorePrintDocDraft_;
+ctx.firestorePrintSelectedDutyDraft_=(shiftId,date,token=syntheticToken)=>
+ originalPull(shiftId,date,token);
+ctx.firestorePrintDocDraft_=(config,shiftId,token=syntheticToken)=>
+ originalDocument(config,shiftId,token);
 const original=values.get('TAXIAPP_同期原本').get('2:1');
 const amount=shift.__taxiPrintSummary.cashRemittance;
 const result=ctx.firestorePrintSelectedDutyDraft_(id);
@@ -105,7 +116,7 @@ assert.equal(values.get('TAXIAPP_印刷データ').get('2:5'),1000);
 assert.equal(values.get('TAXIAPP_集計').get('6:3'),700);
 assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500).length,1);
 assert.ok(fetches.length===3,'read before lock, inside lock, and immediately before index publication');
-assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer synthetic-oauth'));
+assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer '+syntheticToken));
 const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
 // Firestore print-only import must not depend on the legacy Google original
 // 30,000-character chunk limit AFTER the four sheets are already updated.
