@@ -129,10 +129,43 @@ function create(deps){
  }
  const localHash=shift=>digest(stable(getPacket(shift).shift));
  const remoteHash=shift=>digest(stable(getPacket(shift).shift));
+ // Persist unknown-delivery IDs per owner / endpoint. An uncertain
+ // write must remain distinguishable after Chrome reloads.
+ const UNKNOWN_SEND_PREFIX='taxiapp-sync-v2-send-unknown-';
+ const unknownSendKey=()=>UNKNOWN_SEND_PREFIX+digest(String(getEndpoint()||'')+'|'+String(deps.getScopeKey?.()||''));
+ function storedUnknownIds(){
+  if(!getEndpoint())return new Set();
+  const raw=storage.getItem(unknownSendKey());if(!raw)return new Set();
+  let ids;try{ids=JSON.parse(raw);}catch{throw Error('送信不明の管理情報が壊れています');}
+  if(!Array.isArray(ids)||ids.length>5000||ids.some(id=>!validId(id))||
+     new Set(ids).size!==ids.length)throw Error('送信不明の乗務IDが不正です');
+  return new Set(ids);
+ }
+ function markSendUnknown(id){
+  unknownSendIds.add(id);
+  try{
+   const ids=storedUnknownIds();ids.add(id);
+   const json=JSON.stringify([...ids]);
+   storage.setItem(unknownSendKey(),json);
+   if(storage.getItem(unknownSendKey())!==json)
+    throw Error('送信不明の保存確認に失敗');
+  }catch{lastError='送信結果不明の管理情報を保存できません。原本を保持してください';}
+ }
+ function clearSendUnknown(id){
+  try{
+   const ids=storedUnknownIds();ids.delete(id);
+   const json=JSON.stringify([...ids]);storage.setItem(unknownSendKey(),json);
+   if(storage.getItem(unknownSendKey())!==json)return;
+   unknownSendIds.delete(id);
+  }catch{/* Keep uncertainty on storage error. */}
+ }
  function status(){
   return {busy,conflicts:Object.values(conflict),lastError,lastSyncAt};
  }
- const isSendUnknown=id=>unknownSendIds.has(id);
+ const isSendUnknown=id=>{
+  if(unknownSendIds.has(id))return true;
+  try{return storedUnknownIds().has(id);}catch{return true;}
+ };
  // The phone may release a previous original only when its complete current
  // packet still matches a confirmed, owner-scoped server revision.
  function verifiedRevision(id){
@@ -229,7 +262,7 @@ function create(deps){
      const savedHash=currentHash;
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:savedHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:savedHash};
-     sendingId=null;unknownSendIds.delete(id);
+     sendingId=null;clearSendUnknown(id);
      continue;
     }
     if(!base){
@@ -303,7 +336,7 @@ function create(deps){
       throw Error('送信の更新番号とサーバー読戻しを確認できません');
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:sentHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:sentHash};
-     sendingId=null;unknownSendIds.delete(id);
+     sendingId=null;clearSendUnknown(id);
     }
    }
    conflict=nextConflict;
@@ -311,7 +344,7 @@ function create(deps){
    lastSyncAt=Date.now();
    return Object.keys(conflict).length===0;
   }catch(e){
-   if(sendingId)unknownSendIds.add(sendingId);
+   if(sendingId)markSendUnknown(sendingId);
    sendingId=null;
    lastError=String(e?.message||e);
    if(lastError.includes('SYNC_CONFLICT')){
@@ -387,7 +420,7 @@ function create(deps){
   if(!stored||localHash(stored)!==remoteHash(shift))return false;
   const saved=getSaved(),hash=localHash(stored);
   if(!setSaved({...saved,[id]:{revision,hash}}))return false;
-  delete conflict[id];unknownSendIds.delete(id);lastError='';lastSyncAt=Date.now();
+  delete conflict[id];clearSendUnknown(id);lastError='';lastSyncAt=Date.now();
   return true;
  }
  // Only after cloud originals have been durably saved locally, establish
@@ -446,7 +479,7 @@ function create(deps){
     await replaceRemoteShift(id,remote.shift,true);
     if(!setSaved({...saved,[id]:base}))throw Error(lastError);
    }
-   delete conflict[id];unknownSendIds.delete(id);lastError='';lastSyncAt=Date.now();return true;
+   delete conflict[id];clearSendUnknown(id);lastError='';lastSyncAt=Date.now();return true;
   }catch(e){lastError=String(e?.message||e);return false;}
   finally{busy=false;}
  }
