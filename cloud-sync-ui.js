@@ -394,11 +394,9 @@ root.TAXIAPP_SYNC_UI=function(d){
   // Generate a random recovery key, rather than requiring typed passwords.
   // Keep it outside the encrypted backup; both downloads are required to restore.
   if(!root.crypto?.getRandomValues){d.toast('安全な復旧キーを生成できません。原本は変更しません',true);return;}
-  const pin=String(d.root.querySelector('[data-sync-backup-pin]')?.value||'').trim();
-  if(!/^\\d{4}$/.test(pin)){d.toast('確認用の数字4桁を入力してください',true);return;}
   const random=new Uint8Array(24);root.crypto.getRandomValues(random);
   const secret=Array.from(random,x=>x.toString(16).padStart(2,'0')).join('');
-  const pass=secret+pin;
+  const pass=secret;
   if(!root.TAXIAPP_TRANSFER.passwordOk(pass))return;
   if(!root.confirm('この端末とクラウドの双方を暗号化バックアップしてから、選択した版に置き換えます。続けますか？'))return;
   let ok=false;
@@ -407,8 +405,8 @@ root.TAXIAPP_SYNC_UI=function(d){
     const encrypted=await root.TAXIAPP_TRANSFER.encrypt(backup,pass);
     const base='TAXIAPP_競合両版_'+d.dateStamp()+'_'+id;
     d.download(JSON.stringify(encrypted),base+'.json','application/json;charset=utf-8');
-    d.download('TAXIAPP 競合バックアップ復旧情報（厳重保管）\n対象：'+base+'.json\n復旧用ランダムキー：'+secret+'\n暗号解除には末尾に設定した4桁の数字を付けてください。\n',base+'_復旧キー.txt','text/plain;charset=utf-8');
-    if(!root.confirm('暗号化バックアップと復旧キーの2ファイルを保存できましたか？\n両ファイルと設定した数字4桁を保管できた場合だけ「OK」を押してください。'))return false;
+    d.download('TAXIAPP 競合バックアップ復旧情報（厳重保管）\n対象：'+base+'.json\n復旧キー：'+secret+'\n',base+'_復旧キー.txt','text/plain;charset=utf-8');
+    if(!root.confirm('暗号化バックアップと復旧キーの2ファイルを保存できましたか？\n両ファイルを保管できた場合だけ「OK」を押してください。'))return false;
     d.beginBootstrapConflictResolution?.(id);
     return true;
    });
@@ -671,7 +669,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<p class="caption-note">'+(reviewed?'比較後、残したい原本を選んでください。選ばれない側も暗号化バックアップに保存します。':'先に「端末版とクラウド版を比較」を押してください。比較するまで選択はできません。')+'</p>'+ '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>クラウド原本を残す</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>端末原本を残す</button>'+
    '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（両方残す）</button></div></div>';}).join('');
-  return conflicts?'<h3 class="subsection">競合の解決</h3><p class="warn">両方の原本を保護します。確認用の数字4桁を設定してください。復旧には数字4桁と自動保存する復旧キーファイルの両方が必要です。</p>'+ '<label class="field">確認用の数字4桁<input class="control" data-sync-backup-pin type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="数字4桁"></label>'+conflicts:'';
+  return conflicts?'<h3 class="subsection">競合の解決</h3><p class="caption-note">「両方残す」は変更せず保留します。片方を残す場合は、もう片方を復旧できる控えを自動保存します。</p>'+conflicts:'';
  }
  // Refresh the status in place after login or a manual viewer refresh.
  // Never rebuild Settings: that would collapse details and reset the scroll.
