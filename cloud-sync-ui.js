@@ -172,7 +172,12 @@ root.TAXIAPP_SYNC_UI=function(d){
    }
    return false;
   }
-  if(writerRunBusy||status().busy)return false;
+  if(writerRunBusy||status().busy){
+   // A status/payment/return event must not vanish while the preceding
+   // one-duty upload is still running.
+   if(Array.isArray(onlyIds))onlyIds.forEach(id=>queuedDutyIds.add(id));
+   return false;
+  }
   // Deletion markers persist across logout/restart even when the in-memory
   // event queue is cleared. Include them in each required retry batch.
   const requested=Array.isArray(onlyIds)?onlyIds:null;
@@ -214,7 +219,10 @@ root.TAXIAPP_SYNC_UI=function(d){
    return false;
   }finally{
    writerRunBusy=false;
-   if(!ok)batch.forEach(id=>queuedDutyIds.add(id));
+   if(!ok){
+    batch.forEach(id=>queuedDutyIds.add(id));
+    if(requested)requested.forEach(id=>queuedDutyIds.add(id));
+   }
    // Changes saved during the network round trip must be sent afterwards.
    // A failed batch waits for another meaningful edit, reconnect or retry.
    if(queuedDutyIds.size&&ok)queueSync(250);
