@@ -74,5 +74,46 @@ vm.runInContext('let adminFirestorePreviewActive=false,adminFirestorePreviewOwne
  await vm.runInContext('verifyAdminFirestorePreviewDuty()',c);
  assert.match(vm.runInContext('adminFirestorePreviewMessage',c),/保存未確認/,
   'サーバー内容の不一致では成功を表示しない');
+
+ // The remote reception handler must use the UID/preview-scoped IndexedDB
+ // key, NOT the legacy owner's 'taxiapp' key.
+ const replaceStart=html.indexOf(' replace:async(id,incoming,existing)=>{');
+ const replaceEnd=html.indexOf('\n root:appEl',replaceStart);
+ assert.ok(replaceStart>0&&replaceEnd>replaceStart);
+ const replacement=html.slice(replaceStart,replaceEnd).trim()
+  .replace(/^replace:async\(id,incoming,existing\)=>\{/,
+   'this.cloudReplace=async(id,incoming,existing)=>{').replace(/},\s*$/,'};');
+ const previewKey='taxiapp-admin-firestore-preview-v1-'+uid;
+ const persisted=new Map();
+ const testDuty={...clone(shift),startedAt:'11:00'};
+ const v={
+  model:{activeId:null,shifts:[]},accountScope:{uid},
+  accountScopeGeneration:5,MAX_RECORDS:60,keypadActive:false,
+  appEl:{querySelector:()=>null},deepCopy:clone,
+  scopedStorageKey:()=>previewKey,canEditNow:()=>true,
+  save:async()=>{persisted.set(previewKey,clone(v.model));return true;},
+  db:{},idbGet:async(_db,key)=>{
+   assert.equal(key,previewKey,'本人UIDの検証保存先から読み戻す');
+   return clone(persisted.get(key));
+  },
+  render:()=>{},localStorage:{getItem:()=>{throw Error('旧Google原本を読んではいけない');}},
+  Error,Array,JSON,String
+ };
+ vm.createContext(v);
+ vm.runInContext(replacement,v);
+ await v.cloudReplace(id,testDuty);
+ assert.equal(persisted.get(previewKey).shifts[0].startedAt,'11:00');
+ assert.equal(v.model.shifts[0].startedAt,'11:00');
+ // An obsolete response after account switching cannot roll back the new UID.
+ const foreign={id:'shift-1792700001999-foreign',records:[],settings:{}};
+ v.save=async()=>{
+  v.accountScopeGeneration++;
+  v.accountScope.uid='other-synthetic';
+  v.model={activeId:null,shifts:[clone(foreign)]};
+  return true;
+ };
+ await assert.rejects(()=>v.cloudReplace(id,{...clone(testDuty),startedAt:'12:00'}),
+  /ログイン利用者が変更/);
+ assert.equal(v.model.shifts[0].id,foreign.id,'遅延した旧UIDの受信は新アカウントを戻さない');
  console.log('管理者Firestore開発モード：旧原本を変更せず開始→保存→読戻し照合→旧Googleへ復帰');
 })().catch(e=>{console.error(e);process.exitCode=1;});
