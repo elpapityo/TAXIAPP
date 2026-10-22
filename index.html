@@ -2434,7 +2434,7 @@ function editHistoryHighwaySection(operation,modeOrIndex){
 function saveHistoryLocationDraft(draft){
  const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
  const minimal={uid:draft.uid,id:draft.id,recordId:draft.recordId,date:draft.date,
-  baseRevision:draft.baseRevision,al:draft.al,am:draft.am,
+  baseRevision:draft.baseRevision,legacyHash:draft.legacyHash||undefined,al:draft.al,am:draft.am,
   fields:draft.fields||{},metaFields:draft.metaFields||{},
   splitSecond:draft.splitSecond??'',splitAmount:draft.splitAmount??'',
   splitSlot:draft.splitSlot??null,removeRecord:draft.removeRecord===true,
@@ -2448,11 +2448,11 @@ function historyLocationEditHtml(shift){
  const draft=historyLocationEdit;
  if(!draft||draft.uid!==accountScope.uid||draft.id!==shift?.id)return '';
  return '<section class="card"><h3 class="h2">過去日報の営業明細修正</h3>'+
-  (draft.removeRecord?'<p class="warn">この営業記録を削除する修正案です。Firestore保存時に確認します。</p>':
+  (draft.removeRecord?'<p class="warn">この営業記録を削除する修正案です。保存時に確認します。</p>':
    '<p class="caption-note">乗務中の原本とは別に修正案を保持します。料金・距離・決済の変更は既存計算式で再確認します。</p>')+
   '<label class="field"><span class="field-label">乗車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditPickup" maxlength="160" value="'+safeText(draft.al)+'"></label>'+
   '<label class="field"><span class="field-label">降車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditDropoff" maxlength="160" value="'+safeText(draft.am)+'"></label>'+
-  '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>'+(draft.removeRecord?'営業記録の削除を保存':'Firestoreへ保存')+'</button>'+
+  '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>'+(draft.removeRecord?'営業記録の削除を保存':legacyDiary()?'旧GoogleへCAS保存':'Firestoreへ保存')+'</button>'+
   '<button class="btn" data-action="cancelHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>修正を取り消す</button></div>'+
   (draft.message?'<p class="caption-note">'+safeText(draft.message)+'</p>':'')+
   historyHighwayControls(draft)+
@@ -2486,9 +2486,8 @@ function historyLocationEditHtml(shift){
 // List only this user's pending edit backups; never change or delete them.
 function historyProtectedEdits(shift){
  const uid=accountScope.uid;
- const row=historyCloudRows.find(item=>item.id===shift?.id);
- if(!memberDiary()||!shift||historyCloudUid!==uid||!row||
-    row.shift?.date!==historyCloudDate)return [];
+ const row=historySourceRow(shift?.id);
+ if(!shift||!row||(memberDiary()&&historyCloudUid!==uid))return [];
  const candidates=(shift.records||[]).map(record=>({
   recordId:record.id,kind:record.kind,addRecord:false,
   label:'営業№'+String(record.raw?.A??'—')
@@ -2515,7 +2514,7 @@ function historyProtectedEdits(shift){
     Number.isSafeInteger(saved.baseRevision)&&
     Boolean(saved.addRecord)===candidate.addRecord;
    return [{...candidate,blocked:!valid,
-    stale:Boolean(valid&&saved.baseRevision!==row.revision)}];
+    stale:Boolean(valid&&(saved.baseRevision!==row.revision||legacyDiary()&&saved.legacyHash!==historyLegacyHash(row.shift)))}];
   }catch{return [{...candidate,blocked:true}];}
  });
 }
@@ -2560,22 +2559,44 @@ function assertHistoryLocalOverlapSafe(shiftId,remoteShift,revision){
   throw Error('端末の直近乗務とFirestore原本が一致しません。双方を保護して編集を停止しました');
  return true;
 }
+
+function historyLegacyHash(shift){
+ // A checksum is used only to notice changed local data, never to verify a
+ // server CAS revision or to replace the application's existing calculations.
+ const text=JSON.stringify(shift);
+ let hash=2166136261;
+ for(let i=0;i<text.length;i++)hash=Math.imul(hash^text.charCodeAt(i),16777619);
+ return String(text.length)+'-'+(hash>>>0).toString(16);
+}
+function canEditLegacyHistory(shift){
+ return Boolean(legacyDiary()&&canEditNow()&&shift&&
+  model.shifts.some(row=>row.id===shift.id)&&
+  shift.id!==model.activeId&&Boolean(shift.endedAt||shift.endedIso)&&
+  !shift.draft);
+}
+function historySourceRow(shiftId){
+ if(legacyDiary()){
+  const shift=model.shifts.find(x=>x.id===shiftId);
+  return canEditLegacyHistory(shift)?{id:shiftId,revision:0,shift}:null;
+ }
+ return historyCloudRows.find(x=>x.id===shiftId&&x.shift?.date===historyCloudDate)||null;
+}
 function startHistoryLocationEdit(shiftId,recordId,addition=null){
- if(!memberDiary()||!accountDiary.ready()||!canEditNow()||historyCloudUid!==accountScope.uid)
-  throw Error('本人の操作端末でFirestoreの日報を取得してください');
+ if(!canEditNow()||(!legacyDiary()&&(!memberDiary()||!accountDiary.ready()||historyCloudUid!==accountScope.uid)))
+  throw Error('本人の操作端末で保存先の日報を確認してください');
  if(historyLocationEdit&&(historyLocationEdit.id!==shiftId||
     historyLocationEdit.recordId!==recordId)){
   if(historyLocationEdit.uid!==accountScope.uid)
    throw Error('別の利用者の修正控えは操作できません');
   protectOpenHistoryEdit();
  }
- const row=historyCloudRows.find(row=>row.id===shiftId&&row.shift?.date===historyCloudDate);
+ const row=historySourceRow(shiftId);
  const record=addition||row?.shift?.records?.find(record=>record.id===recordId);
  if(addition&&(addition.id!==recordId||row?.shift?.records?.some(item=>item.id===recordId)))
   throw Error('新しい営業記録IDが重複しています');
- if(!row||!record||!Number.isSafeInteger(row.revision)||row.revision<1)
+ if(!row||!record||!Number.isSafeInteger(row.revision)||row.revision<(legacyDiary()?0:1))
   throw Error('対象の日報・更新番号を確認できません');
- assertHistoryLocalOverlapSafe(shiftId,row.shift,row.revision);
+ if(memberDiary())assertHistoryLocalOverlapSafe(shiftId,row.shift,row.revision);
  const key=historyEditStorageKey(accountScope.uid,shiftId,recordId);
  let saved=null;
  try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{throw Error('端末内の修正控えが破損しています。自動上書きを停止しました');}
@@ -2604,6 +2625,7 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
  const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
  const split=record.meta?.splitPayment||{};
  const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
+  legacyHash:legacyDiary()?(saved?.legacyHash||historyLegacyHash(row.shift)):null,
   baseRevision:saved?.baseRevision??row.revision,al:saved?.al??String(record.raw?.AL??''),
   am:saved?.am??String(record.raw?.AM??''),busy:false,
   sourceRecord:prepared,
@@ -2617,7 +2639,7 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
   splitSlot:saved&&Object.prototype.hasOwnProperty.call(saved,'splitSlot')?
    saved.splitSlot:(split.manualSlot===0||split.manualSlot===1?split.manualSlot:null),
   removeRecord:saved?.removeRecord===true,addRecord:Boolean(addition),
-  message:mismatch?'Firestoreに新しい版があります。保存は停止中です。修正控えを確認し、不要なら「修正を取り消す」で原本へ戻してください。':''};
+  message:mismatch?'原本が新しい版に更新されています。修正控えを保持し、無断上書きはしません。':''};
  saveHistoryLocationDraft(draft);
  historyLocationEdit=draft;
  historyShiftId=shiftId;render();
@@ -2755,13 +2777,13 @@ function historyPendingAdditionKey(uid,shiftId,kind){
  return 'taxiapp-history-new-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(shiftId)+'-'+kind;
 }
 function startHistoryNewRecord(kind){
- if(!['ride','cancel','empty'].includes(kind)||!memberDiary()||!canEditNow())
+ if(!['ride','cancel','empty'].includes(kind)||!(memberDiary()||legacyDiary())||!canEditNow())
   throw Error('過去日報を編集できません');
  const shift=selectedHistoryShift();
- const row=historyCloudRows.find(item=>item.id===shift?.id);
- if(!row||historyCloudUid!==accountScope.uid)
-  throw Error('本人Firestoreの日報を取得してください');
- assertHistoryLocalOverlapSafe(shift.id,row.shift,row.revision);
+ const row=historySourceRow(shift?.id);
+ if(!row||memberDiary()&&historyCloudUid!==accountScope.uid)
+  throw Error('保存先の日報を取得してください');
+ if(memberDiary())assertHistoryLocalOverlapSafe(shift.id,row.shift,row.revision);
  if(row.shift.records.length>=MAX_RECORDS)throw Error('60件に達したため追加できません');
  const pointer=historyPendingAdditionKey(accountScope.uid,shift.id,kind);
  let id=localStorage.getItem(pointer),candidate=null;
@@ -2790,8 +2812,8 @@ function startHistoryNewRecord(kind){
 }
 function markHistoryRecordRemoval(recordId){
  const shift=selectedHistoryShift();
- if(!shift||!historyCloudRows.some(row=>row.id===shift.id))
-  throw Error('Firestoreの過去日報を取得してください');
+ if(!shift||!historySourceRow(shift.id))
+  throw Error('編集可能な過去日報を取得してください');
  startHistoryLocationEdit(shift.id,recordId);
  const draft=historyLocationEdit;
  if(!draft||draft.recordId!==recordId)return;
@@ -3055,7 +3077,7 @@ function historyFoldSection(key,title,html){
  return '<details class="details history-fold-panel" data-history-panel="'+safeText(key)+'">'+
   '<summary>'+safeText(title)+'</summary><div class="inner">'+body+'</div></details>';
 }
-function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
+function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift)||canEditLegacyHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
 <section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div>${memberDiary()?(()=>{const found=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);return '<div class="caption-note">'+(found?'本人Firestoreから取得済み／更新番号 '+found.revision:syncUI.dutySyncStatus(shift).label)+'</div>';})():''}</div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
 ${editableHistory?'<div class="actions"><button class="btn" data-action="historyDateEditStart">出庫日を訂正</button><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${renderHistoryDateCorrection(shift)}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">編集</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
