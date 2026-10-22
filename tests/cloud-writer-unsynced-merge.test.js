@@ -195,3 +195,49 @@ const d=root.TAXIAPP_SYNC_UI({
   [true,false],'ログインでは候補限定、変更時には対象ID限定で照合');
  console.log('Firestore新端末：1乗務復元→保存済み版でCAS更新→読戻し基準を確認');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+// More than 60 protected offline duties must be retried in bounded groups.
+// Never silently drop IDs from the event queue after the first successful run.
+(async()=>{
+ const duties=Array.from({length:61},(_,i)=>({
+  id:'shift-'+(1792703000000+i),date:'2026-10-22',startedIso:'2026-10-22T09:00:00Z',
+  endedAt:'',settings:{},records:[],driver:'旧'
+ }));
+ const model={shifts:clone(duties)},store=new Map(),batches=[];
+ const adapter=root.TAXIAPP_SYNC_UI({
+  getModel:()=>model,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:clone(shift)}),
+  endpoint:()=>'/firestore-many-offline-duties',scopeKey:()=> 'uid-many',
+  remoteOnDemand:()=>true,
+  request:async(action,params={})=>{
+   if(action==='syncList'){
+    assert.ok(Array.isArray(params.shiftIds),'再送時に過去日報全件を取得しない');
+    assert.ok(params.shiftIds.length<=60,'Firestore一覧の取得上限を守る');
+    batches.push(params.shiftIds.length);
+    return {shifts:params.shiftIds.filter(id=>store.has(id)).map(id=>({
+     id,revision:store.get(id).revision
+    }))};
+   }
+   if(action==='syncPut'){
+    const packet=JSON.parse(params.payload),id=packet.shift.id;
+    assert.equal(params.baseRevision,0);
+    store.set(id,{revision:1,shift:clone(packet.shift)});
+    return {id,revision:1,confirmed:true};
+   }
+   throw Error('unexpected '+action);
+  },
+  configured:()=>true,prefs:()=>({syncMode:'on'}),canSync:()=>true,
+  canView:()=>false,
+  setStatus:()=>{},toast:()=>{},dateStamp:()=> '20261022',
+  isSettings:()=>true,root:{querySelector:()=>null}
+ });
+ adapter.schedule();
+ model.shifts.forEach(shift=>shift.driver='変更済み');
+ adapter.schedule();
+ assert.equal(await adapter.run(false),true);
+ await new Promise(resolve=>setTimeout(resolve,700));
+ assert.deepEqual(batches,[60,1],'61件の保護日報を60件＋1件で照合');
+ assert.equal(store.size,61,'保留した最後の1乗務も再送される');
+ assert.equal(adapter.verifiedRevision(duties[60].id),1);
+ console.log('未同期61件：端末原本を減らさず60件と1件へ分割再送');
+})().catch(error=>{console.error(error);process.exitCode=1;});
