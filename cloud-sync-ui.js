@@ -369,13 +369,20 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(!check()||server?.id!==id||server.shift?.id!==id)
     throw Error('ログイン利用者または比較対象が変わりました');
    const present=shift=>({
-    date:String(shift.date||''),started:String(shift.startedAt||''),
-    ended:String(shift.endedAt||''),count:shift.records?.length||0,
-    records:(shift.records||[]).map(r=>({
-     time:String(r.raw?.G||''),fare:String(r.raw?.K??''),
-     pickup:String(r.raw?.AL||r.pickup||r.pickupAddress||''),dropoff:String(r.raw?.AM||r.dropoff||r.dropoffAddress||''),
-     details:JSON.stringify(r,null,2)
-    }))
+    date:String(shift.date||''),started:String(shift.startedAt||shift.startedIso||''),
+    ended:String(shift.endedAt||shift.endedIso||''),count:shift.records?.length||0,
+    records:(shift.records||[]).map(r=>{
+     const raw=r.raw||{},meta=r.meta||{};
+     return {
+      kind:String(r.kind==='ride'?'乗車':r.kind==='cancel'?'キャンセル':r.kind||''),
+      board:String(raw.G||r.boardedAt||r.pickupTime||''),
+      alight:String(raw.M||r.alightedAt||r.dropoffTime||''),
+      fare:String(raw.K??r.fare??''),
+      pickup:String(raw.AL||r.pickup||r.pickupAddress||''),
+      dropoff:String(raw.AM||r.dropoff||r.dropoffAddress||''),
+      payment:String(raw.W||r.paymentMethod||meta.paymentMethod||'')
+     };
+    })
    });
    comparedDuties[id]={local:present(local),remote:present(server.shift)};
    refreshPanel();return true;
@@ -653,14 +660,16 @@ root.TAXIAPP_SYNC_UI=function(d){
  }
  function conflictMarkup(s){
   const summary=(heading,info)=>'<div class="card"><strong>'+heading+'</strong>'+
-   '<p class="caption-note">乗務日 '+d.escape(info.date)+'　出庫 '+d.escape(info.started)+
-   '　入庫 '+d.escape(info.ended)+'　営業 '+info.count+'件</p>'+
-   '<details open><summary>各営業の元データを表示</summary>'+
-   '<div>'+(info.records.length?info.records.map((r,i)=>'<p class="caption-note">№'+(i+1)+
-    '　時刻 '+d.escape(r.time||'記録なし')+'　金額 '+d.escape(r.fare||'記録なし')+
-    '円　'+d.escape(r.pickup||'場所なし')+' → '+d.escape(r.dropoff||'場所なし')+'</p>'+ 
-    '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+d.escape(r.details)+'</pre>').join(''):'<p>営業記録は0件です。詳細は元データで確認してください。</p>')+
-   '</div></details></div>';
+   '<p class="caption-note">乗務日 '+d.escape(info.date)+' ／ 営業記録 '+info.count+'件</p>'+
+   '<p class="caption-note">出庫 '+d.escape(info.started||'未記録')+' ／ 入庫 '+d.escape(info.ended||'未記録')+'</p>'+
+   (info.records.length?info.records.map((r,i)=>'<div class="card"><strong>営業 '+(i+1)+'件目</strong>'+
+    '<p>乗車 '+d.escape(r.board||'未記録')+' ／ 降車 '+d.escape(r.alight||'未記録')+'</p>'+
+    '<p>乗車地：'+d.escape(r.pickup||'未記録')+'</p>'+
+    '<p>降車地：'+d.escape(r.dropoff||'未記録')+'</p>'+
+    '<p>メーター料金：'+d.escape(r.fare||'未記録')+(r.fare?'円':'')+'</p>'+
+    '<p>支払方法：'+d.escape(r.payment||'未記録')+'</p>'+
+    '<p class="caption-note">記録区分：'+d.escape(r.kind||'未記録')+'</p></div>').join(''):
+    '<p>営業記録はありません。</p>')+'</div>';
   const conflicts=s.conflicts.map(c=>{const local=d.getModel()?.shifts?.find(sh=>sh.id===c.id);const reviewed=Boolean(comparedDuties[c.id]);return '<div class="card"><strong>'+d.escape(local?.date||comparedDuties[c.id]?.remote?.date||'日付確認中')+'の日報で保存内容が異なります</strong>'+ '<p class="caption-note">対象の乗務ID：'+d.escape(c.id)+'</p>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
    '<button class="btn" type="button" data-sync-compare="'+d.escape(c.id)+'">端末版とサーバー版を比較</button>'+
