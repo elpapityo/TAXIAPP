@@ -1367,7 +1367,8 @@ function setDeviceMode(next,previous='',detail=''){
  if(status)status.textContent=(next==='writer'&&writerLoadGate?'操作権確認済み・Google読込待ち':next==='writer'?'操作可能':next==='viewer'?'閲覧専用':
   next==='pending'?'操作権を確認中':'操作停止')+(detail?'：'+detail:'');
  const takeOver=document.getElementById('accountTakeOver');
- if(takeOver)takeOver.hidden=next!=='viewer'||!!document.getElementById('accountSignOut')?.hidden||!accountSettingsAuto?.status().enabled;
+ if(takeOver)takeOver.hidden=TAXIAPP_PRINT_VIEWER_MODE||next!=='viewer'||
+  !!document.getElementById('accountSignOut')?.hidden||!accountSettingsAuto?.status().enabled;
  if(next!=='writer'){
   try{gpsTripUI?.clearWatch();}catch(e){console.warn('gps-watch-cleanup',e);}
  }else if(next==='writer'&&prior!=='writer'){
