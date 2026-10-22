@@ -52,6 +52,8 @@ function context(mode){
    }
   })}},
   ADMIN_FIRESTORE_PREF_PREFIX:'test-admin-firestore-optin:',
+  // This synthetic legacy-import scenario assumes a distinct owner approval.
+  ADMIN_LEGACY_DUTY_MIGRATION_APPROVED:true,
   deepCopy:o=>JSON.parse(JSON.stringify(o)),
   dateStamp:()=> '20261022',
   download:()=>events.push('backup'),
