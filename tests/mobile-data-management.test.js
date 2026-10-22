@@ -8,15 +8,16 @@ const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].ma
 assert.ok(scripts.length>=2);
 for(const source of scripts) new vm.Script(source); // Parse all inline scripts.
 
-// Exactly six fixed bottom-menu items; management belongs in the Settings screen.
+// A dedicated management bottom-menu item separates cloud diaries and file operations.
 const nav=html.match(/const labels=\{([^}]+)\};/);
 assert.ok(nav);
 assert.deepEqual([...nav[1].matchAll(/([a-z]+):\[/g)].map(x=>x[1]),
- ['drive','live','history','print','shift','settings']);
-assert.match(html,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ ['drive','live','history','print','shift','manage','settings']);
+assert.match(html,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
 assert.doesNotMatch(html,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);overflow:visible/);
 assert.doesNotMatch(html,/tab==='data'\?/);
-assert.match(html,/data-data-management><summary>データ管理（乗務単位の削除）<\/summary>/);
+assert.match(html,/function renderFileManagement\(\)/);
+assert.match(html,/function renderCloudManagement\(\)/);
 assert.match(html,/details\.settings-advanced/);
 assert.match(html,/settingsOpenState=oldPanels\.map\(panel=>panel\.open\)/);
 assert.match(html,/data-action="deleteShift"/);
@@ -63,7 +64,7 @@ assert.equal((displayed.match(/data-action="deleteShift"/g)||[]).length,2);
 assert.ok(displayed.indexOf('shift-open')<displayed.indexOf('shift-closed'));
 assert.ok(!displayed.includes('<script>alert(1)</script>'));
 assert.ok(displayed.includes('JSONバックアップ'));
-assert.ok(displayed.includes('Google原本・他端末の記録は消しません'));
+assert.ok(displayed.includes('クラウドのゴミ箱は変更しません'));
 assert.equal(JSON.stringify(model),before);
 ctx.model={...model,activeId:null,shifts:[]};
 const empty=ctx.renderDataManagement();
