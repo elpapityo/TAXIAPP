@@ -271,6 +271,24 @@ function create(deps){
     const localChanged=currentHash!==base.hash;
     const remoteChanged=remote.revision!==base.revision;
     if(localChanged&&remoteChanged){
+     // A Firestore commit can succeed even when its read-back response is
+     // lost. Reopen that exact owner's duty before calling this a conflict.
+     // Identical content at the latest server revision is a safe recovery;
+     // never resend it or silently adopt genuinely different content.
+     const got=await scopedRequest('syncGet',{shiftId:id});
+     if(!got?.shift||got.id!==id||got.shift.id!==id||
+        Number(got.revision)!==Number(remote.revision))
+      throw Error('送信結果不明の日報を読み戻せません。端末原本を保持して再照合してください');
+     const latest=getModel()?.shifts?.find(s=>s.id===id);
+     if(!latest||localHash(latest)!==currentHash){
+      nextConflict[id]={id,reason:'保存確認中に端末の日報が変更されました',localRevision:base.revision,remoteRevision:got.revision};
+      continue;
+     }
+     if(remoteHash(got.shift)===currentHash){
+      if(!setSaved({...saved,[id]:{revision:got.revision,hash:currentHash}}))throw Error(lastError);
+      saved[id]={revision:got.revision,hash:currentHash};
+      continue;
+     }
      nextConflict[id]={id,reason:'この端末と別端末の両方で変更されました',localRevision:base.revision,remoteRevision:remote.revision};
      continue;
     }
