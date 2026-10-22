@@ -633,6 +633,12 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<p class="footnote">初回に同一乗務の内容が異なる場合も競合扱いです。クラウド側のコードを更新・再公開するまで有効にしないでください。端末ごとの表示設定・GPS権限は個別です。</p>';
  }
  return {enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
+  // A history CAS edit may also affect the retained last returned duty.
+  // Called only after that exact server-confirmed version is durable locally.
+  adoptHistoryDuty:received=>{
+   if(writerRunBusy||queuedDutyIds.has(received?.id))return false;
+   return engine.adoptReceivedDuty(received);
+  },
   markLocalRemoval:(id,shift)=>{const marked=engine.markLocalRemoval(id,shift);queuedDutyIds.add(id);return marked;},
   undoLocalRemoval:id=>{engine.undoLocalRemoval(id);queuedDutyIds.delete(id);},cloudAction};
 };
