@@ -477,6 +477,11 @@ function savePacket_(data,options) {
   ];
   if(options&&options.verifyFirestorePrintOnly===true)
    firestorePrintVerifyRowsDraft_(ss,id,printBatches);
+  else if(options&&Number.isSafeInteger(options.firestoreRevision)&&
+      options.firestoreOwnerUid)
+   firestorePrintPublishVersionedDraft_(ss,id,printBatches,
+    options.firestoreRevision,options.firestoreOwnerUid,
+    options&&options.verifyCurrentSource);
   else firestorePrintPublishRowsDraft_(ss,id,printBatches,
    options&&options.verifyCurrentSource);
  }
