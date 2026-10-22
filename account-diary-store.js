@@ -68,6 +68,74 @@ function create(){
   if(bytes>MAX_SHIFT_BYTES)throw Error('乗務データが大きすぎます。GPS履歴等の保存形式を確認してください');
   return JSON.parse(JSON.stringify(shift));
  }
+
+ // Server-side projection: fetch only the original's identity and version,
+ // never the GPS/routes/records in a whole-account listing.
+ const listFields=['format','revision','trashed','shift.id','shift.date','shift.startedIso',
+  'shift.endedAt','shift.endedIso','shift.__taxiPrintSummary.meter'];
+ function listValue(fields,path){
+  let x={mapValue:{fields}};
+  for(const part of path.split('.')){x=x?.mapValue?.fields?.[part];if(!x)return undefined;}
+  if(x.integerValue!==undefined)return Number(x.integerValue);
+  if(x.doubleValue!==undefined)return Number(x.doubleValue);
+  if(x.stringValue!==undefined)return String(x.stringValue);
+  if(x.booleanValue!==undefined)return x.booleanValue===true;
+  return undefined;
+ }
+ async function projectedMetadata(c,date){
+  const project=String(c.db?.app?.options?.projectId||'');
+  if(!/^[a-zA-Z0-9_-]{4,64}$/.test(project)||
+     typeof c.auth?.currentUser?.getIdToken!=='function'||typeof fetch!=='function')return null;
+  const token=await c.auth.currentUser.getIdToken();ownerCheck(c);
+  const base='https://firestore.googleapis.com/v1/projects/'+encodeURIComponent(project)+
+   '/databases/(default)/documents/privateDuties/'+encodeURIComponent(c.uid);
+  const headers={Authorization:'Bearer '+token},items=[];
+  if(date){
+   const body={structuredQuery:{from:[{collectionId:'shifts'}],
+    select:{fields:listFields.map(fieldPath=>({fieldPath}))},
+    where:{fieldFilter:{field:{fieldPath:'shift.date'},op:'EQUAL',
+     value:{stringValue:date}}}}};
+   const res=await fetch(base+':runQuery',{method:'POST',
+    headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
+   ownerCheck(c);
+   if(!res.ok)throw Error('指定日の日報照合に失敗（HTTP '+res.status+'）');
+   const data=await res.json();ownerCheck(c);
+   if(!Array.isArray(data))throw Error('Firestore一覧の形式が不正です');
+   items.push(...data.filter(row=>row?.document).map(row=>row.document));
+  }else{
+   let next='';
+   for(let page=0;page<50;page++){
+    const p=new URLSearchParams({pageSize:'100'});
+    for(const field of listFields)p.append('mask.fieldPaths',field);
+    if(next)p.set('pageToken',next);
+    const res=await fetch(base+'/shifts?'+p,{headers});ownerCheck(c);
+    if(!res.ok)throw Error('Firestore一覧照合に失敗（HTTP '+res.status+'）');
+    const data=await res.json();ownerCheck(c);
+    if(!Array.isArray(data.documents||[]))throw Error('Firestore一覧が不正です');
+    items.push(...(data.documents||[]));next=String(data.nextPageToken||'');
+    if(!next)break;
+    if(page===49)throw Error('Firestoreの日報件数が上限を超えたため一覧を保留');
+   }
+  }
+  const seen=new Set(),prefix='projects/'+project+
+   '/databases/(default)/documents/privateDuties/'+c.uid+'/shifts/';
+  return items.map(doc=>{
+   if(!String(doc?.name||'').startsWith(prefix))throw Error('本人以外の日報が含まれています');
+   const id=doc.name.slice(prefix.length),v=doc.fields||{};
+   const revision=listValue(v,'revision'),meter=listValue(v,'shift.__taxiPrintSummary.meter');
+   if(!ID.test(id)||seen.has(id)||listValue(v,'format')!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+      !Number.isSafeInteger(revision)||revision<1||listValue(v,'shift.id')!==id)
+    throw Error('Firestore原本のID・形式・更新番号が不正です');
+   seen.add(id);
+   return {id,revision,deleted:listValue(v,'trashed')===true,
+    date:String(listValue(v,'shift.date')||''),
+    startedIso:String(listValue(v,'shift.startedIso')||''),
+    ended:Boolean(listValue(v,'shift.endedAt')||listValue(v,'shift.endedIso')),
+    meter:Number.isFinite(meter)?meter:null,recordsCount:null,
+    updateTime:String(doc.updateTime||'')};
+  });
+ }
+
  async function request(action,fields={}){
   const c=checked();
   if(action==='syncList'){
