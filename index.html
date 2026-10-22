@@ -4144,9 +4144,13 @@ function handleAction(action,id){
   const nativeGpsLinked=nativeDiaryGpsEnabled();
   const gpsOptIn=nativeAutoDistanceEnabled()||model.prefs.gpsTripAtStart!=='off';
   const departureSaved=save();
-  if(memberDiary())void departureSaved.then(ok=>{
-   if(ok===true)return releaseVerifiedPreviousDuties(newRecord.id);
-  });
+  if(memberDiary())void departureSaved.then(async ok=>{
+   if(ok!==true)return;
+   // Departure is a required synchronization event. Confirm only this duty;
+   // a failed network send remains queued without touching older originals.
+   await syncUI.run(false,[newRecord.id]);
+   await releaseVerifiedPreviousDuties(newRecord.id);
+  }).catch(error=>console.error('TAXIAPP departure sync failed:',error));
   // When native GPS is paired, don't start the older browser GPS tracker in parallel.
   if(!nativeGpsLinked&&gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
   else render();
