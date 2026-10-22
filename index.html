@@ -900,7 +900,7 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 <script src="./highway-sections.js?v=20261020-1"></script>
 <script src="./highway-report.js?v=20261020-1"></script>
 <script src="./bidirectional-sync.js?v=20261023-bootstrap-conflict"></script>
-<script src="./cloud-sync-ui.js?v=20261023-2"></script>
+<script src="./cloud-sync-ui.js?v=20261023-3"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
 <script src="./login-core.js?v=20261017-2"></script>
@@ -1339,6 +1339,9 @@ const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:''
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let accountScopeLoaded=false;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
+// Narrow, owner-scoped permission only after both conflict originals are backed up.
+let bootstrapConflictResolutionId='';
+function canWriteBootstrapConflict(id){return Boolean(bootstrapConflictResolutionId&&bootstrapConflictResolutionId===id&&deviceMode==='writer'&&writerLoadGate&&accountScopeLoaded&&currentLoginScope?.uid===accountScope.uid&&currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid);}
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
 function setDeviceMode(next,previous='',detail=''){
@@ -1794,7 +1797,7 @@ function localSaveLabel(){
   '端末：'+String(storageStatus);
 }
 async function save(localOnly=false){
- if(!canEditNow())return false;
+ if(!canEditNow()&&!(localOnly&&canWriteBootstrapConflict(bootstrapConflictResolutionId)))return false;
  const data=deepCopy(model),key=scopedStorageKey(),snapshot=JSON.stringify(data);
  localSavePending=true;updateLocalSaveIndicator();
  const recorded=()=>{
@@ -3725,7 +3728,7 @@ function googleShiftPacket(shift){
 function googlePostRequest(action,fields={}){
  if(!legacyDiary())return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
  if(action==='firestorePrintImport')return Promise.reject(Error('本人Firestore転送はPC印刷専用画面から行ってください'));
- if(!canEditNow()&&!['syncList','syncGet'].includes(action))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
+ if(!canEditNow()&&!['syncList','syncGet'].includes(action)&&!(action==='syncPut'&&canWriteBootstrapConflict(bootstrapConflictResolutionId)&&(()=>{try{return JSON.parse(fields.payload||'null')?.shift?.id===bootstrapConflictResolutionId;}catch{return false;}})()))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
  const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
  return postGoogleBridge_(action,fields,endpoint,key);
 }
@@ -3918,6 +3921,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  canSync:()=>canEditNow(),
  canReviewBlockedConflict:()=>deviceMode==='writer'&&writerLoadGate&&accountScopeLoaded&&
   currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
+ beginBootstrapConflictResolution:id=>{if(deviceMode==='writer'&&writerLoadGate&&accountScopeLoaded&&
+  syncUI.status().conflicts.some(x=>x.id===id)&&currentLoginScope?.uid===accountScope.uid&&
+  currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid)bootstrapConflictResolutionId=id;},
+ endBootstrapConflictResolution:()=>{bootstrapConflictResolutionId='';},
  allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
   accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
   currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
@@ -4025,7 +4032,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   return result.data;
  },
  replace:async(id,incoming,existing)=>{
-  if(!canEditNow())throw Error('操作権が切り替わったため受信を保留しました');
+  if(!canEditNow()&&!canWriteBootstrapConflict(id))throw Error('操作権が切り替わったため受信を保留しました');
   if(!incoming||incoming.id!==id||!Array.isArray(incoming.records)||
      incoming.records.length>MAX_RECORDS||!incoming.settings)
    throw Error('受信した乗務の内容が不正です');
@@ -4036,7 +4043,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   const generation=accountScopeGeneration,uid=accountScope.uid,
    storageKey=scopedStorageKey();
   const sameScope=()=>accountScopeGeneration===generation&&
-   accountScope.uid===uid&&scopedStorageKey()===storageKey&&canEditNow();
+   accountScope.uid===uid&&scopedStorageKey()===storageKey&&(canEditNow()||canWriteBootstrapConflict(id));
   const previous=deepCopy(model);
   const i=model.shifts.findIndex(x=>x.id===id);
   if(i<0)model.shifts.push(deepCopy(incoming));
