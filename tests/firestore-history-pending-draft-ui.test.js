@@ -67,4 +67,31 @@ ctx.protectOpenHistoryEdit();
 assert.equal(localSaveCalls,1,'画面外の修正控えも保護する');
 ctx.historyLocationEdit.busy=true;
 assert.throws(()=>ctx.protectOpenHistoryEdit(),/保存処理中/,'同期中の画面切替を拒否');
+const exitStart=source.indexOf('function protectHistoryPageExit(');
+const exitEnd=source.indexOf('await load();',exitStart);
+assert.ok(exitStart>0&&exitEnd>exitStart,'履歴修正の画面終了保護が必要');
+const handlers={},exitStatus={count:0,fail:false};
+const exitCtx={
+ historyLocationEdit:{uid,id,recordId:'record-1'},console,
+ protectOpenHistoryEdit:()=>{
+  exitStatus.count++;
+  if(exitStatus.fail)throw Error('端末保存失敗');
+ },
+ window:{addEventListener:(event,handler)=>{handlers[event]=handler;}},
+ persistTimer:null,clearTimeout:()=>{},save:()=>true
+};
+vm.createContext(exitCtx);
+vm.runInContext(source.slice(exitStart,exitEnd),exitCtx);
+handlers.pagehide({type:'pagehide'});
+assert.equal(exitStatus.count,1,'スマホの画面離脱時に過去日報の修正控えを保護');
+handlers.beforeunload({type:'beforeunload'});
+assert.equal(exitStatus.count,2,'再読み込み前にも修正控えを保護');
+exitStatus.fail=true;
+const unload={type:'beforeunload',preventDefault(){this.cancelled=true;}};
+handlers.beforeunload(unload);
+assert.equal(unload.cancelled,true,'控えの保存失敗で終了確認を要求');
+assert.equal(unload.returnValue,'','ブラウザの終了確認を要求');
+exitCtx.historyLocationEdit=null;
+handlers.pagehide({type:'pagehide'});
+assert.equal(exitStatus.count,3,'履歴編集がないときは何もしない');
 console.log('過去日報：控えの一覧・再開導線・UID隔離・版違い表示・画面切替保護を確認');
