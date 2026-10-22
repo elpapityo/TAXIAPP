@@ -34,6 +34,21 @@ http.createServer((req,res)=>{
   res.end(req.method==='HEAD'?undefined:contents);
  });
 }).listen(8787,'127.0.0.1',()=>{
- console.log('TAXIAPP Firestore development preview: http://localhost:8787/?adminFirestorePreview=1');
- console.log('Loopback-only. Stop with Ctrl+C. No Firebase or Google configuration changes.');
+ const url='http://localhost:8787/?adminFirestorePreview=1&build=v0.3.126-pr119';
+ console.log('TAXIAPP v0.3.126 - PR #119 development preview');
+ console.log('Server ready:',url);
+ console.log('Keep this window open. Close it or press Ctrl+C to stop.');
+ console.log('If the browser does not open automatically, paste the URL above.');
+ // Bind to loopback before opening the browser: no race with server startup.
+ if(process.platform==='win32'){
+  const {execFile}=require('node:child_process');
+  execFile('cmd.exe',['/d','/s','/c','start "" "'+url+'"'],
+   {windowsHide:true},error=>{
+    if(error)console.log('Could not open the browser automatically:',error.message);
+   });
+ }
+}).on('error',error=>{
+ console.error('Could not start TAXIAPP preview server:',error.message);
+ console.error('If port 8787 is in use, close the previous TAXIAPP preview first.');
+ process.exitCode=1;
 });
