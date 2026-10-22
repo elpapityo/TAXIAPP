@@ -5125,7 +5125,24 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
 if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target.value)){setGoogleStatus('接続キーを保存しました。送信テストを行ってください');saveLater();}return;}
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
 if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-hwy-index],[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-drive-status-field],[data-duty-plan]')){handleInput(event);}});
-window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
+// Browser close/reload must protect the latest visible past-duty correction,
+// not only the active duty. Mobile pagehide is a second best-effort safeguard.
+function protectHistoryPageExit(event){
+ if(!historyLocationEdit)return;
+ try{protectOpenHistoryEdit();}
+ catch(error){
+  console.error('TAXIAPP past-duty correction protection failed:',error);
+  if(event?.type==='beforeunload'){
+   event.preventDefault();
+   event.returnValue='';
+  }
+ }
+}
+window.addEventListener('pagehide',protectHistoryPageExit);
+window.addEventListener('beforeunload',event=>{
+ protectHistoryPageExit(event);
+ if(persistTimer){clearTimeout(persistTimer);save();}
+});
 await load();
 // Never display personal records before identifying the signed-in account.
 model=emptyAccountModel();render();
