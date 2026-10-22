@@ -207,7 +207,9 @@ function create(){
  async function request(action,fields={}){
   const c=checked();
   if(action==='syncList'){
-   if(fields.resumeOnly!==true&&fields.shiftIds===undefined){
+   if(fields.resumeOnly!==true&&fields.shiftIds===undefined&&
+      c.db?.app?.options?.projectId&&typeof c.auth?.currentUser?.getIdToken==='function'&&
+      typeof fetch==='function'){
     const list=await projectedMetadata(c,null);
     if(list)return {shifts:list};
    }
