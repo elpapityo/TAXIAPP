@@ -232,7 +232,7 @@ const d=root.TAXIAPP_SYNC_UI({
   isSettings:()=>true,root:{querySelector:()=>null}
  });
  adapter.schedule();
- model.shifts.forEach(shift=>shift.driver='変更済み');
+ model.shifts.forEach(shift=>{shift.endedAt='18:00';shift.endedIso='2026-10-22T09:00:00Z';});
  adapter.schedule();
  assert.equal(await adapter.run(false),true);
  await new Promise(resolve=>setTimeout(resolve,700));
