@@ -2346,6 +2346,7 @@ function gpsDistanceSummary(shift){
 // A PC-only print bridge, isolated from the old administrator's Google
 // diary sync preferences and from every other Firebase user.
 let firestorePrintPcMessage='';
+let firestorePrintPcBusy=false;
 function firestorePrintPcStorageKey(uid=accountScope.uid){
  return 'taxiapp-firestore-print-pc-v1-'+encodeURIComponent(String(uid||''));
 }
@@ -2398,13 +2399,14 @@ function firestorePrintPcPanel(shift,date){
     '日付を指定してFirestoreから入庫済みの日報を取得してください')+'</p>'+
   '<p class="caption-note">'+(TAXIAPP_PRINT_VIEWER_MODE?'現在：PC印刷専用（閲覧のみ）':
    'PCでは https://elpapityo.github.io/TAXIAPP/?printViewer=1 を開いて本人ログインしてください。')+'</p>'+
-  '<button type="button" class="btn primary" data-action="firestorePrintToGoogle" '+(ready?'':'disabled')+
+  '<button type="button" class="btn primary" data-action="firestorePrintToGoogle" '+(ready&&!firestorePrintPcBusy?'':'disabled')+
   '>選択した日報をGoogle補助簿の4印刷元に転送・改版更新</button>'+
   (firestorePrintPcMessage?'<p class="caption-note" role="status">'+safeText(firestorePrintPcMessage)+'</p>':'')+
   '<p class="footnote">印刷元が最新かどうかはこの転送時にFirestore原本を再取得して確認します。Googleシートだけでは原本の改版を自動検出できません。修正後は必ず再転送してください。</p>'+
   '</section>';
 }
 async function firestorePrintToGoogle(){
+ if(firestorePrintPcBusy)return;
  if(!TAXIAPP_PRINT_VIEWER_MODE||!accountScope.adminFirestore||accountScope.adminFirestorePreview||
     !currentLoginScope?.admin||deviceMode!=='viewer'||!accountDiary.ready())return;
  const scope=currentLoginScope,uid=accountScope.uid,generation=accountScopeGeneration;
@@ -2425,6 +2427,7 @@ async function firestorePrintToGoogle(){
  if(!confirm('PCのGoogle補助簿へ転送しますか？\\n'+date+' ／ 乗務ID：'+row.id+
   '\\n既存Google同期原本・印刷操作の選択・補助簿2ページは変更しません。'))return;
  if(!stable())return;
+ firestorePrintPcBusy=true;
  firestorePrintPcMessage='本人Firebase認証で4印刷元に転送中…';render();
  try{
   const auth=scope.firebase?.auth?.currentUser;
@@ -2445,8 +2448,10 @@ async function firestorePrintToGoogle(){
   if(!stable())return;
   firestorePrintPcMessage='Google取込は未確認：'+String(error?.message||error)+
    '。Googleシートの転送状態を確認するまで連続再送は避けてください';
+ }finally{
+  firestorePrintPcBusy=false;
+  if(stable())render();
  }
- if(stable())render();
 }
 function historyRecordTime(record){
  if(record.kind==='cancel')return String(record.meta?.dispatchAt||record.raw.C||'').slice(0,8)+' ～ '+String(record.meta?.cancelAt||'').slice(0,8);
