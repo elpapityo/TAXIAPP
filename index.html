@@ -1310,7 +1310,7 @@ const ADMIN_FIRESTORE_PREVIEW_AVAILABLE=(()=>{
   new URLSearchParams(window.location.search).get('adminFirestorePreview')==='1';}
  catch{return false;}
 })();
-let adminFirestorePreviewActive=false;
+let adminFirestorePreviewActive=false,adminFirestorePreviewOwnerUid='';
 let currentLoginScope=null,adminCutoverBusy=false;
 function adminFirestoreManifest(uid){
  if(!uid)return null;
@@ -1619,9 +1619,13 @@ async function switchAccountScope(scope){
  historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;
  syncUI.cancelViewer();
  syncUI.resetAccount();
+ if(!scope||scope.uid!==adminFirestorePreviewOwnerUid){
+  adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
+ }
  currentLoginScope=scope||null;
  const adminFirestorePreview=Boolean(scope?.admin&&
-  ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive);
+  ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
+  scope.uid===adminFirestorePreviewOwnerUid);
  const adminFirestore=Boolean(scope?.admin&&
   (adminFirestorePreview||ADMIN_FIRESTORE_CUTOVER_ENABLED||adminFirestoreManifest(scope.uid)));
  accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined}:{});
@@ -3413,6 +3417,69 @@ function renderAdminBackendSettings(){
   '<button class="btn primary" type="button" data-action="adminFirestoreCutover" '+(adminCutoverBusy?'disabled':'')+'>'+
   (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
   '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
+}
+// A development-only administrator Firestore path. This never writes the
+// permanent cutover preference or imports the existing Google/local originals.
+// The owner deliberately creates new duties in the isolated preview store.
+async function startAdminFirestorePreview(){
+ if(adminCutoverBusy||!ADMIN_FIRESTORE_PREVIEW_AVAILABLE||!legacyDiary()||
+    !currentLoginScope?.admin||!canEditNow())return;
+ const source=currentLoginScope,uid=source.uid,generation=accountScopeGeneration;
+ if(source.firebase?.auth?.currentUser?.uid!==uid){
+  toast('管理者本人のログインを確認できません',true);return;
+ }
+ if(!confirm('【開発用・本人Firestore検証】\n現在の本人UIDに新しく入力した日報を保存します。'+
+  '\n既存スマホ原本・Google原本・正式保存先は切り替えず移行もしません。'+
+  '\nテスト乗務だけを入力して確認しますか？'))return;
+ if(currentLoginScope!==source||accountScopeGeneration!==generation||!canEditNow())return;
+ adminCutoverBusy=true;adminFirestorePreviewOwnerUid=uid;
+ adminFirestorePreviewActive=true;
+ try{
+  await switchAccountScope(source);
+  if(currentLoginScope!==source||accountScope.uid!==uid||
+     !accountScope.adminFirestorePreview)throw Error('管理者本人の検証領域に切り替わりませんでした');
+  if(deviceMode==='writer'&&!await syncUI.bootstrapWriter())
+   throw Error('Firestoreの読戻しと端末保護を確認できません');
+  toast('本人Firestoreの検証領域に接続しました。新しい合成乗務で保存を確認できます。');
+ }catch(error){
+  adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
+  try{
+   if(currentLoginScope===source&&accountScope.uid===uid){
+    await switchAccountScope(source);
+    if(deviceMode==='writer')void syncUI.bootstrapWriter();
+   }
+  }catch(recovery){console.error('admin-preview-recovery',recovery);}
+  toast('Firestoreの検証開始を停止しました。旧Google原本は変更していません：'+
+   String(error?.message||error),true);
+ }finally{adminCutoverBusy=false;render();}
+}
+async function exitAdminFirestorePreview(){
+ if(adminCutoverBusy||!accountScope.adminFirestorePreview||
+    currentLoginScope?.uid!==accountScope.uid||!canEditNow())return;
+ const source=currentLoginScope,uid=source.uid,generation=accountScopeGeneration;
+ if(!confirm('管理者の旧Google運用画面へ戻りますか？\n'+
+  '検証用の端末日報とFirestore原本は削除しません。未同期の内容も検証用領域に保持します。'))return;
+ adminCutoverBusy=true;
+ try{
+  if(await save(true)!==true)throw Error('検証用の端末日報を保存できません');
+  if(currentLoginScope!==source||accountScopeGeneration!==generation||
+     source.firebase?.auth?.currentUser?.uid!==uid)
+   throw Error('ログイン中の管理者本人を確認できません');
+  adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
+  await switchAccountScope(source);
+  if(currentLoginScope!==source||accountScope.uid!==uid||!legacyDiary())
+   throw Error('旧Googleの保存領域を安全に復元できません');
+  if(deviceMode==='writer'&&!await syncUI.bootstrapWriter())
+   throw Error('旧Google日報の端末原本を確認できません');
+  toast('旧Google運用画面に戻りました。Firestoreの検証原本も保持しています。');
+ }catch(error){
+  if(currentLoginScope===source&&accountScope.uid===uid){
+   adminFirestorePreviewActive=true;adminFirestorePreviewOwnerUid=uid;
+   try{await switchAccountScope(source);if(deviceMode==='writer')void syncUI.bootstrapWriter();}
+   catch(recovery){console.error('admin-preview-exit-recovery',recovery);}
+  }
+  toast('旧Google画面への復帰を確認できません：'+String(error?.message||error),true);
+ }finally{adminCutoverBusy=false;render();}
 }
 async function startAdminFirestoreCutover(){
  if(adminCutoverBusy)return;
