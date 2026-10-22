@@ -8,8 +8,13 @@ const doc=(id,iso,trashed)=>({
  name:'projects/synthetic-proj/databases/(default)/documents/privateDuties/userSynthetic/shifts/'+id,
  fields:{
   trashed:{booleanValue:trashed},
+  format:{stringValue:'TAXIAPP_PRIVATE_SHIFT_V1'},
+  revision:{integerValue:'1'},
   shift:{mapValue:{fields:{
-   id:{stringValue:id},startedIso:{stringValue:iso},endedIso:{stringValue:iso},
+   id:{stringValue:id},date:{stringValue:'2026-10-21'},
+   startedAt:{stringValue:'18:00'},
+   startedIso:{stringValue:iso},endedIso:{stringValue:iso},
+   records:{arrayValue:{values:[]}},
    __taxiPrintSummary:{mapValue:{fields:{meter:{integerValue:'1000'}}}}
   }}}
  }
