@@ -1409,7 +1409,7 @@ for(const eventName of ['click','pointerdown','input','change','keydown','submit
  document.addEventListener(eventName,blockViewerEdit,true);
 let historyDate='',historyShiftId='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
-let historyCloudRows=[],historyLocationEdit=null;
+let historyCloudRows=[],historyLocationEdit=null,historyDateCorrection=null;
 // The combined business-status screen remembers which sections the driver opened.
 let operationPanelOpen={}; // One open at a time, native named accordion.
 
@@ -1641,7 +1641,7 @@ async function switchAccountScope(scope){
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';
- historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;
+ historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;historyDateCorrection=null;
  firestorePrintPcMessage='';
  syncUI.cancelViewer();
  syncUI.resetAccount();
@@ -2945,6 +2945,97 @@ function discardHistoryLocationEdit(){
 // A returned duty retained as the phone's most recent original is still
 // editable from explicitly fetched Firestore history, but only when the
 // current local original is an exact, revision-verified server copy.
+
+function historyDateCorrectionKey(uid,id){return 'taxiapp-history-date-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(id);}
+function beginHistoryDateCorrection(){
+ const shift=selectedHistoryShift();
+ if(!canEditCloudHistory(shift)||historyLocationEdit)throw Error('Firestoreから取得した編集可能な日報を選び、他の明細編集を終了してください');
+ const row=historyCloudRows.find(r=>r.id===shift.id),uid=accountScope.uid;
+ const key=historyDateCorrectionKey(uid,shift.id),raw=localStorage.getItem(key);
+ let d;
+ try{d=raw?JSON.parse(raw):null;}catch{throw Error('以前の日付訂正控えが破損しています。上書きせず保持します');}
+ if(d&&(d.uid!==uid||d.id!==shift.id||d.originalDate!==shift.date))throw Error('日付訂正控えの本人または原本が異なるため停止しました');
+ if(!d)d={uid,id:shift.id,originalDate:shift.date,newDate:shift.date,revision:row.revision,message:''};
+ localStorage.setItem(key,JSON.stringify(d));
+ if(localStorage.getItem(key)!==JSON.stringify(d))throw Error('日付訂正控えを端末に保存できません');
+ if(d.revision!==row.revision)d.message='原本が変更されています。修正控えを保護し、上書きしません。';
+ historyDateCorrection=d;render();
+}
+function renderHistoryDateCorrection(shift){
+ const d=historyDateCorrection;if(!d||d.id!==shift?.id)return '';
+ return '<section class="card"><h2 class="h2">出庫日の訂正</h2>'+
+  '<p class="warn">乗務IDを変えず、乗務の各日時を同じ日数だけ移動します。入庫済み日報だけ訂正できます。</p>'+
+  '<p class="caption-note">ID：'+safeText(d.id)+'／現在の出庫日：'+safeText(d.originalDate)+'／元の更新番号：'+d.revision+'</p>'+
+  '<label class="field">訂正後の日付<input type="date" class="control" id="historyCorrectionDate" value="'+safeText(d.newDate)+'"></label>'+
+  (d.message?'<p class="warn">'+safeText(d.message)+'</p>':'')+
+  '<div class="actions"><button class="btn primary" type="button" data-action="historyDateSave" '+(d.busy?'disabled':'')+'>Firestoreへ保存して確認</button>'+
+  '<button class="btn" type="button" data-action="historyDateCancel" '+(d.busy?'disabled':'')+'>修正控えを取り消す</button></div></section>';
+}
+function correctShiftDate(shift,newDate){
+ const old=shift.date;
+ const day=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s))throw Error('日付が不正です');
+  const ms=Date.parse(s+'T00:00:00Z');if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==s)throw Error('存在しない日付です');return ms;};
+ const delta=day(newDate)-day(old);
+ if(Math.abs(delta)>366*86400000)throw Error('1年を超える日付訂正はできません');
+ const walk=(v,k='')=>{
+  if(Array.isArray(v))return v.map(x=>walk(x,k));
+  if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([name,x])=>[name,walk(x,name)]));
+  if(typeof v!=='string')return v;
+  if((k==='date'||k==='serviceDate')&&v===old)return newDate;
+  if((k.endsWith('Iso')||['dispatchAt','cancelAt','createdAt','settledAt','boardedAt','alightedAt','at'].includes(k))&&
+   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)){const ms=Date.parse(v);if(Number.isFinite(ms))return new Date(ms+delta).toISOString();}
+  return v;
+ };
+ return walk(shift);
+}
+async function saveHistoryDateCorrection(){
+ const d=historyDateCorrection;if(!d||d.busy||!memberDiary()||!canEditNow()||!accountDiary.ready()||accountScope.uid!==d.uid)return;
+ const row=historyCloudRows.find(x=>x.id===d.id);
+ if(!row||row.revision!==d.revision||row.shift.date!==d.originalDate){d.message='元の更新番号が異なります。修正控えは保持します';render();return;}
+ if(d.newDate===d.originalDate){d.message='変更された日付がありません';render();return;}
+ let corrected;
+ try{if(!row.shift.endedAt&&!row.shift.endedIso)throw Error('入庫済みの日報だけ訂正できます');
+  assertHistoryLocalOverlapSafe(d.id,row.shift,row.revision);corrected=correctShiftDate(row.shift,d.newDate);}
+ catch(e){d.message=String(e.message||e);render();return;}
+ if(!confirm('出庫日 '+d.originalDate+' → '+d.newDate+' に訂正し、乗務IDは維持してFirestoreをCAS更新しますか？'))return;
+ const gen=accountScopeGeneration,epoch=historyCloudEpoch;
+ const stable=()=>accountScope.uid===d.uid&&gen===accountScopeGeneration&&epoch===historyCloudEpoch&&historyDateCorrection===d&&memberDiary()&&canEditNow();
+ d.busy=true;d.message='Firestoreに保存して読戻し確認中';render();
+ try{
+  const packet=accountScope.adminFirestore?googleShiftPacket(corrected):{kind:'TAXIAPP_SHIFT_V1',shift:corrected};
+  if(accountScope.adminFirestore)packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  try{await accountDiary.request('syncPut',{baseRevision:d.revision,payload:JSON.stringify(packet)});}catch(e){d.message='送信結果を読戻し中：'+String(e.message||e);}
+  if(!stable())return;
+  const remote=await accountDiary.request('syncGet',{shiftId:d.id});
+  if(!stable())return;
+  if(remote?.id!==d.id||remote.revision!==d.revision+1||
+    JSON.stringify(canonicalStoredDuty(remote.shift))!==JSON.stringify(canonicalStoredDuty(packet.shift)))
+   throw Error('送信結果不明または競合です。元の修正控えを保持し、上書きはしません');
+  const i=model.shifts.findIndex(x=>x.id===d.id);
+  if(i>=0){
+   assertHistoryLocalOverlapSafe(d.id,row.shift,row.revision);
+   const before=deepCopy(model.shifts[i]);model.shifts[i]=deepCopy(packet.shift);
+   if(await save(true)!==true){model.shifts[i]=before;throw Error('Firestore保存済みですが端末保存未確認。修正控えを保持します');}
+   if(!stable())return;
+   if(!syncUI.adoptHistoryDuty({id:d.id,revision:remote.revision,shift:packet.shift})){
+    model.shifts[i]=before;await save(true);throw Error('Firestore保存済みですが端末更新番号が未確認。修正控えを保持します');
+   }
+  }
+  historyCloudRows=historyCloudRows.filter(x=>x.id!==d.id);historyCloudShifts=historyCloudRows.map(x=>x.shift);
+  historyDateCorrection=null;
+  try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
+  catch{historyCloudMessage='Firestore保存済み。端末の訂正控えは手動保護してください';render();return;}
+  historyCloudMessage='出庫日を'+d.newDate+'へ訂正・保存確認済み。新しい日付を指定して取得してください。';render();
+ }catch(e){if(stable()){d.message='保存未確認：'+String(e.message||e);render();}}
+ finally{d.busy=false;if(historyDateCorrection===d)render();}
+}
+function cancelHistoryDateCorrection(){
+ const d=historyDateCorrection;if(!d||d.busy||!confirm('日付訂正の修正控えを破棄しますか？Firestore原本は変更しません。'))return;
+ try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
+ catch{d.message='端末の修正控えを破棄できません';render();return;}
+ historyDateCorrection=null;render();
+}
+
 function canEditCloudHistory(shift){
  if(!shift||!memberDiary()||!accountDiary.ready()||!canEditNow()||
     historyCloudUid!==accountScope.uid||historyCloudDate!==shift.date||
@@ -2967,7 +3058,7 @@ function historyFoldSection(key,title,html){
 function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
 <section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div>${memberDiary()?(()=>{const found=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);return '<div class="caption-note">'+(found?'本人Firestoreから取得済み／更新番号 '+found.revision:syncUI.dutySyncStatus(shift).label)+'</div>';})():''}</div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
-${editableHistory?'<div class="actions"><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">明細修正</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
+${editableHistory?'<div class="actions"><button class="btn" data-action="historyDateEditStart">出庫日を訂正</button><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${renderHistoryDateCorrection(shift)}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">明細修正</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
 ${shift.records.length?`<details class="details history-fold-panel history-detail-section" data-history-panel="records"><summary>営業明細の詳細（${shift.records.length}件）</summary><div class="inner"><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</div></details>`:''}`}`;}
 // Seven-purpose operations dashboard. Presentation only: no stored record mutations.
 function opsBreakSeconds(shift,now=new Date()){
@@ -4583,6 +4674,9 @@ function handleAction(action,id){
  if(action==='exportDevice'){exportDevice();return;}
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
+ if(action==='historyDateEditStart'){try{beginHistoryDateCorrection();}catch(e){toast(String(e.message||e),true);}return;}
+ if(action==='historyDateSave'){void saveHistoryDateCorrection();return;}
+ if(action==='historyDateCancel'){cancelHistoryDateCorrection();return;}
   if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
   if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
   if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
@@ -5665,6 +5759,12 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.id==='historyEditPickup'||event.target.id==='historyEditDropoff'){
   try{historyLocationInputs();}catch(error){if(historyLocationEdit){historyLocationEdit.message=String(error?.message||error);render();}}
   return;
+ }
+ if(event.target.id==='historyCorrectionDate'){
+  const d=historyDateCorrection;if(!d||!canEditNow()||accountScope.uid!==d.uid)return;
+  d.newDate=String(event.target.value||'');d.message='';
+  try{localStorage.setItem(historyDateCorrectionKey(d.uid,d.id),JSON.stringify(d));}catch{d.message='訂正日を端末に保存できません';}
+  render();return;
  }
  if(event.target.id==='historyDate'){
   try{protectOpenHistoryEdit();}
