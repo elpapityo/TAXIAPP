@@ -701,7 +701,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<button class="btn" type="button" data-sync-compare="'+d.escape(c.id)+'">端末版とサーバー版を比較</button>'+
    (comparedDuties[c.id]?'<section class="card"><strong>実際に異なる項目</strong>'+
      (comparedDuties[c.id].differences.length?comparedDuties[c.id].differences.map(diff=>'<p class="caption-note"><strong>'+d.escape(diff.label)+'</strong>：端末「'+d.escape(diff.local)+'」／クラウド「'+d.escape(diff.remote)+'」</p>').join(''):'<p class="caption-note">記録項目の差は検出されませんでした。更新番号などの同期情報を確認してください。</p>')+'</section><div class="form-grid">'+summary('端末版',comparedDuties[c.id].local)+
-     summary('Firestore版',comparedDuties[c.id].remote)+'</div>':'')+
+     summary(d.remoteOnDemand?.()?'Firestore版':'旧Google原本',comparedDuties[c.id].remote)+'</div>':'')+
    '<p class="caption-note">'+(reviewed?'比較後、残したい原本を選んでください。選ばれない側も暗号化バックアップに保存します。':'先に「端末版とクラウド版を比較」を押してください。比較するまで選択はできません。')+'</p>'+ '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>クラウド原本を残す</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>端末原本を残す</button>'+
    '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（両方残す）</button></div></div>';}).join('');
