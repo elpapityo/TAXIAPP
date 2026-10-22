@@ -1688,7 +1688,7 @@ async function switchAccountScope(scope){
 let localSavePending=false;
 function updateLocalSaveIndicator(){
  const el=typeof document!=='undefined'?document.querySelector?.('[data-local-save-status]'):null;
- if(el)el.textContent=localSaveLabel();
+ if(el)el.textContent=localSaveLabel()+'（Firestore保存とは別です）';
 }
 function localSaveLabel(){
  if(storageStatus==='保存できない環境')return '端末：保存失敗（JSONバックアップを保管してください）';
@@ -1708,8 +1708,8 @@ async function save(localOnly=false){
   localSavePending=!same;
   updateLocalSaveIndicator();
   if(!same&&!persistTimer&&canEditNow())saveLater();
-  if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}
-  return true;
+  if(same&&!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}
+  return same;
  };
  try{
   if(db){await idbPut(db,data,key);storageStatus='IndexedDB';return recorded();}
