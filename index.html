@@ -2381,6 +2381,23 @@ function protectOpenHistoryEdit(){
   if(!historyLocationInputs())throw Error('過去日報の修正入力を保存できません');
  }else saveHistoryLocationDraft(draft);
 }
+// A returned duty can be edited even when the phone retains the same
+// last returned original. Only allow this when the owner's server revision
+// and every original field still match the locally verified baseline.
+function assertHistoryLocalOverlapSafe(shiftId,remoteShift,revision){
+ const local=model.shifts.find(shift=>shift.id===shiftId);
+ if(!local)return false;
+ if(!local.endedAt&&!local.endedIso||local.draft)
+  throw Error('進行中・編集中の端末原本があるため、過去日報の直接編集を停止しました');
+ if(!remoteShift||remoteShift.id!==shiftId||
+    !Number.isSafeInteger(revision)||revision<1||
+    syncUI.verifiedRevision(shiftId)!==revision)
+  throw Error('端末の直近乗務がFirestoreと保存確認済みではありません。原本を保持して編集を停止しました');
+ if(JSON.stringify(canonicalStoredDuty(localFirestoreOriginal(local)))!==
+    JSON.stringify(canonicalStoredDuty(remoteShift)))
+  throw Error('端末の直近乗務とFirestore原本が一致しません。双方を保護して編集を停止しました');
+ return true;
+}
 function startHistoryLocationEdit(shiftId,recordId,addition=null){
  if(!memberDiary()||!accountDiary.ready()||!canEditNow()||historyCloudUid!==accountScope.uid)
   throw Error('本人の操作端末でFirestoreの日報を取得してください');
@@ -2390,14 +2407,13 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
    throw Error('別の利用者の修正控えは操作できません');
   protectOpenHistoryEdit();
  }
- if(model.shifts.some(row=>row.id===shiftId))
-  throw Error('端末に同じ乗務の記録があります。未同期の内容を保護するため、クラウド側の直接編集を停止しました');
  const row=historyCloudRows.find(row=>row.id===shiftId&&row.shift?.date===historyCloudDate);
  const record=addition||row?.shift?.records?.find(record=>record.id===recordId);
  if(addition&&(addition.id!==recordId||row?.shift?.records?.some(item=>item.id===recordId)))
   throw Error('新しい営業記録IDが重複しています');
  if(!row||!record||!Number.isSafeInteger(row.revision)||row.revision<1)
   throw Error('対象の日報・更新番号を確認できません');
+ assertHistoryLocalOverlapSafe(shiftId,row.shift,row.revision);
  const key=historyEditStorageKey(accountScope.uid,shiftId,recordId);
  let saved=null;
  try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{throw Error('端末内の修正控えが破損しています。自動上書きを停止しました');}
@@ -2581,8 +2597,9 @@ function startHistoryNewRecord(kind){
   throw Error('過去日報を編集できません');
  const shift=selectedHistoryShift();
  const row=historyCloudRows.find(item=>item.id===shift?.id);
- if(!row||historyCloudUid!==accountScope.uid||model.shifts.some(item=>item.id===shift.id))
-  throw Error('本人Firestoreの日報を取得し、端末の未同期記録を保護してください');
+ if(!row||historyCloudUid!==accountScope.uid)
+  throw Error('本人Firestoreの日報を取得してください');
+ assertHistoryLocalOverlapSafe(shift.id,row.shift,row.revision);
  if(row.shift.records.length>=MAX_RECORDS)throw Error('60件に達したため追加できません');
  const pointer=historyPendingAdditionKey(accountScope.uid,shift.id,kind);
  let id=localStorage.getItem(pointer),candidate=null;
@@ -2648,12 +2665,13 @@ async function commitHistoryLocationEdit(){
   render();return;
  }
  const row=historyCloudRows.find(row=>row.id===draft.id&&row.revision===draft.baseRevision);
- if(!row||row.shift?.date!==draft.date||model.shifts.some(item=>item.id===draft.id)){
-  draft.message='端末の日報または取得した原本が変更されています。修正内容は保持しました。';render();return;
+ if(!row||row.shift?.date!==draft.date){
+  draft.message='取得した原本の更新番号が変更されています。修正内容は保持しました。';render();return;
  }
  draft.busy=true;draft.message='Firestoreの更新番号を確認し保存中…';render();
  const generation=accountScopeGeneration,epoch=historyCloudEpoch;
  try{
+  assertHistoryLocalOverlapSafe(draft.id,row.shift,row.revision);
   const updated=deepCopy(row.shift);
   const rec=draft.addRecord?deepCopy(draft.sourceRecord):updated.records.find(item=>item.id===draft.recordId);
   if(!rec)throw Error('修正対象の営業記録がありません');
@@ -2698,6 +2716,23 @@ async function commitHistoryLocationEdit(){
     throw Error('保存結果を確認できません。'+String(sendError?.message||'更新競合またはサーバー原本が異なります')+
      '。修正控えを保持し、双方を上書きしません');
    saved={id:draft.id,revision:checked.revision,confirmed:true};
+  }
+  // The just-returned duty may still be the phone's normal one-duty
+  // original. Store the confirmed correction locally before adopting CAS.
+  // An unrelated in-progress duty or unsynced content is never overwritten.
+  const localIndex=model.shifts.findIndex(item=>item.id===draft.id);
+  if(localIndex>=0){
+   assertHistoryLocalOverlapSafe(draft.id,row.shift,row.revision);
+   const oldLocal=deepCopy(model.shifts[localIndex]);
+   model.shifts[localIndex]=deepCopy(packet.shift);
+   if(await save(true)!==true){
+    model.shifts[localIndex]=oldLocal;
+    throw Error('Firestoreには保存済みですが端末原本の修正版を保存できません。修正控えを保持しました');
+   }
+   if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
+      epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
+   if(!syncUI.adoptHistoryDuty({id:draft.id,revision:saved.revision,shift:packet.shift}))
+    throw Error('Firestoreには保存済みですが、端末の更新番号を確定できません。修正控えを保持しました');
   }
   const i=historyCloudRows.findIndex(item=>item.id===draft.id);
   if(i>=0)historyCloudRows[i]={id:draft.id,revision:saved.revision,shift:deepCopy(packet.shift)};
