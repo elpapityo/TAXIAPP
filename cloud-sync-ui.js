@@ -127,7 +127,7 @@ root.TAXIAPP_SYNC_UI=function(d){
       throw Error('Firestoreの乗務一覧が不正です');
      seen.add(row.id);
     }
-    let selected=local;
+    let selected=local,receivedForBootstrap=null;
     if(!local.length){
      const available=listing.shifts.filter(row=>!row.deleted);
      const open=available.filter(row=>!row.ended);
@@ -139,11 +139,14 @@ root.TAXIAPP_SYNC_UI=function(d){
       if(received?.id!==candidate.id||received?.revision!==candidate.revision||
          received.shift?.id!==candidate.id)throw Error('Firestoreの乗務が受信中に変更されました');
       selected=[received.shift];
+      receivedForBootstrap=received;
      }
     }
     if(!stable()||!d.writerBootstrapAllowed?.())return false;
     if(!await d.onWriterSnapshot(selected))return false;
     if(!stable())return false;
+    if(receivedForBootstrap&&!engine.adoptReceivedDuty(receivedForBootstrap))
+     throw Error('再開した原本の更新番号を端末へ保護できません。再送を停止しました');
     observedDutyStates=dutyStates(d.getModel(),Boolean(d.remoteOnDemand?.()));queuedDutyIds.clear();
     // Offline or unsent local duties must be retried after sign-in; never
     // assume that a successful login means they reached Firestore.
