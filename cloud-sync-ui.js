@@ -489,7 +489,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     esc(r.date||r.shift?.date||'日付未記録')+' ／ '+(n==null?'件数未記録':n+'件')+' ／ '+amount+
     '</strong><p class="caption-note">'+(r.deleted?'ゴミ箱（復元可能）':r.ended?'入庫済み':'未入庫')+
     ' ／ 更新番号 '+r.revision+' ／ '+esc(r.id)+'</p><div class="actions">'+
-    (r.deleted?'<button class="btn" data-action="cloudRestore" data-id="'+esc(r.id)+'">復元</button>':
+    (r.deleted?'<button class="btn" data-action="cloudRestore" data-id="'+esc(r.id)+'">クラウドから復元</button>':
     '<button class="btn" data-action="cloudIndexOpen" data-id="'+esc(r.id)+'">内容を確認・編集</button>'+
     '<button class="btn red" data-action="cloudTrash" data-id="'+esc(r.id)+'">ゴミ箱へ移動</button>')+
     '</div></div>';
@@ -538,13 +538,25 @@ root.TAXIAPP_SYNC_UI=function(d){
       recordsCount:Number.isSafeInteger(m.recordsCount)?m.recordsCount:null,
       meter:Number.isFinite(m.meter)?m.meter:null};
     });
+    // Preserve the existing legacy Google full listing; Firestore only uses
+    // lightweight server-verified metadata until one row is opened.
+    if(!d.remoteOnDemand?.()){
+     for(const row of cloudRows){
+      if(row.deleted)continue;
+      const full=await scopedRequest('syncGet',{shiftId:row.id});
+      if(full?.id!==row.id||Number(full.revision)!==row.revision||full.shift?.id!==row.id)
+       throw Error('旧Google原本が一覧取得中に更新されました');
+      row.shift=full.shift;row.date=full.shift.date;
+      row.recordsCount=full.shift.records?.length??null;
+     }
+    }
     verifyScope();cloudLoaded=true;
     d.toast('Firestore '+cloudRows.filter(r=>!r.deleted).length+'乗務／ゴミ箱 '+cloudRows.filter(r=>r.deleted).length+'乗務');
    }else if(kind==='trash'){
     const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&!x.deleted);
     if(!row)throw Error('対象を一覧から取得し直してください');
     const remote=await scopedRequest('syncGet',{shiftId:id});
-    if(remote?.id!==id||remote.shift?.id!==id||remote.shift.date!==row.date||
+    if(remote?.id!==id||remote.shift?.id!==id||(row.date&&remote.shift.date!==row.date)||
        Number(remote.revision)!==row.revision)
      throw Error('原本に変更がありました。ゴミ箱操作を停止しました');
     row.shift=remote.shift;
