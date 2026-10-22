@@ -2,51 +2,81 @@
 setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
-rem TAXIAPP development preview: loopback-only. Never touches main deployment.
-rem Do not open a stale preview if an old server still listens on port 8787.
+if errorlevel 1 goto invalid_folder
+
+echo ==========================================
+echo TAXIAPP v0.3.126 - 開発検証版 PR #119
+echo ==========================================
+echo.
+echo 開発サーバーが起動したら、自動でブラウザを開きます。
+echo この黒いウィンドウは検証中ずっと開いたままにしてください。
+echo.
+if not exist "index.html" goto incomplete_zip
+
+rem Never silently reuse another ZIP's http://localhost:8787 server.
 netstat -ano | findstr /C:":8787 " | findstr /I "LISTENING" >nul
-if not errorlevel 1 (
-  echo.
-  echo 8787番ポートは使用中です。以前のTAXIAPP検証用ウィンドウを閉じてください。
-  echo 古いZIPの誤表示を防ぐため、ブラウザは起動しません。
-  pause
-  exit /b 1
-)
-rem Requires a local Python or Node.js installation but installs nothing.
+if not errorlevel 1 goto already_running
+
+rem Use a single foreground process. Both servers launch the browser
+rem ONLY after port 8787 is listening; errors remain in this window.
 where py >nul 2>nul
 if not errorlevel 1 (
-  py -3 -c "import http.server" >nul 2>nul
-  if not errorlevel 1 goto with_py
+  py -3 -c "import sys; assert sys.version_info >= (3, 9)" >nul 2>nul
+  if not errorlevel 1 goto python_launcher
 )
 where python >nul 2>nul
 if not errorlevel 1 (
-  python -c "import http.server" >nul 2>nul
-  if not errorlevel 1 goto with_python
+  python -c "import sys; assert sys.version_info >= (3, 9)" >nul 2>nul
+  if not errorlevel 1 goto python_launcher_path
 )
 where node >nul 2>nul
 if not errorlevel 1 (
   node -e "require('node:http')" >nul 2>nul
-  if not errorlevel 1 goto with_node
+  if not errorlevel 1 goto node_launcher
 )
+echo エラー：Python 3.9以降またはNode.jsが見つかりません。
+echo 何もインストール・変更せず終了します。
+goto failed
+
+:python_launcher
+echo Pythonを使って起動します。
+py -3 "start-admin-firestore-preview-server.py"
+goto finished
+
+:python_launcher_path
+echo Pythonを使って起動します。
+python "start-admin-firestore-preview-server.py"
+goto finished
+
+:node_launcher
+echo Node.jsを使って起動します。
+node "start-admin-firestore-preview-server.js"
+goto finished
+
+:already_running
+echo エラー：8787番ポートが使用中です。
+echo 以前のTAXIAPP検証用の黒いウィンドウを閉じてください。
+echo 古いZIPを誤表示しないため、今回のブラウザ起動を中止しました。
+goto failed
+
+:incomplete_zip
+echo エラー：このBATと同じフォルダにindex.htmlがありません。
+echo ZIPをすべて展開してからBATを起動してください。
+goto failed
+
+:invalid_folder
+echo エラー：展開先のフォルダを開けません。
+goto failed
+
+:finished
 echo.
-echo TAXIAPP local preview requires Python 3 or Node.js.
-echo Neither runtime was found. No Firebase or Google data has been modified.
-echo See docs for manual setup instructions.
+echo 検証用サーバーが終了しました。エラーが出ていれば上の内容を確認してください。
+echo 本番の日報・Google保存先・Firebase設定は変更していません。
+pause
+exit /b %ERRORLEVEL%
+
+:failed
+echo.
+echo 原因が分かるよう、この画面を閉じずに停止しています。
 pause
 exit /b 1
-:with_py
-start "TAXIAPP Local Preview (close to stop)" cmd /k py -3 -m http.server 8787 --bind 127.0.0.1
-goto launch
-:with_python
-start "TAXIAPP Local Preview (close to stop)" cmd /k python -m http.server 8787 --bind 127.0.0.1
-:with_node
-start "TAXIAPP Local Preview (close to stop)" cmd /k node start-admin-firestore-preview-server.js
-goto launch
-:launch
-timeout /t 2 /nobreak >nul
-start "" "http://localhost:8787/?adminFirestorePreview=1&build=v0.3.126-pr119"
-echo.
-echo TAXIAPP development preview: v0.3.126-pr119 - PR #119
-echo This server is available only on this PC. Close its console window to stop.
-echo The real owner's Firebase sign-in must still be verified in the browser.
-exit /b 0
