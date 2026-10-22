@@ -659,7 +659,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    if(writerRunBusy||queuedDutyIds.has(received?.id))return false;
    return engine.adoptReceivedDuty(received);
   },
-  markLocalRemoval:(id,shift)=>{const marked=engine.markLocalRemoval(id,shift);queuedDutyIds.add(id);return marked;},
+  markLocalRemoval:(id,shift)=>engine.markLocalRemoval(id,shift),
   undoLocalRemoval:id=>{engine.undoLocalRemoval(id);queuedDutyIds.delete(id);},cloudAction};
 };
 })(typeof window!=='undefined'?window:globalThis);
