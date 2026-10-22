@@ -105,6 +105,28 @@ assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
  'the identical Firebase revision may be read again without duplicate rows');
 assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
  'idempotent read must leave all sheets unchanged');
+// Reading the same four source sheets at PC print confirmation must use
+// the original application's stored calculated packet, without writing.
+const checked=ctx.firestorePrintDocDraft_({project,uid},id);
+assert.match(ctx.savePacket_(checked.packet,{firestorePrintOnly:true,
+ verifyFirestorePrintOnly:true}),/保存完了/);
+const beforeConfirm=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+const printData=values.get('TAXIAPP_印刷データ');
+const originalPickup=printData.get('2:8');
+printData.set('2:8','【合成】別の乗車地');
+assert.throws(()=>ctx.savePacket_(checked.packet,{firestorePrintOnly:true,
+ verifyFirestorePrintOnly:true}),/明細が一致しません/,'同額でも印刷元の乗車地が異なれば停止');
+printData.set('2:8',originalPickup);
+const sameSecondEdited={
+ ...checked.packet,
+ shift:{...checked.packet.shift,records:[{...checked.packet.shift.records[0],
+  raw:{...checked.packet.shift.records[0].raw,AL:'【合成】同一秒の修正'}}]}
+};
+assert.throws(()=>ctx.savePacket_(sameSecondEdited,{firestorePrintOnly:true,
+ verifyFirestorePrintOnly:true}),/明細が一致しません/,
+ '金額・件数・更新秒が同一でも修正済み原本の古い印刷を停止');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),
+ beforeConfirm,'PCの全明細照合は既存4シートにも帳票にも書き込まない');
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
 returnedUid='anotherSyntheticOwner';
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID・プロジェクト/);
