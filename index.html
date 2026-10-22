@@ -1666,10 +1666,41 @@ async function ensureAdminFreshFirestore(scope){
   if(localStorage.getItem(recovery)!==backup)
    throw Error('旧端末原本の復旧控えを記録できません');
  }
+ // Explicit migration approval: preserve each completed local duty by
+ // original shiftId. A server conflict or deleted original stops cutover;
+ // it must never become a new duplicate or overwrite the other device.
+ const existing=new Map(remote.shifts.map(x=>[x.id,x]));
+ if(existing.size!==remote.shifts.length)throw Error('Firestore一覧の乗務IDが重複しています');
+ for(const shift of old.shifts){
+  if(scope.firebase?.auth?.currentUser?.uid!==uid)
+   throw Error('日報移行中に本人認証が変わりました');
+  if(!shift.id||!(shift.endedAt||shift.endedIso))
+   throw Error('未入庫の旧日報が含まれるため移行を保留しました');
+  const packet=googleShiftPacket(shift);
+  packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  const expected=JSON.stringify(canonicalStoredDuty(packet.shift));
+  const present=existing.get(shift.id);
+  if(present){
+   if(present.deleted)throw Error('Firestoreのゴミ箱に同じ乗務IDがあります：'+shift.id);
+   const actual=await probe.request('syncGet',{shiftId:shift.id});
+   if(actual?.id!==shift.id||Number(actual.revision)!==Number(present.revision)||
+      JSON.stringify(canonicalStoredDuty(actual.shift))!==expected)
+    throw Error('Firestoreの同じ乗務IDに異なる原本があります：'+shift.id);
+  }else{
+   // A response may be lost after commit. Read back before deciding whether
+   // migration succeeded; never retry blindly with baseRevision zero.
+   try{await probe.request('syncPut',{baseRevision:0,payload:JSON.stringify(packet)});}
+   catch(error){console.warn('旧日報の送信結果を読戻し照合します',error);}
+   const verified=await probe.request('syncGet',{shiftId:shift.id});
+   if(verified?.id!==shift.id||!Number.isSafeInteger(Number(verified.revision))||
+      JSON.stringify(canonicalStoredDuty(verified.shift))!==expected)
+    throw Error('旧日報のFirestore保存確認に失敗しました：'+shift.id);
+  }
+ }
  const manifestKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
  // Do not mark old or synthetic Firestore duties as the current open duty.
- const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:[],
-  excludedIds:remote.shifts.map(x=>x.id),at:Date.now(),oldGooglePreserved:true});
+ const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:old.shifts.map(x=>x.id),
+  excludedIds:remote.shifts.filter(x=>!old.shifts.some(d=>d.id===x.id)).map(x=>x.id),at:Date.now(),oldGooglePreserved:true});
  localStorage.setItem(manifestKey,manifest);
  if(localStorage.getItem(manifestKey)!==manifest)
   throw Error('保存先切替記録を確認できません');
