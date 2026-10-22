@@ -147,12 +147,12 @@ function client(name,svc,model,failReceive=false,remoteOnDemand=false){
   'if(sheetTargetPrefs().syncMode===\'on\'){syncUI.schedule();return;}']){
   assert.ok(html.includes(literal),'missing '+literal);
  }
- const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+) — 乗務日報<\/title>/)?.[1];
- assert.ok(pageVersion,'document title must contain the release version');
- assert.ok(html.includes('乗務日報 · ${displayVersion}'),
-  'header must display the version read from the title, not a hard-coded older version');
- assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+/)'),
-  'header must derive version from document title');
+ const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+(?:-dev\.\d+)?) — 乗務日報<\/title>/)?.[1];
+ assert.equal(pageVersion,'v0.3.126-dev.119','PR #119の開発版を旧ZIPと区別する');
+ assert.ok(html.includes('乗務日報 · ${displayVersion}（開発版 PR #119）'),
+  '画面上部にバージョンとPR番号を表示する');
+ assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+(?:-dev\\.\\d+)?/)'),
+  '開発版のバージョン文字列をtitleから取得する');
  assert.doesNotMatch(html,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'/,
   'periodic bidirectional cloud polling must stay disabled');
  assert.match(html,/data-action="viewerRefresh"/,'viewer refresh control must exist');
