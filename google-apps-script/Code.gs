@@ -485,14 +485,19 @@ function savePacket_(data,options) {
   else firestorePrintPublishRowsDraft_(ss,id,printBatches,
    options&&options.verifyCurrentSource);
  }
- // Save a lossless shift snapshot in 30,000-character chunks (under cell limit).
- var json = JSON.stringify(shift);
- var chunks = [];
- for (var start = 0; start < json.length; start += TAXIAPP_CHUNK_SIZE)
-  chunks.push(json.slice(start,start+TAXIAPP_CHUNK_SIZE));
- if (chunks.length > TAXIAPP_MAX_CHUNKS) throw Error('乗務データが大きすぎます');
- var originals = [id,now,chunks.length].concat(chunks);
- if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
+ // Only the legacy Google workflow stores a lossless original snapshot.
+ // Firestore printing already uses the owner UID's original and has written
+ // its four verified print sources above. Do not reject that successful
+ // transfer later because of an unused legacy chunk-count restriction.
+ if(!printOnly){
+  var json = JSON.stringify(shift);
+  var chunks = [];
+  for (var start = 0; start < json.length; start += TAXIAPP_CHUNK_SIZE)
+   chunks.push(json.slice(start,start+TAXIAPP_CHUNK_SIZE));
+  if (chunks.length > TAXIAPP_MAX_CHUNKS) throw Error('乗務データが大きすぎます');
+  var originals = [id,now,chunks.length].concat(chunks);
+  replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
+ }
  return '保存完了：' + shift.date + ' / ' + records.length + '件';
 }
 

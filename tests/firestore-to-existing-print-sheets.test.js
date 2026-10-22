@@ -107,6 +107,15 @@ assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500)
 assert.ok(fetches.length===3,'read before lock, inside lock, and immediately before index publication');
 assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer synthetic-oauth'));
 const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+// Firestore print-only import must not depend on the legacy Google original
+// 30,000-character chunk limit AFTER the four sheets are already updated.
+// Setting the legacy limit to zero makes this regression immediately visible.
+ctx.TAXIAPP_MAX_CHUNKS=0;
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'Firestore印刷元の取込に旧Google原本の分割保存制限を適用しない');
+ctx.TAXIAPP_MAX_CHUNKS=20;
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
+ '同じ版の再取込は印刷元も旧Google原本も変更しない');
 assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
  'the identical Firebase revision may be read again without duplicate rows');
 assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
