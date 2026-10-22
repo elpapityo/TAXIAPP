@@ -1685,18 +1685,63 @@ async function switchAccountScope(scope){
  if(!adminCutoverBusy&&deviceMode==='writer'&&writerLoadGate)
   void syncUI.bootstrapWriter();
 }
-async function save(localOnly=false){if(!canEditNow())return false;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);return false;}}}
-function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
+let localSavePending=false;
+function updateLocalSaveIndicator(){
+ const el=typeof document!=='undefined'?document.querySelector?.('[data-local-save-status]'):null;
+ if(el)el.textContent=localSaveLabel();
+}
+function localSaveLabel(){
+ if(storageStatus==='保存できない環境')return '端末：保存失敗（JSONバックアップを保管してください）';
+ if(localSavePending||Boolean(persistTimer))return '端末：保存待ち・保存確認中';
+ return storageStatus==='IndexedDB'?'端末：保存済み（IndexedDB）':
+  storageStatus==='localStorage（代替保存）'?'端末：保存済み（代替保存）':
+  '端末：'+String(storageStatus);
+}
+async function save(localOnly=false){
+ if(!canEditNow())return false;
+ const data=deepCopy(model),key=scopedStorageKey(),snapshot=JSON.stringify(data);
+ localSavePending=true;updateLocalSaveIndicator();
+ const recorded=()=>{
+  // The model can change while IndexedDB writes. Only show "saved" when
+  // the exact visible snapshot (and owner scope) still matches.
+  const same=scopedStorageKey()===key&&JSON.stringify(model)===snapshot;
+  localSavePending=!same;
+  updateLocalSaveIndicator();
+  if(!same&&!persistTimer&&canEditNow())saveLater();
+  if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}
+  return true;
+ };
+ try{
+  if(db){await idbPut(db,data,key);storageStatus='IndexedDB';return recorded();}
+  localStorage.setItem(key,snapshot);storageStatus='localStorage（代替保存）';return recorded();
+ }catch(e){
+  console.error(e);
+  try{
+   localStorage.setItem(key,snapshot);db=null;
+   storageStatus='localStorage（代替保存）';return recorded();
+  }catch{
+   storageStatus='保存できない環境';localSavePending=true;
+   updateLocalSaveIndicator();
+   toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);
+   return false;
+  }
+ }
+}
+function saveLater(){
+ if(!canEditNow())return;
+ localSavePending=true;updateLocalSaveIndicator();
+ clearTimeout(persistTimer);
+ persistTimer=setTimeout(()=>{persistTimer=0;void save();},350);
+}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id||(id==='manage'&&['cloud','files'].includes(tab))?'selected':''}" ${tab===id||(id==='manage'&&['cloud','files'].includes(tab))?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function renderDutySaveStatus(){
  const shift=getShift()||selectedShift();
  const cloud=memberDiary()?syncUI.dutySyncStatus(shift):{state:'legacy',label:'Firestoreには未確認（現在の原本はGoogle Sheets）',revision:null};
  const date=shift?safeText(shift.date||'日付不明')+'／'+safeText(shift.id):'対象の日報なし';
- const local=storageStatus==='IndexedDB'?'端末内保存：IndexedDB':storageStatus==='localStorage（代替保存）'?'端末内保存：代替保存':
-  storageStatus==='保存できない環境'?'端末保存失敗':'端末保存：'+safeText(storageStatus);
+ const local=localSaveLabel();
  return '<section class="card" style="padding:12px 16px" aria-label="日報の保存状態"><div style="font-weight:800;margin-bottom:4px">日報の保存状態</div>'+
  '<div class="caption-note" style="overflow-wrap:anywhere">対象：'+date+'</div>'+
- '<div class="caption-note">'+local+'（Firestore保存とは別です）</div>'+
+ '<div class="caption-note" data-local-save-status>'+safeText(local)+'（Firestore保存とは別です）</div>'+
  '<div role="status" class="'+(cloud.state==='confirmed'?'panel-strip':cloud.state==='unknown'||cloud.state==='conflict'?'danger-note':'warn')+'" style="margin:8px 0 0;padding:9px 11px">Firestore：'+safeText(cloud.label)+'</div></section>';
 }
 function header(){
