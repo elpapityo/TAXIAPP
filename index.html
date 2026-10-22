@@ -4189,6 +4189,80 @@ async function exitAdminFirestorePreview(){
   toast('旧Google画面への復帰を確認できません：'+String(error?.message||error),true);
  }finally{adminCutoverBusy=false;render();}
 }
+// Explicit one-duty Google -> personal Firestore transfer, separate from a save-target switch.
+let legacyOctoberMigrationBusy=false,legacyOctoberMigrationMessage='';
+async function migrateOctober16GoogleDuty(){
+ if(legacyOctoberMigrationBusy||!legacyDiary()||!currentLoginScope?.admin||
+    !canEditNow()||!googleIsConfigured()||TAXIAPP_PRINT_VIEWER_MODE)return;
+ const id='shift-1792134600000',date='2026-10-16';
+ const scope=currentLoginScope,uid=accountScope.uid,generation=accountScopeGeneration;
+ const stable=()=>scope===currentLoginScope&&generation===accountScopeGeneration&&
+   uid===accountScope.uid&&scope.uid===uid&&legacyDiary()&&canEditNow()&&
+   scope.firebase?.auth?.currentUser?.uid===uid;
+ if(!stable())return;
+ if(!confirm('10月16日のGoogle日報1乗務だけを本人Firestoreにコピーします。\\n'+
+   '乗務ID：'+id+'\\n既存のGoogle原本は削除しません。続けますか？'))return;
+ legacyOctoberMigrationBusy=true;
+ legacyOctoberMigrationMessage='10月16日の原本を確認中…';render();
+ try{
+  const response=await googlePostRequest('syncGet',{shiftId:id});
+  if(!stable())throw Error('本人認証・操作端末が変更されました');
+  const row=response?.data,shift=row?.shift;
+  if(row?.id!==id||shift?.id!==id||shift?.date!==date||
+     !Number.isSafeInteger(Number(row.revision))||Number(row.revision)<1||
+     !Array.isArray(shift.records)||!shift.settings||
+     !(shift.endedAt||shift.endedIso))
+   throw Error('Google原本の乗務ID・日付・更新番号・入庫状態を照合できません');
+  const snapshot=JSON.stringify(shift);
+  const backup=JSON.stringify({uid,id,googleRevision:Number(row.revision),shift});
+  const backupKey='taxiapp-legacy-one-duty-recovery-v1-'+uid+'-'+id;
+  localStorage.setItem(backupKey,backup);
+  if(localStorage.getItem(backupKey)!==backup)
+   throw Error('移行前の端末バックアップを検証できません');
+  download(backup,'TAXIAPP_20261016_Firestore移行前.json','application/json;charset=utf-8');
+  if(!confirm('10月16日の復旧用JSONファイルを保存できましたか？\\n確認後にFirestoreへ送信します。'))
+   return;
+  // Re-fetch immediately before any write: never migrate a stale Google revision.
+  const fresh=(await googlePostRequest('syncGet',{shiftId:id}))?.data;
+  if(!stable())throw Error('操作権が変更されました');
+  if(fresh?.id!==id||Number(fresh.revision)!==Number(row.revision)||
+     JSON.stringify(fresh.shift)!==snapshot)
+   throw Error('移行準備中にGoogle原本が変わりました。転送を停止します');
+  const packet=googleShiftPacket(shift);
+  packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  const expected=JSON.stringify(packet.shift);
+  const staging=window.TAXIAPP_ACCOUNT_DIARY.create();
+  staging.bind({uid},{...scope.firebase,admin:true,storageBackend:'firestore'});
+  if(!staging.ready())throw Error('本人Firestoreに接続できません');
+  const listing=await staging.request('syncList',{});
+  if(!stable()||!Array.isArray(listing?.shifts))
+   throw Error('Firestore原本一覧を確認できません');
+  const found=listing.shifts.find(s=>s.id===id);
+  if(found?.deleted)throw Error('移行先に削除済み記録があります。再作成しません');
+  if(found){
+   const existing=await staging.request('syncGet',{shiftId:id});
+   if(!stable()||JSON.stringify(existing?.shift)!==expected)
+    throw Error('Firestore側に異なる同一乗務IDがあります。上書きしません');
+   legacyOctoberMigrationMessage='10月16日の原本はFirestoreと内容一致を確認済み（上書きなし）';
+   return;
+  }
+  const sent=await staging.request('syncPut',{baseRevision:0,payload:JSON.stringify(packet)});
+  if(!stable())throw Error('送信後に認証状態が変わりました。再送せず確認してください');
+  if(sent?.id!==id||Number(sent.revision)!==1)
+   throw Error('Firestoreの保存結果が不明です。再送せず原本を確認してください');
+  const verified=await staging.request('syncGet',{shiftId:id});
+  if(!stable()||verified?.id!==id||Number(verified.revision)!==1||
+     JSON.stringify(verified.shift)!==expected)
+   throw Error('Firestoreの読戻し内容が一致しません。Google原本を保護します');
+  legacyOctoberMigrationMessage='10月16日のFirestore保存・読戻し確認済み（Google原本も保持）';
+ }catch(error){
+  legacyOctoberMigrationMessage='移行保留：'+String(error?.message||error);
+  toast(legacyOctoberMigrationMessage,true);
+ }finally{
+  legacyOctoberMigrationBusy=false;
+  if(stable())render();
+ }
+}
 async function startAdminFirestoreCutover(){
  if(adminCutoverBusy)return;
  if(!currentLoginScope?.admin||!legacyDiary()||!canEditNow()){
@@ -4420,7 +4494,9 @@ function renderCloudManagement(){
   '<p class="warn">現行原本はGoogle Sheetsです。Firestore取得欄に表示されなくても、Google日報の保存・PC印刷には影響しません。</p>'+ '<p class="caption-note">旧Google原本は無断移行しません。過去日報の閲覧は下のボタンから行えます。</p>'+ '<button class="btn" type="button" data-tab="history">端末にある過去日報を確認</button>'+ 
   '<label class="field">Google原本の乗務IDを指定（1件取得）<input class="control" type="text" id="legacyGoogleHistoryId" maxlength="100" placeholder="shift-…"></label>'+ 
   '<button class="btn" type="button" data-action="legacyGoogleHistoryLoad" '+(legacyHistoryBusy?'disabled':'')+'>旧Google原本を開く</button>'+ 
-  '<p class="caption-note">'+safeText(legacyHistoryMessage)+'</p></section>';
+  '<p class="caption-note">'+safeText(legacyHistoryMessage)+'</p>'+ 
+  '<div class="actions"><button class="btn" type="button" data-action="migrateOctober16GoogleDuty" '+(legacyOctoberMigrationBusy?'disabled':'')+'>10月16日の1乗務をFirestoreへ移行</button></div>'+ 
+  '<p class="caption-note" role="status">'+safeText(legacyOctoberMigrationMessage)+'</p></section>';
  return titleBlock('クラウド日報管理','CLOUD DIARY','本人UIDの日報を必要な日付だけ取得します。')+
   managementSubNav()+filter+(memberDiary()?syncUI.privateDiaryPanel():'');
 }
@@ -5075,6 +5151,7 @@ function handleAction(action,id){
  }
  if(action==='saveHistoryLocationEdit'){void commitHistoryLocationEdit();return;}
  if(action==='cancelHistoryLocationEdit'){discardHistoryLocationEdit();return;}
+ if(action==='migrateOctober16GoogleDuty'){void migrateOctober16GoogleDuty();return;}
  if(action==='legacyGoogleHistoryLoad'){
   const id=String(document.getElementById('legacyGoogleHistoryId')?.value||'').trim();
   void loadLegacyHistoryById(id);return;
