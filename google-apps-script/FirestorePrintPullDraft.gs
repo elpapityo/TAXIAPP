@@ -3,16 +3,17 @@
  * Add to existing Apps Script only after explicit production authorization.
  * The existing doPost and legacy savePacket_ are unchanged for legacy calls.
  *
- * The running Google identity must already have strictly controlled Firestore
- * read IAM rights. ScriptApp OAuth token is used; NO exported service key and
- * NO anonymous Web App / shared-key Firestore proxy.
+ * The logged-in OWNER sends a short-lived Firebase Authentication ID token
+ * from the PC TAXIAPP. Firestore Security Rules enforce request.auth.uid.
+ * No Google IAM Firestore read role, service account or ScriptApp OAuth token.
+ * Existing GAS write key alone NEVER authorizes a Firestore read.
  *
  * Required Script Properties (never hardcode or print values):
  *  TAXIAPP_FIRESTORE_PROJECT_ID : Firebase project ID
  *  TAXIAPP_FIRESTORE_OWNER_UID  : authenticated owner's UID, pinned once
  *
- * OAuth scope datastore is required; configuration, app redeploy, grants,
- * original migration and real-print write all await owner approval.
+ * The existing GAS project must allow UrlFetchApp to call Firestore REST.
+ * Deployment, Script Properties and print-source writes await owner approval.
  */
 var TAXIAPP_FIRESTORE_PRINT_URI='https://firestore.googleapis.com/v1/';
 function firestorePrintConfigDraft_(){
@@ -25,11 +26,13 @@ function firestorePrintConfigDraft_(){
   throw Error('Firestoreのプロジェクトと本人UIDが未設定です');
  return {project:project,uid:uid};
 }
-function firestorePrintRestDraft_(cfg,subpath){
- if(typeof ScriptApp==='undefined'||typeof UrlFetchApp==='undefined')
-  throw Error('Google OAuthまたはFirestore読取権限がありません');
- var token=ScriptApp.getOAuthToken();
- if(!token)throw Error('Google認証トークンがありません');
+function firestorePrintRestDraft_(cfg,subpath,idToken){
+ // Never fall back to Google OAuth/IAM: it can read another person's duty.
+ // A Firebase ID token must be supplied for EVERY Firestore request.
+ if(typeof UrlFetchApp==='undefined'||typeof idToken!=='string'||
+    idToken.length<100||idToken.length>8192||idToken.split('.').length!==3)
+  throw Error('本人のFirebase認証がありません。PCのTAXIAPPから再取込してください');
+ var token=idToken;
  var base='projects/'+encodeURIComponent(cfg.project)+'/databases/(default)/documents/';
  var res=UrlFetchApp.fetch(TAXIAPP_FIRESTORE_PRINT_URI+base+subpath,{
   method:'get',headers:{Authorization:'Bearer '+token},muteHttpExceptions:true
@@ -65,11 +68,11 @@ function firestorePrintDecodeDraft_(v,depth){
  }
  throw Error('Firestoreの未対応データ型です');
 }
-function firestorePrintDocDraft_(cfg,id){
+function firestorePrintDocDraft_(cfg,id,idToken){
  if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(id||'')))
   throw Error('印刷する乗務IDが不正です');
  var path='privateDuties/'+encodeURIComponent(cfg.uid)+'/shifts/'+encodeURIComponent(id);
- var doc=firestorePrintRestDraft_(cfg,path);
+ var doc=firestorePrintRestDraft_(cfg,path,idToken);
  var expectedName='projects/'+cfg.project+'/databases/(default)/documents/'+path;
  if(String(doc.name||'')!==expectedName)
   throw Error('Firestoreの本人UID・乗務ID・プロジェクトが取得先と一致しません');
@@ -94,15 +97,15 @@ function firestorePrintDocDraft_(cfg,id){
  return {revision:data.revision,id:id,packet:packet};
 }
 /** Manual PC operation only. Never registered in public doPost. */
-function firestorePrintSelectedDutyDraft_(id,expectedDate){
+function firestorePrintSelectedDutyDraft_(id,expectedDate,idToken){
  var cfg=firestorePrintConfigDraft_();
- var first=firestorePrintDocDraft_(cfg,id);
+ var first=firestorePrintDocDraft_(cfg,id,idToken);
  if(expectedDate&&first.packet.shift.date!==expectedDate)
   throw Error('日付指定した乗務と取得したFirestore原本の日付が一致しません');
  var lock=LockService.getScriptLock();
  if(!lock.tryLock(25000))throw Error('別の印刷転送が実行中です');
  try{
-  var current=firestorePrintDocDraft_(cfg,id);
+  var current=firestorePrintDocDraft_(cfg,id,idToken);
   if(current.revision!==first.revision||
      JSON.stringify(first.packet)!==JSON.stringify(current.packet))
    throw Error('印刷転送中にFirestore原本が更新されました');
@@ -111,7 +114,7 @@ function firestorePrintSelectedDutyDraft_(id,expectedDate){
   return savePacket_(current.packet,{firestorePrintOnly:true,
    firestoreRevision:current.revision,firestoreOwnerUid:cfg.uid,
    verifyCurrentSource:function(){
-    var beforeIndex=firestorePrintDocDraft_(cfg,id);
+    var beforeIndex=firestorePrintDocDraft_(cfg,id,idToken);
     if(beforeIndex.revision!==current.revision||
        JSON.stringify(beforeIndex.packet)!==JSON.stringify(current.packet))
      throw Error('印刷元の公開直前にFirestore原本が更新されました。転送を停止します');
@@ -122,12 +125,12 @@ function firestorePrintSelectedDutyDraft_(id,expectedDate){
  * No sheet reads/writes and no changes to B15/B17/C17. Date filtering is only
  * for the explicit PC menu, never for app startup or phone synchronization.
  */
-function firestorePrintCandidatesDraft_(){
+function firestorePrintCandidatesDraft_(idToken){
  var cfg=firestorePrintConfigDraft_();
  var path='privateDuties/'+encodeURIComponent(cfg.uid)+'/shifts';
  var token='',seen={},candidates=[];
  for(var page=0;page<10;page++){
-  var response=firestorePrintRestDraft_(cfg,path+'?pageSize=100'+(token?'&pageToken='+encodeURIComponent(token):''));
+  var response=firestorePrintRestDraft_(cfg,path+'?pageSize=100'+(token?'&pageToken='+encodeURIComponent(token):''),idToken);
   (response.documents||[]).forEach(function(doc){
    var prefix='projects/'+cfg.project+'/databases/(default)/documents/privateDuties/'+cfg.uid+'/shifts/';
    var name=String(doc.name||'');
@@ -179,6 +182,7 @@ function firestorePrintDateChoicesDraft_(date){
  return items;
 }
 function firestorePrintDateMenuDraft_(){
+ throw Error('安全のためGoogleシート単独からのFirestore読取を廃止しました。PCのTAXIAPPで本人ログインし、営業履歴から取込してください');
  var ui=SpreadsheetApp.getUi();
  var entry=ui.prompt('Firestore印刷用の乗務日','YYYY-MM-DD形式で入力してください。例：2026-10-22',ui.ButtonSet.OK_CANCEL);
  if(entry.getSelectedButton()!==ui.Button.OK)return;
@@ -206,16 +210,21 @@ function firestorePrintDateMenuDraft_(){
 /** Separate PC menu; does NOT override or replace existing onOpen macros. */
 function firestorePrintMenuDraft_(){
  SpreadsheetApp.getUi().createMenu('TAXIAPP Firebase取込')
-  .addItem('日付・乗務を選んで取込','firestorePrintDateMenuDraft_')
-  .addItem('Firestoreの最新乗務を取込','firestorePrintLatestMenuDraft_')
-  .addItem('選択済み乗務を取込・更新（印刷元4シート）','firestorePrintChosenMenuDraft_')
+  .addItem('取込手順：PCのTAXIAPPから行う','firestorePrintInstructionsDraft_')
   .addToUi();
 }
+function firestorePrintInstructionsDraft_(){
+ SpreadsheetApp.getUi().alert('本人Firestore印刷取込',
+  'PCでTAXIAPPに本人ログイン → 営業履歴 → 日付を指定してFirestoreから取得 → 対象乗務の「Google補助簿へ転送」を実行してください。取込後はこのシートのB15/B17で乗務を選びます。GoogleのIAMで全利用者の日報を読む権限は使いません。',
+  SpreadsheetApp.getUi().ButtonSet.OK);
+}
 function firestorePrintLatestMenuDraft_(){
+ throw Error('Google IAMで原本を取得しません。PCのTAXIAPPで本人ログインして取込してください');
  var result=firestorePrintLatestDutyDraft_();
  SpreadsheetApp.openById(TAXIAPP_SHEET_ID).toast(result,'Firebase印刷取込',8);
 }
 function firestorePrintChosenMenuDraft_(){
+ throw Error('Google IAMで原本を取得しません。PCのTAXIAPPで本人ログインして取込してください');
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var operation=ss.getSheetByName('TAXIAPP_印刷操作');
  if(!operation)throw Error('既存の印刷操作シートがありません');

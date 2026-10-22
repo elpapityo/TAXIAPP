@@ -106,8 +106,25 @@ function doPost(e) {
   var key=PropertiesService.getScriptProperties().getProperty('TAXIAPP_WRITE_KEY');
   if(!key||String(params.key||'')!==key)throw Error('接続キーが違います');
   var action=String(params.action||'');
-  if(['syncList','syncGet','syncPut','syncTrash','syncRestore','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore'].indexOf(action)<0&&action!=='sync')
+  if(['syncList','syncGet','syncPut','syncTrash','syncRestore','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore','firestorePrintImport'].indexOf(action)<0&&action!=='sync')
    throw Error('未対応の処理です');
+  if(action==='firestorePrintImport'){
+   // Dedicated PC operation: existing shared key plus owner's Firebase ID
+   // token. The token is not retained; Firestore rules enforce the UID.
+   var id=String(params.shiftId||'');
+   if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))
+    throw Error('転送する乗務IDが不正です');
+   var date=String(params.date||'');
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))
+    throw Error('指定した乗務日が不正です');
+   var token=String(params.firebaseIdToken||'');
+   if(token.length<100||token.length>8192||token.split('.').length!==3)
+    throw Error('本人のFirebase認証がありません');
+   if(typeof firestorePrintSelectedDutyDraft_!=='function')
+    throw Error('Firestoreの本人専用印刷取込コードを導入してください');
+   var result=firestorePrintSelectedDutyDraft_(id,date,token);
+   return replyToPhone_(nonce,true,result,{id:id,date:date},audience);
+  }
   var lock=LockService.getScriptLock();
   if(!lock.tryLock(25000))throw Error('別の同期を処理中です');
   try{
@@ -601,31 +618,21 @@ function applySelectedPrintShift() {
   // A stale C17 formula must never confirm a different duty on paper.
   if(String(operation.getRange('C17').getDisplayValue()||'').trim()!==id)
    throw Error('印刷対象IDの式と選択中の乗務が一致しません');
-  var verified=firestorePrintDocDraft_(firestorePrintConfigDraft_(),id);
-  shift=verified.packet.shift;
-  expected=Number(verified.packet.summary.meter);
-  if(!Number.isFinite(expected)||Number(matching[0][7])!==shift.records.length)
-   throw Error('Firestoreの印刷件数・金額を確認できません');
-  // A correction can change individual rides without changing the meter sum
-  // or count. Compare the source timestamp already copied into print index P.
-  var sourceAt=new Date(String(verified.packet.printRecordedAt||''));
-  if(!Number.isFinite(sourceAt.getTime())||
-     String(matching[0][15]||'').trim()!==Utilities.formatDate(sourceAt,'Asia/Tokyo','yyyy-MM-dd HH:mm:ss'))
-   throw Error('Firestore原本の更新日時と印刷元が一致しません。再取込内容を確認してください');
+  // The Google Sheets UI has no Firebase login token. Confirm only the
+  // explicitly imported, owner-authorized print source and its version journal.
+  // Newer Firestore edits require a deliberate PC TAXIAPP re-import.
+  if(typeof firestorePrintVerifyPublishedDraft_!=='function')
+   throw Error('本人Firestore印刷元の版管理を確認できません');
+  var published=firestorePrintVerifyPublishedDraft_(ss,id);
+  shift={id:id,date:published.date,records:Array(published.records).fill(null)};
+  expected=published.meter;
+  if(!Number.isFinite(expected)||Number(matching[0][7])!==published.records)
+   throw Error('取り込んだ印刷元の件数・金額が一致しません');
+  // The journal checks every cell in the four print-source sheets.
+  // The Google Sheet alone cannot claim that Firestore has not changed;
+  // the PC must re-import the latest revision before confirming print.
   if(Number(matching[0][8])!==expected)
-   throw Error('Firestore印刷元のメーター売上が原本と一致しません');
-  // Count, totals and second-resolution timestamps cannot prove that
-  // corrected pickup/payment/highway details are the same. Use the SAME
-  // savePacket_ projection in read-only mode, never a new fare calculator.
-  if(typeof firestorePrintVerifyRowsDraft_!=='function')
-   throw Error('Firestore印刷元の明細照合が未設定です。印刷を停止しました');
-  savePacket_(verified.packet,{firestorePrintOnly:true,verifyFirestorePrintOnly:true});
-  // A second edit can commit during the read-only four-sheet comparison.
-  // Do not confirm an obsolete snapshot just because it matched the sheets.
-  var again=firestorePrintDocDraft_(firestorePrintConfigDraft_(),id);
-  if(again.revision!==verified.revision||
-     JSON.stringify(again.packet)!==JSON.stringify(verified.packet))
-   throw Error('印刷確認中にFirestore原本が更新されました。印刷を停止します');
+   throw Error('本人認証済み印刷元のメーター売上が一致しません');
  }
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');

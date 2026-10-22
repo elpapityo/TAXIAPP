@@ -390,3 +390,33 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
  return {id:shiftId,changedSheets:plans.filter(function(p){return p.rows.length;})
   .map(function(p){return p.name;}),oldOriginalUnchanged:true,paperFormsUnchanged:true};
 }
+
+
+/** Verify a previously imported duty WITHOUT Google IAM or Firebase bearer.
+ * Only confirms the exact four-sheet state saved after owner-authorized pull.
+ * It does not claim that this is Firestore's current revision.
+ */
+function firestorePrintVerifyPublishedDraft_(ss,id){
+ var cfg=firestorePrintConfigDraft_();
+ var journal=firestorePrintJournalDraft_(cfg.uid,id);
+ if(!journal.record||journal.record.state!=='ready')
+  throw Error('この乗務は本人Firebase認証で未取込です。PCのTAXIAPPで転送してください');
+ var order=['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計','TAXIAPP_乗務一覧'];
+ var batches=order.map(function(name){return {
+  name:name,width:TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name].length,rows:[]
+ };});
+ var snapshot=firestorePrintSnapshotDraft_(ss,id,batches);
+ var digest=firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(snapshot));
+ if(digest!==journal.record.digest)
+  throw Error('本人認証後に印刷元が変更されています。再取込まで印刷確認を停止します');
+ var index=snapshot[3].rows;
+ if(index.length!==1||String(index[0][0])!==id||
+    String(index[0][16])!=='Firestore印刷済')
+  throw Error('本人Firestore印刷元の乗務一覧を確認できません');
+ var item=index[0],records=Number(item[7]),meter=Number(item[8]);
+ if(!Number.isSafeInteger(records)||records<0||records>60||
+    !Number.isFinite(meter))
+  throw Error('印刷元の件数またはメーター売上が不正です');
+ return {id:id,date:String(item[1]),records:records,meter:meter,
+  revision:journal.record.revision};
+}
