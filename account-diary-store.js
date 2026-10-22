@@ -109,10 +109,10 @@ function create(){
     throw Error('過去日報の取得日付が不正です');
    // Date-scoped Firestore query: do not load old duties into the local
    // working model, and never open another account's collection.
-   const query=typeof c.f.query==='function'&&typeof c.f.where==='function'?
-    c.f.query(collectionRef(c),c.f.where('shift.date','==',date)):
-    collectionRef(c);
-   const snapshot=await c.f.getDocsFromServer(query);
+   if(typeof c.f.query!=='function'||typeof c.f.where!=='function')
+    throw Error('指定日のFirestore取得機能を利用できません。全日報の取得は行わず保留します');
+   const dateQuery=c.f.query(collectionRef(c),c.f.where('shift.date','==',date));
+   const snapshot=await c.f.getDocsFromServer(dateQuery);
    ownerCheck(c);
    const seen=new Set(),rows=[];
    for(const doc of snapshot.docs){
