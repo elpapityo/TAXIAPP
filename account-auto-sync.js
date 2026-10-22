@@ -9,6 +9,12 @@ root.TAXIAPP_ACCOUNT_AUTO={
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
   let deviceSession=null,viewerLogin=false,explicitWriterLogin=false;
+  // A dedicated print session may READ its own duties but never take over
+  // the Galaxy's last-login-wins writerSessionId.
+  const printViewerMode=(()=>{
+   try{return new URLSearchParams(root.location.search).get('printViewer')==='1';}
+   catch{return false;}
+  })();
   let deferredWhileEditing=false;
   let busy=false,again=false,timer=null,booted=false;
   // A single per-UID session listener revokes old editors.
@@ -26,7 +32,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(signOut)signOut.hidden=!user;
    if(signOut)signOut.disabled=!user;
    const takeOver=$('accountTakeOver');
-   if(takeOver)takeOver.hidden=!user||!enabled||deviceSession?.state()!=='viewer';
+   if(takeOver)takeOver.hidden=printViewerMode||!user||!enabled||deviceSession?.state()!=='viewer';
   }
   function currentPrefs(){return api.extract(deps.getModel()).prefs;}
   function readBase(){
@@ -210,7 +216,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
     baseline=readBase();
     localSignature=api.signature(currentPrefs());
     status('ログイン済み：操作端末を確認しています');
-    await deviceSession.begin(next,{viewer:false,claimOnLogin:explicitWriterLogin});
+    await deviceSession.begin(next,{
+     viewer:printViewerMode,claimOnLogin:!printViewerMode&&explicitWriterLogin
+    });
     viewerLogin=false;explicitWriterLogin=false;
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
@@ -223,13 +231,14 @@ root.TAXIAPP_ACCOUNT_AUTO={
    }
    $('accountSignIn')?.addEventListener('click',async()=>{
     if(!auth){status('ログイン機能を読み込み中です…');return;}
-    viewerLogin=false;explicitWriterLogin=true;
+    viewerLogin=printViewerMode;explicitWriterLogin=!printViewerMode;
     try{
      await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
-     if(deviceSession?.state()==='viewer')await deviceSession.claim();
+     if(!printViewerMode&&deviceSession?.state()==='viewer')await deviceSession.claim();
     }catch(e){status('ログイン失敗：'+String(e.code||e.message||e));}
    });
    $('accountTakeOver')?.addEventListener('click',()=>{
+    if(printViewerMode)return;
     explicitWriterLogin=true;
     if(!enabled){status('利用者登録を確認できないため操作権を取得できません');return;}
     deviceSession?.claim().catch(e=>status('切替失敗：'+String(e.message||e)));

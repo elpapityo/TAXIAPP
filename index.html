@@ -1303,6 +1303,11 @@ window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 // 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
 const ADMIN_FIRESTORE_CUTOVER_ENABLED=false; // Default legacy: only an individually verified opt-in is allowed.
+// Print-only PC mode does not claim this UID's active phone editing session.
+const TAXIAPP_PRINT_VIEWER_MODE=(()=>{
+ try{return new URLSearchParams(window.location.search).get('printViewer')==='1';}
+ catch{return false;}
+})();
 const ADMIN_FIRESTORE_PREF_PREFIX='taxiapp-admin-firestore-optin-v1-';
 // Opt-in development mode on localhost only. Production backend stays legacy.
 const ADMIN_FIRESTORE_PREVIEW_AVAILABLE=(()=>{
@@ -1634,7 +1639,8 @@ async function switchAccountScope(scope){
   ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
   scope.uid===adminFirestorePreviewOwnerUid);
  const adminFirestore=Boolean(scope?.admin&&
-  (adminFirestorePreview||ADMIN_FIRESTORE_CUTOVER_ENABLED||adminFirestoreManifest(scope.uid)));
+  (adminFirestorePreview||ADMIN_FIRESTORE_CUTOVER_ENABLED||
+   adminFirestoreManifest(scope.uid)||TAXIAPP_PRINT_VIEWER_MODE));
  accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined}:{});
  accountScope=scope?{kind:scope.admin&&!adminFirestore?'legacy':'member',uid:scope.uid,
   adminFirestore,adminFirestorePreview}:{kind:'pending',uid:''};
@@ -2209,10 +2215,10 @@ function firestorePrintPcPanel(shift,date){
   historyCloudDate===date&&historyCloudRows.some(row=>
    row.id===shift.id&&row.shift?.date===date&&
    Boolean(row.shift?.endedAt||row.shift?.endedIso)));
- const ready=verified&&deviceMode==='writer'&&!writerLoadGate&&
+ const ready=verified&&TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
   googleWebAppUrl(prefs.webAppUrl)&&prefs.writeKey.length>=24;
  return '<section class="card"><h2 class="h2">PCからGoogle補助簿へ転送（本人Firestore）</h2>'+
-  '<p class="helper">PCのこのTAXIAPPへ管理者本人でログインし、上の「クラウドからこの日付を取得」で入庫済み日報を選んでください。'+
+  '<p class="helper">PC印刷専用モードではGalaxyの営業入力権を引き継がず、管理者本人のFirestore原本を読取ります。上の「クラウドからこの日付を取得」で入庫済み日報を選んでください。'+
   'Googleに他の利用者の日報閲覧権限は付与しません。印刷する乗務の選択はGoogleシートのB15/B17で従来どおり行います。</p>'+
   '<label class="field"><span class="field-label">Google Apps Scriptの /exec URL（このPCのみ保存）</span>'+
   '<input class="control" type="url" data-firestore-print-setting="webAppUrl" value="'+safeText(prefs.webAppUrl)+'" placeholder="https://script.google.com/macros/s/.../exec"></label>'+
@@ -2221,6 +2227,8 @@ function firestorePrintPcPanel(shift,date){
   '<p class="caption-note">送信対象：'+safeText(verified?
     date+'／出庫 '+String(shift.startedAt||'不明')+'／'+shift.records.length+'件':
     '日付を指定してFirestoreから入庫済みの日報を取得してください')+'</p>'+
+  '<p class="caption-note">'+(TAXIAPP_PRINT_VIEWER_MODE?'現在：PC印刷専用（閲覧のみ）':
+   'PCでは https://elpapityo.github.io/TAXIAPP/?printViewer=1 を開いて本人ログインしてください。')+'</p>'+
   '<button type="button" class="btn primary" data-action="firestorePrintToGoogle" '+(ready?'':'disabled')+
   '>選択した日報をGoogle補助簿の4印刷元に転送・改版更新</button>'+
   (firestorePrintPcMessage?'<p class="caption-note" role="status">'+safeText(firestorePrintPcMessage)+'</p>':'')+
@@ -2228,12 +2236,13 @@ function firestorePrintPcPanel(shift,date){
   '</section>';
 }
 async function firestorePrintToGoogle(){
- if(!accountScope.adminFirestore||accountScope.adminFirestorePreview||
-    !currentLoginScope?.admin||!canEditNow()||writerLoadGate)return;
+ if(!TAXIAPP_PRINT_VIEWER_MODE||!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    !currentLoginScope?.admin||deviceMode!=='viewer'||!accountDiary.ready())return;
  const scope=currentLoginScope,uid=accountScope.uid,generation=accountScopeGeneration;
  const stable=()=>currentLoginScope===scope&&accountScopeGeneration===generation&&
   accountScope.uid===uid&&accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
-  scope.firebase?.auth?.currentUser?.uid===uid&&canEditNow();
+  scope.firebase?.auth?.currentUser?.uid===uid&&
+  deviceMode==='viewer'&&accountDiary.ready();
  const shift=selectedHistoryShift(),date=historyDate||selectedShift()?.date||dateStamp();
  const row=historyCloudRows.find(item=>item.id===shift?.id&&
   item.shift?.date===date&&Boolean(item.shift?.endedAt||item.shift?.endedIso));
@@ -2255,7 +2264,7 @@ async function firestorePrintToGoogle(){
   if(!stable())return;
   if(typeof token!=='string'||token.split('.').length!==3)
    throw Error('Firebaseログインを確認できません');
-  const reply=await googlePostRequest('firestorePrintImport',{
+  const reply=await firestorePrintGooglePostRequest({
    shiftId:row.id,date,firebaseIdToken:token
   },prefs);
   if(!stable())return;
@@ -3252,15 +3261,24 @@ function googleShiftPacket(shift){
 // POST through a hidden form avoids browser CORS restrictions on Apps Script Web Apps.
 // The receiver returns an HTML acknowledgement via postMessage; opaque fetch success
 // is NEVER treated as evidence that records reached Google Sheets.
-function googlePostRequest(action,fields={},printBridge=null){
- const ownerPrint=action==='firestorePrintImport'&&
-  Boolean(accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
-   currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&printBridge);
- if(!ownerPrint&&!legacyDiary())
-  return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
+function googlePostRequest(action,fields={}){
+ if(!legacyDiary())return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
+ if(action==='firestorePrintImport')return Promise.reject(Error('本人Firestore転送はPC印刷専用画面から行ってください'));
  if(!canEditNow()&&!['syncList','syncGet'].includes(action))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
- const endpoint=ownerPrint?googleWebAppUrl(printBridge.webAppUrl):googleWebAppUrl(sheetTargetPrefs().webAppUrl);
- const key=ownerPrint?String(printBridge.writeKey||''):googleWriteKey();
+ const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
+ return postGoogleBridge_(action,fields,endpoint,key);
+}
+function firestorePrintGooglePostRequest(fields,prefs){
+ if(!TAXIAPP_PRINT_VIEWER_MODE||!accountScope.adminFirestore||
+    accountScope.adminFirestorePreview||!currentLoginScope?.admin||
+    currentLoginScope.uid!==accountScope.uid||
+    currentLoginScope.firebase?.auth?.currentUser?.uid!==accountScope.uid||
+    deviceMode!=='viewer'||!accountDiary.ready())
+  return Promise.reject(Error('PC印刷専用の本人認証が必要です'));
+ return postGoogleBridge_('firestorePrintImport',fields,
+   googleWebAppUrl(prefs.webAppUrl),String(prefs.writeKey||''));
+}
+function postGoogleBridge_(action,fields,endpoint,key){
  if(!endpoint||key.length<24)return Promise.reject(Error('WebアプリURLと接続キーを設定してください'));
  const nonce='tx-'+Date.now()+'-'+Math.random().toString(36).slice(2);
  return new Promise((resolve,reject)=>{

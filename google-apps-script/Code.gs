@@ -608,8 +608,8 @@ function applySelectedPrintShift() {
   // Firestore-only duties must never be loaded from the retired Google original.
   // This branch is read-only and uses the application's EXISTING totals.
   if(typeof firestorePrintConfigDraft_!=='function'||
-     typeof firestorePrintDocDraft_!=='function')
-   throw Error('Firestore印刷確認は未設定です。従来の印刷原本は変更しません');
+     typeof firestorePrintVerifyPublishedDraft_!=='function')
+   throw Error('本人Firestore印刷元の版管理は未設定です。旧Google原本は変更しません');
   var index=ss.getSheetByName('TAXIAPP_乗務一覧');
   var rows=index.getLastRow()>1?index.getRange(2,1,index.getLastRow()-1,17).getDisplayValues():[];
   var matching=rows.filter(function(row){return String(row[0]||'').trim()===id;});
