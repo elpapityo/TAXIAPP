@@ -92,9 +92,34 @@ root.TAXIAPP_SYNC_UI=function(d){
     if(!d.configured()||d.prefs().syncMode!=='on')
      throw Error('本人Firestoreの接続と同期設定を確認してください');
     d.onWriterBootstrapStatus?.('本人Firestoreの乗務一覧を確認中…');
-    const listing=await d.request('syncList',{});
-    if(!stable())return false;
-    if(!Array.isArray(listing?.shifts))throw Error('Firestoreの日報一覧を確認できません');
+    const local=[...(d.getModel()?.shifts||[])];
+    const ids=local.map(shift=>String(shift?.id||''));
+    if(ids.some(id=>!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))||
+       new Set(ids).size!==ids.length)
+      throw Error('端末の日報IDに不正または重複があります。原本を保持して照合を停止しました');
+    // Existing phone originals already identify the duties to check. Do not
+    // download every historical Firestore document during this login.
+    // Exceptional unsynced/legacy originals may exceed one duty: check in
+    // bounded batches without deleting or ignoring any of them.
+    const listRows=[];
+    if(ids.length){
+      for(let i=0;i<ids.length;i+=60){
+        const listing=await d.request('syncList',{shiftIds:ids.slice(i,i+60)});
+        if(!stable())return false;
+        if(!Array.isArray(listing?.shifts))
+          throw Error('Firestoreの日報一覧を確認できません');
+        listRows.push(...listing.shifts);
+      }
+    }else{
+      // A new device has no local duty ID. Keep the existing safe discovery
+      // path until a bounded latest-duty lookup is implemented and verified.
+      const listing=await d.request('syncList',{});
+      if(!stable())return false;
+      if(!Array.isArray(listing?.shifts))
+        throw Error('Firestoreの日報一覧を確認できません');
+      listRows.push(...listing.shifts);
+    }
+    const listing={shifts:listRows};
     const seen=new Set();
     for(const row of listing.shifts){
      if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(row?.id||''))||
@@ -102,7 +127,6 @@ root.TAXIAPP_SYNC_UI=function(d){
       throw Error('Firestoreの乗務一覧が不正です');
      seen.add(row.id);
     }
-    const local=[...(d.getModel()?.shifts||[])];
     let selected=local;
     if(!local.length){
      const available=listing.shifts.filter(row=>!row.deleted);
