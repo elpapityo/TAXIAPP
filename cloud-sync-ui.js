@@ -111,12 +111,12 @@ root.TAXIAPP_SYNC_UI=function(d){
         listRows.push(...listing.shifts);
       }
     }else{
-      // A new device has no local duty ID. Keep the existing safe discovery
-      // path until a bounded latest-duty lookup is implemented and verified.
-      const listing=await d.request('syncList',{});
+      // A new device has no local duty ID. Select only the owner's unfinished
+      // duty (or most recent returned duty), never fetch the whole archive.
+      const listing=await d.request('syncList',{resumeOnly:true});
       if(!stable())return false;
       if(!Array.isArray(listing?.shifts))
-        throw Error('Firestoreの日報一覧を確認できません');
+        throw Error('Firestoreの再開候補を確認できません');
       listRows.push(...listing.shifts);
     }
     const listing={shifts:listRows};
