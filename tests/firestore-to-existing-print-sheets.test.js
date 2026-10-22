@@ -1,6 +1,6 @@
 'use strict';
 /* Firestore OWNER original -> existing Sheets 4 sources, synthetic only */
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const load=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const script=[load('google-apps-script/Code.gs'),
  load('google-apps-script/FirestorePrintPullDraft.gs'),
@@ -35,7 +35,8 @@ class FakeSheet{
    getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>data.get(key(r+i,c+j))??'')),
    getFormulas:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>{
      const v=data.get(key(r+i,c+j));return typeof v==='string'&&v[0]==='='?v:'';})),
-   setValues:rows=>{assert.equal(rows.length,n);for(let i=0;i<n;i++){
+   setValues:rows=>{if(syntheticWriteFailure&&syntheticWriteFailure===this.name){syntheticWriteFailure='';throw Error('合成の印刷元書込失敗');}
+    assert.equal(rows.length,n);for(let i=0;i<n;i++){
     assert.equal(rows[i].length,m);for(let j=0;j<m;j++)data.set(key(r+i,c+j),rows[i][j]);}},
    clearContent:()=>{for(let i=0;i<n;i++)for(let j=0;j<m;j++)data.delete(key(r+i,c+j));}
   };
@@ -64,11 +65,13 @@ const payload={format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,shift,updatedAt:'202
 let returnedUid=uid;
 const doc=(which=id,what=payload)=>({name:'projects/'+project+'/databases/(default)/documents/privateDuties/'+returnedUid+'/shifts/'+which,
  fields:Object.fromEntries(Object.entries(what).map(([k,x])=>[k,toField(x)]))});
-const fetches=[];
+const fetches=[],journalStorage=new Map();
+let syntheticWriteFailure='';
 const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
  SpreadsheetApp:{openById:()=>ss},PropertiesService:{getScriptProperties:()=>({
   getProperty:k=>({'TAXIAPP_FIRESTORE_PROJECT_ID':project,
-    'TAXIAPP_FIRESTORE_OWNER_UID':uid})[k]||''
+    'TAXIAPP_FIRESTORE_OWNER_UID':uid})[k]||journalStorage.get(k)||'',
+  setProperty:(k,v)=>journalStorage.set(k,v),deleteProperty:k=>journalStorage.delete(k)
  })},
  ScriptApp:{getOAuthToken:()=> 'synthetic-oauth'},
  UrlFetchApp:{fetch:(url,opts)=>{
@@ -80,7 +83,10 @@ const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
   return {getResponseCode:()=>200,getContentText:()=>JSON.stringify(reply)};
  }},
  LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
- Utilities:{formatDate:()=> '2026-10-21 11:00:00'}};
+ Utilities:{formatDate:()=> '2026-10-21 11:00:00',
+  DigestAlgorithm:{SHA_256:'SHA-256'},Charset:{UTF_8:'UTF-8'},
+  computeDigest:(_algo,value)=>[...crypto.createHash('sha256').update(value).digest()],
+  base64EncodeWebSafe:bytes=>Buffer.from(bytes).toString('base64url')}};
 vm.createContext(ctx);vm.runInContext(script,ctx);
 const original=values.get('TAXIAPP_同期原本').get('2:1');
 const amount=shift.__taxiPrintSummary.cashRemittance;
@@ -127,6 +133,45 @@ assert.throws(()=>ctx.savePacket_(sameSecondEdited,{firestorePrintOnly:true,
  '金額・件数・更新秒が同一でも修正済み原本の古い印刷を停止');
 assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),
  beforeConfirm,'PCの全明細照合は既存4シートにも帳票にも書き込まない');
+// Safe same-ID revised source: never overwrite legacy originals or formulas.
+const journalKey='TAXIAPP_FS_PRINT_REV1_'+uid+'_'+id;
+const initialJournal=JSON.parse(journalStorage.get(journalKey));
+assert.equal(initialJournal.revision,1);
+assert.equal(initialJournal.state,'ready');
+payload.revision=2;
+shift.records[0].raw.AL='【合成】変更後の乗車地';
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'a newer confirmed revision can replace the same ID without duplicate rows');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'【合成】変更後の乗車地');
+assert.equal(values.get('TAXIAPP_同期原本').get('2:1'),original);
+assert.equal(values.get('補助簿印刷用').get('1:1'),'=DO_NOT_CHANGE()');
+assert.equal(values.get('補助簿印刷用_2頁').get('1:1'),'=SECOND_PAGE()');
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:20'),'=DO_NOT_CHANGE_SELECTOR()');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,2);
+const postUpdate=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,'same revision is idempotent');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),postUpdate,
+ 'repeated revision creates no additional rows');
+payload.revision=3;
+shift.records[0].raw.AL='【合成】さらに修正';
+syntheticWriteFailure='TAXIAPP_印刷データ';
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/旧印刷元に戻しました/,
+ 'a partial write failure restores the prior verified source');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'【合成】変更後の乗車地',
+ 'failed revision must not destroy previous printed data');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,2,
+ 'rollback restores the prior revision journal');
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,'retry after safe rollback');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,3);
+const oldPickup=values.get('TAXIAPP_印刷データ').get('2:8');
+values.get('TAXIAPP_印刷データ').set('2:8','第三者の編集');
+payload.revision=4;
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/手動照合/,
+ 'unverified manual edits to old print-source rows must block a new revision');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'第三者の編集');
+values.get('TAXIAPP_印刷データ').set('2:8',oldPickup);
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,4);
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
 returnedUid='anotherSyntheticOwner';
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID・プロジェクト/);
