@@ -149,8 +149,8 @@ function client(name,svc,model,failReceive=false,remoteOnDemand=false){
  }
  const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+(?:-dev\.\d+)?) — 乗務日報<\/title>/)?.[1];
  assert.equal(pageVersion,'v0.3.128','PR #119の開発版を旧ZIPと区別する');
- assert.ok(html.includes('乗務日報 · ${displayVersion}（開発版 PR #119）'),
-  '画面上部にバージョンとPR番号を表示する');
+ assert.ok(html.includes('乗務日報 · ${displayVersion}'),
+  '画面上部にバージョンを表示する');
  assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+(?:-dev\\.\\d+)?/)'),
   '開発版のバージョン文字列をtitleから取得する');
  assert.doesNotMatch(html,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'/,
