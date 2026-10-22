@@ -143,3 +143,55 @@ const d=root.TAXIAPP_SYNC_UI({
  assert.deepEqual(listCalls.flat(),ids,'別UIDや端末にない過去乗務を検索しない');
  console.log('Firestore再ログイン：端末内原本61件だけを分割照合・全履歴取得なし');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+// A fresh phone restores one known server duty. A local edit afterwards must
+// use the read-back revision as CAS rather than becoming a false conflict.
+(async()=>{
+ const shift={id:'shift-1792702000000',date:'2026-10-22',
+  startedIso:'2026-10-22T10:00:00Z',endedAt:'',records:[],settings:{},driver:'元'};
+ const model={shifts:[]},server={revision:4,shift:clone(shift)};
+ let gate=true;
+ const actions=[];
+ const d=root.TAXIAPP_SYNC_UI({
+  getModel:()=>model,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:clone(shift)}),
+  endpoint:()=>'/fresh-phone-uid',scopeKey:()=> 'fresh-phone-uid',
+  remoteOnDemand:()=>true,
+  request:async(action,params={})=>{
+   actions.push({action,params});
+   if(action==='syncList'){
+    if(params.resumeOnly)return {shifts:[{id:shift.id,revision:server.revision,ended:false}]};
+    assert.deepEqual([...params.shiftIds],[shift.id]);
+    return {shifts:[{id:shift.id,revision:server.revision,ended:false}]};
+   }
+   if(action==='syncGet')return {id:shift.id,revision:server.revision,shift:clone(server.shift)};
+   if(action==='syncPut'){
+    assert.equal(params.baseRevision,4,'復元した原本の読戻し更新番号でCASを実施');
+    server.shift=clone(JSON.parse(params.payload).shift);
+    server.revision=5;
+    return {id:shift.id,revision:5,confirmed:true};
+   }
+   throw Error('unexpected '+action);
+  },
+  configured:()=>true,prefs:()=>({syncMode:'on'}),
+  canSync:()=>!gate,canView:()=>false,
+  writerBootstrapAllowed:()=>gate,
+  onWriterSnapshot:async shifts=>{model.shifts=clone(shifts);return true;},
+  onWriterBootstrapReady:()=>{gate=false;},
+  onWriterSynced:async()=>{},
+  setStatus:()=>{},toast:()=>{},dateStamp:()=> '20261022',
+  isSettings:()=>true,root:{querySelector:()=>null}
+ });
+ assert.equal(await d.bootstrapWriter(),true,'入庫前の原本1件を端末へ復旧する');
+ assert.equal(model.shifts.length,1);
+ assert.equal(d.verifiedRevision(shift.id),4,'Firestore読戻し更新番号を端末同期基準へ保持');
+ assert.equal(actions.filter(x=>x.action==='syncPut').length,0,'復旧だけではクラウドを書き換えない');
+ model.shifts[0].driver='修正後';
+ assert.equal(await d.run(false,[shift.id]),true,'新端末で復元した乗務を通常の1乗務CASで更新');
+ assert.equal(server.shift.driver,'修正後');
+ assert.equal(server.revision,5);
+ assert.equal(d.verifiedRevision(shift.id),5);
+ assert.deepEqual(actions.filter(x=>x.action==='syncList').map(x=>Boolean(x.params.resumeOnly)),
+  [true,false],'ログインでは候補限定、変更時には対象ID限定で照合');
+ console.log('Firestore新端末：1乗務復元→保存済み版でCAS更新→読戻し基準を確認');
+})().catch(error=>{console.error(error);process.exitCode=1;});
