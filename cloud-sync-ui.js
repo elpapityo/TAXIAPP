@@ -152,7 +152,9 @@ root.TAXIAPP_SYNC_UI=function(d){
     // Offline or unsent local duties must be retried after sign-in; never
     // assume that a successful login means they reached Firestore.
     local.forEach(shift=>queuedDutyIds.add(shift.id));
-    writerFeedback='本人Firestoreへ接続済み／端末の日報'+(d.getModel()?.shifts?.length||0)+'件を保護';
+    writerFeedback=d.previewFreshOnly?.()?
+     '管理者検証領域を準備済み／Firestoreへの原本保存は未確認':
+     '本人Firestoreへ接続済み／端末の日報'+(d.getModel()?.shifts?.length||0)+'件を保護';
     d.onWriterBootstrapReady?.();
     d.setStatus(writerFeedback);
     if(queuedDutyIds.size)queueSync(400);
