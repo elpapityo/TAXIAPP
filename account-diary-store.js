@@ -136,9 +136,81 @@ function create(){
   });
  }
 
+
+ // Bounded, UID-keyed detail cache. A record is displayed only after a fresh
+ // server metadata check matches BOTH revision and Firestore updateTime.
+ const hotReadCache=new Map();
+ let readDbPromise;
+ function readDb(){
+  if(typeof indexedDB==='undefined')return Promise.resolve(null);
+  if(!readDbPromise)readDbPromise=new Promise((resolve,reject)=>{
+   const req=indexedDB.open('taxiapp-firestore-history-cache-v1',1);
+   req.onupgradeneeded=()=>{
+    const db=req.result;
+    if(!db.objectStoreNames.contains('duties')){
+     const store=db.createObjectStore('duties',{keyPath:'key'});
+     store.createIndex('uid','uid',{unique:false});
+    }
+   };
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>reject(req.error);
+  }).catch(()=>null);
+  return readDbPromise;
+ }
+ async function cacheDuty(c,meta,shift){
+  if(!meta.updateTime)return;
+  const entry={key:c.uid+':'+meta.id,uid:c.uid,id:meta.id,
+   revision:meta.revision,updateTime:meta.updateTime,date:meta.date,
+   shift:validate(shift,meta.id),at:Date.now()};
+  hotReadCache.set(entry.key,entry);
+  const owned=[...hotReadCache.values()].filter(row=>row.uid===c.uid)
+   .sort((a,b)=>b.at-a.at);
+  for(const row of owned.slice(8))hotReadCache.delete(row.key);
+  try{
+   const db=await readDb();if(!db)return;
+   const old=await new Promise((resolve,reject)=>{
+    const tx=db.transaction('duties','readonly');
+    const req=tx.objectStore('duties').index('uid').getAll(c.uid);
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error);
+   });
+   ownerCheck(c);
+   const prune=old.filter(row=>row.key!==entry.key)
+    .sort((a,b)=>b.at-a.at).slice(7);
+   await new Promise((resolve,reject)=>{
+    const tx=db.transaction('duties','readwrite'),store=tx.objectStore('duties');
+    store.put(entry);for(const row of prune)store.delete(row.key);
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+   });
+  }catch{/* Failure to cache cannot change an original or the read result. */}
+ }
+ async function cachedDuty(c,meta){
+  if(!meta.updateTime)return null;
+  const key=c.uid+':'+meta.id;
+  let row=hotReadCache.get(key);
+  if(!row)try{
+   const db=await readDb();
+   if(db)row=await new Promise((resolve,reject)=>{
+    const tx=db.transaction('duties','readonly'),req=tx.objectStore('duties').get(key);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+   });
+  }catch{return null;}
+  ownerCheck(c);
+  if(!row||row.uid!==c.uid||row.id!==meta.id||
+     row.revision!==meta.revision||row.updateTime!==meta.updateTime||
+     row.date!==meta.date||row.shift?.id!==meta.id||
+     row.shift?.date!==meta.date)return null;
+  try{return validate(row.shift,meta.id);}catch{return null;}
+ }
+
  async function request(action,fields={}){
   const c=checked();
   if(action==='syncList'){
+   if(fields.resumeOnly!==true&&fields.shiftIds===undefined){
+    const list=await projectedMetadata(c,null);
+    if(list)return {shifts:list};
+   }
    // Event sync: fetch only the touched duty. Login and manual sync still
    // enumerate all of this user's own shifts.
    const ids=fields.shiftIds;
@@ -253,6 +325,31 @@ function create(){
    // working model, and never open another account's collection.
    if(typeof c.f.query!=='function'||typeof c.f.where!=='function')
     throw Error('指定日のFirestore取得機能を利用できません。全日報の取得は行わず保留します');
+   const light=await projectedMetadata(c,date);
+   if(light){
+    const rows=[];
+    for(const meta of light){
+     ownerCheck(c);
+     if(meta.deleted||meta.date!==date)continue;
+     let shift=await cachedDuty(c,meta);
+     if(!shift){
+      const snapshot=await c.f.getDocFromServer(docRef(c,meta.id));
+      ownerCheck(c);
+      if(!snapshot.exists())throw Error('原本の取得中に対象の日報がありません');
+      const record=snapshot.data();
+      if(record?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+         record.trashed===true||Number(record.revision)!==meta.revision||
+         record.shift?.id!==meta.id||record.shift?.date!==date)
+       throw Error('取得中にFirestore原本の更新がありました。読み直してください');
+      shift=validate(record.shift,meta.id);
+      await cacheDuty(c,meta,shift);
+     }
+     rows.push({id:meta.id,revision:meta.revision,shift});
+     if(rows.length>20)throw Error('指定日に乗務が多すぎます。日付を確認してください');
+    }
+    return {date,shifts:rows};
+   }
+   // SDK-compatible fallback: server read, not an unverified cached snapshot.
    const dateQuery=c.f.query(collectionRef(c),c.f.where('shift.date','==',date));
    const snapshot=await c.f.getDocsFromServer(dateQuery);
    ownerCheck(c);
