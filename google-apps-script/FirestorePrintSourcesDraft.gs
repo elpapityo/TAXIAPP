@@ -34,6 +34,44 @@ function firestorePrintSameRowsDraft_(actual,expected){
   });
  });
 }
+/**
+ * Before the PC confirms its selected Firestore duty, compare ALL existing
+ * calculated print-source cells with that exact confirmed duty. This remains
+ * read-only, including for same-second edits with identical totals. Formulas
+ * within the 4 source ranges are never silently treated as ordinary values.
+ */
+function firestorePrintVerifyRowsDraft_(ss,shiftId,batches){
+ if(!ss||typeof ss.getSheetByName!=='function'||
+    !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId)||
+    !Array.isArray(batches)||batches.length!==4)
+  throw Error('Firestore印刷元の照合情報が不正です');
+ var order=['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計','TAXIAPP_乗務一覧'];
+ batches.forEach(function(batch,index){
+  var name=batch.name,headers=TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name];
+  if(name!==order[index]||!headers||batch.width!==headers.length||
+     !Array.isArray(batch.rows)||batch.rows.some(function(row){
+      return !Array.isArray(row)||row.length!==headers.length||row[0]!==shiftId;
+     }))throw Error('印刷元の照合行形式が不正です：'+name);
+  var sheet=ss.getSheetByName(name);
+  if(!sheet||sheet.getMaxColumns()<headers.length||sheet.getMaxRows()<2)
+   throw Error('既存印刷元の構造を確認できません：'+name);
+  if(JSON.stringify(sheet.getRange(1,1,1,headers.length).getValues()[0])!==
+     JSON.stringify(headers))
+   throw Error('既存印刷元の見出しが異なります：'+name);
+  var area=sheet.getRange(2,1,sheet.getMaxRows()-1,headers.length);
+  var all=area.getValues(),formulas=area.getFormulas(),matching=[];
+  all.forEach(function(row,i){
+   if(String(row[0])!==shiftId)return;
+   if(formulas[i].some(Boolean))
+    throw Error('印刷元の営業行に数式が存在します。変更せず確認を停止しました：'+name);
+   matching.push(row);
+  });
+  var prepared=batch.rows.map(function(row){return row.map(safeCell_);});
+  if(!firestorePrintSameRowsDraft_(matching,prepared))
+   throw Error('Firestoreの原本と既存印刷元の明細が一致しません。再取込・手動復旧を確認してください：'+name);
+ });
+ return {id:shiftId,verifiedSheets:order.slice(),readOnly:true};
+}
 function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
  if(!ss||typeof ss.getSheetByName!=='function'||
     !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId)||
