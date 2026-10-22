@@ -3407,21 +3407,32 @@ const syncUI=window.TAXIAPP_SYNC_UI({
      (model.shifts.find(x=>x.id===id)?.gpsTrip?.enabled||keypadActive||
       appEl.querySelector('input:focus,textarea:focus,select:focus')))
    throw Error('この端末で編集中の乗務です。GPS・入力を終了してから再同期してください');
+  const generation=accountScopeGeneration,uid=accountScope.uid,
+   storageKey=scopedStorageKey();
+  const sameScope=()=>accountScopeGeneration===generation&&
+   accountScope.uid===uid&&scopedStorageKey()===storageKey&&canEditNow();
   const previous=deepCopy(model);
   const i=model.shifts.findIndex(x=>x.id===id);
   if(i<0)model.shifts.push(deepCopy(incoming));
   else model.shifts[i]=deepCopy(incoming);
   model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
   try{
-   await save(true);
-   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   if(await save(true)!==true)throw Error('受信した乗務の端末保存に失敗しました');
+   if(!sameScope())throw Error('受信中にログイン利用者が変更されました');
+   const stored=db?await idbGet(db,storageKey):
+    JSON.parse(localStorage.getItem(storageKey)||'null');
+   if(!sameScope())throw Error('読戻し中にログイン利用者が変更されました');
    const savedShift=stored?.shifts?.find(x=>x.id===id);
    const expectedShift=model.shifts.find(x=>x.id===id);
-   if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
+   if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))
+    throw Error('受信した乗務を本人用の端末領域へ正しく保存できませんでした');
   }catch(error){
-   model=previous;await save(true);throw error;
+   // A stale cloud callback may finish after another UID has signed in.
+   // Never roll back that newer account's state with the old UID's copy.
+   if(sameScope()){model=previous;await save(true);}
+   throw error;
   }
-  render(); // Cloud reception must refresh operations/summary as well as history.
+  render(); // Cloud reception refreshes the original operations and history.
 
  },
  root:appEl,isSettings:()=>tab==='settings',setStatus:setGoogleStatus,
