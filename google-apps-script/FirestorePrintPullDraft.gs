@@ -159,7 +159,12 @@ function firestorePrintChosenMenuDraft_(){
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var operation=ss.getSheetByName('TAXIAPP_印刷操作');
  if(!operation)throw Error('既存の印刷操作シートがありません');
- var id=String(operation.getRange('C17').getDisplayValue()||'');
+ var id=String(operation.getRange('C17').getDisplayValue()||'').trim();
+ // C17 is a formula-derived ID; B15/B17 select the actual PC print duty.
+ // Never import an earlier duty when the formula has not caught up.
+ var selected=resolvePrintShiftId_(ss,operation);
+ if(!selected||selected!==id)
+  throw Error('PCで選択した乗務とC17の乗務IDが一致しません。B15/B17を確認してから再実行してください');
  var result=firestorePrintSelectedDutyDraft_(id);
  ss.toast(result,'Firebase印刷取込',8);
 }
