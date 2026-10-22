@@ -3275,11 +3275,14 @@ async function releaseVerifiedPreviousDuties(activeId){
  */
 const syncUI=window.TAXIAPP_SYNC_UI({
  remoteOnDemand:()=>memberDiary(),
+ // Isolate editor CAS baselines from the production manager's UID state.
+ previewFreshOnly:()=>Boolean(accountScope.adminFirestorePreview),
  canSync:()=>canEditNow(),
  allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
   accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
   currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
- scopeKey:()=>accountScope.uid,
+ scopeKey:()=>accountScope.adminFirestorePreview?
+  'firestore-preview-'+accountScope.uid:accountScope.uid,
  isEditing:()=>Boolean(appEl.querySelector('input:focus,textarea:focus,select:focus')),
 
  canView:()=>deviceMode==='viewer'&&Boolean(accountSettingsAuto?.status().enabled),
