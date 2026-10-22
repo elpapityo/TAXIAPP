@@ -108,3 +108,38 @@ const d=root.TAXIAPP_SYNC_UI({
  assert.equal(plan.shifts.length,1);
  console.log('復元済みの端末日報はサーバー不在でも保持し、自動再アップロードを防ぐ');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+// Firestore on-demand login: when this device already has local originals,
+// list only those exact IDs, including any number of protected exceptions.
+// Fetching every historical shift would violate the decided on-demand policy.
+(async()=>{
+ const ids=Array.from({length:61},(_,i)=>'shift-'+(1792641000000+i));
+ const model={shifts:ids.map(id=>({id,date:'2026-10-22',settings:{},records:[]}))};
+ const listCalls=[];
+ const scoped=root.TAXIAPP_SYNC_UI({
+  getModel:()=>model,getPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift}),
+  endpoint:()=>'/firestore-scoped-login',scopeKey:()=> 'uid-private',
+  remoteOnDemand:()=>true,
+  request:async(action,params={})=>{
+   assert.equal(action,'syncList','ログイン時に保存済み原本を勝手に送信しない');
+   assert.ok(Array.isArray(params.shiftIds),'端末に原本があるときは全件一覧を要求しない');
+   listCalls.push([...params.shiftIds]);
+   return {shifts:[]};
+  },
+  configured:()=>true,prefs:()=>({syncMode:'on'}),
+  canSync:()=>false,canView:()=>false,
+  writerBootstrapAllowed:()=>true,
+  onWriterSnapshot:async shifts=>{
+   assert.equal(shifts.length,61,'未照合の端末原本を整理・削除しない');
+   return true;
+  },
+  onWriterBootstrapReady:()=>{},
+  setStatus:()=>{},toast:()=>{},dateStamp:()=> '20261022'
+ });
+ assert.equal(await scoped.bootstrapWriter(),true);
+ assert.deepEqual(listCalls.map(chunk=>chunk.length),[60,1],
+  '1乗務制限の例外が60件を超えても分割して照合する');
+ assert.deepEqual(listCalls.flat(),ids,'別UIDや端末にない過去乗務を検索しない');
+ console.log('Firestore再ログイン：端末内原本61件だけを分割照合・全履歴取得なし');
+})().catch(error=>{console.error(error);process.exitCode=1;});
