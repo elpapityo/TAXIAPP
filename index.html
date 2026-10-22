@@ -1407,7 +1407,7 @@ function blockViewerEdit(event){
 }
 for(const eventName of ['click','pointerdown','input','change','keydown','submit'])
  document.addEventListener(eventName,blockViewerEdit,true);
-let historyDate='',historyShiftId='',cloudManagementDate='',printShiftId='',highwayShiftId='',storageStatus='確認中';
+let historyDate='',historyShiftId='',cloudManagementDate='',legacyHistoryRemote=null,legacyHistoryBusy=false,legacyHistoryMessage='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
 let historyCloudRows=[],historyLocationEdit=null,historyDateCorrection=null;
 // The combined business-status screen remembers which sections the driver opened.
@@ -1536,6 +1536,8 @@ function historyMatches(){const date=historyDate||selectedShift()?.date||dateSta
    if(getShift()?.id!==s.id)merged.set(s.id,s);
    else if(!merged.has(s.id))merged.set(s.id,s);
   });
+ if(legacyDiary()&&legacyHistoryRemote?.uid===accountScope.uid&&legacyHistoryRemote.shift?.date===date&&
+    !merged.has(legacyHistoryRemote.id))merged.set(legacyHistoryRemote.id,legacyHistoryRemote.shift);
  return [...merged.values()].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
 function selectedHistoryShift(){const a=historyMatches();return a.find(s=>s.id===historyShiftId)||a[0]||null;}
 function selectedPrintShift(){return printShiftId?(model.shifts.find(s=>s.id===printShiftId)||null):selectedShift();}
@@ -1649,7 +1651,7 @@ async function switchAccountScope(scope){
   adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
  }
  adminFirestorePreviewMessage='';
- currentLoginScope=scope||null;cloudManagementDate='';
+ currentLoginScope=scope||null;cloudManagementDate='';legacyHistoryRemote=null;legacyHistoryBusy=false;legacyHistoryMessage='';
  const adminFirestorePreview=Boolean(scope?.admin&&
   ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
   scope.uid===adminFirestorePreviewOwnerUid);
@@ -2614,17 +2616,53 @@ function historyLegacyHash(shift){
  return String(text.length)+'-'+(hash>>>0).toString(16);
 }
 function canEditLegacyHistory(shift){
- return Boolean(legacyDiary()&&canEditNow()&&shift&&
-  model.shifts.some(row=>row.id===shift.id)&&
-  shift.id!==model.activeId&&Boolean(shift.endedAt||shift.endedIso)&&
-  !shift.draft);
+ if(!legacyDiary()||!canEditNow()||!shift||shift.id===model.activeId||
+    !(shift.endedAt||shift.endedIso)||shift.draft)return false;
+ const local=model.shifts.find(row=>row.id===shift.id);
+ if(local)return local===shift;
+ return Boolean(legacyHistoryRemote?.uid===accountScope.uid&&
+   legacyHistoryRemote.id===shift.id&&legacyHistoryRemote.shift===shift);
 }
-function historySourceRow(shiftId){
+function historySourceRow(id){
  if(legacyDiary()){
-  const shift=model.shifts.find(x=>x.id===shiftId);
-  return canEditLegacyHistory(shift)?{id:shiftId,revision:0,shift}:null;
+  const local=model.shifts.find(row=>row.id===id);
+  if(local)return canEditLegacyHistory(local)?{id,revision:0,shift:local}:null;
+  const remote=legacyHistoryRemote;
+  return remote?.uid===accountScope.uid&&remote.id===id&&
+    canEditLegacyHistory(remote.shift)?{id,revision:remote.revision,shift:remote.shift}:null;
  }
- return historyCloudRows.find(x=>x.id===shiftId&&x.shift?.date===historyCloudDate)||null;
+ return historyCloudRows.find(row=>row.id===id&&row.shift?.date===historyCloudDate)||null;
+}
+async function loadLegacyHistoryById(id){
+ if(legacyHistoryBusy||!legacyDiary()||!canEditNow()||!googleIsConfigured()){
+  toast('旧Google原本の閲覧には、管理者の接続設定と操作権が必要です',true);return;
+ }
+ if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)){
+  toast('乗務IDの形式を確認してください',true);return;
+ }
+ try{protectOpenHistoryEdit();}catch(e){toast(String(e.message||e),true);return;}
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ legacyHistoryBusy=true;legacyHistoryMessage='旧Google原本を1乗務だけ取得中';render();
+ try{
+  const response=await googlePostRequest('syncGet',{shiftId:id}),row=response?.data,shift=row?.shift;
+  if(uid!==accountScope.uid||generation!==accountScopeGeneration||!legacyDiary())return;
+  if(row?.id!==id||shift?.id!==id||
+     !Number.isSafeInteger(Number(row.revision))||Number(row.revision)<1||
+     !Array.isArray(shift.records)||!shift.settings||
+     !/^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||'')))
+   throw Error('旧Google原本の乗務ID・更新番号・内容を確認できません');
+  legacyHistoryRemote={uid,id,revision:Number(row.revision),shift:deepCopy(shift)};
+  const existing=model.shifts.some(s=>s.id===id);
+  legacyHistoryMessage=existing?
+   '同じ乗務IDの端末記録もあります。更新競合に注意し、無断上書きしません。':
+   '旧Google原本を取得しました。営業中の日報・GPS・設定は変えていません。';
+  historyDate=shift.date;historyShiftId=id;tab='history';render();
+ }catch(e){
+  if(uid===accountScope.uid&&generation===accountScopeGeneration){
+   legacyHistoryMessage='旧Google原本の取得失敗：'+String(e?.message||e);
+   toast(legacyHistoryMessage,true);
+  }
+ }finally{legacyHistoryBusy=false;}
 }
 function startHistoryLocationEdit(shiftId,recordId,addition=null){
  if(!canEditNow()||(!legacyDiary()&&(!memberDiary()||!accountDiary.ready()||historyCloudUid!==accountScope.uid)))
@@ -4267,7 +4305,10 @@ function renderCloudManagement(){
   '<p class="caption-note">'+safeText(historyCloudMessage)+'</p></section>'+
   (loaded?(cards||'<section class="card">この日付の日報はありません。</section>'):''):
   '<section class="card"><h2 class="h2">現行原本はGoogle Sheets</h2>'+
-  '<p class="warn">現行原本はGoogle Sheetsです。Firestore取得欄に表示されなくても、Google日報の保存・PC印刷には影響しません。</p>'+ '<p class="caption-note">旧Google原本は無断移行しません。過去日報の閲覧は下のボタンから行えます。</p>'+ '<button class="btn" type="button" data-tab="history">端末にある過去日報を確認</button></section>';
+  '<p class="warn">現行原本はGoogle Sheetsです。Firestore取得欄に表示されなくても、Google日報の保存・PC印刷には影響しません。</p>'+ '<p class="caption-note">旧Google原本は無断移行しません。過去日報の閲覧は下のボタンから行えます。</p>'+ '<button class="btn" type="button" data-tab="history">端末にある過去日報を確認</button>'+ 
+  '<label class="field">Google原本の乗務IDを指定（1件取得）<input class="control" type="text" id="legacyGoogleHistoryId" maxlength="100" placeholder="shift-…"></label>'+ 
+  '<button class="btn" type="button" data-action="legacyGoogleHistoryLoad" '+(legacyHistoryBusy?'disabled':'')+'>旧Google原本を開く</button>'+ 
+  '<p class="caption-note">'+safeText(legacyHistoryMessage)+'</p></section>';
  return titleBlock('クラウド日報管理','CLOUD DIARY','本人UIDの日報を必要な日付だけ取得します。')+
   managementSubNav()+filter+(memberDiary()?syncUI.privateDiaryPanel():'');
 }
@@ -4922,6 +4963,10 @@ function handleAction(action,id){
  }
  if(action==='saveHistoryLocationEdit'){void commitHistoryLocationEdit();return;}
  if(action==='cancelHistoryLocationEdit'){discardHistoryLocationEdit();return;}
+ if(action==='legacyGoogleHistoryLoad'){
+  const id=String(document.getElementById('legacyGoogleHistoryId')?.value||'').trim();
+  void loadLegacyHistoryById(id);return;
+ }
  if(action==='cloudManageLoad'){
   try{protectOpenHistoryEdit();}catch(e){toast('修正控えの保護に失敗：'+String(e.message||e),true);return;}
   if(!memberDiary()||!accountDiary.ready()){toast('本人Firestore接続を確認してください',true);return;}
