@@ -4230,7 +4230,6 @@ async function migrateOctober16GoogleDuty(){
    throw Error('移行準備中にGoogle原本が変わりました。転送を停止します');
   const packet=googleShiftPacket(shift);
   packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
-  const expected=JSON.stringify(packet.shift);
   const staging=window.TAXIAPP_ACCOUNT_DIARY.create();
   staging.bind({uid},{...scope.firebase,admin:true,storageBackend:'firestore'});
   if(!staging.ready())throw Error('本人Firestoreに接続できません');
@@ -4241,7 +4240,7 @@ async function migrateOctober16GoogleDuty(){
   if(found?.deleted)throw Error('移行先に削除済み記録があります。再作成しません');
   if(found){
    const existing=await staging.request('syncGet',{shiftId:id});
-   if(!stable()||JSON.stringify(existing?.shift)!==expected)
+   if(!stable()||JSON.stringify(canonicalStoredDuty(existing?.shift))!==JSON.stringify(canonicalStoredDuty(packet.shift)))
     throw Error('Firestore側に異なる同一乗務IDがあります。上書きしません');
    legacyOctoberMigrationMessage='10月16日の原本はFirestoreと内容一致を確認済み（上書きなし）';
    return;
@@ -4252,7 +4251,7 @@ async function migrateOctober16GoogleDuty(){
    throw Error('Firestoreの保存結果が不明です。再送せず原本を確認してください');
   const verified=await staging.request('syncGet',{shiftId:id});
   if(!stable()||verified?.id!==id||Number(verified.revision)!==1||
-     JSON.stringify(verified.shift)!==expected)
+     JSON.stringify(canonicalStoredDuty(verified.shift))!==JSON.stringify(canonicalStoredDuty(packet.shift)))
    throw Error('Firestoreの読戻し内容が一致しません。Google原本を保護します');
   legacyOctoberMigrationMessage='10月16日のFirestore保存・読戻し確認済み（Google原本も保持）';
  }catch(error){
