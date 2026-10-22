@@ -390,17 +390,21 @@ root.TAXIAPP_SYNC_UI=function(d){
    d.setStatus(message());d.toast(writerFeedback);return;
   }
   if(!comparedDuties[id]){d.toast('端末原本とクラウド原本の比較を先に行ってください',true);return;}
-  const pass=String(d.root.querySelector('[data-sync-backup-password]')?.value||'');
-  if(!root.TAXIAPP_TRANSFER.passwordOk(pass)){
-   d.toast('競合の控えを暗号化する12文字以上のパスワードを入力してください',true);return;
-  }
+  // Generate a random recovery key, rather than requiring typed passwords.
+  // Keep it outside the encrypted backup; both downloads are required to restore.
+  if(!root.crypto?.getRandomValues){d.toast('安全な復旧キーを生成できません。原本は変更しません',true);return;}
+  const random=new Uint8Array(24);root.crypto.getRandomValues(random);
+  const pass=Array.from(random,x=>x.toString(16).padStart(2,'0')).join('');
+  if(!root.TAXIAPP_TRANSFER.passwordOk(pass))return;
   if(!root.confirm('この端末とクラウドの双方を暗号化バックアップしてから、選択した版に置き換えます。続けますか？'))return;
   let ok=false;
   try{
    ok=await engine.resolve(id,localWins,async backup=>{
     const encrypted=await root.TAXIAPP_TRANSFER.encrypt(backup,pass);
-    d.download(JSON.stringify(encrypted),'TAXIAPP_競合両版_'+d.dateStamp()+'_'+id+'.json','application/json;charset=utf-8');
-    if(!root.confirm('暗号化バックアップのダウンロード完了を確認しましたか？\n保存とパスワードを確認した場合のみ「OK」を押してください。'))return false;
+    const base='TAXIAPP_競合両版_'+d.dateStamp()+'_'+id;
+    d.download(JSON.stringify(encrypted),base+'.json','application/json;charset=utf-8');
+    d.download('TAXIAPP 競合バックアップ復旧キー（厳重保管）\n'+base+'.json\n'+pass+'\n',base+'_復旧キー.txt','text/plain;charset=utf-8');
+    if(!root.confirm('暗号化バックアップと復旧キーの2ファイルを保存できましたか？\n両方を保管できた場合だけ「OK」を押してください。'))return false;
     d.beginBootstrapConflictResolution?.(id);
     return true;
    });
@@ -662,9 +666,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<p class="caption-note">'+(reviewed?'比較後、残したい原本を選んでください。選ばれない側も暗号化バックアップに保存します。':'先に「端末版とクラウド版を比較」を押してください。比較するまで選択はできません。')+'</p>'+ '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>クラウド原本を残す</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>端末原本を残す</button>'+
    '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（両方残す）</button></div></div>';}).join('');
-  return conflicts?'<h3 class="subsection">競合の解決</h3><p class="warn">採用する版を選ぶ前に、両方の版を暗号化バックアップします。</p>'+
-   '<label class="field"><span class="field-label">バックアップ用パスワード（12文字以上）</span>'+
-   '<input class="control" type="password" data-sync-backup-password autocomplete="new-password"></label>'+conflicts:'';
+  return conflicts?'<h3 class="subsection">競合の解決</h3><p class="warn">採用する版を選ぶ前に、両方の版を暗号化バックアップします。復旧キーは自動生成され、別ファイルで保存します。手入力は不要です。</p>'+conflicts:'';
  }
  // Refresh the status in place after login or a manual viewer refresh.
  // Never rebuild Settings: that would collapse details and reset the scroll.
