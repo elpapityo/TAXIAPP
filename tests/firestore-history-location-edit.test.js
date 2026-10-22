@@ -136,9 +136,10 @@ vm.runInContext(source.slice(begin,end),ctx);
  ctx.model.shifts.push(retained);
  ctx.historyCloudRows=[{id:original.id,revision:server.get(original.id).revision,
   shift:clone(retained)}];
- ctx.syncUI.verifiedRevision=()=>server.get(original.id).revision;
+ let confirmedBefore=server.get(original.id).revision;
+ ctx.syncUI.verifiedRevision=()=>confirmedBefore;
  let adopted=null,localSaves=0;
- ctx.syncUI.adoptHistoryDuty=info=>{adopted=info;return true;};
+ ctx.syncUI.adoptHistoryDuty=info=>{adopted=info;confirmedBefore=info.revision;return true;};
  ctx.save=async()=>{localSaves++;return true;};
  ctx.startHistoryLocationEdit(original.id,'ride-1');
  fields.historyEditPickup.value='端末の直近日報を修正';
