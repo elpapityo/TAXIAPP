@@ -9,8 +9,15 @@ const keys=c=>[...shifts].filter(([key])=>key.startsWith(c.uid+'/'));
 const fire={
  collection(_db,_folder,uid,_leaf){return {uid};},
  doc(_db,_folder,uid,_leaf,id){return {uid,id};},
+ where(field,op,value){return {field,op,value};},
+ query(collection,filter){return {...collection,filter};},
  async getDocsFromServer(collection){
-  return {docs:keys(collection).map(([key,row])=>({
+  const found=keys(collection).filter(([,row])=>{
+   if(!collection.filter)return true;
+   const {field,op,value}=collection.filter;
+   return field==='shift.date'&&op==='=='&&row.shift?.date===value;
+  });
+  return {docs:found.map(([key,row])=>({
    id:key.split('/')[1],data:()=>clone(row)
   }))};
  },
