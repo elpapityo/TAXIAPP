@@ -4446,7 +4446,11 @@ function handleAction(action,id){
    else if(canEditNow())syncUI.run(true);
    return;
   }
-  if(!canEditNow()&&action!=='bidirectionalSyncNow'){
+  // Print-only PC mode may read a date and submit the selected source;
+  // all ride, settlement, settings and cloud-mutating actions stay blocked.
+  const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
+   ['loadCloudHistory','firestorePrintToGoogle'].includes(action);
+  if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();

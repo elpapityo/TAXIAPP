@@ -65,6 +65,9 @@ const shift={id:'shift-111-xyz',date:'2026-10-20',startedIso:'2026-10-20T06:00:0
  assert.match(account,/if\(printViewerMode\)return;/);
  assert.match(index,/TAXIAPP_PRINT_VIEWER_MODE/);
  assert.match(index,/firestorePrintGooglePostRequest/);
+ assert.match(index,/const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&/);
+ assert.match(index,/\['loadCloudHistory','firestorePrintToGoogle'\]\.includes\(action\)/);
+ assert.match(index,/if\(!canEditNow\(\)&&action!=='bidirectionalSyncNow'&&!printReadAction\)/);
  assert.match(session,/claimedOnce=Boolean\(oldId\)\|\|!claimOnLogin/);
  console.log('Cloud login handover race and offline retry tests passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
