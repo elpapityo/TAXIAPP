@@ -389,6 +389,7 @@ root.TAXIAPP_SYNC_UI=function(d){
    writerFeedback='競合を保留しました。端末・Firestoreの双方は変更していません。';
    d.setStatus(message());d.toast(writerFeedback);return;
   }
+  if(!comparedDuties[id]){d.toast('端末原本とクラウド原本の比較を先に行ってください',true);return;}
   const pass=String(d.root.querySelector('[data-sync-backup-password]')?.value||'');
   if(!root.TAXIAPP_TRANSFER.passwordOk(pass)){
    d.toast('競合の控えを暗号化する12文字以上のパスワードを入力してください',true);return;
@@ -647,14 +648,14 @@ root.TAXIAPP_SYNC_UI=function(d){
     '　乗車 '+d.escape(r.time)+'　メーター入力 '+d.escape(r.fare)+
     '円　'+d.escape(r.pickup)+' → '+d.escape(r.dropoff)+'</p>').join('')+
    '</div></details></div>';
-  const conflicts=s.conflicts.map(c=>'<div class="card"><strong>競合乗務 '+d.escape(c.id)+'</strong>'+
+  const conflicts=s.conflicts.map(c=>{const local=d.getModel()?.shifts?.find(sh=>sh.id===c.id);const reviewed=Boolean(comparedDuties[c.id]);return '<div class="card"><strong>'+d.escape(local?.date||comparedDuties[c.id]?.remote?.date||'日付確認中')+'の日報で保存内容が異なります</strong>'+ '<p class="caption-note">対象の乗務ID：'+d.escape(c.id)+'</p>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
    '<button class="btn" type="button" data-sync-compare="'+d.escape(c.id)+'">端末版とサーバー版を比較</button>'+
    (comparedDuties[c.id]?'<div class="form-grid">'+summary('端末版',comparedDuties[c.id].local)+
      summary('Firestore版',comparedDuties[c.id].remote)+'</div>':'')+
-   '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'">クラウド版を採用</button>'+
-   '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'">この端末版を採用</button>'+
-   '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（変更しない）</button></div></div>').join('');
+   '<p class="caption-note">'+(reviewed?'比較後、残したい原本を選んでください。選ばれない側も暗号化バックアップに保存します。':'先に「端末版とクラウド版を比較」を押してください。比較するまで選択はできません。')+'</p>'+ '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>クラウド原本を残す</button>'+
+   '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>端末原本を残す</button>'+
+   '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（両方残す）</button></div></div>';}).join('');
   return conflicts?'<h3 class="subsection">競合の解決</h3><p class="warn">採用する版を選ぶ前に、両方の版を暗号化バックアップします。</p>'+
    '<label class="field"><span class="field-label">バックアップ用パスワード（12文字以上）</span>'+
    '<input class="control" type="password" data-sync-backup-password autocomplete="new-password"></label>'+conflicts:'';
