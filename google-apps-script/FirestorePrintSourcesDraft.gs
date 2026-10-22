@@ -214,7 +214,7 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   var rows=next.map(function(row){return row.slice();});
   while(rows.length<len)rows.push(Array(old.width).fill(''));
   return {name:old.name,sheet:old.sheet,range:range,before:before,rows:rows,
-   width:old.width};
+   changed:!firestorePrintSameRowsDraft_(old.rows,next),width:old.width};
  });
  journal.properties.setProperty(journal.key,JSON.stringify({
   uid:uid,id:id,revision:recorded.revision,digest:existingDigest,state:'writing'
@@ -224,7 +224,13 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   plans.forEach(function(plan){
    if(plan.name==='TAXIAPP_乗務一覧'&&typeof verifyBeforeIndex==='function')
     verifyBeforeIndex();
-   if(!plan.rows.length)return;
+   if(!plan.rows.length||!plan.changed)return;
+   // An operator can edit a sheet after our first snapshot. Check again
+   // immediately before writing; never overwrite values or formulas that
+   // are no longer the verified previous print-source version.
+   if(plan.range.getFormulas().some(function(row){return row.some(Boolean);})||
+      !firestorePrintSameRowsDraft_(plan.range.getValues(),plan.before))
+    throw Error('印刷元が転送中に変更されました：'+plan.name);
    attempted.push(plan);
    plan.range.setValues(plan.rows);
    if(!firestorePrintSameRowsDraft_(plan.range.getValues(),plan.rows))
@@ -271,7 +277,7 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   }
   throw Error('Firestore再印刷が中断され、印刷元の一部に復旧が必要です。自動再送しません：'+needsManual.join('、'));
  }
- return {id:id,changedSheets:plans.filter(function(p){return p.rows.length;})
+ return {id:id,changedSheets:plans.filter(function(p){return p.changed&&p.rows.length;})
   .map(function(p){return p.name;}),oldOriginalUnchanged:true,paperFormsUnchanged:true};
 }
 
