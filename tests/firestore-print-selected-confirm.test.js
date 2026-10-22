@@ -82,4 +82,22 @@ sourceAvailable=true;legacy=true;rowState='受信済み';
 let legacyLoad=0;ctx.loadShift_=(spread,id0)=>{legacyLoad++;assert.equal(id0,id);return shift;};
 assert.equal(ctx.applySelectedPrintShift().ok,true);
 assert.equal(legacyLoad,1,'legacy printing unchanged');
+// The PC's explicit choice must agree with the formula-derived ID before
+// the draft import may change any of the four print-source sheets.
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..',
+ 'google-apps-script/FirestorePrintPullDraft.gs'),'utf8'),ctx);
+legacy=false;rowState='Firestore印刷済';selected=label;derived=id;
+let importedId='';
+ctx.firestorePrintSelectedDutyDraft_=selectedId=>{
+ importedId=selectedId;return '取込検証済み';
+};
+ctx.firestorePrintChosenMenuDraft_();
+assert.equal(importedId,id,'PCのB17で指定した本人乗務のみ転送');
+importedId='';derived='shift-9999999999999-other';
+assert.throws(()=>ctx.firestorePrintChosenMenuDraft_(),/B15\/B17/,
+ 'C17の数式が古い乗務IDなら転送しない');
+assert.equal(importedId,'','誤選択時はFirestore送信処理を開始しない');
+derived=id;selected='別の乗務';
+assert.throws(()=>ctx.firestorePrintChosenMenuDraft_(),/B15\/B17/,
+ 'B17が別乗務ならC17を信用して転送しない');
 console.log('既存印刷選択：Firestore専用ID・本人原本金額・件数を確認、旧Google印刷は維持');
