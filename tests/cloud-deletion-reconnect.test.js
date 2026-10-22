@@ -212,7 +212,7 @@ function adapter(){
   Object.fromEntries(Object.keys(x).sort().map(k=>[k,canon(x[k])])):x;
  const hash=shift=>JSON.stringify(shift);
  const context={
-  model:state,accountScope:{uid:'owner-G'},accountScopeGeneration:1,
+  model:state,legacyHistoryRemote:null,accountScope:{uid:'owner-G'},accountScopeGeneration:1,
   currentLoginScope:{admin:true},canEditNow:()=>true,legacyDiary:()=>true,googleIsConfigured:()=>true,
   historyLegacyHash:hash,googleShiftPacket:shift=>({kind:'TAXIAPP_SHIFT_V1',shift:copy(shift),summary:{}}),
   googlePostRequest:async(action,payload)=>{
