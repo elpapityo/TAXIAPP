@@ -31,12 +31,12 @@ const ui=root.TAXIAPP_SYNC_UI({
  assert.match(ui.privateDiaryPanel(),/data-sync-compare/);
  assert.equal(await ui.compare(id),true);
  const html=ui.privateDiaryPanel();
- assert.match(html,/メーター入力 2000/);
- assert.match(html,/メーター入力 2200/);
+ assert.match(html,/金額 2000/);
+ assert.match(html,/金額 2200/);
  assert.doesNotMatch(html,/<img src=x>/,'個人記録はHTMLエスケープする');
  assert.equal(reads,1);
  ui.resetAccount();
- assert.doesNotMatch(ui.privateDiaryPanel(),/メーター入力 2200/,'ログアウト時は比較キャッシュ破棄');
+ assert.doesNotMatch(ui.privateDiaryPanel(),/金額 2200/,'ログアウト時は比較キャッシュ破棄');
  owner='UID-B';
  assert.equal(await ui.compare('shift-0000000000000-wrong'),false);
  assert.equal(reads,1);
