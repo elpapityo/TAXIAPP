@@ -3075,16 +3075,19 @@ function discardHistoryLocationEdit(){
 function historyDateCorrectionKey(uid,id){return 'taxiapp-history-date-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(id);}
 function beginHistoryDateCorrection(){
  const shift=selectedHistoryShift();
- if(!canEditCloudHistory(shift)||historyLocationEdit)throw Error('Firestoreから取得した編集可能な日報を選び、他の明細編集を終了してください');
- const row=historyCloudRows.find(r=>r.id===shift.id),uid=accountScope.uid;
+ if(!(canEditCloudHistory(shift)||canEditLegacyHistory(shift))||historyLocationEdit)
+  throw Error('編集可能な日報を選び、他の明細編集を終了してください');
+ const row=historySourceRow(shift.id),uid=accountScope.uid;
  const key=historyDateCorrectionKey(uid,shift.id),raw=localStorage.getItem(key);
  let d;
  try{d=raw?JSON.parse(raw):null;}catch{throw Error('以前の日付訂正控えが破損しています。上書きせず保持します');}
  if(d&&(d.uid!==uid||d.id!==shift.id||d.originalDate!==shift.date))throw Error('日付訂正控えの本人または原本が異なるため停止しました');
- if(!d)d={uid,id:shift.id,originalDate:shift.date,newDate:shift.date,revision:row.revision,message:''};
+ if(!d)d={uid,id:shift.id,originalDate:shift.date,newDate:shift.date,revision:row.revision,
+  legacyHash:legacyDiary()?historyLegacyHash(shift):null,message:''};
  localStorage.setItem(key,JSON.stringify(d));
  if(localStorage.getItem(key)!==JSON.stringify(d))throw Error('日付訂正控えを端末に保存できません');
- if(d.revision!==row.revision)d.message='原本が変更されています。修正控えを保護し、上書きしません。';
+ if(d.revision!==row.revision||legacyDiary()&&d.legacyHash!==historyLegacyHash(shift))
+  d.message='原本が変更されています。修正控えを保護し、上書きしません。';
  historyDateCorrection=d;render();
 }
 function renderHistoryDateCorrection(shift){
@@ -3094,7 +3097,7 @@ function renderHistoryDateCorrection(shift){
   '<p class="caption-note">ID：'+safeText(d.id)+'／現在の出庫日：'+safeText(d.originalDate)+'／元の更新番号：'+d.revision+'</p>'+
   '<label class="field">訂正後の日付<input type="date" class="control" id="historyCorrectionDate" value="'+safeText(d.newDate)+'"></label>'+
   (d.message?'<p class="warn">'+safeText(d.message)+'</p>':'')+
-  '<div class="actions"><button class="btn primary" type="button" data-action="historyDateSave" '+(d.busy?'disabled':'')+'>Firestoreへ保存して確認</button>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="historyDateSave" '+(d.busy?'disabled':'')+'>'+(legacyDiary()?'旧GoogleへCAS保存':'Firestoreへ保存')+'</button>'+
   '<button class="btn" type="button" data-action="historyDateCancel" '+(d.busy?'disabled':'')+'>修正控えを取り消す</button></div></section>';
 }
 function correctShiftDate(shift,newDate){
@@ -3115,19 +3118,31 @@ function correctShiftDate(shift,newDate){
  return walk(shift);
 }
 async function saveHistoryDateCorrection(){
- const d=historyDateCorrection;if(!d||d.busy||!memberDiary()||!canEditNow()||!accountDiary.ready()||accountScope.uid!==d.uid)return;
- const row=historyCloudRows.find(x=>x.id===d.id);
+ const d=historyDateCorrection;if(!d||d.busy||!canEditNow()||accountScope.uid!==d.uid||
+  (!legacyDiary()&&(!memberDiary()||!accountDiary.ready())))return;
+ const row=historySourceRow(d.id);
  if(!row||row.revision!==d.revision||row.shift.date!==d.originalDate){d.message='元の更新番号が異なります。修正控えは保持します';render();return;}
  if(d.newDate===d.originalDate){d.message='変更された日付がありません';render();return;}
  let corrected;
  try{if(!row.shift.endedAt&&!row.shift.endedIso)throw Error('入庫済みの日報だけ訂正できます');
-  assertHistoryLocalOverlapSafe(d.id,row.shift,row.revision);corrected=correctShiftDate(row.shift,d.newDate);}
+  if(memberDiary())assertHistoryLocalOverlapSafe(d.id,row.shift,row.revision);
+  if(legacyDiary()&&historyLegacyHash(row.shift)!==d.legacyHash)throw Error('旧日報が変更されています。修正控えを保持します');
+  corrected=correctShiftDate(row.shift,d.newDate);}
  catch(e){d.message=String(e.message||e);render();return;}
- if(!confirm('出庫日 '+d.originalDate+' → '+d.newDate+' に訂正し、乗務IDは維持してFirestoreをCAS更新しますか？'))return;
+ if(!confirm('出庫日 '+d.originalDate+' → '+d.newDate+' に訂正し、乗務IDを維持して'+
+  (legacyDiary()?'旧Google原本':'本人Firestore')+'をCAS更新しますか？'))return;
  const gen=accountScopeGeneration,epoch=historyCloudEpoch;
- const stable=()=>accountScope.uid===d.uid&&gen===accountScopeGeneration&&epoch===historyCloudEpoch&&historyDateCorrection===d&&memberDiary()&&canEditNow();
- d.busy=true;d.message='Firestoreに保存して読戻し確認中';render();
+ const stable=()=>accountScope.uid===d.uid&&gen===accountScopeGeneration&&epoch===historyCloudEpoch&&historyDateCorrection===d&&(legacyDiary()||memberDiary())&&canEditNow();
+ d.busy=true;d.message='保存先へCAS保存・読戻し確認中';render();
  try{
+  if(legacyDiary()){
+   await legacyCasSaveHistoricalShift(row.shift,corrected,d.legacyHash);
+   if(!stable())return;
+   historyDateCorrection=null;
+   try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
+   catch{historyCloudMessage='Google原本は更新確認済みですが端末の修正控えは保護しています';render();return;}
+   historyCloudMessage='出庫日を'+d.newDate+'へ訂正・旧Google原本をCAS保存確認済み';render();return;
+  }
   const packet=accountScope.adminFirestore?googleShiftPacket(corrected):{kind:'TAXIAPP_SHIFT_V1',shift:corrected};
   if(accountScope.adminFirestore)packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
   try{await accountDiary.request('syncPut',{baseRevision:d.revision,payload:JSON.stringify(packet)});}catch(e){d.message='送信結果を読戻し中：'+String(e.message||e);}
@@ -3156,7 +3171,7 @@ async function saveHistoryDateCorrection(){
  finally{d.busy=false;if(historyDateCorrection===d)render();}
 }
 function cancelHistoryDateCorrection(){
- const d=historyDateCorrection;if(!d||d.busy||!confirm('日付訂正の修正控えを破棄しますか？Firestore原本は変更しません。'))return;
+ const d=historyDateCorrection;if(!d||d.busy||!confirm('日付訂正の修正控えを破棄しますか？サーバー原本は変更しません。'))return;
  try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
  catch{d.message='端末の修正控えを破棄できません';render();return;}
  historyDateCorrection=null;render();
