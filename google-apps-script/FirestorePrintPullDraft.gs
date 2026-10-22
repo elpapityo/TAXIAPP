@@ -107,6 +107,7 @@ function firestorePrintSelectedDutyDraft_(id){
   // The original Google sync storage and existing 2-page print forms
   // are NOT changed. Only the four existing print-source sheets receive rows.
   return savePacket_(current.packet,{firestorePrintOnly:true,
+   firestoreRevision:current.revision,firestoreOwnerUid:cfg.uid,
    verifyCurrentSource:function(){
     var beforeIndex=firestorePrintDocDraft_(cfg,id);
     if(beforeIndex.revision!==current.revision||
