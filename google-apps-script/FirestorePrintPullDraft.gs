@@ -208,7 +208,7 @@ function firestorePrintMenuDraft_(){
  SpreadsheetApp.getUi().createMenu('TAXIAPP Firebase取込')
   .addItem('日付・乗務を選んで取込','firestorePrintDateMenuDraft_')
   .addItem('Firestoreの最新乗務を取込','firestorePrintLatestMenuDraft_')
-  .addItem('選択済み乗務を照合（同じ版のみ）','firestorePrintChosenMenuDraft_')
+  .addItem('選択済み乗務を取込・更新（印刷元4シート）','firestorePrintChosenMenuDraft_')
   .addToUi();
 }
 function firestorePrintLatestMenuDraft_(){

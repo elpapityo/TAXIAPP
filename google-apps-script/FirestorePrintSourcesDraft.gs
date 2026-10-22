@@ -68,7 +68,7 @@ function firestorePrintVerifyRowsDraft_(ss,shiftId,batches){
   });
   var prepared=batch.rows.map(function(row){return row.map(safeCell_);});
   if(!firestorePrintSameRowsDraft_(matching,prepared))
-   throw Error('Firestore原本と印刷元の明細が一致しません。同一乗務IDの改版再印刷は未完成です。自動上書きせず確認してください：'+name);
+   throw Error('Firestore原本と印刷元の明細が一致しません。改版後の日報は「日付・乗務を選んで取込」で更新してから再確認してください。未確認の印刷元は上書きしません：'+name);
  });
  return {id:shiftId,verifiedSheets:order.slice(),readOnly:true};
 }
