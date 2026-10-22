@@ -24,7 +24,7 @@ function server(){
    if(prior?.deleted)throw Error('deleted');
    const entry={revision:version+1,shift:clone(shift)};
    cloud.set(shift.id,entry);
-   return {id:shift.id,revision:entry.revision};
+   return {id:shift.id,revision:entry.revision,confirmed:true};
   }
   if(action==='syncTrash'||action==='syncRestore'){
    const row=cloud.get(data.shiftId);
@@ -148,7 +148,7 @@ function client(name,svc,model,failReceive=false,remoteOnDemand=false){
   assert.ok(html.includes(literal),'missing '+literal);
  }
  const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+(?:-dev\.\d+)?) — 乗務日報<\/title>/)?.[1];
- assert.equal(pageVersion,'v0.3.128','PR #119の開発版を旧ZIPと区別する');
+ assert.equal(pageVersion,'v0.3.129','新しい管理画面と日報保存状態の開発版を識別する');
  assert.ok(html.includes('乗務日報 · ${displayVersion}'),
   '画面上部にバージョンを表示する');
  assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+(?:-dev\\.\\d+)?/)'),
@@ -189,21 +189,24 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  assert.equal(await owner.app.run(),true);
  assert.equal(svc.cloud.get(id).revision,1);
  assert.equal(owner.app.markLocalRemoval(id,original),true);
- assert.deepEqual(owner.app.localRemovalIds(),[id],'restart queue can recover deleted duty IDs');
+ assert.deepEqual(owner.app.localRemovalIds(),[id],'local hide marker survives account restart');
  owner.model.shifts=[];
- assert.equal(await owner.app.run(),true,'delete marker reaches server with CAS');
- assert.equal(svc.cloud.get(id).deleted,true);
- assert.equal(svc.cloud.get(id).revision,2);
- assert.equal(svc.cloud.size,1,'soft delete never destroys the original');
+ assert.equal(await owner.app.run(),true,'local removal never calls remote trash');
+ assert.notEqual(svc.cloud.get(id).deleted,true,'the server original is not trashed');
+ assert.equal(svc.cloud.get(id).revision,1,'local cleanup cannot alter remote revision');
  const another=client('otherReader',svc,{shifts:[]});
  assert.equal(await another.app.run(),true);
- assert.equal(another.model.shifts.length,0,'other device never imports a trashed duty');
- assert.deepEqual(await another.app.readOnly(),[],'viewer cannot display trashed duty');
+ assert.equal(another.model.shifts.length,1,'another device sees the intact cloud original');
+ assert.equal((await another.app.readOnly()).length,1,'read-only viewer can still read it');
+ // Explicit server trash is a separate owner-confirmed action.
+ const hidden=await svc.request('syncTrash',{shiftId:id,baseRevision:1});
+ assert.equal(hidden.deleted,true);
+ assert.equal(hidden.revision,2);
  const after=await svc.request('syncRestore',{shiftId:id,baseRevision:2});
  assert.equal(after.deleted,false);
  owner.app.undoLocalRemoval(id);
  assert.equal(await owner.app.run(),true);
- assert.equal(owner.model.shifts.length,1,'restore is an explicit operation');
+ assert.equal(owner.model.shifts.length,1,'the local marker can be cleared independently');
  const changedId='shift-998877665544-race';
  const changed={...original,id:changedId};
  const racer=client('trashRace',svc,{shifts:[clone(changed)]});
@@ -212,9 +215,9 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  racer.model.shifts=[];
  svc.cloud.get(changedId).revision++;
  svc.cloud.get(changedId).shift.startingOdo='8';
- assert.equal(await racer.app.run(),false,'concurrent edit blocks deletion');
+ assert.equal(await racer.app.run(),true,'local cleanup does not overwrite concurrent cloud edits');
  assert.notEqual(svc.cloud.get(changedId).deleted,true);
- console.log('クラウドの論理削除と復元：別端末へ復活しない／編集競合を保護');
+ console.log('端末日報の整理とサーバーゴミ箱は別操作：原本・CAS版番号・他端末受信を保護');
 })().catch(e=>{console.error(e);process.exitCode=1;});
 
 // Bootstrapping a writer must not silently discard a local-only or modified duty.

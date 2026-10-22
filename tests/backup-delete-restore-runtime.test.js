@@ -36,9 +36,11 @@ const ctx={
  syncUI:{
   markLocalRemoval:(id)=>{marked.add(id);return true;},
   undoLocalRemoval:(id)=>marked.delete(id),
-  enabled:()=>false,schedule:()=>{throw Error('sync is disabled');}
+  enabled:()=>true,status:()=>({busy:false}),verifiedRevision:()=>1,
+  cloudAction:async(kind,id)=>{assert.equal(kind,'trashLocal');assert.equal(id,original.id);return true;},
+  schedule:()=>{}, // Restored duties are retried by normal sync safely.
  },
- save:async()=>store.set('owner:'+ctx.accountScope.uid,JSON.stringify(ctx.model)),
+ save:async()=>{store.set('owner:'+ctx.accountScope.uid,JSON.stringify(ctx.model));return true;},
  upgradeWaitingHistory:()=>{}
 };
 vm.createContext(ctx);vm.runInContext(source,ctx);
@@ -47,6 +49,7 @@ vm.createContext(ctx);vm.runInContext(source,ctx);
  await ctx.deleteWholeShift(original.id);
  assert.equal(ctx.model.shifts.length,0);
  assert.ok(marked.has(original.id));
+ assert.ok(notices.some(x=>String(x.s).includes('Firestore')));
  assert.equal(downloads.length,1);
  assert.match(downloads[0].filename,/削除前/);
  assert.equal(JSON.parse(downloads[0].text).shifts[0].id,original.id);

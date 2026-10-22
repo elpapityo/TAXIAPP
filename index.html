@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.128 — 乗務日報</title>
+<title>TAXIAPP v0.3.129 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -355,7 +355,7 @@ html[data-ui-theme="night"] .keypad-value{background:#162c41;color:#fff}
 
 /* v0.3.7: six compact mobile navigation items; independent keyboard preferences. */
 @media(max-width:700px){
- .sidebar .nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));}
+ .sidebar .nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
  .sidebar .nav button{min-width:0;padding:7px 0;gap:3px;}
  .sidebar .nav .nav-ico{font-size:clamp(16px,4vw,21px);}
  .sidebar .nav .nav-label{font-size:clamp(9px,2.35vw,12px);word-break:keep-all;letter-spacing:-.05em;}
@@ -1294,7 +1294,7 @@ function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
 const appEl=document.getElementById('app'), noticeEl=document.getElementById('notice');
-const labels={drive:['🚕','乗務入力'],live:['◴','営業・集計'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],settings:['⚙','設定']};
+const labels={drive:['🚕','乗務入力'],live:['◴','営業・集計'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],settings:['⚙','設定']};
 const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE','AF','AG','AH','AI','AJ','AK','AN','AO','AP','AQ','AR']);
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
 let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab='drive',db=null,persistTimer=0,toastTimer=0;
@@ -1407,9 +1407,9 @@ function blockViewerEdit(event){
 }
 for(const eventName of ['click','pointerdown','input','change','keydown','submit'])
  document.addEventListener(eventName,blockViewerEdit,true);
-let historyDate='',historyShiftId='',printShiftId='',highwayShiftId='',storageStatus='確認中';
+let historyDate='',historyShiftId='',cloudManagementDate='',legacyHistoryRemote=null,legacyHistoryBusy=false,legacyHistoryMessage='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
-let historyCloudRows=[],historyLocationEdit=null;
+let historyCloudRows=[],historyLocationEdit=null,historyDateCorrection=null;
 // The combined business-status screen remembers which sections the driver opened.
 let operationPanelOpen={}; // One open at a time, native named accordion.
 
@@ -1536,6 +1536,8 @@ function historyMatches(){const date=historyDate||selectedShift()?.date||dateSta
    if(getShift()?.id!==s.id)merged.set(s.id,s);
    else if(!merged.has(s.id))merged.set(s.id,s);
   });
+ if(legacyDiary()&&legacyHistoryRemote?.uid===accountScope.uid&&legacyHistoryRemote.shift?.date===date&&
+    !merged.has(legacyHistoryRemote.id))merged.set(legacyHistoryRemote.id,legacyHistoryRemote.shift);
  return [...merged.values()].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
 function selectedHistoryShift(){const a=historyMatches();return a.find(s=>s.id===historyShiftId)||a[0]||null;}
 function selectedPrintShift(){return printShiftId?(model.shifts.find(s=>s.id===printShiftId)||null):selectedShift();}
@@ -1641,7 +1643,7 @@ async function switchAccountScope(scope){
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';
- historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;
+ historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;historyDateCorrection=null;
  firestorePrintPcMessage='';
  syncUI.cancelViewer();
  syncUI.resetAccount();
@@ -1649,7 +1651,7 @@ async function switchAccountScope(scope){
   adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
  }
  adminFirestorePreviewMessage='';
- currentLoginScope=scope||null;
+ currentLoginScope=scope||null;cloudManagementDate='';legacyHistoryRemote=null;legacyHistoryBusy=false;legacyHistoryMessage='';
  const adminFirestorePreview=Boolean(scope?.admin&&
   ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
   scope.uid===adminFirestorePreviewOwnerUid);
@@ -1685,9 +1687,65 @@ async function switchAccountScope(scope){
  if(!adminCutoverBusy&&deviceMode==='writer'&&writerLoadGate)
   void syncUI.bootstrapWriter();
 }
-async function save(localOnly=false){if(!canEditNow())return false;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);return false;}}}
-function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
-function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
+let localSavePending=false;
+function updateLocalSaveIndicator(){
+ const el=typeof document!=='undefined'?document.querySelector?.('[data-local-save-status]'):null;
+ if(el)el.textContent=localSaveLabel()+'（Firestore保存とは別です）';
+}
+function localSaveLabel(){
+ if(storageStatus==='保存できない環境')return '端末：保存失敗（JSONバックアップを保管してください）';
+ if(localSavePending||Boolean(persistTimer))return '端末：保存待ち・保存確認中';
+ return storageStatus==='IndexedDB'?'端末：保存済み（IndexedDB）':
+  storageStatus==='localStorage（代替保存）'?'端末：保存済み（代替保存）':
+  '端末：'+String(storageStatus);
+}
+async function save(localOnly=false){
+ if(!canEditNow())return false;
+ const data=deepCopy(model),key=scopedStorageKey(),snapshot=JSON.stringify(data);
+ localSavePending=true;updateLocalSaveIndicator();
+ const recorded=()=>{
+  // The model can change while IndexedDB writes. Only show "saved" when
+  // the exact visible snapshot (and owner scope) still matches.
+  const same=scopedStorageKey()===key&&JSON.stringify(model)===snapshot;
+  localSavePending=!same;
+  updateLocalSaveIndicator();
+  if(!same&&!persistTimer&&canEditNow())saveLater();
+  if(same&&!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}
+  return same;
+ };
+ try{
+  if(db){await idbPut(db,data,key);storageStatus='IndexedDB';return recorded();}
+  localStorage.setItem(key,snapshot);storageStatus='localStorage（代替保存）';return recorded();
+ }catch(e){
+  console.error(e);
+  try{
+   localStorage.setItem(key,snapshot);db=null;
+   storageStatus='localStorage（代替保存）';return recorded();
+  }catch{
+   storageStatus='保存できない環境';localSavePending=true;
+   updateLocalSaveIndicator();
+   toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);
+   return false;
+  }
+ }
+}
+function saveLater(){
+ if(!canEditNow())return;
+ localSavePending=true;updateLocalSaveIndicator();
+ clearTimeout(persistTimer);
+ persistTimer=setTimeout(()=>{persistTimer=0;void save();},350);
+}
+function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id||(id==='manage'&&['cloud','files'].includes(tab))?'selected':''}" ${tab===id||(id==='manage'&&['cloud','files'].includes(tab))?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
+function renderDutySaveStatus(){
+ const shift=getShift()||selectedShift();
+ const cloud=memberDiary()?syncUI.dutySyncStatus(shift):{state:'legacy',label:'Firestoreには未確認（現在の原本はGoogle Sheets）',revision:null};
+ const date=shift?safeText(shift.date||'日付不明')+'／'+safeText(shift.id):'対象の日報なし';
+ const local=localSaveLabel();
+ return '<section class="card" style="padding:12px 16px" aria-label="日報の保存状態"><div style="font-weight:800;margin-bottom:4px">日報の保存状態</div>'+
+ '<div class="caption-note" style="overflow-wrap:anywhere">対象：'+date+'</div>'+
+ '<div class="caption-note" data-local-save-status>'+safeText(local)+'（Firestore保存とは別です）</div>'+
+ '<div role="status" class="'+(cloud.state==='confirmed'?'panel-strip':cloud.state==='unknown'||cloud.state==='conflict'?'danger-note':'warn')+'" style="margin:8px 0 0;padding:9px 11px">Firestore：'+safeText(cloud.label)+'</div></section>';
+}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+(?:-dev\.\d+)?/)||['v?'])[0];
  const state=deviceMode==='pending'?'△ 操作権を確認中（入力停止）':
@@ -1699,7 +1757,7 @@ function header(){
   ?`<div class="viewer-sync-controls"><button class="btn" style="min-height:34px;padding:5px 10px;font-size:12px;border-radius:8px" type="button" data-action="writerRefresh" ${syncUI.status().busy?'disabled aria-busy="true"':''}>${writerLoadGate?'↻ 再試行':syncUI.status().busy?'◌ 照合中':'↻ 同期'}</button><span class="viewer-sync-time" role="status">${safeText(writerLoadGate?writerLoadError:syncUI.message())}</span></div>`:'';
  const viewerTools=deviceMode==='viewer'
   ?`<div class="viewer-sync-controls"><button class="btn" type="button" data-action="viewerRefresh" ${syncUI.message()==='取得中…'?'disabled aria-busy="true"':''}>${syncUI.message()==='取得中…'?'◌ 取得中…':'↻ 最新データを取得'}</button><span class="viewer-sync-time">${safeText(syncUI.message())}</span></div>`:'';
- return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>`;
+ return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>${renderDutySaveStatus()}`;
 }
 let pendingRender=false, renderAfterKeypad=false;
 let focusDispatchSourceAfterRender=false;
@@ -1742,7 +1800,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='manage'?renderManagementHome():tab==='cloud'?renderCloudManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):renderSettings(shift)}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -2423,7 +2481,7 @@ function editHistoryHighwaySection(operation,modeOrIndex){
 function saveHistoryLocationDraft(draft){
  const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
  const minimal={uid:draft.uid,id:draft.id,recordId:draft.recordId,date:draft.date,
-  baseRevision:draft.baseRevision,al:draft.al,am:draft.am,
+  baseRevision:draft.baseRevision,legacyHash:draft.legacyHash||undefined,al:draft.al,am:draft.am,
   fields:draft.fields||{},metaFields:draft.metaFields||{},
   splitSecond:draft.splitSecond??'',splitAmount:draft.splitAmount??'',
   splitSlot:draft.splitSlot??null,removeRecord:draft.removeRecord===true,
@@ -2437,11 +2495,11 @@ function historyLocationEditHtml(shift){
  const draft=historyLocationEdit;
  if(!draft||draft.uid!==accountScope.uid||draft.id!==shift?.id)return '';
  return '<section class="card"><h3 class="h2">過去日報の営業明細修正</h3>'+
-  (draft.removeRecord?'<p class="warn">この営業記録を削除する修正案です。Firestore保存時に確認します。</p>':
+  (draft.removeRecord?'<p class="warn">この営業記録を削除する修正案です。保存時に確認します。</p>':
    '<p class="caption-note">乗務中の原本とは別に修正案を保持します。料金・距離・決済の変更は既存計算式で再確認します。</p>')+
   '<label class="field"><span class="field-label">乗車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditPickup" maxlength="160" value="'+safeText(draft.al)+'"></label>'+
   '<label class="field"><span class="field-label">降車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditDropoff" maxlength="160" value="'+safeText(draft.am)+'"></label>'+
-  '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>'+(draft.removeRecord?'営業記録の削除を保存':'Firestoreへ保存')+'</button>'+
+  '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>'+(draft.removeRecord?'営業記録の削除を保存':legacyDiary()?'旧GoogleへCAS保存':'Firestoreへ保存')+'</button>'+
   '<button class="btn" data-action="cancelHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>修正を取り消す</button></div>'+
   (draft.message?'<p class="caption-note">'+safeText(draft.message)+'</p>':'')+
   historyHighwayControls(draft)+
@@ -2475,9 +2533,8 @@ function historyLocationEditHtml(shift){
 // List only this user's pending edit backups; never change or delete them.
 function historyProtectedEdits(shift){
  const uid=accountScope.uid;
- const row=historyCloudRows.find(item=>item.id===shift?.id);
- if(!memberDiary()||!shift||historyCloudUid!==uid||!row||
-    row.shift?.date!==historyCloudDate)return [];
+ const row=historySourceRow(shift?.id);
+ if(!shift||!row||(memberDiary()&&historyCloudUid!==uid))return [];
  const candidates=(shift.records||[]).map(record=>({
   recordId:record.id,kind:record.kind,addRecord:false,
   label:'営業№'+String(record.raw?.A??'—')
@@ -2504,7 +2561,7 @@ function historyProtectedEdits(shift){
     Number.isSafeInteger(saved.baseRevision)&&
     Boolean(saved.addRecord)===candidate.addRecord;
    return [{...candidate,blocked:!valid,
-    stale:Boolean(valid&&saved.baseRevision!==row.revision)}];
+    stale:Boolean(valid&&(saved.baseRevision!==row.revision||legacyDiary()&&saved.legacyHash!==historyLegacyHash(row.shift)))}];
   }catch{return [{...candidate,blocked:true}];}
  });
 }
@@ -2549,22 +2606,80 @@ function assertHistoryLocalOverlapSafe(shiftId,remoteShift,revision){
   throw Error('端末の直近乗務とFirestore原本が一致しません。双方を保護して編集を停止しました');
  return true;
 }
+
+function historyLegacyHash(shift){
+ // A checksum is used only to notice changed local data, never to verify a
+ // server CAS revision or to replace the application's existing calculations.
+ const text=JSON.stringify(shift);
+ let hash=2166136261;
+ for(let i=0;i<text.length;i++)hash=Math.imul(hash^text.charCodeAt(i),16777619);
+ return String(text.length)+'-'+(hash>>>0).toString(16);
+}
+function canEditLegacyHistory(shift){
+ if(!legacyDiary()||!canEditNow()||!shift||shift.id===model.activeId||
+    !(shift.endedAt||shift.endedIso)||shift.draft)return false;
+ const local=model.shifts.find(row=>row.id===shift.id);
+ if(local)return local===shift;
+ return Boolean(legacyHistoryRemote?.uid===accountScope.uid&&
+   legacyHistoryRemote.id===shift.id&&legacyHistoryRemote.shift===shift);
+}
+function historySourceRow(id){
+ if(legacyDiary()){
+  const local=model.shifts.find(row=>row.id===id);
+  if(local)return canEditLegacyHistory(local)?{id,revision:0,shift:local}:null;
+  const remote=legacyHistoryRemote;
+  return remote?.uid===accountScope.uid&&remote.id===id&&
+    canEditLegacyHistory(remote.shift)?{id,revision:remote.revision,shift:remote.shift}:null;
+ }
+ return historyCloudRows.find(row=>row.id===id&&row.shift?.date===historyCloudDate)||null;
+}
+async function loadLegacyHistoryById(id){
+ if(legacyHistoryBusy||!legacyDiary()||!canEditNow()||!googleIsConfigured()){
+  toast('旧Google原本の閲覧には、管理者の接続設定と操作権が必要です',true);return;
+ }
+ if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)){
+  toast('乗務IDの形式を確認してください',true);return;
+ }
+ try{protectOpenHistoryEdit();}catch(e){toast(String(e.message||e),true);return;}
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ legacyHistoryBusy=true;legacyHistoryMessage='旧Google原本を1乗務だけ取得中';render();
+ try{
+  const response=await googlePostRequest('syncGet',{shiftId:id}),row=response?.data,shift=row?.shift;
+  if(uid!==accountScope.uid||generation!==accountScopeGeneration||!legacyDiary())return;
+  if(row?.id!==id||shift?.id!==id||
+     !Number.isSafeInteger(Number(row.revision))||Number(row.revision)<1||
+     !Array.isArray(shift.records)||!shift.settings||
+     !/^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||'')))
+   throw Error('旧Google原本の乗務ID・更新番号・内容を確認できません');
+  legacyHistoryRemote={uid,id,revision:Number(row.revision),shift:deepCopy(shift)};
+  const existing=model.shifts.some(s=>s.id===id);
+  legacyHistoryMessage=existing?
+   '同じ乗務IDの端末記録もあります。更新競合に注意し、無断上書きしません。':
+   '旧Google原本を取得しました。営業中の日報・GPS・設定は変えていません。';
+  historyDate=shift.date;historyShiftId=id;tab='history';render();
+ }catch(e){
+  if(uid===accountScope.uid&&generation===accountScopeGeneration){
+   legacyHistoryMessage='旧Google原本の取得失敗：'+String(e?.message||e);
+   toast(legacyHistoryMessage,true);
+  }
+ }finally{legacyHistoryBusy=false;}
+}
 function startHistoryLocationEdit(shiftId,recordId,addition=null){
- if(!memberDiary()||!accountDiary.ready()||!canEditNow()||historyCloudUid!==accountScope.uid)
-  throw Error('本人の操作端末でFirestoreの日報を取得してください');
+ if(!canEditNow()||(!legacyDiary()&&(!memberDiary()||!accountDiary.ready()||historyCloudUid!==accountScope.uid)))
+  throw Error('本人の操作端末で保存先の日報を確認してください');
  if(historyLocationEdit&&(historyLocationEdit.id!==shiftId||
     historyLocationEdit.recordId!==recordId)){
   if(historyLocationEdit.uid!==accountScope.uid)
    throw Error('別の利用者の修正控えは操作できません');
   protectOpenHistoryEdit();
  }
- const row=historyCloudRows.find(row=>row.id===shiftId&&row.shift?.date===historyCloudDate);
+ const row=historySourceRow(shiftId);
  const record=addition||row?.shift?.records?.find(record=>record.id===recordId);
  if(addition&&(addition.id!==recordId||row?.shift?.records?.some(item=>item.id===recordId)))
   throw Error('新しい営業記録IDが重複しています');
- if(!row||!record||!Number.isSafeInteger(row.revision)||row.revision<1)
+ if(!row||!record||!Number.isSafeInteger(row.revision)||row.revision<(legacyDiary()?0:1))
   throw Error('対象の日報・更新番号を確認できません');
- assertHistoryLocalOverlapSafe(shiftId,row.shift,row.revision);
+ if(memberDiary())assertHistoryLocalOverlapSafe(shiftId,row.shift,row.revision);
  const key=historyEditStorageKey(accountScope.uid,shiftId,recordId);
  let saved=null;
  try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{throw Error('端末内の修正控えが破損しています。自動上書きを停止しました');}
@@ -2593,6 +2708,7 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
  const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
  const split=record.meta?.splitPayment||{};
  const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
+  legacyHash:legacyDiary()?(saved?.legacyHash||historyLegacyHash(row.shift)):null,
   baseRevision:saved?.baseRevision??row.revision,al:saved?.al??String(record.raw?.AL??''),
   am:saved?.am??String(record.raw?.AM??''),busy:false,
   sourceRecord:prepared,
@@ -2606,7 +2722,7 @@ function startHistoryLocationEdit(shiftId,recordId,addition=null){
   splitSlot:saved&&Object.prototype.hasOwnProperty.call(saved,'splitSlot')?
    saved.splitSlot:(split.manualSlot===0||split.manualSlot===1?split.manualSlot:null),
   removeRecord:saved?.removeRecord===true,addRecord:Boolean(addition),
-  message:mismatch?'Firestoreに新しい版があります。保存は停止中です。修正控えを確認し、不要なら「修正を取り消す」で原本へ戻してください。':''};
+  message:mismatch?'原本が新しい版に更新されています。修正控えを保持し、無断上書きはしません。':''};
  saveHistoryLocationDraft(draft);
  historyLocationEdit=draft;
  historyShiftId=shiftId;render();
@@ -2744,13 +2860,13 @@ function historyPendingAdditionKey(uid,shiftId,kind){
  return 'taxiapp-history-new-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(shiftId)+'-'+kind;
 }
 function startHistoryNewRecord(kind){
- if(!['ride','cancel','empty'].includes(kind)||!memberDiary()||!canEditNow())
+ if(!['ride','cancel','empty'].includes(kind)||!(memberDiary()||legacyDiary())||!canEditNow())
   throw Error('過去日報を編集できません');
  const shift=selectedHistoryShift();
- const row=historyCloudRows.find(item=>item.id===shift?.id);
- if(!row||historyCloudUid!==accountScope.uid)
-  throw Error('本人Firestoreの日報を取得してください');
- assertHistoryLocalOverlapSafe(shift.id,row.shift,row.revision);
+ const row=historySourceRow(shift?.id);
+ if(!row||memberDiary()&&historyCloudUid!==accountScope.uid)
+  throw Error('保存先の日報を取得してください');
+ if(memberDiary())assertHistoryLocalOverlapSafe(shift.id,row.shift,row.revision);
  if(row.shift.records.length>=MAX_RECORDS)throw Error('60件に達したため追加できません');
  const pointer=historyPendingAdditionKey(accountScope.uid,shift.id,kind);
  let id=localStorage.getItem(pointer),candidate=null;
@@ -2779,8 +2895,8 @@ function startHistoryNewRecord(kind){
 }
 function markHistoryRecordRemoval(recordId){
  const shift=selectedHistoryShift();
- if(!shift||!historyCloudRows.some(row=>row.id===shift.id))
-  throw Error('Firestoreの過去日報を取得してください');
+ if(!shift||!historySourceRow(shift.id))
+  throw Error('編集可能な過去日報を取得してください');
  startHistoryLocationEdit(shift.id,recordId);
  const draft=historyLocationEdit;
  if(!draft||draft.recordId!==recordId)return;
@@ -2803,12 +2919,131 @@ function unchangedHistoryEdit(draft){
  return JSON.stringify(draft.highwaySections??null)===
   JSON.stringify(original.meta?.highwaySections??null);
 }
+
+async function legacyCasSaveHistoricalShift(original,updated,sourceHash,sourceRevision=0){
+ if(!legacyDiary()||!canEditNow()||!googleIsConfigured()||
+    !currentLoginScope?.admin||!accountScope.uid)
+  throw Error('管理者のGoogle接続と操作権を確認してください。修正控えは保持します');
+ const generation=accountScopeGeneration,uid=accountScope.uid,shiftId=original.id;
+ const local=()=>model.shifts.find(s=>s.id===shiftId);
+ const detachedRow=!local()?legacyHistoryRemote:null;
+ const detached=Boolean(detachedRow?.uid===uid&&detachedRow.id===shiftId&&
+  detachedRow.shift?.id===shiftId&&historyLegacyHash(detachedRow.shift)===sourceHash&&
+  Number(detachedRow.revision)===sourceRevision&&sourceRevision>=1);
+ const stable=()=>legacyDiary()&&canEditNow()&&accountScopeGeneration===generation&&
+  accountScope.uid===uid&&(!detached||legacyHistoryRemote===detachedRow);
+ if(!detached&&(!local()||historyLegacyHash(local())!==sourceHash||
+    local().draft||model.activeId===shiftId))
+  throw Error('元の端末日報が変更されています。原本と修正控えを保護します');
+ if(detached&&model.shifts.some(shift=>shift.id===shiftId))
+  throw Error('同じ乗務IDの端末日報が増えました。双方を保護して編集を停止します');
+ const response=await googlePostRequest('syncGet',{shiftId});
+ if(!stable())throw Error('保存先または利用者が変わったため修正を中止しました');
+ const remote=response?.data;
+ if(remote?.id!==shiftId||remote.shift?.id!==shiftId||
+    !Number.isSafeInteger(Number(remote.revision))||Number(remote.revision)<1)
+  throw Error('Google原本と更新番号を確認できません。修正控えを保持します');
+ const equal=(a,b)=>JSON.stringify(canonicalStoredDuty(a))===JSON.stringify(canonicalStoredDuty(b));
+ const expected=detached?original:googleShiftPacket(original).shift;
+ if(!equal(remote.shift,expected)||(detached&&Number(remote.revision)!==sourceRevision))
+  throw Error('Google原本の内容または更新番号が変わりました。無断上書きせず修正控えを保持します');
+ if(!stable()||(detached?model.shifts.some(x=>x.id===shiftId):
+    !local()||historyLegacyHash(local())!==sourceHash))
+  throw Error('確認中に端末原本または保存先が変更されました。修正控えを保持します');
+ const packet=googleShiftPacket(updated),baseRevision=Number(remote.revision);
+ let ack=null,sendError=null;
+ try{
+  const answer=await googlePostRequest('syncPut',{baseRevision,payload:JSON.stringify(packet)});
+  ack=answer?.data;
+ }catch(error){sendError=error;}
+ if(!stable())throw Error('送信中に本人端末の操作権が変更されました。修正控えを保持します');
+ // An acknowledgement can be lost after the CAS commit. Read the original
+ // and compare the complete payload; NEVER retry an uncertain write blindly.
+ let checked=null;
+ try{checked=(await googlePostRequest('syncGet',{shiftId}))?.data;}
+ catch(error){throw Error('Google送信結果を読戻しできません。修正控えを保持します：'+String(error.message||error));}
+ if(!stable())throw Error('確認中に利用者が変わりました。修正控えを保持します');
+ if(checked?.id!==shiftId||Number(checked.revision)!==baseRevision+1||
+    !equal(checked.shift,packet.shift))
+  throw Error('Google原本の更新結果不明・競合です。修正控えを保持しました：'+
+   String(sendError?.message||ack?.message||'更新番号・内容の不一致'));
+ if(detached){
+  if(model.shifts.some(x=>x.id===shiftId))
+   throw Error('Google原本は更新確認済みですが端末に同じIDが追加されました。修正控えを保持します');
+  legacyHistoryRemote={uid,id:shiftId,revision:baseRevision+1,shift:deepCopy(checked.shift)};
+ }else{
+  const index=model.shifts.findIndex(x=>x.id===shiftId);
+  if(index<0||historyLegacyHash(model.shifts[index])!==sourceHash)
+   throw Error('Google原本は更新確認済みですが端末の原本が変更されています。修正控えを保持します');
+  const previous=deepCopy(model.shifts[index]);
+  model.shifts[index]=deepCopy(updated);
+  if(await save(true)!==true){
+   model.shifts[index]=previous;
+   throw Error('Google原本は更新確認済みですが端末の永続保存に失敗しました。修正控えを保持します');
+  }
+  if(!stable())throw Error('保存中に利用者が変わりました。修正控えを保持します');
+  if(!syncUI.adoptHistoryDuty({id:shiftId,revision:baseRevision+1,shift:deepCopy(updated)}))
+   throw Error('Google原本は保存済みですが、端末の同期更新番号を確定できません。修正控えを保持します');
+ }
+ if(legacyHistoryRemote?.uid===uid&&legacyHistoryRemote.id===shiftId)
+  legacyHistoryRemote={uid,id:shiftId,revision:baseRevision+1,shift:deepCopy(checked.shift)};
+ cloudLastDigest.set(shiftId,JSON.stringify(packet));
+ setGoogleStatus('旧Google原本をCAS更新・読戻し確認済み：'+updated.date+'／版'+(baseRevision+1));
+ return {revision:baseRevision+1};
+}
+async function commitLegacyHistoryLocationEdit(draft){
+ if(!legacyDiary()||!canEditNow()||accountScope.uid!==draft.uid)return;
+ const source=historySourceRow(draft.id),original=source?.shift;
+ if(!original||!canEditLegacyHistory(original)||historyLegacyHash(original)!==draft.legacyHash||
+    original.date!==draft.date){
+  draft.message='端末の日報が変更されています。修正控えは保持しました';render();return;
+ }
+ if(!googleIsConfigured()){
+  draft.message='旧Googleへの接続情報が未設定です。修正控えは端末に保護しています。接続確認後に再保存してください';render();return;
+ }
+ draft.busy=true;draft.message='既存Google原本をCAS照合し保存中…';render();
+ const generation=accountScopeGeneration;
+ try{
+  const updated=deepCopy(original);
+  const rec=draft.addRecord?deepCopy(draft.sourceRecord):updated.records.find(r=>r.id===draft.recordId);
+  if(!rec)throw Error('修正対象の営業記録がありません');
+  if(draft.addRecord){
+   if(updated.records.length>=MAX_RECORDS||updated.records.some(r=>r.id===rec.id))
+    throw Error('営業記録の件数・IDを確認してください');
+   rec.status='complete';rec.meta??={};rec.meta.serviceDate=updated.date;
+   applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
+   const issues=[...validateDraft(rec),...validatePaymentBreakdown(rec,updated.settings,updated.date)];
+   if(issues.length)throw Error('営業内容を確認してください：'+issues.join('、'));
+   rec.raw=deriveRaw(rec,updated.settings);
+   updated.records.push(rec);
+   updated.records.forEach((item,index)=>{item.raw.A=index+1;});
+  }else if(draft.removeRecord){
+   if(!confirm('営業№'+String(rec.raw?.A||'')+'を旧Google原本からCAS更新で除きますか？復旧用JSONは事前に保管してください'))return;
+   updated.records=updated.records.filter(item=>item.id!==rec.id);
+   updated.records.forEach((item,index)=>{item.raw.A=index+1;});
+  }else applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
+  await legacyCasSaveHistoricalShift(original,updated,draft.legacyHash,source.revision);
+  if(accountScopeGeneration!==generation||historyLocationEdit!==draft)return;
+  try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));
+   if(draft.addRecord)localStorage.removeItem(historyPendingAdditionKey(draft.uid,draft.id,draft.sourceRecord.kind));
+  }catch{
+   draft.message='Google原本は保存確認済みですが、端末の修正控えは保護したままです';render();return;
+  }
+  historyLocationEdit=null;historyCloudMessage='旧Google原本の営業明細を更新・読戻し確認しました';render();
+ }catch(error){
+  if(historyLocationEdit===draft&&accountScope.uid===draft.uid){
+   draft.message='保存未確認：'+String(error.message||error)+'。端末の修正控えを保持しています';render();
+  }
+ }finally{draft.busy=false;if(historyLocationEdit===draft)render();}
+}
 async function commitHistoryLocationEdit(){
  const draft=historyLocationEdit;
  if(!draft||draft.busy)return;
  try{if(!historyLocationInputs())throw Error('修正入力が見つかりません');}
  catch(error){draft.message=String(error?.message||error);render();return;}
- if(!accountDiary.ready()||!canEditNow()||accountScope.uid!==draft.uid)return;
+ if(!canEditNow()||accountScope.uid!==draft.uid)return;
+ if(legacyDiary()){await commitLegacyHistoryLocationEdit(draft);return;}
+ if(!accountDiary.ready())return;
  if(unchangedHistoryEdit(draft)){
   try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));}
   catch{draft.message='変更なしですが、端末の修正控えを整理できません';render();return;}
@@ -2913,7 +3148,7 @@ async function commitHistoryLocationEdit(){
 function discardHistoryLocationEdit(){
  const draft=historyLocationEdit;
  if(!draft||draft.busy)return;
- if(!confirm('端末に保護した過去日報の修正案を取り消しますか？Firestoreの原本は変更しません。'))return;
+ if(!confirm('端末に保護した過去日報の修正案を取り消しますか？サーバー原本は変更しません。'))return;
  try{
   const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
   const snapshot=localStorage.getItem(key);
@@ -2934,6 +3169,112 @@ function discardHistoryLocationEdit(){
 // A returned duty retained as the phone's most recent original is still
 // editable from explicitly fetched Firestore history, but only when the
 // current local original is an exact, revision-verified server copy.
+
+function historyDateCorrectionKey(uid,id){return 'taxiapp-history-date-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(id);}
+function beginHistoryDateCorrection(){
+ const shift=selectedHistoryShift();
+ if(!(canEditCloudHistory(shift)||canEditLegacyHistory(shift))||historyLocationEdit)
+  throw Error('編集可能な日報を選び、他の明細編集を終了してください');
+ const row=historySourceRow(shift.id),uid=accountScope.uid;
+ const key=historyDateCorrectionKey(uid,shift.id),raw=localStorage.getItem(key);
+ let d;
+ try{d=raw?JSON.parse(raw):null;}catch{throw Error('以前の日付訂正控えが破損しています。上書きせず保持します');}
+ if(d&&(d.uid!==uid||d.id!==shift.id||d.originalDate!==shift.date))throw Error('日付訂正控えの本人または原本が異なるため停止しました');
+ if(!d)d={uid,id:shift.id,originalDate:shift.date,newDate:shift.date,revision:row.revision,
+  legacyHash:legacyDiary()?historyLegacyHash(shift):null,message:''};
+ localStorage.setItem(key,JSON.stringify(d));
+ if(localStorage.getItem(key)!==JSON.stringify(d))throw Error('日付訂正控えを端末に保存できません');
+ if(d.revision!==row.revision||legacyDiary()&&d.legacyHash!==historyLegacyHash(shift))
+  d.message='原本が変更されています。修正控えを保護し、上書きしません。';
+ historyDateCorrection=d;render();
+}
+function renderHistoryDateCorrection(shift){
+ const d=historyDateCorrection;if(!d||d.id!==shift?.id)return '';
+ return '<section class="card"><h2 class="h2">出庫日の訂正</h2>'+
+  '<p class="warn">乗務IDを変えず、乗務の各日時を同じ日数だけ移動します。入庫済み日報だけ訂正できます。</p>'+
+  '<p class="caption-note">ID：'+safeText(d.id)+'／現在の出庫日：'+safeText(d.originalDate)+'／元の更新番号：'+d.revision+'</p>'+
+  '<label class="field">訂正後の日付<input type="date" class="control" id="historyCorrectionDate" value="'+safeText(d.newDate)+'"></label>'+
+  (d.message?'<p class="warn">'+safeText(d.message)+'</p>':'')+
+  '<div class="actions"><button class="btn primary" type="button" data-action="historyDateSave" '+(d.busy?'disabled':'')+'>'+(legacyDiary()?'旧GoogleへCAS保存':'Firestoreへ保存')+'</button>'+
+  '<button class="btn" type="button" data-action="historyDateCancel" '+(d.busy?'disabled':'')+'>修正控えを取り消す</button></div></section>';
+}
+function correctShiftDate(shift,newDate){
+ const old=shift.date;
+ const day=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s))throw Error('日付が不正です');
+  const ms=Date.parse(s+'T00:00:00Z');if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==s)throw Error('存在しない日付です');return ms;};
+ const delta=day(newDate)-day(old);
+ // Keep the original shift ID for any valid corrected date.
+ const walk=(v,k='')=>{
+  if(Array.isArray(v))return v.map(x=>walk(x,k));
+  if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([name,x])=>[name,walk(x,name)]));
+  if(typeof v!=='string')return v;
+  if((k==='date'||k==='serviceDate')&&v===old)return newDate;
+  if((k.endsWith('Iso')||['dispatchAt','cancelAt','createdAt','settledAt','boardedAt','alightedAt','at'].includes(k))&&
+   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)){const ms=Date.parse(v);if(Number.isFinite(ms))return new Date(ms+delta).toISOString();}
+  return v;
+ };
+ return walk(shift);
+}
+async function saveHistoryDateCorrection(){
+ const d=historyDateCorrection;if(!d||d.busy||!canEditNow()||accountScope.uid!==d.uid||
+  (!legacyDiary()&&(!memberDiary()||!accountDiary.ready())))return;
+ const row=historySourceRow(d.id);
+ if(!row||row.revision!==d.revision||row.shift.date!==d.originalDate){d.message='元の更新番号が異なります。修正控えは保持します';render();return;}
+ if(d.newDate===d.originalDate){d.message='変更された日付がありません';render();return;}
+ let corrected;
+ try{if(!row.shift.endedAt&&!row.shift.endedIso)throw Error('入庫済みの日報だけ訂正できます');
+  if(memberDiary())assertHistoryLocalOverlapSafe(d.id,row.shift,row.revision);
+  if(legacyDiary()&&historyLegacyHash(row.shift)!==d.legacyHash)throw Error('旧日報が変更されています。修正控えを保持します');
+  corrected=correctShiftDate(row.shift,d.newDate);}
+ catch(e){d.message=String(e.message||e);render();return;}
+ if(!confirm('出庫日 '+d.originalDate+' → '+d.newDate+' に訂正し、乗務IDを維持して'+
+  (legacyDiary()?'旧Google原本':'本人Firestore')+'をCAS更新しますか？'))return;
+ const gen=accountScopeGeneration,epoch=historyCloudEpoch;
+ const stable=()=>accountScope.uid===d.uid&&gen===accountScopeGeneration&&epoch===historyCloudEpoch&&historyDateCorrection===d&&(legacyDiary()||memberDiary())&&canEditNow();
+ d.busy=true;d.message='保存先へCAS保存・読戻し確認中';render();
+ try{
+  if(legacyDiary()){
+   await legacyCasSaveHistoricalShift(row.shift,corrected,d.legacyHash,row.revision);
+   if(!stable())return;
+   historyDateCorrection=null;historyDate=corrected.date;historyShiftId=d.id;
+   try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
+   catch{historyCloudMessage='Google原本は更新確認済みですが端末の修正控えは保護しています';render();return;}
+   historyCloudMessage='出庫日を'+d.newDate+'へ訂正・旧Google原本をCAS保存確認済み';render();return;
+  }
+  const packet=accountScope.adminFirestore?googleShiftPacket(corrected):{kind:'TAXIAPP_SHIFT_V1',shift:corrected};
+  if(accountScope.adminFirestore)packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  try{await accountDiary.request('syncPut',{baseRevision:d.revision,payload:JSON.stringify(packet)});}catch(e){d.message='送信結果を読戻し中：'+String(e.message||e);}
+  if(!stable())return;
+  const remote=await accountDiary.request('syncGet',{shiftId:d.id});
+  if(!stable())return;
+  if(remote?.id!==d.id||remote.revision!==d.revision+1||
+    JSON.stringify(canonicalStoredDuty(remote.shift))!==JSON.stringify(canonicalStoredDuty(packet.shift)))
+   throw Error('送信結果不明または競合です。元の修正控えを保持し、上書きはしません');
+  const i=model.shifts.findIndex(x=>x.id===d.id);
+  if(i>=0){
+   assertHistoryLocalOverlapSafe(d.id,row.shift,row.revision);
+   const before=deepCopy(model.shifts[i]);model.shifts[i]=deepCopy(packet.shift);
+   if(await save(true)!==true){model.shifts[i]=before;throw Error('Firestore保存済みですが端末保存未確認。修正控えを保持します');}
+   if(!stable())return;
+   if(!syncUI.adoptHistoryDuty({id:d.id,revision:remote.revision,shift:packet.shift})){
+    model.shifts[i]=before;await save(true);throw Error('Firestore保存済みですが端末更新番号が未確認。修正控えを保持します');
+   }
+  }
+  historyCloudRows=historyCloudRows.filter(x=>x.id!==d.id);historyCloudShifts=historyCloudRows.map(x=>x.shift);
+  historyDateCorrection=null;
+  try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
+  catch{historyCloudMessage='Firestore保存済み。端末の訂正控えは手動保護してください';render();return;}
+  historyCloudMessage='出庫日を'+d.newDate+'へ訂正・保存確認済み。新しい日付を指定して取得してください。';render();
+ }catch(e){if(stable()){d.message='保存未確認：'+String(e.message||e);render();}}
+ finally{d.busy=false;if(historyDateCorrection===d)render();}
+}
+function cancelHistoryDateCorrection(){
+ const d=historyDateCorrection;if(!d||d.busy||!confirm('日付訂正の修正控えを破棄しますか？サーバー原本は変更しません。'))return;
+ try{localStorage.removeItem(historyDateCorrectionKey(d.uid,d.id));}
+ catch{d.message='端末の修正控えを破棄できません';render();return;}
+ historyDateCorrection=null;render();
+}
+
 function canEditCloudHistory(shift){
  if(!shift||!memberDiary()||!accountDiary.ready()||!canEditNow()||
     historyCloudUid!==accountScope.uid||historyCloudDate!==shift.date||
@@ -2953,10 +3294,10 @@ function historyFoldSection(key,title,html){
  return '<details class="details history-fold-panel" data-history-panel="'+safeText(key)+'">'+
   '<summary>'+safeText(title)+'</summary><div class="inner">'+body+'</div></details>';
 }
-function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
-<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
+function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift)||canEditLegacyHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
+<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存された日報を表示します。Google原本だけの日報は「管理」→「クラウド日報管理」で乗務IDを指定して1件取得できます。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div>${memberDiary()?(()=>{const found=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);return '<div class="caption-note">'+(found?'本人Firestoreから取得済み／更新番号 '+found.revision:syncUI.dutySyncStatus(shift).label)+'</div>';})():legacyHistoryRemote?.id===shift.id&&legacyHistoryRemote.uid===accountScope.uid?'<div class="caption-note">旧Google原本の取得版：'+legacyHistoryRemote.revision+'／乗務ID：'+safeText(shift.id)+'</div>':''}</div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
-${editableHistory?'<div class="actions"><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">明細修正</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
+${editableHistory?'<div class="actions"><button class="btn" data-action="historyDateEditStart">出庫日を訂正</button><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${renderHistoryDateCorrection(shift)}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">編集</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
 ${shift.records.length?`<details class="details history-fold-panel history-detail-section" data-history-panel="records"><summary>営業明細の詳細（${shift.records.length}件）</summary><div class="inner"><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</div></details>`:''}`}`;}
 // Seven-purpose operations dashboard. Presentation only: no stored record mutations.
 function opsBreakSeconds(shift,now=new Date()){
@@ -3647,17 +3988,13 @@ function renderAdminBackendSettings(){
  }
  const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  return '<section class="card"><h2 class="h2">現在の原本：Google Sheets（管理者）</h2>'+
-  '<p class="helper">本人UID別Firestoreへ切替する乗務だけ選択してください。不要なテスト乗務は選択しません。旧Google原本と補助簿2ページは変更しません。</p>'+
-  (shifts.length?shifts.map(sh=>'<label class="field" style="display:flex;align-items:center;gap:8px;margin:8px 0">'+
-   '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'" '+(ADMIN_LEGACY_DUTY_MIGRATION_APPROVED?'':'disabled')+'>'+
-   '<span>'+safeText(sh.date||'日付不明')+' ／ '+Number(sh.records?.length||0)+'件 ／ '+safeText(sh.id)+'</span></label>').join(''):
-   '<p class="helper">この端末に乗務がありません。新しい保存先を初期化できます。</p>')+
+  '<p class="helper">既存'+shifts.length+'乗務は旧Google原本として保護中です。これまでの乗務の移行は別途承認が必要です。新しい営業からのFirestore自動同期へ切替える場合だけ、下の一度限りの設定を使用します。</p>'+
   '<label class="field" style="display:flex;gap:8px;margin:12px 0">'+
   '<input type="checkbox" data-firestore-new-only>'+
   '<span>既存の端末日報は移行せず、これからの営業日報だけFirestoreへ保存する（旧Google原本は残す）</span></label>'+
   '<p class="caption-note">既存の日報移行は保存先切替と別承認です。現在は既存データを移行せず新規開始だけを選べます。過去の検証用Firestore日報も通常乗務として自動再開しません。</p>'+
   '<button class="btn primary" type="button" data-action="adminFirestoreCutover" '+(adminCutoverBusy?'disabled':'')+'>'+
-  (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
+  (adminCutoverBusy?'保存先変更中…':'今後の新規乗務の保存先をFirestoreへ切り替える')+'</button>'+
   '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
 }
 // Verify the administrator's current duty in either approved production
@@ -3909,7 +4246,7 @@ async function returnAdminToLegacy(){
 function renderSheetTargetSettings(){
  if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2>'+
   '<p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>'+
-  syncUI.privateDiaryPanel();
+  '';
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
@@ -3923,11 +4260,7 @@ function renderSheetTargetSettings(){
  <div class="actions"><button class="btn primary" data-action="syncCurrentShift" ${latest?'':'disabled'}>↥ この乗務をGoogleへ送信</button><button class="btn" data-action="syncAllShifts" ${model.shifts.length?'':'disabled'}>↥ 過去の乗務も送信</button></div>
  <p class="footnote">端末内への保存は常に有効です。同じ乗務IDの再送信ではGoogle側の同じ乗務データを更新し、他の乗務は保持します。印刷対象の切替はGoogleシート側で行います。</p>
  <div class="actions">${url?`<a class="btn" href="${safeText(url)}" target="_blank" rel="noopener noreferrer">↗ Googleの印刷シートを開く</a>`:''}</div>
- ${syncUI.panel()}<hr class="divider"><h3 class="subsection">CSV・バックアップ</h3>
- <div class="form-grid"><label class="field"><span class="field-label">ファイル名の先頭</span><input class="control" data-file-setting="fileBaseName" type="text" maxlength="100" value="${safeText(p.fileBaseName)}"></label>
- <label class="field"><span class="field-label">ファイル名の書式</span><input class="control" data-file-setting="fileNamePattern" type="text" maxlength="180" value="${safeText(p.fileNamePattern)}"></label></div>
- <div class="panel-strip" data-file-preview>例：<strong>${safeText(exportFileName('入力_RAW_実車',latest))}</strong></div>
- <div class="actions"><button class="btn" data-action="downloadCsv" ${latest?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadPaymentsCsv" ${latest?'':'disabled'}>⇩ 決済内訳CSV</button><button class="btn" data-action="downloadJson">⇩ JSONバックアップ</button></div>
+ ${syncUI.panel()}
  </section>`;
 }
 function handleSheetTargetSetting(target){const field=target.dataset.cloudSetting??target.dataset.fileSetting;
@@ -3964,6 +4297,47 @@ function handleSheetTargetSetting(target){const field=target.dataset.cloudSettin
 }
 // A single departure-to-return session is the unit of device data removal.
 // Render as full-width touch cards, not a horizontally scrollable table.
+function managementSubNav(){return '<div class="actions" style="margin-bottom:16px"><button class="btn" type="button" data-tab="manage">管理</button><button class="btn" type="button" data-tab="cloud">☁ クラウド日報</button><button class="btn" type="button" data-tab="files">▣ ファイル管理</button></div>';}
+function renderManagementHome(){return titleBlock('管理','MANAGEMENT','日報の管理とファイル操作を別々に扱います。')+'<section class="card"><h2 class="h2">クラウド日報管理</h2><p class="helper">本人のサーバー日報の閲覧・修正・保存状態とゴミ箱</p><button class="btn primary" type="button" data-tab="cloud">クラウド日報管理を開く</button></section>'+'<section class="card"><h2 class="h2">ファイル管理</h2><p class="helper">JSON・CSV・バックアップ・取込・端末内整理</p><button class="btn primary" type="button" data-tab="files">ファイル管理を開く</button></section>';}
+
+function renderCloudManagement(){
+ const date=cloudManagementDate||historyDate||dateStamp();
+ const loaded=memberDiary()&&historyCloudUid===accountScope.uid&&historyCloudDate===date;
+ const rows=loaded?historyCloudRows:[];
+ const cards=rows.map(row=>{
+  const sh=row.shift,editable=canEditCloudHistory(sh);
+  const amount=totals(sh.records||[],sh.settings||{},sh.date||'').meter;
+  return '<article class="card"><strong>'+safeText(sh.date)+' ／ 営業'+sh.records.length+'件 ／ '+money(amount)+'</strong>'+
+   '<p class="caption-note" style="overflow-wrap:anywhere">乗務ID：'+safeText(row.id)+'</p>'+
+   '<p class="panel-strip">サーバー原本：取得済み ／ 更新番号 '+row.revision+'（編集後は再保存して照合）</p>'+
+   '<button class="btn" type="button" data-action="cloudManageOpen" data-id="'+safeText(row.id)+'">'+
+    (editable?'営業記録を編集する':'営業記録を確認する')+'</button></article>';
+ }).join('');
+ const filter=memberDiary()?
+  '<section class="card"><h2 class="h2">乗務日を指定して取得</h2>'+
+  '<label class="field">乗務日<input type="date" class="control" id="cloudManagementDate" value="'+safeText(date)+'"></label>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="cloudManageLoad" '+(historyCloudBusy?'disabled':'')+'>この日付をFirestoreから取得</button></div>'+
+  '<p class="caption-note">'+safeText(historyCloudMessage)+'</p></section>'+
+  (loaded?(cards||'<section class="card">この日付の日報はありません。</section>'):''):
+  '<section class="card"><h2 class="h2">現行原本はGoogle Sheets</h2>'+
+  '<p class="warn">現行原本はGoogle Sheetsです。Firestore取得欄に表示されなくても、Google日報の保存・PC印刷には影響しません。</p>'+ '<p class="caption-note">旧Google原本は無断移行しません。過去日報の閲覧は下のボタンから行えます。</p>'+ '<button class="btn" type="button" data-tab="history">端末にある過去日報を確認</button>'+ 
+  '<label class="field">Google原本の乗務IDを指定（1件取得）<input class="control" type="text" id="legacyGoogleHistoryId" maxlength="100" placeholder="shift-…"></label>'+ 
+  '<button class="btn" type="button" data-action="legacyGoogleHistoryLoad" '+(legacyHistoryBusy?'disabled':'')+'>旧Google原本を開く</button>'+ 
+  '<p class="caption-note">'+safeText(legacyHistoryMessage)+'</p></section>';
+ return titleBlock('クラウド日報管理','CLOUD DIARY','本人UIDの日報を必要な日付だけ取得します。')+
+  managementSubNav()+filter+(memberDiary()?syncUI.privateDiaryPanel():'');
+}
+
+function renderFileManagement(){const shift=selectedShift(),latest=shift,p=sheetTargetPrefs();return `
+${titleBlock('ファイル管理','FILES','JSON・CSV・端末間移行・端末内データ整理')}${managementSubNav()}
+${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">JSONバックアップ・復元</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">${accountScope.adminFirestore?'現在の原本は本人UID専用Firestoreです。旧Google原本はそのまま保持します。':memberDiary()?'現在の原本は本人UID専用Firestoreです。ログインと操作権の確認後に利用できます。':'従来のGoogle原本を継続します。入力はログインと操作権の確認後に利用できます。'}</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider">${accountScope.adminFirestore&&!accountScope.adminFirestorePreview?'<label class="field"><span class="field-label">本人Firestoreへ保存済みJSON日報を1乗務取り込む</span><input class="control" style="font-size:13px" type="file" id="importFirestoreBackup" accept=".json,application/json"></label><p class="footnote">入庫済みの1乗務を日付で選択し、本人UIDのFirestoreに新規保存します。現行の営業中データ・設定・旧Google原本は変更しません。既存の同じ乗務IDは上書きしません。</p>':'<label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p>'}</section><div class="danger-note">※ 端末への保存にはIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。${accountScope.adminFirestore?'Firestore原本のGoogle補助簿印刷元への転記はPC側で明示操作します。':memberDiary()?'本人用Firestore原本は他の利用者のデータと分離しています。':'従来のGoogle原本と印刷用シートは維持します。'}</div>
+${legacyDiary()?`<section class="card"><h2 class="h2">CSV・ファイル名</h2>
+ <div class="form-grid"><label class="field"><span class="field-label">ファイル名の先頭</span><input class="control" data-file-setting="fileBaseName" type="text" maxlength="100" value="${safeText(p.fileBaseName)}"></label>
+ <label class="field"><span class="field-label">ファイル名の書式</span><input class="control" data-file-setting="fileNamePattern" type="text" maxlength="180" value="${safeText(p.fileNamePattern)}"></label></div>
+ <div class="panel-strip" data-file-preview>例：<strong>${safeText(exportFileName('入力_RAW_実車',latest))}</strong></div>
+ <div class="actions"><button class="btn" data-action="downloadCsv" ${latest?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadPaymentsCsv" ${latest?'':'disabled'}>⇩ 決済内訳CSV</button></div></section>`:''}
+${renderDataManagement()}
+`;}
 function renderDataManagement(){
  const sessions=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  const items=sessions.map(s=>{
@@ -3979,12 +4353,12 @@ function renderDataManagement(){
     <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
     ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
    </div>
-   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">この乗務を削除</button>
+   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">${memberDiary()?"この乗務をゴミ箱へ移動":"端末の乗務を整理（旧Google原本は保持）"}</button>
   </article>`;
  }).join('');
  return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
-   <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
-   <p class="warn">削除後は同じ保存先と同期しても端末へ復活しません。Google原本・他端末の記録は消しません。先にJSONバックアップを保存してください。</p>
+   <p class="helper">本人Firestoreの保存確認済み日報は、明示削除でゴミ箱へ移し、復元できる状態を維持します。保存未確認・競合中の日報は削除できません。旧Google原本は移行・削除しません。</p>
+   <p class="warn">通常保持の自動整理と、手動のゴミ箱移動は別操作です。旧Google原本・印刷帳票は変更しません。未同期・競合・移行前の乗務は引き続き保護してください。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
   </section>
   <section class="card"><h2 class="h2">乗務一覧</h2>
@@ -4034,12 +4408,12 @@ function renderLoginAccountInfo(){
   '<p class="caption-note">ここにはChromeのプロフィールではなく、TAXIAPPが認証したGoogleアカウントを表示します。'+
   '保存先の表示は同期成功の証明ではありません。ログインや保存先の設定はこの欄から変更しません。</p></section>';
 }
-function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced" data-login-account-settings open><summary>ログイン中のアカウント情報</summary><div class="inner">${renderLoginAccountInfo()}</div></details><details class="details settings-advanced"><summary>営業入力の画面サイズ・向き</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の画面サイズと向き</h2><p class="helper">営業入力は1種類に統一しています。必要な項目は「営業入力項目の表示設定」で選択できます。</p><h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-data-management><summary>データ管理（乗務単位の削除）</summary><div class="inner">${renderDataManagement()}</div></details><details class="details settings-advanced" data-business-field-settings><summary>営業画面の表示項目</summary><div class="inner"><details class="details" data-ride-field-settings><summary>日報入力項目の表示設定</summary><div class="inner">${renderRideFieldSettings()}</div></details><details class="details" data-cruising-summary-settings><summary>空車・流し時の上部表示項目</summary><div class="inner">${renderCruisingSummarySettings()}</div></details><details class="details" data-drive-status-settings><summary>営業情報の表示</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の状況表示</h2><p class="helper">画面上部の営業情報をまとめて表示・非表示にできます。下では項目ごとに選べます。非表示にしても日報記録や計算処理はそのままです。</p>${renderUiChoice('driveStatusDisplay',[['on','表示する'],['off','表示しない']])}<h3 class="subsection">表示する項目を選択</h3>${renderDriveStatusFieldSettings()}</section></div></details></div></details><details class="details settings-advanced" data-appearance-settings><summary>画面表示のカスタマイズ</summary><div class="inner"><details class="details" data-text-size-settings><summary>文字の大きさ</summary><div class="inner"><section class="card"><p class="helper">画面全体の文字サイズを設定します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-button-size-settings><summary>ボタンの大きさ</summary><div class="inner"><section class="card"><p class="helper">ボタンを押しやすい大きさに変更します。操作は安全に停車した状態で行ってください。</p>${renderUiChoice('buttons',[['ultra','超コンパクト'],['compact','控えめ'],['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-help-settings><summary>説明文の表示</summary><div class="inner"><section class="card">${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}</section></div></details><details class="details" data-theme-settings><summary>画面の配色・コントラスト</summary><div class="inner"><section class="card"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}</section></div></details><details class="details" data-ui-preview-settings><summary>表示サンプル・表示設定の初期化</summary><div class="inner"><section class="card"><div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details></div></details><details class="details settings-advanced"><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced" data-admin-backend-settings><summary>${legacyDiary()||accountScope.adminFirestore?'日報原本の保存先を変更':'日報原本の保存先'}</summary><div class="inner">${renderAdminBackendSettings()}</div></details><details class="details settings-advanced"><summary>${legacyDiary()?'Googleスプレッドシート':'本人専用クラウド日報'}</summary><div class="inner">${renderSheetTargetSettings()}</div></details><details class="details settings-advanced" data-driver-registration><summary>乗務員登録・車両・キャンセル設定</summary><div class="inner">${renderDriverDefaults()}<details class="details" data-cancel-settings><summary>キャンセル設定</summary><div class="inner"><section class="card"><h2 class="h2">キャンセル時のメーター照合</h2><p class="helper">配車アプリ会社からのキャンセル補填金とは無関係です。車両メーターに初乗り相当額が残るかどうかだけを設定します。補正は実売上・納金に加算しません。</p><label class="field"><span class="field-label">キャンセル後の車両メーター</span><select class="control" data-cancel-meter-mode><option value="retain" ${cancelMeterConfig().mode==='retain'?'selected':''}>初乗り料金が残る</option><option value="reset" ${cancelMeterConfig().mode==='reset'?'selected':''}>0円に戻る（照合補正なし）</option></select></label>${cancelMeterConfig().mode==='retain'?`<label class="field"><span class="field-label">照合用の初乗り料金（円）</span><input class="control" type="number" min="0" max="100000" step="1" data-cancel-meter-amount value="${cancelMeterConfig().amount}"></label>`:''}<p class="caption-note">新たに保存するキャンセルごとに補正額を記録するため、設定を変えても過去の照合額は変わりません。既存の記録は従来の700円で扱います。</p></section></div></details>${shift?`<details class="details" data-fee-settings><summary>計算用金額・手数料設定</summary><div class="inner"><section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section></div></details>`:''}<details class="details" data-duty-plan-settings><summary>勤務形態・1乗務の予定</summary><div class="inner">${renderDutyPlanSettings()}</div></details></div></details><details class="details settings-advanced" data-wait-place-settings><summary>待機場所の設定</summary><div class="inner">${renderWaitPlaceSettings()}</div></details><details class="details settings-advanced" data-distance-address-settings><summary>距離・住所取得</summary><div class="inner"><details class="details" data-gps-settings><summary>走行距離の設定</summary><div class="inner"><section class="card"><h2 class="h2">① 距離を記録しますか？</h2><p class="helper">ONなら距離欄を表示します。手入力や「GPS取得」ボタンが使えます。自動入力するかどうかは次の②で選べます。</p><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（距離を記録する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を記録する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p>${model.prefs.pickupDropDistance!=='off'||model.prefs.highwayDistance!=='off'?`<div class="distance-auto-group"><h2 class="h2">② 距離を自動入力しますか？</h2><p class="helper">手動：距離を自分で入力します。「GPS取得」ボタンも利用できます。自動：時刻・現在地を記録するとき、空欄にGPS距離を入力します。</p><label class="field"><span class="field-label">時刻・現在地の記録時に距離も自動入力</span><select class="control" data-native-auto-distance>
+function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced" data-login-account-settings open><summary>ログイン中のアカウント情報</summary><div class="inner">${renderLoginAccountInfo()}</div></details><details class="details settings-advanced"><summary>営業入力の画面サイズ・向き</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の画面サイズと向き</h2><p class="helper">営業入力は1種類に統一しています。必要な項目は「営業入力項目の表示設定」で選択できます。</p><h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-business-field-settings><summary>営業画面の表示項目</summary><div class="inner"><details class="details" data-ride-field-settings><summary>日報入力項目の表示設定</summary><div class="inner">${renderRideFieldSettings()}</div></details><details class="details" data-cruising-summary-settings><summary>空車・流し時の上部表示項目</summary><div class="inner">${renderCruisingSummarySettings()}</div></details><details class="details" data-drive-status-settings><summary>営業情報の表示</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の状況表示</h2><p class="helper">画面上部の営業情報をまとめて表示・非表示にできます。下では項目ごとに選べます。非表示にしても日報記録や計算処理はそのままです。</p>${renderUiChoice('driveStatusDisplay',[['on','表示する'],['off','表示しない']])}<h3 class="subsection">表示する項目を選択</h3>${renderDriveStatusFieldSettings()}</section></div></details></div></details><details class="details settings-advanced" data-appearance-settings><summary>画面表示のカスタマイズ</summary><div class="inner"><details class="details" data-text-size-settings><summary>文字の大きさ</summary><div class="inner"><section class="card"><p class="helper">画面全体の文字サイズを設定します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-button-size-settings><summary>ボタンの大きさ</summary><div class="inner"><section class="card"><p class="helper">ボタンを押しやすい大きさに変更します。操作は安全に停車した状態で行ってください。</p>${renderUiChoice('buttons',[['ultra','超コンパクト'],['compact','控えめ'],['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-help-settings><summary>説明文の表示</summary><div class="inner"><section class="card">${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}</section></div></details><details class="details" data-theme-settings><summary>画面の配色・コントラスト</summary><div class="inner"><section class="card"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}</section></div></details><details class="details" data-ui-preview-settings><summary>表示サンプル・表示設定の初期化</summary><div class="inner"><section class="card"><div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details></div></details><details class="details settings-advanced"><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced" data-internal-settings><summary>保存先・接続の詳細管理（通常操作不要）</summary><div class="inner"><details class="details settings-advanced" data-admin-backend-settings><summary>${legacyDiary()||accountScope.adminFirestore?'日報原本の保存先を変更':'日報原本の保存先'}</summary><div class="inner">${renderAdminBackendSettings()}</div></details><details class="details settings-advanced"><summary>${legacyDiary()?'Googleスプレッドシート':'本人専用クラウド日報'}</summary><div class="inner">${renderSheetTargetSettings()}</div></details></div></details><details class="details settings-advanced" data-driver-registration><summary>乗務員登録・車両・キャンセル設定</summary><div class="inner">${renderDriverDefaults()}<details class="details" data-cancel-settings><summary>キャンセル設定</summary><div class="inner"><section class="card"><h2 class="h2">キャンセル時のメーター照合</h2><p class="helper">配車アプリ会社からのキャンセル補填金とは無関係です。車両メーターに初乗り相当額が残るかどうかだけを設定します。補正は実売上・納金に加算しません。</p><label class="field"><span class="field-label">キャンセル後の車両メーター</span><select class="control" data-cancel-meter-mode><option value="retain" ${cancelMeterConfig().mode==='retain'?'selected':''}>初乗り料金が残る</option><option value="reset" ${cancelMeterConfig().mode==='reset'?'selected':''}>0円に戻る（照合補正なし）</option></select></label>${cancelMeterConfig().mode==='retain'?`<label class="field"><span class="field-label">照合用の初乗り料金（円）</span><input class="control" type="number" min="0" max="100000" step="1" data-cancel-meter-amount value="${cancelMeterConfig().amount}"></label>`:''}<p class="caption-note">新たに保存するキャンセルごとに補正額を記録するため、設定を変えても過去の照合額は変わりません。既存の記録は従来の700円で扱います。</p></section></div></details>${shift?`<details class="details" data-fee-settings><summary>計算用金額・手数料設定</summary><div class="inner"><section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section></div></details>`:''}<details class="details" data-duty-plan-settings><summary>勤務形態・1乗務の予定</summary><div class="inner">${renderDutyPlanSettings()}</div></details></div></details><details class="details settings-advanced" data-wait-place-settings><summary>待機場所の設定</summary><div class="inner">${renderWaitPlaceSettings()}</div></details><details class="details settings-advanced" data-distance-address-settings><summary>距離・住所取得</summary><div class="inner"><details class="details" data-gps-settings><summary>走行距離の設定</summary><div class="inner"><section class="card"><h2 class="h2">① 距離を記録しますか？</h2><p class="helper">ONなら距離欄を表示します。手入力や「GPS取得」ボタンが使えます。自動入力するかどうかは次の②で選べます。</p><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（距離を記録する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を記録する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p>${model.prefs.pickupDropDistance!=='off'||model.prefs.highwayDistance!=='off'?`<div class="distance-auto-group"><h2 class="h2">② 距離を自動入力しますか？</h2><p class="helper">手動：距離を自分で入力します。「GPS取得」ボタンも利用できます。自動：時刻・現在地を記録するとき、空欄にGPS距離を入力します。</p><label class="field"><span class="field-label">時刻・現在地の記録時に距離も自動入力</span><select class="control" data-native-auto-distance>
 <option value="on" ${nativeAutoDistanceEnabled()?'selected':''}>ON：時刻・現在地の記録と一緒に自動入力</option>
 <option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：自動入力しない（手入力・GPS取得ボタンは利用可能）</option></select></label>${nativeAutoDistanceEnabled()?`<div class="gps-source-choice"><h2 class="h2">③ 自動入力に使うGPSを選択</h2><p class="helper">ブラウザGPS：Chromeで測定。GPS距離ラボ：Android専用アプリで測定（別途アプリの起動が必要）。</p><label class="field"><span class="field-label">GPSの取得方法</span><select class="control" data-native-diary-gps>
  <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>ブラウザGPS（Chromeの位置情報を利用）</option>
  <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>GPS距離ラボ（Android専用アプリ）</option>
- </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">${accountScope.adminFirestore?'現在の原本は本人UID専用Firestoreです。旧Google原本はそのまま保持します。':memberDiary()?'現在の原本は本人UID専用Firestoreです。ログインと操作権の確認後に利用できます。':'従来のGoogle原本を継続します。入力はログインと操作権の確認後に利用できます。'}</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider">${accountScope.adminFirestore&&!accountScope.adminFirestorePreview?'<label class="field"><span class="field-label">本人Firestoreへ保存済みJSON日報を1乗務取り込む</span><input class="control" style="font-size:13px" type="file" id="importFirestoreBackup" accept=".json,application/json"></label><p class="footnote">入庫済みの1乗務を日付で選択し、本人UIDのFirestoreに新規保存します。現行の営業中データ・設定・旧Google原本は変更しません。既存の同じ乗務IDは上書きしません。</p>':'<label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p>'}</section><div class="danger-note">※ 端末への保存にはIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。${accountScope.adminFirestore?'Firestore原本のGoogle補助簿印刷元への転記はPC側で明示操作します。':memberDiary()?'本人用Firestore原本は他の利用者のデータと分離しています。':'従来のGoogle原本と印刷用シートは維持します。'}</div></div></details>`;}
+ </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details></div></details>`;}
 function download(textData,file,type){const blob=new Blob([textData],{type}),link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download=file;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 let gpsPermissionText='';
 function setGpsPermissionStatus(message){gpsPermissionText=String(message);const el=appEl.querySelector('[data-gps-permission-status]');if(el)el.textContent=gpsPermissionText;}
@@ -4563,6 +4937,9 @@ function handleAction(action,id){
  if(action==='exportDevice'){exportDevice();return;}
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
+ if(action==='historyDateEditStart'){try{beginHistoryDateCorrection();}catch(e){toast(String(e.message||e),true);}return;}
+ if(action==='historyDateSave'){void saveHistoryDateCorrection();return;}
+ if(action==='historyDateCancel'){cancelHistoryDateCorrection();return;}
   if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
   if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
   if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
@@ -4601,6 +4978,21 @@ function handleAction(action,id){
  }
  if(action==='saveHistoryLocationEdit'){void commitHistoryLocationEdit();return;}
  if(action==='cancelHistoryLocationEdit'){discardHistoryLocationEdit();return;}
+ if(action==='legacyGoogleHistoryLoad'){
+  const id=String(document.getElementById('legacyGoogleHistoryId')?.value||'').trim();
+  void loadLegacyHistoryById(id);return;
+ }
+ if(action==='cloudManageLoad'){
+  try{protectOpenHistoryEdit();}catch(e){toast('修正控えの保護に失敗：'+String(e.message||e),true);return;}
+  if(!memberDiary()||!accountDiary.ready()){toast('本人Firestore接続を確認してください',true);return;}
+  const date=cloudManagementDate||historyDate||dateStamp();historyDate=date;historyShiftId='';
+  void loadHistoryFromCloud(date);return;
+ }
+ if(action==='cloudManageOpen'){
+  if(!memberDiary()||historyCloudUid!==accountScope.uid)return;
+  const row=historyCloudRows.find(x=>x.id===id&&x.shift?.date===historyCloudDate);if(!row)return;
+  historyDate=historyCloudDate;historyShiftId=id;tab='history';render();return;
+ }
  if(action==='loadCloudHistory'){
   try{protectOpenHistoryEdit();}
   catch(error){toast('修正控えを保護できないため再取得を停止：'+String(error?.message||error),true);return;}
@@ -5348,30 +5740,54 @@ async function deleteWholeShift(shiftId){
  if(!canEditNow()){toast('乗務の削除は認証済みの操作端末で行ってください',true);return;}
  const shift=model.shifts.find(s=>s.id===shiftId);
  if(!shift){toast('削除対象が見つかりません',true);return;}
- if(cloudRunning){toast('Google送信中は削除できません',true);return;}
- const unfinished=shift.id===model.activeId||!shift.endedAt;
+ if(cloudRunning||syncUI.status().busy){toast('同期中は削除できません。完了後に再確認してください',true);return;}
+ const firestore=memberDiary();
+ const unfinished=shift.id===model.activeId||!shift.endedAt&&!shift.endedIso;
  const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
- if(!confirm('【乗務1件の削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
-  '\nこの端末から削除し、同じ保存先から再取得しても復活させません。\nGoogle・Firestoreの原本やほかの端末は消しません。\n本当に削除しますか？'))return;
- if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
- // Download a single-duty recovery copy BEFORE local removal; it contains
- // no Google connection key or another driver's daily records.
+ if(firestore){
+  if(unfinished||shift.draft){
+   toast('未入庫・編集中の日報は削除できません。営業記録と下書きを保護しています',true);return;
+  }
+  if(syncUI.verifiedRevision(shiftId)===null){
+   toast('Firestoreの保存確認ができていないため削除しません。未同期・競合・送信結果不明を確認してください',true);return;
+  }
+ }
+ const deletionSummary=firestore?
+  '\n本人Firestoreのゴミ箱へ移動してから端末を整理します。原本は復元可能ですが通常の履歴・印刷対象から外れます。':
+  '\n現行のGoogle原本・印刷元は変更せず、この端末だけを整理します。';
+ if(!confirm('【乗務1件の手動削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
+   deletionSummary+'\n実行しますか？'))return;
+ if(unfinished&&!confirm('【未入庫データの整理を最終確認】\n入庫前の端末記録を整理します。旧Google原本は変更しません。続けますか？'))return;
+ // Download a recovery copy BEFORE contacting the server or changing the
+ // local model. Real earnings, location and payment records remain protected.
  download(JSON.stringify({version:1,ownerUid:accountScope.uid||null,shifts:[deepCopy(shift)]}),
   'TAXIAPP_削除前_'+dateStamp()+'_'+shiftId+'.json','application/json;charset=utf-8');
- if(!confirm('この乗務のJSONバックアップを保存・保管したことを確認しましたか？\n未保存の場合はキャンセルしてください。'))return;
+ if(!confirm('この乗務のJSONバックアップを端末外にも保管しましたか？\n未保存ならキャンセルしてください。'))return;
  const previous=deepCopy(model);
- let newlyMarked=false;
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ let serverTrashed=false,newlyMarked=false;
+ if(firestore){
+  const verified=await syncUI.cloudAction('trashLocal',shiftId);
+  if(!verified){toast('Firestoreのゴミ箱移動を確認できなかったため端末原本は残しました',true);return;}
+  serverTrashed=true;
+  if(accountScopeGeneration!==generation||accountScope.uid!==uid){
+   toast('ログイン利用者が変化しました。サーバー側をゴミ箱に移した後、端末原本は保護しました。本人のクラウド日報管理で確認してください',true);
+   return;
+  }
+ }
  try{
-  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId,shift);
- }catch(error){toast('削除を中止しました。再受信防止情報を保存できません：'+String(error?.message||error),true);return;}
+  if(firestore||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId,shift);
+ }catch(error){
+  toast((serverTrashed?'Firestoreはゴミ箱へ移動済みです。':'')+'端末原本は保持しています。再受信防止情報を保存できません：'+String(error?.message||error),true);
+  return;
+ }
  try{
-  // Invalidate any pending save and GPS watch before removing an active duty.
   clearTimeout(persistTimer);persistTimer=0;
   clearTimeout(cloudTimer);cloudTimer=null;
   if(shift.id===model.activeId)gpsTripUI?.clearWatch();
   model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId,{allowUnfinished:unfinished}).model;
-  await save(true);
+  if(await save(true)!==true)throw Error('端末への削除状態の保存に失敗しました');
   const key=scopedStorageKey();
   const stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
   if(!stored||!Array.isArray(stored.shifts)||stored.shifts.some(s=>s.id===shiftId)||stored.activeId!==model.activeId)
@@ -5379,25 +5795,17 @@ async function deleteWholeShift(shiftId){
   if(historyShiftId===shiftId)historyShiftId='';
   if(printShiftId===shiftId)printShiftId='';
   render();
-  if(syncUI.enabled()){
-   toast(display+' の乗務を端末から削除しました。クラウドとの削除状態を同期します。');
-   void syncUI.run(true);
-  }else{
-   toast(display+' の乗務を端末から削除しました。自動同期は無効です。設定の「クラウド保存済み日報の整理」で必要に応じてゴミ箱へ移してください。');
-  }
- }catch(e){
+  toast(firestore?display+'を本人Firestoreのゴミ箱へ移動しました。復元可能です。':
+   display+'を端末から整理しました。旧Google原本は変更していません。');
+ }catch(error){
   model=previous;
-  if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(markerError){
-   toast('削除状態の復旧が必要です：'+String(markerError?.message||markerError),true);
-  }
-  try{
-   await save(true);
-   if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
-  }catch(restoreError){
-   toast('削除・復元とも失敗しました。事前のJSONバックアップを確認してください：'+String(restoreError.message||restoreError),true);
-   return;
-  }
-  render();toast('削除を取り消しました：'+String(e.message||e),true);
+  // A successful CAS trash must not be hidden by silently rolling back its
+  // marker; retain the old local original as an exceptional protected copy.
+  if(!serverTrashed&&newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch{}
+  try{await save(true);}catch{}
+  render();
+  toast((serverTrashed?'Firestoreはゴミ箱へ移動済みです。端末原本を復旧用に保持しました。本人の日報管理で復元できます。':
+   '端末の削除を取り消しました。')+String(error?.message||error),true);
  }
 }
 // A JSON export can be re-used without importing every historical duty
@@ -5645,6 +6053,17 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.id==='historyEditPickup'||event.target.id==='historyEditDropoff'){
   try{historyLocationInputs();}catch(error){if(historyLocationEdit){historyLocationEdit.message=String(error?.message||error);render();}}
   return;
+ }
+ if(event.target.id==='historyCorrectionDate'){
+  const d=historyDateCorrection;if(!d||!canEditNow()||accountScope.uid!==d.uid)return;
+  d.newDate=String(event.target.value||'');d.message='';
+  try{localStorage.setItem(historyDateCorrectionKey(d.uid,d.id),JSON.stringify(d));}catch{d.message='訂正日を端末に保存できません';}
+  render();return;
+ }
+ if(event.target.id==='cloudManagementDate'){
+  const date=String(event.target.value||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+  cloudManagementDate=date;render();return;
  }
  if(event.target.id==='historyDate'){
   try{protectOpenHistoryEdit();}

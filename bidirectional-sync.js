@@ -20,6 +20,8 @@ function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
   getEndpoint,toast,localStorage:storage,getRemoteOnDemand}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
+ let sendingId=null;
+ const unknownSendIds=new Set();
  let scopeEpoch=0;
  let viewerBusy=false,viewerPromise=null,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
  const localKey=()=>KEY_PREFIX+digest(String(getEndpoint()||''));
@@ -127,9 +129,43 @@ function create(deps){
  }
  const localHash=shift=>digest(stable(getPacket(shift).shift));
  const remoteHash=shift=>digest(stable(getPacket(shift).shift));
+ // Persist unknown-delivery IDs per owner / endpoint. An uncertain
+ // write must remain distinguishable after Chrome reloads.
+ const UNKNOWN_SEND_PREFIX='taxiapp-sync-v2-send-unknown-';
+ const unknownSendKey=()=>UNKNOWN_SEND_PREFIX+digest(String(getEndpoint()||'')+'|'+String(deps.getScopeKey?.()||''));
+ function storedUnknownIds(){
+  if(!getEndpoint())return new Set();
+  const raw=storage.getItem(unknownSendKey());if(!raw)return new Set();
+  let ids;try{ids=JSON.parse(raw);}catch{throw Error('送信不明の管理情報が壊れています');}
+  if(!Array.isArray(ids)||ids.length>5000||ids.some(id=>!validId(id))||
+     new Set(ids).size!==ids.length)throw Error('送信不明の乗務IDが不正です');
+  return new Set(ids);
+ }
+ function markSendUnknown(id){
+  unknownSendIds.add(id);
+  try{
+   const ids=storedUnknownIds();ids.add(id);
+   const json=JSON.stringify([...ids]);
+   storage.setItem(unknownSendKey(),json);
+   if(storage.getItem(unknownSendKey())!==json)
+    throw Error('送信不明の保存確認に失敗');
+  }catch{lastError='送信結果不明の管理情報を保存できません。原本を保持してください';}
+ }
+ function clearSendUnknown(id){
+  try{
+   const ids=storedUnknownIds();ids.delete(id);
+   const json=JSON.stringify([...ids]);storage.setItem(unknownSendKey(),json);
+   if(storage.getItem(unknownSendKey())!==json)return;
+   unknownSendIds.delete(id);
+  }catch{/* Keep uncertainty on storage error. */}
+ }
  function status(){
   return {busy,conflicts:Object.values(conflict),lastError,lastSyncAt};
  }
+ const isSendUnknown=id=>{
+  if(unknownSendIds.has(id))return true;
+  try{return storedUnknownIds().has(id);}catch{return true;}
+ };
  // The phone may release a previous original only when its complete current
  // packet still matches a confirmed, owner-scoped server revision.
  function verifiedRevision(id){
@@ -160,7 +196,7 @@ function create(deps){
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
    return result;
   };
-  busy=true;lastError='';
+  busy=true;lastError='';sendingId=null;
   try{
    const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
@@ -178,31 +214,9 @@ function create(deps){
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
    const present=new Map(shifts.map(s=>[s.id,s]));
    const nextConflict=selected?Object.fromEntries(Object.entries(conflict).filter(([id])=>!selected.has(id))):{};
-   // Send explicit deletion intent even though the duty is no longer in model.
-   // Require the original content to match the version actually deleted locally.
-   for(const [id,marker] of Object.entries(removed)){
-    if(selected&&!selected.has(id))continue;
-    const remote=cloud.get(id);
-    if(!remote||remote.deleted===true)continue;
-    if(typeof marker!=='object'||typeof marker.hash!=='string')continue;
-    const base=saved[id];
-    if(base&&base.revision!==remote.revision){
-     nextConflict[id]={id,reason:'削除後に別端末が原本を更新しました。自動削除を保留',localRevision:base.revision,remoteRevision:remote.revision};
-     continue;
-    }
-    const received=await scopedRequest('syncGet',{shiftId:id});
-    if(!received?.shift||received.id!==id||received.revision!==remote.revision||
-       remoteHash(received.shift)!==marker.hash){
-     nextConflict[id]={id,reason:'削除対象のクラウド原本が端末で確認した内容と異なります',localRevision:base?.revision??null,remoteRevision:remote.revision};
-     continue;
-    }
-    const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:remote.revision});
-    if(!done||done.id!==id||done.deleted!==true||done.revision!==remote.revision+1)
-     throw Error('クラウド側の削除状態を確認できません');
-    const next={revision:done.revision,hash:marker.hash};
-    if(!setSaved({...saved,[id]:next}))throw Error(lastError);
-    saved[id]=next;
-   }
+   // Local device removal markers prevent automatic re-download only.
+   // They must never trigger a server trash/delete action. Server trash is
+   // exclusively the owner's explicit cloudAction('trash') with confirmation.
    // Firestore on-demand mode never pulls historical cloud-only duties
    // into the phone's persistent working model during a routine sync.
    // Explicit past-date viewing uses the separate read-only history API.
@@ -242,11 +256,13 @@ function create(deps){
       nextConflict[id]={id,reason:'クラウドに以前の記録が見つかりません',localRevision:base.revision,remoteRevision:0};
       continue;
      }
+     sendingId=id;
      const sent=await scopedRequest('syncPut',{baseRevision:0,payload:JSON.stringify(getPacket(current))});
-     if(!sent||sent.id!==id||sent.revision!==1)throw Error('新規送信の応答が不正です');
+     if(!sent||sent.id!==id||sent.revision!==1||(getRemoteOnDemand?.()&&sent.confirmed!==true))throw Error('新規送信のサーバー読戻し確認が完了していません');
      const savedHash=currentHash;
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:savedHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:savedHash};
+     sendingId=null;clearSendUnknown(id);
      continue;
     }
     if(!base){
@@ -314,17 +330,22 @@ function create(deps){
     if(localChanged){
      const payload=getPacket(current);
      const sentHash=currentHash;
+     sendingId=id;
      const sent=await scopedRequest('syncPut',{baseRevision:base.revision,payload:JSON.stringify(payload)});
-     if(!sent||sent.id!==id||sent.revision!==base.revision+1)
-      throw Error('送信の更新番号を確認できません');
+     if(!sent||sent.id!==id||sent.revision!==base.revision+1||(getRemoteOnDemand?.()&&sent.confirmed!==true))
+      throw Error('送信の更新番号とサーバー読戻しを確認できません');
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:sentHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:sentHash};
+     sendingId=null;clearSendUnknown(id);
     }
    }
    conflict=nextConflict;
+   for(const shift of shifts){const base=saved[shift.id];if(base?.revision>0&&base.hash===localHash(shift)&&!nextConflict[shift.id])unknownSendIds.delete(shift.id);}
    lastSyncAt=Date.now();
    return Object.keys(conflict).length===0;
   }catch(e){
+   if(sendingId)markSendUnknown(sendingId);
+   sendingId=null;
    lastError=String(e?.message||e);
    if(lastError.includes('SYNC_CONFLICT')){
     const idMatch=lastError.match(/SYNC_CONFLICT:(\d+)/);
@@ -399,7 +420,7 @@ function create(deps){
   if(!stored||localHash(stored)!==remoteHash(shift))return false;
   const saved=getSaved(),hash=localHash(stored);
   if(!setSaved({...saved,[id]:{revision,hash}}))return false;
-  delete conflict[id];lastError='';lastSyncAt=Date.now();
+  delete conflict[id];clearSendUnknown(id);lastError='';lastSyncAt=Date.now();
   return true;
  }
  // Only after cloud originals have been durably saved locally, establish
@@ -458,17 +479,17 @@ function create(deps){
     await replaceRemoteShift(id,remote.shift,true);
     if(!setSaved({...saved,[id]:base}))throw Error(lastError);
    }
-   delete conflict[id];lastError='';lastSyncAt=Date.now();return true;
+   delete conflict[id];clearSendUnknown(id);lastError='';lastSyncAt=Date.now();return true;
   }catch(e){lastError=String(e?.message||e);return false;}
   finally{busy=false;}
  }
  function resetAccount(){
   scopeEpoch++;
   busy=false;viewerBusy=false;viewerPromise=null;
-  conflict={};lastError='';lastSyncAt=0;
+  conflict={};lastError='';lastSyncAt=0;sendingId=null;unknownSendIds.clear();
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,isSendUnknown,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
