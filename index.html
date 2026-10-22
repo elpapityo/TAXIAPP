@@ -3256,6 +3256,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   const blocked=(conflicts||[]).map(x=>x.id);
   const nextId=window.TAXIAPP_SHIFT_MIRROR.selectActive(model.shifts,model.activeId,blocked);
   if(nextId!==model.activeId){model.activeId=nextId;await save(true);render();}
+  // A first departure check may race with the event upload. Retry after
+  // a confirmed sync; never remove an unsent or conflicting previous duty.
+  if(memberDiary()&&model.shifts.length>1&&getShift()?.id===model.activeId)
+   await releaseVerifiedPreviousDuties(model.activeId);
  },
  request:async(action,fields)=>{
   if(memberDiary())return accountDiary.request(action,fields);
