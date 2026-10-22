@@ -3,7 +3,16 @@ setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
 rem TAXIAPP development preview: loopback-only. Never touches main deployment.
-rem Requires a local Python installation, but does not install packages.
+rem Do not open a stale preview if an old server still listens on port 8787.
+netstat -ano | findstr /C:":8787 " | findstr /I "LISTENING" >nul
+if not errorlevel 1 (
+  echo.
+  echo 8787番ポートは使用中です。以前のTAXIAPP検証用ウィンドウを閉じてください。
+  echo 古いZIPの誤表示を防ぐため、ブラウザは起動しません。
+  pause
+  exit /b 1
+)
+rem Requires a local Python or Node.js installation but installs nothing.
 where py >nul 2>nul
 if not errorlevel 1 (
   py -3 -c "import http.server" >nul 2>nul
@@ -35,9 +44,9 @@ start "TAXIAPP Local Preview (close to stop)" cmd /k node start-admin-firestore-
 goto launch
 :launch
 timeout /t 2 /nobreak >nul
-start "" "http://localhost:8787/?adminFirestorePreview=1"
+start "" "http://localhost:8787/?adminFirestorePreview=1&build=v0.3.126-dev.119"
 echo.
-echo TAXIAPP development preview opened: http://localhost:8787/?adminFirestorePreview=1
+echo TAXIAPP development preview: v0.3.126-dev.119 - PR #119
 echo This server is available only on this PC. Close its console window to stop.
 echo The real owner's Firebase sign-in must still be verified in the browser.
 exit /b 0
