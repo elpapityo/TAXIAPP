@@ -142,13 +142,13 @@ function client(name,svc,model,failReceive=false,remoteOnDemand=false){
  assert.equal(raceServer.cloud.get(id).shift.startingOdo,'20');
  assert.equal(race.app.status().conflicts.length,1);
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
- for(const literal of ['bidirectional-sync.js?v=20261022-9','cloud-sync-ui.js?v=20261022-14',
+ for(const literal of ['bidirectional-sync.js?v=20261022-9','cloud-sync-ui.js?v=20261023-1',
   'syncUI.panel()','syncUI.run(true)','syncMode','googlePostRequest(',
   'if(sheetTargetPrefs().syncMode===\'on\'){syncUI.schedule();return;}']){
   assert.ok(html.includes(literal),'missing '+literal);
  }
  const pageVersion=html.match(/<title>TAXIAPP (v\d+\.\d+\.\d+(?:-dev\.\d+)?) — 乗務日報<\/title>/)?.[1];
- assert.equal(pageVersion,'v0.3.131','10月16日日報のFirestore移行操作を含む正式版を識別する');
+ assert.equal(pageVersion,'v0.3.132','10月16日日報のFirestore移行操作を含む正式版を識別する');
  assert.ok(html.includes('乗務日報 · ${displayVersion}'),
   '画面上部にバージョンを表示する');
  assert.ok(html.includes('document.title.match(/v\\d+\\.\\d+\\.\\d+(?:-dev\\.\\d+)?/)'),
