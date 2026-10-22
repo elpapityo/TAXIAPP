@@ -75,6 +75,60 @@ function create(){
    // enumerate all of this user's own shifts.
    const ids=fields.shiftIds;
    let docs;
+   if(fields.resumeOnly===true){
+    if(ids!==undefined)throw Error('再開候補と乗務ID指定は同時に使えません');
+    const f=c.f,source=collectionRef(c);
+    if(['query','where','orderBy','limit','startAfter'].some(name=>typeof f[name]!=='function'))
+     throw Error('Firestoreの限定取得に対応していません。過去日報全件の取得は行わず保留します');
+    const meta=row=>{
+     const data=row.data(),id=String(row.id||''),revision=Number(data?.revision);
+     if(!ID.test(id)||data?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+        !Number.isSafeInteger(revision)||revision<1||data?.shift?.id!==id)
+      throw Error('再開候補の原本ID・形式・更新番号が不正です。安全のため取得を停止しました');
+     return {id,revision,deleted:data?.trashed===true,
+      ended:Boolean(data.shift.endedAt||data.shift.endedIso),
+      startedIso:String(data.shift.startedIso||'')};
+    };
+    // Open duties must take priority over a more recent returned duty.
+    // Earlier versions use endedAt; also check explicit empty endedIso
+    // without requiring an unapproved schema migration.
+    const open=new Map();
+    for(const field of ['shift.endedAt','shift.endedIso']){
+     const rows=await f.getDocsFromServer(f.query(source,f.where(field,'==','')));
+     ownerCheck(c);
+     for(const doc of rows.docs){
+      const item=meta(doc);
+      if(item.deleted||item.ended)continue;
+      const prev=open.get(item.id);
+      if(prev&&prev.revision!==item.revision)
+       throw Error('未入庫乗務の照合中に更新がありました。原本を保護して再試行してください');
+      open.set(item.id,item);
+      if(open.size>1)throw Error('未入庫乗務が複数あります。対象を自動選択せず確認してください');
+     }
+    }
+    if(open.size)return {shifts:[...open.values()]};
+    // No unfinished duty: retrieve only the latest non-trashed returned
+    // duty, paging past trashed originals without reading all history.
+    // Never treat a missing open marker as a confirmed returned duty.
+    const pageSize=20;
+    let last=null;
+    for(let page=0;page<20;page++){
+     const constraints=[f.orderBy('shift.startedIso','desc'),f.limit(pageSize)];
+     if(last)constraints.push(f.startAfter(last));
+     const rows=await f.getDocsFromServer(f.query(source,...constraints));
+     ownerCheck(c);
+     for(const doc of rows.docs){
+      const item=meta(doc);
+      if(item.deleted)continue;
+      if(!item.ended)
+       throw Error('未入庫乗務の検索項目が不足しています。過去日報を自動選択せず保護します');
+      return {shifts:[item]};
+     }
+     if(rows.docs.length<pageSize)return {shifts:[]};
+     last=rows.docs[rows.docs.length-1];
+    }
+    throw Error('再開候補にゴミ箱内の原本が多数あります。全履歴取得せず確認を保留します');
+   }
    if(Array.isArray(ids)){
     if(ids.length>60)throw Error('一度に照合する乗務が多すぎます');
     const unique=[...new Set(ids.map(String))];
