@@ -1,8 +1,8 @@
 /**
  * TAXIAPP -> Google Sheets bridge.
- * ADD as a new .gs file in Extensions > Apps Script; do not replace any old
- * scripts or macros. Then deploy a Web App
- * ("Execute as: Me", "Who has access: Anyone"). A separate random shared key is
+ * Version 3 was deployed to the existing GAS Web App on 2026-10-22.
+ * This source is maintained for parity and future reviewed changes; do not
+ * redeploy solely from a GitHub update. A separate random shared key is
  * required for EVERY POST, so the /exec URL alone cannot write to this sheet.
  * No web credentials belong in public GitHub code.
  *
@@ -499,8 +499,7 @@ function savePacket_(data,options) {
    firestorePrintPublishVersionedDraft_(ss,id,printBatches,
     options.firestoreRevision,options.firestoreOwnerUid,
     options&&options.verifyCurrentSource);
-  else firestorePrintPublishRowsDraft_(ss,id,printBatches,
-   options&&options.verifyCurrentSource);
+  else throw Error('Firestore印刷元の更新番号・本人UIDが不足しています');
  }
  // Only the legacy Google workflow stores a lossless original snapshot.
  // Firestore printing already uses the owner UID's original and has written
@@ -738,4 +737,33 @@ function conflictVaultSetTrash_(archiveId,trash){
  });
  if(!found)throw Error('対象の競合保管データがありません');
  return {archiveId:archiveId,trashed:trash};
+}
+
+/**
+ * 本番GAS v3の公開前に確認済みの読み取り専用チェック。旧原本を変更しない。
+ * 実行は必要な場合のみ。公開時の承認と確認は2026-10-22に完了。
+ */
+function taxiappGASReleaseReadOnlyCheck(){
+ var p=PropertiesService.getScriptProperties();
+ if(!p.getProperty('TAXIAPP_WRITE_KEY'))throw Error('既存Google接続キーが未設定です');
+ if(typeof firestorePrintConfigDraft_!=='function'||
+    typeof firestorePrintSelectedDutyDraft_!=='function'||
+    typeof firestorePrintVerifyPublishedDraft_!=='function'||
+    typeof firestorePrintPublishVersionedDraft_!=='function')
+  throw Error('Firestore印刷連携の3ファイルが揃っていません');
+ var cfg=firestorePrintConfigDraft_();
+ if(cfg.project!=='taxiapp-2b6bd')throw Error('FirebaseプロジェクトIDが対象と違います');
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ ['TAXIAPP_同期原本','TAXIAPP_印刷操作','補助簿印刷用','補助簿印刷用_2頁'].forEach(function(name){
+  if(!ss.getSheetByName(name))throw Error('既存シートが見つかりません：'+name);
+ });
+ Object.keys(TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS).forEach(function(name){
+  var sheet=ss.getSheetByName(name),expected=TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name];
+  if(!sheet)throw Error('印刷元シートが見つかりません：'+name);
+  var actual=sheet.getRange(1,1,1,expected.length).getValues()[0];
+  if(JSON.stringify(actual)!==JSON.stringify(expected))
+   throw Error('印刷元の見出しが異なります：'+name);
+ });
+ Logger.log('TAXIAPP_GAS_READ_ONLY_OK 設定・接続コード・旧原本・補助簿2頁・印刷元4シートを確認。書込みなし');
+ return 'TAXIAPP_GAS_READ_ONLY_OK';
 }
