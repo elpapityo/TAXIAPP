@@ -4,7 +4,7 @@ const html=fs.readFileSync('index.html','utf8');
 const gps=require('../gps-diary-bridge.js');
 const highway=require('../highway-sections.js');
 require('../highway-report.js');
-assert.match(html,/<title>TAXIAPP v0\.3\.\d+ — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.\d+(?:-dev\.\d+)? — 乗務日報<\/title>/);
 assert.match(html,/fetch\('\.\/municipalities\.json',\{cache:'force-cache'/);
 assert.doesNotMatch(html,/fetch\('\.\.\/\.\.\/municipalities\.json'/);
 assert.equal(new URL('./municipalities.json','https://elpapityo.github.io/TAXIAPP/').pathname,'/TAXIAPP/municipalities.json');

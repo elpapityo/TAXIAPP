@@ -63,7 +63,7 @@ assert.equal((displayed.match(/data-action="deleteShift"/g)||[]).length,2);
 assert.ok(displayed.indexOf('shift-open')<displayed.indexOf('shift-closed'));
 assert.ok(!displayed.includes('<script>alert(1)</script>'));
 assert.ok(displayed.includes('JSONバックアップ'));
-assert.ok(displayed.includes('Googleスプレッドシートに送信済みのデータは消しません'));
+assert.ok(displayed.includes('Google原本・他端末の記録は消しません'));
 assert.equal(JSON.stringify(model),before);
 ctx.model={...model,activeId:null,shifts:[]};
 const empty=ctx.renderDataManagement();

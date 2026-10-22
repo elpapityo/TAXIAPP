@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
-<meta name="description" content="TAXIAPP 乗務日報・GPS統合正式版">
-<title>TAXIAPP v0.3.113 — 乗務日報</title>
+<meta name="description" content="TAXIAPP 乗務日報・営業支援">
+<title>TAXIAPP v0.3.128 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -899,15 +899,15 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-sections.js?v=20261020-1"></script>
 <script src="./highway-report.js?v=20261020-1"></script>
-<script src="./bidirectional-sync.js?v=20261019-1"></script>
-<script src="./cloud-sync-ui.js?v=20261017-10"></script>
+<script src="./bidirectional-sync.js?v=20261022-9"></script>
+<script src="./cloud-sync-ui.js?v=20261022-14"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
 <script src="./login-core.js?v=20261017-2"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
 <script src="./account-auto-sync.js?v=20261020-1"></script>
-<script src="./account-diary-store.js?v=20261020-1"></script>
+<script src="./account-diary-store.js?v=20261022-9"></script>
 <script>
 (async function () {
   'use strict';
@@ -1301,14 +1301,43 @@ let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicl
 const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDistance!=='off':['S','V','AB','AE','X','Y','AJ','AK'].includes(field)?model.prefs.highwayDistance!=='off':true;
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
+// 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
+const ADMIN_FIRESTORE_CUTOVER_ENABLED=false; // Default legacy: only an individually verified opt-in is allowed.
+// Existing production duty migration requires independent approval beyond
+// the future approval to change where newly created duties are saved.
+const ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false;
+// Print-only PC mode does not claim this UID's active phone editing session.
+const TAXIAPP_PRINT_VIEWER_MODE=(()=>{
+ try{return new URLSearchParams(window.location.search).get('printViewer')==='1';}
+ catch{return false;}
+})();
+const ADMIN_FIRESTORE_PREF_PREFIX='taxiapp-admin-firestore-optin-v1-';
+// Opt-in development mode on localhost only. Production backend stays legacy.
+const ADMIN_FIRESTORE_PREVIEW_AVAILABLE=(()=>{
+ try{return ['localhost','127.0.0.1','[::1]'].includes(window.location.hostname)&&
+  new URLSearchParams(window.location.search).get('adminFirestorePreview')==='1';}
+ catch{return false;}
+})();
+let adminFirestorePreviewActive=false,adminFirestorePreviewOwnerUid='',adminFirestorePreviewMessage='';
+let currentLoginScope=null,adminCutoverBusy=false;
+function adminFirestoreManifest(uid){
+ if(!uid)return null;
+ try{
+  const m=JSON.parse(localStorage.getItem(ADMIN_FIRESTORE_PREF_PREFIX+uid)||'null');
+  return m?.mode==='firestore'&&m.uid===uid&&Array.isArray(m.sourceIds)?m:null;
+ }catch{return null;}
+}
 const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
 let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
-const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
+const scopedStorageKey=()=>accountScope.adminFirestorePreview?
+ 'taxiapp-admin-firestore-preview-v1-'+accountScope.uid:
+ memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
 const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
+let accountScopeLoaded=false;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
@@ -1341,7 +1370,8 @@ function setDeviceMode(next,previous='',detail=''){
  if(status)status.textContent=(next==='writer'&&writerLoadGate?'操作権確認済み・Google読込待ち':next==='writer'?'操作可能':next==='viewer'?'閲覧専用':
   next==='pending'?'操作権を確認中':'操作停止')+(detail?'：'+detail:'');
  const takeOver=document.getElementById('accountTakeOver');
- if(takeOver)takeOver.hidden=next!=='viewer'||!!document.getElementById('accountSignOut')?.hidden||!accountSettingsAuto?.status().enabled;
+ if(takeOver)takeOver.hidden=TAXIAPP_PRINT_VIEWER_MODE||next!=='viewer'||
+  !!document.getElementById('accountSignOut')?.hidden||!accountSettingsAuto?.status().enabled;
  if(next!=='writer'){
   try{gpsTripUI?.clearWatch();}catch(e){console.warn('gps-watch-cleanup',e);}
  }else if(next==='writer'&&prior!=='writer'){
@@ -1353,9 +1383,20 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"]')||
-  (['change','input'].includes(event.type)&&target.matches?.(
-   '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
+ // A print-only PC is a viewer by design: it must never claim the
+ // Galaxy's editing session. Permit only date/shift navigation, explicit
+ // authenticated print transfer, and this PC's Google bridge settings.
+ const printViewerOwner=Boolean(TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
+  accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+  currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
+  accountDiary.ready());
+ const readOnlySelection=target.matches?.(
+  '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect');
+ const pcPrintControl=printViewerOwner&&(
+  target.closest?.('[data-action="firestorePrintToGoogle"]')||
+  target.matches?.('[data-firestore-print-setting]'));
+ const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"]')||
+  readOnlySelection||pcPrintControl;
  if(safe)return;
  if(!['click','pointerdown','input','change','keydown','submit'].includes(event.type))return;
  event.preventDefault();event.stopImmediatePropagation();
@@ -1367,6 +1408,8 @@ function blockViewerEdit(event){
 for(const eventName of ['click','pointerdown','input','change','keydown','submit'])
  document.addEventListener(eventName,blockViewerEdit,true);
 let historyDate='',historyShiftId='',printShiftId='',highwayShiftId='',storageStatus='確認中';
+let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
+let historyCloudRows=[],historyLocationEdit=null;
 // The combined business-status screen remembers which sections the driver opened.
 let operationPanelOpen={}; // One open at a time, native named accordion.
 
@@ -1484,7 +1527,16 @@ function setUiOption(key,value){
 }
 function getShift(){return model.shifts.find(x=>x.id===model.activeId)||null;}
 function selectedShift(){return getShift()||model.shifts[0]||null;}
-function historyMatches(){const date=historyDate||selectedShift()?.date||dateStamp();return (model.shifts||[]).filter(s=>s.date===date).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
+function historyMatches(){const date=historyDate||selectedShift()?.date||dateStamp();const local=(model.shifts||[]).filter(s=>s.date===date);
+ const merged=new Map(local.map(s=>[s.id,s]));
+ if(memberDiary()&&historyCloudUid===accountScope.uid&&historyCloudDate===date)
+  historyCloudShifts.forEach(s=>{
+   // Once explicitly fetched, display the Firestore original. Keep an active
+   // local duty's live inputs/GPS view unchanged, and never mutate model.
+   if(getShift()?.id!==s.id)merged.set(s.id,s);
+   else if(!merged.has(s.id))merged.set(s.id,s);
+  });
+ return [...merged.values()].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
 function selectedHistoryShift(){const a=historyMatches();return a.find(s=>s.id===historyShiftId)||a[0]||null;}
 function selectedPrintShift(){return printShiftId?(model.shifts.find(s=>s.id===printShiftId)||null):selectedShift();}
 function lastPayment(shift){return (shift?.records||[]).filter(r=>r.kind==='ride'&&r.status==='complete'&&r.meta?.settledIso&&Number.isFinite(Date.parse(r.meta.settledIso))).sort((a,b)=>Date.parse(b.meta.settledIso)-Date.parse(a.meta.settledIso))[0]||null;}
@@ -1585,13 +1637,32 @@ async function load(){try{db=await Promise.race([openDb(),new Promise((_,reject)
 async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
  // Do not migrate a legacy owner's records to another user.
- writerLoadGate=true;
+ writerLoadGate=true;accountScopeLoaded=false;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
+ historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';
+ historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;
+ firestorePrintPcMessage='';
  syncUI.cancelViewer();
  syncUI.resetAccount();
- accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin}:{});
- accountScope=scope?{kind:scope.admin?'legacy':'member',uid:scope.uid}:{kind:'pending',uid:''};
+ if(!scope||scope.uid!==adminFirestorePreviewOwnerUid){
+  adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
+ }
+ adminFirestorePreviewMessage='';
+ currentLoginScope=scope||null;
+ const adminFirestorePreview=Boolean(scope?.admin&&
+  ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
+  scope.uid===adminFirestorePreviewOwnerUid);
+ const adminFirestore=Boolean(scope?.admin&&
+  (adminFirestorePreview||ADMIN_FIRESTORE_CUTOVER_ENABLED||
+   adminFirestoreManifest(scope.uid)||TAXIAPP_PRINT_VIEWER_MODE));
+ // Print-viewer PCs may fetch the owner's Firestore history but must
+ // never become a writer, even if a future UI handler is invoked directly.
+ accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,
+  admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined,
+  readOnly:TAXIAPP_PRINT_VIEWER_MODE}:{});
+ accountScope=scope?{kind:scope.admin&&!adminFirestore?'legacy':'member',uid:scope.uid,
+  adminFirestore,adminFirestorePreview}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
  // Blank the previous account immediately, before any async IndexedDB read.
  model=emptyAccountModel();render();
@@ -1607,13 +1678,18 @@ async function switchAccountScope(scope){
   delete model.prefs.sheetTarget;
  }
  if(tab==='print'&&!legacyDiary())tab='drive';
+ accountScopeLoaded=true;
  render();
+ // The device-session callback may arrive before IndexedDB completes.
+ // Resume only after the correct account's local original is loaded.
+ if(!adminCutoverBusy&&deviceMode==='writer'&&writerLoadGate)
+  void syncUI.bootstrapWriter();
 }
-async function save(localOnly=false){if(!canEditNow())return;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);}}}
+async function save(localOnly=false){if(!canEditNow())return false;const data=deepCopy(model),key=scopedStorageKey();try{if(db){await idbPut(db,data,key);storageStatus='IndexedDB';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}localStorage.setItem(key,JSON.stringify(data));storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch(e){console.error(e);try{localStorage.setItem(key,JSON.stringify(data));db=null;storageStatus='localStorage（代替保存）';if(!localOnly){scheduleGoogleSync();accountSettingsAuto?.localSaved();}return true;}catch{storageStatus='保存できない環境';toast('自動保存できません。すぐにJSONバックアップを保存してください。',true);return false;}}}
 function saveLater(){if(!canEditNow())return;clearTimeout(persistTimer);persistTimer=setTimeout(save,350);}
 function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id?'selected':''}" ${tab===id?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div></div>`;}
 function header(){
- const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+/)||['v?'])[0];
+ const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+(?:-dev\.\d+)?/)||['v?'])[0];
  const state=deviceMode==='pending'?'△ 操作権を確認中（入力停止）':
   deviceMode==='viewer'&&viewerCloudError?'△ 閲覧データの受信エラー':
   deviceMode==='viewer'&&!viewerCloudLoaded?'◌ 閲覧データ受信待ち':
@@ -1640,6 +1716,7 @@ function render(){
 // Preserve all expanded setting categories and the current reading position.
 // The UI is rebuilt after setting changes and background cloud updates.
 let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false;
+let historyPanelOpen={},historyPanelDutyKey='';
 function renderNow(){
  if(keypadActive){renderAfterKeypad=true;return;}
  if(saveTouchPress){saveRenderPending=true;return;}
@@ -1650,6 +1727,14 @@ function renderNow(){
  const scrollPosition=sameTab&&tab==='settings'
   ? {x:window.scrollX,y:window.scrollY}:null;
  const highwayWasOpen=Boolean(appEl.querySelector('[data-highway-fold]')?.open);
+ if(tab==='history'){
+  const historyKey=accountScope.uid+'|'+(historyDate||'')+'|'+(selectedHistoryShift()?.id||'');
+  if(sameTab&&historyPanelDutyKey===historyKey){
+   for(const panel of appEl.querySelectorAll('details[data-history-panel]'))
+    historyPanelOpen[panel.dataset.historyPanel]=panel.open;
+  }else historyPanelOpen={};
+  historyPanelDutyKey=historyKey;
+ }
  for(const panel of appEl.querySelectorAll('[data-operation-panel]')){
   if(panel.dataset.operationPanel in operationPanelOpen)
    operationPanelOpen[panel.dataset.operationPanel]=panel.open;
@@ -1675,6 +1760,12 @@ function renderNow(){
  if(highwayWasOpen){
   const highway=appEl.querySelector('[data-highway-fold]');
   if(highway)highway.open=true;
+ }
+ if(tab==='history'){
+  for(const panel of appEl.querySelectorAll('details[data-history-panel]')){
+   if(Object.prototype.hasOwnProperty.call(historyPanelOpen,panel.dataset.historyPanel))
+    panel.open=historyPanelOpen[panel.dataset.historyPanel];
+  }
  }
  applyInputKeyboardMode();
  if(tab==='settings'){
@@ -2102,6 +2193,111 @@ function gpsDistanceSummary(shift){
  ${rows.map(([label,value])=>`<div class="statline"><span>${safeText(label)}</span><b>${safeText(value)}</b></div>`).join('')}
  <p class="footnote">GPSの推定値と車両の実際のトリップは必ずしも一致しません。中断区間は未加算です。実車・空車のGPS実測と手動補正差は別管理しています。</p></section>`;
 }
+// A PC-only print bridge, isolated from the old administrator's Google
+// diary sync preferences and from every other Firebase user.
+let firestorePrintPcMessage='';
+function firestorePrintPcStorageKey(uid=accountScope.uid){
+ return 'taxiapp-firestore-print-pc-v1-'+encodeURIComponent(String(uid||''));
+}
+function firestorePrintPcSettings(){
+ if(!accountScope.adminFirestore||!currentLoginScope?.admin)return {webAppUrl:'',writeKey:''};
+ try{
+  const data=JSON.parse(localStorage.getItem(firestorePrintPcStorageKey())||'null');
+  return {webAppUrl:String(data?.webAppUrl||''),writeKey:String(data?.writeKey||'')};
+ }catch{return {webAppUrl:'',writeKey:''};}
+}
+function firestorePrintPcSettingChange(el){
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    currentLoginScope?.uid!==accountScope.uid||!currentLoginScope?.admin)return;
+ const field=el.dataset.firestorePrintSetting;
+ if(!['webAppUrl','writeKey'].includes(field))return;
+ const old=firestorePrintPcSettings();
+ const next={...old,[field]:String(el.value||'').trim()};
+ if(field==='webAppUrl'&&next.webAppUrl&&!googleWebAppUrl(next.webAppUrl)){
+  firestorePrintPcMessage='Google Apps Scriptの /exec URLを確認してください';
+  render();return;
+ }
+ if(field==='writeKey'&&next.writeKey.length>0&&next.writeKey.length<24){
+  firestorePrintPcMessage='Google接続キーは24文字以上必要です';
+  render();return;
+ }
+ try{
+  localStorage.setItem(firestorePrintPcStorageKey(),JSON.stringify(next));
+  firestorePrintPcMessage='この本人UIDのPCに接続設定を保存しました';
+ }catch(error){firestorePrintPcMessage='接続設定を保護できません：'+String(error?.message||error);}
+ render();
+}
+function firestorePrintPcPanel(shift,date){
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview)return '';
+ const prefs=firestorePrintPcSettings();
+ const verified=Boolean(shift&&historyCloudUid===accountScope.uid&&
+  historyCloudDate===date&&historyCloudRows.some(row=>
+   row.id===shift.id&&row.shift?.date===date&&
+   Boolean(row.shift?.endedAt||row.shift?.endedIso)));
+ const ready=verified&&TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
+  googleWebAppUrl(prefs.webAppUrl)&&prefs.writeKey.length>=24;
+ return '<section class="card"><h2 class="h2">PCからGoogle補助簿へ転送（本人Firestore）</h2>'+
+  '<p class="helper">PC印刷専用モードではGalaxyの営業入力権を引き継がず、管理者本人のFirestore原本を読取ります。上の「クラウドからこの日付を取得」で入庫済み日報を選んでください。'+
+  'Googleに他の利用者の日報閲覧権限は付与しません。印刷する乗務の選択はGoogleシートのB15/B17で従来どおり行います。</p>'+
+  '<label class="field"><span class="field-label">Google Apps Scriptの /exec URL（このPCのみ保存）</span>'+
+  '<input class="control" type="url" data-firestore-print-setting="webAppUrl" value="'+safeText(prefs.webAppUrl)+'" placeholder="https://script.google.com/macros/s/.../exec"></label>'+
+  '<label class="field"><span class="field-label">既存Google接続キー（このPCのみ保存）</span>'+
+  '<input class="control" type="password" data-firestore-print-setting="writeKey" value="'+safeText(prefs.writeKey)+'" autocomplete="off"></label>'+
+  '<p class="caption-note">送信対象：'+safeText(verified?
+    date+'／出庫 '+String(shift.startedAt||'不明')+'／'+shift.records.length+'件':
+    '日付を指定してFirestoreから入庫済みの日報を取得してください')+'</p>'+
+  '<p class="caption-note">'+(TAXIAPP_PRINT_VIEWER_MODE?'現在：PC印刷専用（閲覧のみ）':
+   'PCでは https://elpapityo.github.io/TAXIAPP/?printViewer=1 を開いて本人ログインしてください。')+'</p>'+
+  '<button type="button" class="btn primary" data-action="firestorePrintToGoogle" '+(ready?'':'disabled')+
+  '>選択した日報をGoogle補助簿の4印刷元に転送・改版更新</button>'+
+  (firestorePrintPcMessage?'<p class="caption-note" role="status">'+safeText(firestorePrintPcMessage)+'</p>':'')+
+  '<p class="footnote">印刷元が最新かどうかはこの転送時にFirestore原本を再取得して確認します。Googleシートだけでは原本の改版を自動検出できません。修正後は必ず再転送してください。</p>'+
+  '</section>';
+}
+async function firestorePrintToGoogle(){
+ if(!TAXIAPP_PRINT_VIEWER_MODE||!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    !currentLoginScope?.admin||deviceMode!=='viewer'||!accountDiary.ready())return;
+ const scope=currentLoginScope,uid=accountScope.uid,generation=accountScopeGeneration;
+ const stable=()=>currentLoginScope===scope&&accountScopeGeneration===generation&&
+  accountScope.uid===uid&&accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+  scope.firebase?.auth?.currentUser?.uid===uid&&
+  deviceMode==='viewer'&&accountDiary.ready();
+ const shift=selectedHistoryShift(),date=historyDate||selectedShift()?.date||dateStamp();
+ const row=historyCloudRows.find(item=>item.id===shift?.id&&
+  item.shift?.date===date&&Boolean(item.shift?.endedAt||item.shift?.endedIso));
+ if(!row||historyCloudUid!==uid||historyCloudDate!==date){
+  firestorePrintPcMessage='本人Firestoreから日付を指定して入庫済み乗務を取得してください';render();return;
+ }
+ const prefs=firestorePrintPcSettings();
+ if(!googleWebAppUrl(prefs.webAppUrl)||prefs.writeKey.length<24){
+  firestorePrintPcMessage='Google Apps ScriptのURLと接続キーを設定してください';render();return;
+ }
+ if(!confirm('PCのGoogle補助簿へ転送しますか？\\n'+date+' ／ 乗務ID：'+row.id+
+  '\\n既存Google同期原本・印刷操作の選択・補助簿2ページは変更しません。'))return;
+ if(!stable())return;
+ firestorePrintPcMessage='本人Firebase認証で4印刷元に転送中…';render();
+ try{
+  const auth=scope.firebase?.auth?.currentUser;
+  if(typeof auth?.getIdToken!=='function')throw Error('本人Firebase認証を取得できません');
+  const token=await auth.getIdToken(true);
+  if(!stable())return;
+  if(typeof token!=='string'||token.split('.').length!==3)
+   throw Error('Firebaseログインを確認できません');
+  const reply=await firestorePrintGooglePostRequest({
+   shiftId:row.id,date,firebaseIdToken:token
+  },prefs);
+  if(!stable())return;
+  if(reply?.data?.id!==row.id||reply?.data?.date!==date)
+   throw Error('Googleの受信確認と選択した乗務IDが一致しません');
+  firestorePrintPcMessage='Google4印刷元へ転送確認済み：'+date+
+   ' ／ '+row.id+'。PCのGoogleシートでB15/B17から対象を選んでください。';
+ }catch(error){
+  if(!stable())return;
+  firestorePrintPcMessage='Google取込は未確認：'+String(error?.message||error)+
+   '。Googleシートの転送状態を確認するまで連続再送は避けてください';
+ }
+ if(stable())render();
+}
 function historyRecordTime(record){
  if(record.kind==='cancel')return String(record.meta?.dispatchAt||record.raw.C||'').slice(0,8)+' ～ '+String(record.meta?.cancelAt||'').slice(0,8);
  return (record.raw.G||record.raw.C||'—')+' ～ '+(record.raw.M||'—');
@@ -2146,11 +2342,622 @@ function historyRecordDetails(record,shift){
   <p class="footnote">受取額は各決済で預かった金額、会社納金対象はアプリ内の精算計算による金額です。手数料の控除を区別して表示します。金額0円の決済方法は省略しています。</p>
  </div></details>`;
 }
-function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp();return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
-<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。</span></section>${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
+async function loadHistoryFromCloud(date){
+ const epoch=++historyCloudEpoch,uid=String(accountScope.uid||''),generation=accountScopeGeneration;
+ historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';
+ if(!memberDiary()||!accountDiary.ready())return;
+ historyCloudBusy=true;historyCloudMessage='Firestoreから取得中…';render();
+ try{
+  const response=await accountDiary.request('syncHistoryDate',{date});
+  if(epoch!==historyCloudEpoch||accountScopeGeneration!==generation||accountScope.uid!==uid||historyDate!==date)return;
+  if(response?.date!==date||!Array.isArray(response.shifts))throw Error('過去日報の取得結果が不正です');
+  historyCloudRows=response.shifts.map(row=>({id:row.id,revision:row.revision,shift:deepCopy(row.shift)}));
+  historyCloudShifts=historyCloudRows.map(row=>row.shift);
+  historyCloudUid=uid;historyCloudDate=date;
+  historyCloudMessage='クラウドから'+historyCloudShifts.length+'乗務を取得しました（端末には常時保存しません）';
+ }catch(error){
+  if(epoch===historyCloudEpoch&&accountScopeGeneration===generation&&accountScope.uid===uid)
+   historyCloudMessage='過去日報を取得できません：'+String(error?.message||error);
+ }finally{
+  if(epoch===historyCloudEpoch){historyCloudBusy=false;render();}
+ }
+}
+
+function historyEditStorageKey(uid,id,recordId){
+ return 'taxiapp-history-edit-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(id)+'-'+encodeURIComponent(recordId);
+}
+const HISTORY_EDIT_FIELDS=['C','E','F','G','I','J','K','L','M','N','O','AN','AO','AR',
+ 'Q','R','S','T','U','V','W','Z','AA','AB','AC','AD','AE','AF','AG','AH'];
+const HISTORY_EDIT_NUMERIC=new Set(['F','I','J','K','L','AN','AO','AR','S','V','W','AB','AE','AF','AG','AH']);
+const HISTORY_EDIT_TIMES=new Set(['C','G','M','R','U','AA','AD']);
+const HISTORY_EDIT_HIGHWAY=new Set(['Q','R','S','T','U','V','W','Z','AA','AB','AC','AD','AE','AF','AG','AH']);
+const HISTORY_EDIT_META=['uberAppDisplayed','uberReservation','uberTip'];
+function historyEditableKeys(record){
+ if(record.kind==='cancel')return ['C','E'];
+ if(record.kind==='empty'||record.kind==='ride')
+  return HISTORY_EDIT_FIELDS.filter(k=>(record.kind==='ride'||HISTORY_EDIT_HIGHWAY.has(k))&&
+   (!HISTORY_EDIT_HIGHWAY.has(k)||!Array.isArray(record.meta?.highwaySections)));
+ return [];
+}
+const HISTORY_HIGHWAY_FIELDS=['entryIC','entryTime','entryKm','exitIC','exitTime','exitKm','fee'];
+function historyHighwayControls(draft){
+ if(!Array.isArray(draft.highwaySections))return '';
+ const labels={entryIC:'入口インター',entryTime:'入口時刻',entryKm:'入口距離（km）',
+  exitIC:'出口インター',exitTime:'出口時刻',exitKm:'出口距離（km）',fee:'高速料金（円）'};
+ return '<details '+(draft.highwayOpen?'open':'')+'><summary>高速道路の区間別明細（'+draft.highwaySections.length+'区間）</summary>'+
+  draft.highwaySections.map((section,index)=>'<div class="card"><strong>'+
+   (section.mode==='実'?'実車':'空車')+'高速 '+(index+1)+'区間</strong>'+
+   '<div class="form-grid">'+HISTORY_HIGHWAY_FIELDS.map(key=>
+    '<label class="field"><span class="field-label">'+labels[key]+'</span>'+
+    '<input class="control" '+(draft.busy?'disabled ':'')+'data-history-highway-index="'+index+
+    '" data-history-highway-field="'+key+'" type="'+(['entryTime','exitTime'].includes(key)?'time':'text')+
+    '" '+(['entryTime','exitTime'].includes(key)?'step="1" ':'')+
+    'value="'+safeText(String(section[key]??''))+'" maxlength="100"></label>').join('')+
+   '</div><button class="btn red" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayRemove" data-id="'+index+
+   '">この区間を削除</button></div>').join('')+
+  '<div class="actions"><button class="btn" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayAdd" data-id="実">＋ 実車高速区間</button>'+
+  '<button class="btn" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayAdd" data-id="空">＋ 空車高速区間</button></div>'+
+  '<p class="caption-note">区間距離・料金は既存の高速明細計算で集計します。</p></details>';
+}
+function editHistoryHighwaySection(operation,modeOrIndex){
+ const draft=historyLocationEdit;
+ if(!draft||draft.busy||!Array.isArray(draft.highwaySections))return;
+ if(!historyLocationInputs())throw Error('修正中のデータが保存できません');
+ const previous=deepCopy(draft.highwaySections);
+ if(operation==='add'){
+  if(!['実','空'].includes(modeOrIndex)||draft.highwaySections.length>=20)
+   throw Error('高速区間は20件までです');
+  draft.highwaySections.push({mode:modeOrIndex,entryIC:'',entryTime:'',entryKm:'',
+   exitIC:'',exitTime:'',exitKm:'',fee:''});
+ }else if(operation==='remove'){
+  const i=Number(modeOrIndex);
+  if(!Number.isInteger(i)||i<0||i>=draft.highwaySections.length)return;
+  if(!confirm('高速'+(i+1)+'区間を編集控えから除きますか？サーバーにはまだ反映しません。'))return;
+  draft.highwaySections.splice(i,1);
+ }else return;
+ try{saveHistoryLocationDraft(draft);}
+ catch(error){draft.highwaySections=previous;throw error;}
+ draft.highwayOpen=true;
+ render();
+}
+function saveHistoryLocationDraft(draft){
+ const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
+ const minimal={uid:draft.uid,id:draft.id,recordId:draft.recordId,date:draft.date,
+  baseRevision:draft.baseRevision,al:draft.al,am:draft.am,
+  fields:draft.fields||{},metaFields:draft.metaFields||{},
+  splitSecond:draft.splitSecond??'',splitAmount:draft.splitAmount??'',
+  splitSlot:draft.splitSlot??null,removeRecord:draft.removeRecord===true,
+  addRecord:draft.addRecord===true,sourceRecord:draft.addRecord?draft.sourceRecord:undefined,
+  highwaySections:Array.isArray(draft.highwaySections)?draft.highwaySections:null};
+ const json=JSON.stringify(minimal);
+ localStorage.setItem(key,json);
+ if(localStorage.getItem(key)!==json)throw Error('修正内容を端末に保護できません');
+}
+function historyLocationEditHtml(shift){
+ const draft=historyLocationEdit;
+ if(!draft||draft.uid!==accountScope.uid||draft.id!==shift?.id)return '';
+ return '<section class="card"><h3 class="h2">過去日報の営業明細修正</h3>'+
+  (draft.removeRecord?'<p class="warn">この営業記録を削除する修正案です。Firestore保存時に確認します。</p>':
+   '<p class="caption-note">乗務中の原本とは別に修正案を保持します。料金・距離・決済の変更は既存計算式で再確認します。</p>')+
+  '<label class="field"><span class="field-label">乗車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditPickup" maxlength="160" value="'+safeText(draft.al)+'"></label>'+
+  '<label class="field"><span class="field-label">降車地</span><input class="control" '+(draft.busy?'disabled ':'')+'id="historyEditDropoff" maxlength="160" value="'+safeText(draft.am)+'"></label>'+
+  '<div class="actions"><button class="btn primary" data-action="saveHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>'+(draft.removeRecord?'営業記録の削除を保存':'Firestoreへ保存')+'</button>'+
+  '<button class="btn" data-action="cancelHistoryLocationEdit" '+(draft.busy?'disabled':'')+'>修正を取り消す</button></div>'+
+  (draft.message?'<p class="caption-note">'+safeText(draft.message)+'</p>':'')+
+  historyHighwayControls(draft)+
+  '<details><summary>営業・料金・決済などの修正項目</summary>'+
+  '<div class="form-grid">'+historyEditableKeys(draft.sourceRecord||{}).map(key=>{
+   const name=RAW_COLUMNS.find(x=>x[0]===key)?.[1]||key;
+   const value=String(draft.fields?.[key]??'');
+   const options=key==='E'?TYPES.map(k=>[k,k]):key==='N'?PAYMENTS:
+    key==='O'?[['','なし'],['シ','シ'],['高','高']]:null;
+   const control=options?
+    '<select class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-field="'+key+'">'+
+     options.map(pair=>'<option value="'+safeText(pair[0])+'" '+(value===pair[0]?'selected':'')+'>'+safeText(pair[1])+'</option>').join('')+'</select>':
+    '<input class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-field="'+key+'" maxlength="160" value="'+safeText(value)+'" '+(HISTORY_EDIT_NUMERIC.has(key)?'inputmode="decimal"':'')+'>';
+   return '<label class="field"><span class="field-label">'+safeText(name)+'</span>'+control+'</label>';
+  }).join('')+'</div>'+
+  (draft.sourceRecord?.kind==='ride'?'<div class="form-grid">'+
+    HISTORY_EDIT_META.map(key=>'<label class="field"><span class="field-label">'+
+     safeText(({uberAppDisplayed:'Uberアプリ表示額',uberReservation:'Uber予約料',uberTip:'Uberチップ'})[key])+
+     '</span><input class="control" inputmode="decimal" '+(draft.busy?'disabled ':'')+'data-history-edit-meta="'+key+
+     '" value="'+safeText(draft.metaFields?.[key]??'')+'"></label>').join('')+
+    '<label class="field"><span class="field-label">追加決済金種</span><select class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-split="second">'+
+    [['','なし'],...PAYMENTS.filter(x=>x[0]!=='キ')].map(p=>'<option value="'+safeText(p[0])+'" '+
+      (draft.splitSecond===p[0]?'selected':'')+'>'+safeText(p[1])+'</option>').join('')+'</select></label>'+
+    '<label class="field"><span class="field-label">手動指定の決済金額（円）</span><input class="control" inputmode="decimal" '+(draft.busy?'disabled ':'')+'data-history-edit-split="amount" value="'+safeText(draft.splitAmount??'')+'"></label>'+
+    '<label class="field"><span class="field-label">金額を指定する金種</span><select class="control" '+(draft.busy?'disabled ':'')+'data-history-edit-split="slot">'+
+    '<option value="" '+(draft.splitSlot===null?'selected':'')+'>未指定</option>'+
+    '<option value="0" '+(draft.splitSlot===0?'selected':'')+'>最初の金種</option>'+
+    '<option value="1" '+(draft.splitSlot===1?'selected':'')+'>追加金種</option></select></label></div>':'')+
+   '<p class="caption-note">料金・手数料・納金の再計算には、既存アプリの正式計算処理を使用します。入力した高速の複数区間も既存の距離・料金集計を使用します。</p></details></section>';
+}
+// List only this user's pending edit backups; never change or delete them.
+function historyProtectedEdits(shift){
+ const uid=accountScope.uid;
+ const row=historyCloudRows.find(item=>item.id===shift?.id);
+ if(!memberDiary()||!shift||historyCloudUid!==uid||!row||
+    row.shift?.date!==historyCloudDate)return [];
+ const candidates=(shift.records||[]).map(record=>({
+  recordId:record.id,kind:record.kind,addRecord:false,
+  label:'営業№'+String(record.raw?.A??'—')
+ }));
+ const names={ride:'乗車',cancel:'キャンセル',empty:'空車高速'};
+ for(const kind of Object.keys(names)){
+  try{
+   const recordId=localStorage.getItem(historyPendingAdditionKey(uid,shift.id,kind));
+   if(recordId)candidates.push({recordId,kind,addRecord:true,
+    label:'追加中の'+names[kind]});
+  }catch{
+   candidates.push({recordId:'',kind,addRecord:true,
+    label:'追加中の'+names[kind],blocked:true});
+  }
+ }
+ return candidates.flatMap(candidate=>{
+  if(candidate.blocked)return [{...candidate,blocked:true}];
+  try{
+   const raw=localStorage.getItem(historyEditStorageKey(uid,shift.id,candidate.recordId));
+   if(raw===null&&!candidate.addRecord)return [];
+   const saved=raw===null?null:JSON.parse(raw);
+   const valid=saved&&saved.uid===uid&&saved.id===shift.id&&
+    saved.recordId===candidate.recordId&&saved.date===shift.date&&
+    Number.isSafeInteger(saved.baseRevision)&&
+    Boolean(saved.addRecord)===candidate.addRecord;
+   return [{...candidate,blocked:!valid,
+    stale:Boolean(valid&&saved.baseRevision!==row.revision)}];
+  }catch{return [{...candidate,blocked:true}];}
+ });
+}
+function historyProtectedEditsHtml(shift){
+ const entries=historyProtectedEdits(shift);
+ if(!entries.length)return '';
+ return '<section class="card"><h3 class="h2">端末に保護した未保存の修正（'+entries.length+'件）</h3>'+
+  '<p class="caption-note">他の営業を開いても修正控えは消えません。保存前の内容を確認できます。版違いの場合はFirestoreを無断上書きしません。</p>'+
+  '<div class="actions">'+entries.map(entry=>
+   entry.blocked?
+    '<span class="warn">'+safeText(entry.label)+'：修正控えを確認できません。削除せず保護しています。</span>':
+    '<button class="btn" data-action="'+(entry.addRecord?'historyAddRecord':'editHistoryLocation')+
+    '" data-id="'+safeText(entry.addRecord?entry.kind:entry.recordId)+'">'+
+    safeText(entry.label)+(entry.stale?'（更新番号が異なります）':'')+
+    (historyLocationEdit?.recordId===entry.recordId?'（編集中）':'')+
+    ' を開く</button>').join('')+'</div></section>';
+}
+// Never switch a history editor while its latest visible inputs are unprotected.
+function protectOpenHistoryEdit(){
+ const draft=historyLocationEdit;
+ if(!draft)return;
+ if(draft.busy)throw Error('過去日報の保存処理中です');
+ const visible=document.getElementById('historyEditPickup');
+ if(visible){
+  if(!historyLocationInputs())throw Error('過去日報の修正入力を保存できません');
+ }else saveHistoryLocationDraft(draft);
+}
+// A returned duty can be edited even when the phone retains the same
+// last returned original. Only allow this when the owner's server revision
+// and every original field still match the locally verified baseline.
+function assertHistoryLocalOverlapSafe(shiftId,remoteShift,revision){
+ const local=model.shifts.find(shift=>shift.id===shiftId);
+ if(!local)return false;
+ if(!local.endedAt&&!local.endedIso||local.draft)
+  throw Error('進行中・編集中の端末原本があるため、過去日報の直接編集を停止しました');
+ if(!remoteShift||remoteShift.id!==shiftId||
+    !Number.isSafeInteger(revision)||revision<1||
+    syncUI.verifiedRevision(shiftId)!==revision)
+  throw Error('端末の直近乗務がFirestoreと保存確認済みではありません。原本を保持して編集を停止しました');
+ if(JSON.stringify(canonicalStoredDuty(localFirestoreOriginal(local)))!==
+    JSON.stringify(canonicalStoredDuty(remoteShift)))
+  throw Error('端末の直近乗務とFirestore原本が一致しません。双方を保護して編集を停止しました');
+ return true;
+}
+function startHistoryLocationEdit(shiftId,recordId,addition=null){
+ if(!memberDiary()||!accountDiary.ready()||!canEditNow()||historyCloudUid!==accountScope.uid)
+  throw Error('本人の操作端末でFirestoreの日報を取得してください');
+ if(historyLocationEdit&&(historyLocationEdit.id!==shiftId||
+    historyLocationEdit.recordId!==recordId)){
+  if(historyLocationEdit.uid!==accountScope.uid)
+   throw Error('別の利用者の修正控えは操作できません');
+  protectOpenHistoryEdit();
+ }
+ const row=historyCloudRows.find(row=>row.id===shiftId&&row.shift?.date===historyCloudDate);
+ const record=addition||row?.shift?.records?.find(record=>record.id===recordId);
+ if(addition&&(addition.id!==recordId||row?.shift?.records?.some(item=>item.id===recordId)))
+  throw Error('新しい営業記録IDが重複しています');
+ if(!row||!record||!Number.isSafeInteger(row.revision)||row.revision<1)
+  throw Error('対象の日報・更新番号を確認できません');
+ assertHistoryLocalOverlapSafe(shiftId,row.shift,row.revision);
+ const key=historyEditStorageKey(accountScope.uid,shiftId,recordId);
+ let saved=null;
+ try{saved=JSON.parse(localStorage.getItem(key)||'null');}catch{throw Error('端末内の修正控えが破損しています。自動上書きを停止しました');}
+ if(saved&&(saved.uid!==accountScope.uid||saved.id!==shiftId||saved.recordId!==recordId||
+    saved.date!==row.shift.date||!Number.isSafeInteger(saved.baseRevision)))
+  throw Error('端末内の修正控えが一致しません。自動上書きを停止しました');
+
+ if(saved?.metaFields&&(record.kind!=='ride'||typeof saved.metaFields!=='object'||
+   Array.isArray(saved.metaFields)||Object.keys(saved.metaFields).some(k=>
+    !HISTORY_EDIT_META.includes(k)||typeof saved.metaFields[k]!=='string')))
+  throw Error('過去日報の決済控えが不正です');
+ if(saved&&Object.prototype.hasOwnProperty.call(saved,'highwaySections')&&
+    saved.highwaySections!==null&&(!Array.isArray(saved.highwaySections)||
+    saved.highwaySections.length>20||saved.highwaySections.some(section=>
+     !section||!['実','空'].includes(section.mode)||
+     Object.keys(section).some(key=>!['mode',...HISTORY_HIGHWAY_FIELDS].includes(key))||
+     HISTORY_HIGHWAY_FIELDS.some(key=>typeof section[key]!=='string'||section[key].length>100))))
+  throw Error('高速区間の修正控えが不正です。原本を保持します');
+ const prepared=deepCopy(record);
+ if(['ride','empty'].includes(prepared.kind)&&typeof window!=='undefined'&&
+   window.TAXIAPP_HIGHWAY_SECTIONS?.initialize)
+  window.TAXIAPP_HIGHWAY_SECTIONS.initialize(prepared);
+ if(saved?.fields&&(!saved.fields||typeof saved.fields!=='object'||Array.isArray(saved.fields)||
+   Object.keys(saved.fields).some(k=>!historyEditableKeys(prepared).includes(k)||typeof saved.fields[k]!=='string')))
+  throw Error('過去日報の修正控えに旧高速入力項目があります。控えを保護し、上書きを停止しました');
+ const mismatch=Boolean(saved&&saved.baseRevision!==row.revision);
+ const split=record.meta?.splitPayment||{};
+ const draft={uid:accountScope.uid,id:shiftId,recordId,date:row.shift.date,
+  baseRevision:saved?.baseRevision??row.revision,al:saved?.al??String(record.raw?.AL??''),
+  am:saved?.am??String(record.raw?.AM??''),busy:false,
+  sourceRecord:prepared,
+  highwaySections:['ride','empty'].includes(record.kind)?
+   deepCopy(saved?.highwaySections??prepared.meta?.highwaySections??null):null,
+  fields:historyEditableKeys(prepared).reduce((o,k)=>({...o,[k]:saved?.fields?.[k]??String(record.raw?.[k]??'')}),{}),
+  metaFields:record.kind==='ride'?Object.fromEntries(HISTORY_EDIT_META.map(k=>
+   [k,saved?.metaFields?.[k]??String(record.meta?.[k]??'')])):{},
+  splitSecond:saved?.splitSecond??String(split.second||''),
+  splitAmount:saved?.splitAmount??String(split.manualAmount??''),
+  splitSlot:saved&&Object.prototype.hasOwnProperty.call(saved,'splitSlot')?
+   saved.splitSlot:(split.manualSlot===0||split.manualSlot===1?split.manualSlot:null),
+  removeRecord:saved?.removeRecord===true,addRecord:Boolean(addition),
+  message:mismatch?'Firestoreに新しい版があります。保存は停止中です。修正控えを確認し、不要なら「修正を取り消す」で原本へ戻してください。':''};
+ saveHistoryLocationDraft(draft);
+ historyLocationEdit=draft;
+ historyShiftId=shiftId;render();
+}
+function historyLocationInputs(){
+ const draft=historyLocationEdit;
+ if(!draft||draft.busy)return false;
+ const al=document.getElementById('historyEditPickup');
+ const am=document.getElementById('historyEditDropoff');
+ if(!al||!am)return false;
+ draft.al=al.value;draft.am=am.value;
+ if(typeof document.querySelectorAll==='function'){
+  for(const input of document.querySelectorAll('[data-history-edit-field]')){
+   if(Object.prototype.hasOwnProperty.call(draft.fields||{},input.dataset.historyEditField))
+    draft.fields[input.dataset.historyEditField]=input.value;
+  }
+  for(const input of document.querySelectorAll('[data-history-edit-meta]')){
+   if(Object.prototype.hasOwnProperty.call(draft.metaFields||{},input.dataset.historyEditMeta))
+    draft.metaFields[input.dataset.historyEditMeta]=input.value;
+  }
+  for(const input of document.querySelectorAll('[data-history-highway-field]')){
+   const i=Number(input.dataset.historyHighwayIndex),key=input.dataset.historyHighwayField;
+   if(Number.isInteger(i)&&draft.highwaySections?.[i]&&HISTORY_HIGHWAY_FIELDS.includes(key))
+    draft.highwaySections[i][key]=input.value;
+  }
+  for(const input of document.querySelectorAll('[data-history-edit-split]')){
+   if(input.dataset.historyEditSplit==='second')draft.splitSecond=input.value;
+   if(input.dataset.historyEditSplit==='amount')draft.splitAmount=input.value;
+   if(input.dataset.historyEditSplit==='slot')draft.splitSlot=input.value===''?null:Number(input.value);
+  }
+ }
+ saveHistoryLocationDraft(draft);
+ return true;
+}
+// A historical edit works on a detached Firestore document. Official
+// pricing(), deriveRaw() and paymentBreakdown() remain the only calculators.
+function applyHistoryBusinessEdits(record,draft,settings,date){
+ const allowed=new Set(historyEditableKeys(draft.sourceRecord||record));
+ const changed=new Set();
+ record.raw={...record.raw,AL:draft.al,AM:draft.am};
+ for(const [key,value] of Object.entries(draft.fields||{})){
+  if(!allowed.has(key)||typeof value!=='string'||value.length>160)
+   throw Error('修正した営業項目が不正です：'+key);
+  if(value===String(draft.sourceRecord?.raw?.[key]??''))continue;
+  if(HISTORY_EDIT_NUMERIC.has(key)&&value.trim()!==''){
+   const numberValue=Number(value);
+   if(!/^\d+(?:\.\d{1,3})?$/.test(value)||!Number.isFinite(numberValue)||
+      numberValue>9999999||(['I','J'].includes(key)&&(!Number.isInteger(numberValue)||numberValue>12))||
+      (!['F','L','S','V','AB','AE'].includes(key)&&!Number.isInteger(numberValue)))
+    throw Error('数値の形式が不正です：'+key);
+  }
+  if(HISTORY_EDIT_TIMES.has(key)&&value!==''&&!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value))
+   throw Error('時刻の形式が不正です：'+key);
+  if(key==='E'&&!TYPES.includes(value))throw Error('配車区分を確認してください');
+  if(key==='N'&&(!PAYMENTS.some(([code])=>code===value)||value==='キ'))
+   throw Error('金種を確認してください');
+  if(key==='O'&&!['','シ','高'].includes(value))throw Error('割引区分を確認してください');
+  record.raw[key]=value;changed.add(key);
+ }
+ const oldMeta=draft.sourceRecord?.meta||{};
+ record.meta={...record.meta};
+ if(Array.isArray(draft.highwaySections)&&
+    JSON.stringify(draft.highwaySections)!==JSON.stringify(oldMeta.highwaySections)){
+  const items=draft.highwaySections;
+  if(items.length>20||items.some(section=>!section||!['実','空'].includes(section.mode)||
+      HISTORY_HIGHWAY_FIELDS.some(key=>typeof section[key]!=='string'||section[key].length>100)))
+   throw Error('高速道路の区間明細が不正です');
+  for(const section of items){
+   for(const key of ['entryKm','exitKm']){
+    const value=section[key];
+    if(value!==''&&(!/^\d+(?:\.\d{1,3})?$/.test(value)||Number(value)>9999999))
+     throw Error('高速区間の距離入力が不正です');
+   }
+   if(section.fee!==''&&(!/^\d{1,7}$/.test(section.fee)||Number(section.fee)>9999999))
+    throw Error('高速区間の料金入力が不正です');
+   for(const key of ['entryTime','exitTime']){
+    if(section[key]!==''&&!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(section[key]))
+     throw Error('高速区間の時刻入力が不正です');
+   }
+  }
+  const api=typeof window!=='undefined'?window.TAXIAPP_HIGHWAY_SECTIONS:null;
+  if(!api||!api.validate)throw Error('既存の高速区間計算を利用できません');
+  const issues=api.validate(items);
+  if(issues.length)throw Error('高速区間の入力を確認してください：'+issues.join('、'));
+  record.meta.highwaySections=deepCopy(items);
+  changed.add('highwaySections');
+ }
+ if(record.kind==='ride'){
+  for(const key of HISTORY_EDIT_META){
+   const value=draft.metaFields?.[key];
+   if(typeof value!=='string'||value.length>30)throw Error('Uber明細の形式が不正です');
+   if(value!==String(oldMeta[key]??'')){
+    if(value!==''&&(!/^\d{1,7}$/.test(value)||Number(value)>9999999))
+     throw Error('Uber金額は0以上の整数で入力してください');
+    record.meta[key]=value;changed.add(key);
+   }
+  }
+  const split=oldMeta.splitPayment||{};
+  const nextSecond=String(draft.splitSecond??''),nextAmount=String(draft.splitAmount??'');
+  const nextSlot=draft.splitSlot;
+  if(nextSecond!==String(split.second||'')||nextAmount!==String(split.manualAmount??'')||
+     (nextSecond&&nextSlot!==split.manualSlot)){
+   if(nextSecond!==''&&!PAYMENTS.some(([code])=>code===nextSecond&&code!=='キ'))
+    throw Error('追加金種を確認してください');
+   if(nextSecond===record.raw.N&&nextSecond)throw Error('最初と追加の金種が重複しています');
+   if(nextAmount!==''&&(!/^\d{1,7}$/.test(nextAmount)||Number(nextAmount)>9999999))
+    throw Error('支払金額は0以上の整数で入力してください');
+   if(nextSecond!==''&&!([0,1].includes(nextSlot)))throw Error('支払金種の指定が不正です');
+   record.meta.splitPayment={...split,second:nextSecond,
+     manualSlot:nextSecond?nextSlot:null,manualAmount:nextSecond?nextAmount:''};
+   changed.add('splitPayment');
+  }
+  if(changed.has('O'))updateDiscountForDraft(record,'O');
+  if(changed.has('K'))updateDiscountForDraft(record,'K');
+  if(changed.has('AR')){
+   if(!['シ','高'].includes(record.raw.O)&&number(record.raw.AR)>0)
+    throw Error('割引区分のない営業に割引金額は設定できません');
+   updateDiscountForDraft(record,'AR');
+  }
+  for(const [from,to,label] of [['F','L','実車距離'],['S','V','実車高速距離'],['AB','AE','空車高速距離']]){
+   if((changed.has(from)||changed.has(to))&&number(record.raw[from])!==null&&
+      number(record.raw[to])!==null&&number(record.raw[to])<number(record.raw[from]))
+    throw Error(label+'の降車側は乗車側以上で入力してください');
+  }
+  if([...changed].some(key=>['K','N','E','O','AR','AN','AO','W',
+       'uberAppDisplayed','uberReservation','uberTip','splitPayment'].includes(key))){
+   const problems=validatePaymentBreakdown(record,settings,date);
+   if(problems.length)throw Error('決済内訳を確認してください：'+problems.join('、'));
+  }
+ }
+ if(changed.size)record.raw=deriveRaw(record,settings);
+ return changed.size;
+}
+function historyPendingAdditionKey(uid,shiftId,kind){
+ return 'taxiapp-history-new-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(shiftId)+'-'+kind;
+}
+function startHistoryNewRecord(kind){
+ if(!['ride','cancel','empty'].includes(kind)||!memberDiary()||!canEditNow())
+  throw Error('過去日報を編集できません');
+ const shift=selectedHistoryShift();
+ const row=historyCloudRows.find(item=>item.id===shift?.id);
+ if(!row||historyCloudUid!==accountScope.uid)
+  throw Error('本人Firestoreの日報を取得してください');
+ assertHistoryLocalOverlapSafe(shift.id,row.shift,row.revision);
+ if(row.shift.records.length>=MAX_RECORDS)throw Error('60件に達したため追加できません');
+ const pointer=historyPendingAdditionKey(accountScope.uid,shift.id,kind);
+ let id=localStorage.getItem(pointer),candidate=null;
+ if(id){
+  let saved;
+  try{saved=JSON.parse(localStorage.getItem(historyEditStorageKey(accountScope.uid,shift.id,id))||'null');}
+  catch{throw Error('追加中の営業記録が破損しています。上書きせず保持します');}
+  if(!saved?.addRecord||saved.uid!==accountScope.uid||saved.id!==shift.id||
+     saved.recordId!==id||saved.sourceRecord?.id!==id||saved.sourceRecord.kind!==kind)
+   throw Error('追加中の営業記録を照合できません。端末の控えを保持します');
+  candidate=saved.sourceRecord;
+ }else{
+  const at=new Date(row.shift.startedIso||row.shift.date+'T00:00:00');
+  const start=Number.isFinite(at.getTime())?at:new Date(row.shift.date+'T00:00:00');
+  candidate=makeDraft(deepCopy(row.shift),kind,start,'乗');
+  candidate.id='record-'+Date.now()+'-'+Math.floor(Math.random()*100000);
+ }
+ startHistoryLocationEdit(shift.id,candidate.id,candidate);
+ try{
+  localStorage.setItem(pointer,candidate.id);
+  if(localStorage.getItem(pointer)!==candidate.id)throw Error('追加中の日報IDを保存できません');
+ }catch(error){
+  historyLocationEdit.message='追加中の営業記録IDの保護に失敗しました：'+String(error?.message||error);
+  render();return;
+ }
+}
+function markHistoryRecordRemoval(recordId){
+ const shift=selectedHistoryShift();
+ if(!shift||!historyCloudRows.some(row=>row.id===shift.id))
+  throw Error('Firestoreの過去日報を取得してください');
+ startHistoryLocationEdit(shift.id,recordId);
+ const draft=historyLocationEdit;
+ if(!draft||draft.recordId!==recordId)return;
+ if(!confirm('この営業№'+String(draft.sourceRecord?.raw?.A||'')+'を削除する修正案を作成しますか？サーバーへはまだ送信しません。'))return;
+ draft.removeRecord=true;
+ saveHistoryLocationDraft(draft);
+ render();
+}
+function unchangedHistoryEdit(draft){
+ if(!draft||draft.addRecord||draft.removeRecord)return false;
+ const original=draft.sourceRecord;
+ if(!original)return false;
+ if(draft.al!==String(original.raw?.AL??'')||draft.am!==String(original.raw?.AM??''))return false;
+ if(Object.entries(draft.fields||{}).some(([key,val])=>val!==String(original.raw?.[key]??'')))return false;
+ if(Object.entries(draft.metaFields||{}).some(([key,val])=>val!==String(original.meta?.[key]??'')))return false;
+ const split=original.meta?.splitPayment||{};
+ if(draft.splitSecond!==String(split.second||'')||draft.splitAmount!==String(split.manualAmount??''))return false;
+ const oldSlot=split.manualSlot===0||split.manualSlot===1?split.manualSlot:null;
+ if(draft.splitSecond&&draft.splitSlot!==oldSlot)return false;
+ return JSON.stringify(draft.highwaySections??null)===
+  JSON.stringify(original.meta?.highwaySections??null);
+}
+async function commitHistoryLocationEdit(){
+ const draft=historyLocationEdit;
+ if(!draft||draft.busy)return;
+ try{if(!historyLocationInputs())throw Error('修正入力が見つかりません');}
+ catch(error){draft.message=String(error?.message||error);render();return;}
+ if(!accountDiary.ready()||!canEditNow()||accountScope.uid!==draft.uid)return;
+ if(unchangedHistoryEdit(draft)){
+  try{localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));}
+  catch{draft.message='変更なしですが、端末の修正控えを整理できません';render();return;}
+  historyLocationEdit=null;historyCloudMessage='変更された項目はありません';
+  render();return;
+ }
+ const row=historyCloudRows.find(row=>row.id===draft.id&&row.revision===draft.baseRevision);
+ if(!row||row.shift?.date!==draft.date){
+  draft.message='取得した原本の更新番号が変更されています。修正内容は保持しました。';render();return;
+ }
+ draft.busy=true;draft.message='Firestoreの更新番号を確認し保存中…';render();
+ const generation=accountScopeGeneration,epoch=historyCloudEpoch;
+ try{
+  assertHistoryLocalOverlapSafe(draft.id,row.shift,row.revision);
+  const updated=deepCopy(row.shift);
+  const rec=draft.addRecord?deepCopy(draft.sourceRecord):updated.records.find(item=>item.id===draft.recordId);
+  if(!rec)throw Error('修正対象の営業記録がありません');
+  if(draft.addRecord){
+   if(updated.records.length>=MAX_RECORDS||updated.records.some(item=>item.id===draft.recordId))
+    throw Error('営業記録の件数またはIDが重複しています');
+   rec.status='complete';rec.meta??={};rec.meta.serviceDate=updated.date;
+   applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
+   const issues=[...validateDraft(rec),...validatePaymentBreakdown(rec,updated.settings,updated.date)];
+   if(issues.length)throw Error('営業記録の入力を確認してください：'+issues.join('、'));
+   rec.raw=deriveRaw(rec,updated.settings);
+   updated.records.push(rec);
+   updated.records.forEach((item,index)=>{item.raw.A=index+1;});
+  }else if(draft.removeRecord){
+   if(!confirm('営業№'+String(rec.raw?.A||'')+'をFirestore原本から削除しますか？対象の乗務内で営業番号が詰め直されます。'))return;
+   updated.records=updated.records.filter(item=>item.id!==draft.recordId);
+   updated.records.forEach((item,index)=>{item.raw.A=index+1;});
+  }else applyHistoryBusinessEdits(rec,draft,updated.settings,updated.date);
+  const packet=accountScope.adminFirestore?googleShiftPacket(updated):
+   {kind:'TAXIAPP_SHIFT_V1',shift:updated};
+  if(accountScope.adminFirestore)packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  let saved=null,sendError=null;
+  try{
+   saved=await accountDiary.request('syncPut',{
+    baseRevision:draft.baseRevision,payload:JSON.stringify(packet)
+   });
+  }catch(error){sendError=error;}
+  if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
+     epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
+  // The network can fail AFTER the CAS transaction committed. A fresh server
+  // read avoids submitting the same changed duty again with a stale revision.
+  if(!saved?.confirmed||saved?.id!==draft.id||saved.revision!==draft.baseRevision+1){
+   let checked=null;
+   try{checked=await accountDiary.request('syncGet',{shiftId:draft.id});}
+   catch{/* Unknown delivery: keep the on-device correction without replacement. */}
+   if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
+      epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
+   if(checked?.id!==draft.id||
+      !Number.isSafeInteger(checked.revision)||checked.revision<=draft.baseRevision||
+      JSON.stringify(canonicalStoredDuty(checked.shift))!==
+       JSON.stringify(canonicalStoredDuty(packet.shift)))
+    throw Error('保存結果を確認できません。'+String(sendError?.message||'更新競合またはサーバー原本が異なります')+
+     '。修正控えを保持し、双方を上書きしません');
+   saved={id:draft.id,revision:checked.revision,confirmed:true};
+  }
+  // The just-returned duty may still be the phone's normal one-duty
+  // original. Store the confirmed correction locally before adopting CAS.
+  // An unrelated in-progress duty or unsynced content is never overwritten.
+  const localIndex=model.shifts.findIndex(item=>item.id===draft.id);
+  if(localIndex>=0){
+   assertHistoryLocalOverlapSafe(draft.id,row.shift,row.revision);
+   const oldLocal=deepCopy(model.shifts[localIndex]);
+   model.shifts[localIndex]=deepCopy(packet.shift);
+   if(await save(true)!==true){
+    model.shifts[localIndex]=oldLocal;
+    throw Error('Firestoreには保存済みですが端末原本の修正版を保存できません。修正控えを保持しました');
+   }
+   if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
+      epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
+   if(!syncUI.adoptHistoryDuty({id:draft.id,revision:saved.revision,shift:packet.shift})){
+    // CAS already succeeded remotely, but a concurrent event sync may hold
+    // the baseline lock. Restore the previously verified local original so
+    // the protected correction can safely be retried via server read-back.
+    model.shifts[localIndex]=oldLocal;
+    if(await save(true)!==true)
+     throw Error('Firestoreには保存済みですが端末の旧原本への復旧に失敗しました。修正控えを保持しました');
+    throw Error('Firestoreには保存済みですが、端末の更新番号を確定できません。旧原本と修正控えを保持しました');
+   }
+  }
+  const i=historyCloudRows.findIndex(item=>item.id===draft.id);
+  if(i>=0)historyCloudRows[i]={id:draft.id,revision:saved.revision,shift:deepCopy(packet.shift)};
+  historyCloudShifts=historyCloudRows.map(item=>item.shift);
+  try{
+   localStorage.removeItem(historyEditStorageKey(draft.uid,draft.id,draft.recordId));
+   if(draft.addRecord)localStorage.removeItem(historyPendingAdditionKey(draft.uid,draft.id,draft.sourceRecord.kind));
+  }
+  catch{draft.message='サーバーは保存済みですが端末の修正控えを削除できません';render();return;}
+  historyLocationEdit=null;
+  historyCloudMessage='営業明細の修正をFirestoreに保存・読戻し確認しました';
+  render();
+ }catch(error){
+  if(historyLocationEdit===draft&&accountScope.uid===draft.uid&&accountScopeGeneration===generation){
+   draft.message='保存未確認：'+String(error?.message||error)+'。修正控えを保持しています。';
+   render();
+  }
+ }finally{draft.busy=false;if(historyLocationEdit===draft)render();}
+}
+function discardHistoryLocationEdit(){
+ const draft=historyLocationEdit;
+ if(!draft||draft.busy)return;
+ if(!confirm('端末に保護した過去日報の修正案を取り消しますか？Firestoreの原本は変更しません。'))return;
+ try{
+  const key=historyEditStorageKey(draft.uid,draft.id,draft.recordId);
+  const snapshot=localStorage.getItem(key);
+  localStorage.removeItem(key);
+  if(draft.addRecord){
+   const pointer=historyPendingAdditionKey(draft.uid,draft.id,draft.sourceRecord.kind);
+   try{localStorage.removeItem(pointer);}
+   catch(error){
+    // Keep the in-progress edit addressable if the pointer could not be removed.
+    if(snapshot!==null)localStorage.setItem(key,snapshot);
+    throw error;
+   }
+  }
+ }catch{draft.message='修正控えを削除できません。端末の元データは保持しています';render();return;}
+ historyLocationEdit=null;render();
+}
+
+// A returned duty retained as the phone's most recent original is still
+// editable from explicitly fetched Firestore history, but only when the
+// current local original is an exact, revision-verified server copy.
+function canEditCloudHistory(shift){
+ if(!shift||!memberDiary()||!accountDiary.ready()||!canEditNow()||
+    historyCloudUid!==accountScope.uid||historyCloudDate!==shift.date||
+    getShift()?.id===shift.id)return false;
+ const cloud=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);
+ if(!cloud||!Number.isSafeInteger(cloud.revision)||cloud.revision<1)return false;
+ try{assertHistoryLocalOverlapSafe(shift.id,cloud.shift,cloud.revision);}
+ catch{return false;}
+ return true;
+}
+// The cloud data and existing calculators remain unchanged. Only fold the
+// long history sections; keep the record action table always accessible.
+function historyFoldSection(key,title,html){
+ if(!html)return '';
+ const body=html.replace(/^<section class="card"><h2 class="h2">[^<]*<\/h2>/,'')
+  .replace(/\s*<\/section>\s*$/,'');
+ return '<details class="details history-fold-panel" data-history-panel="'+safeText(key)+'">'+
+  '<summary>'+safeText(title)+'</summary><div class="inner">'+body+'</div></details>';
+}
+function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
+<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
-${shift.gpsTrip?gpsDistanceSummary(shift):''}${dailyReferenceDetails(shift,dailyReferenceFor(shift))}<div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み'}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div>
-${shift.records.length?`<section class="card history-detail-section"><h2 class="h2">営業明細（タップして確認）</h2><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</section>`:''}`}`;}
+${editableHistory?'<div class="actions"><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">明細修正</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
+${shift.records.length?`<details class="details history-fold-panel history-detail-section" data-history-panel="records"><summary>営業明細の詳細（${shift.records.length}件）</summary><div class="inner"><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</div></details>`:''}`}`;}
 // Seven-purpose operations dashboard. Presentation only: no stored record mutations.
 function opsBreakSeconds(shift,now=new Date()){
  return (shift?.breakSessions||[]).reduce((sum,x)=>sum+breakSeconds(x,now),0)
@@ -2475,8 +3282,22 @@ function googleShiftPacket(shift){
 // is NEVER treated as evidence that records reached Google Sheets.
 function googlePostRequest(action,fields={}){
  if(!legacyDiary())return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
+ if(action==='firestorePrintImport')return Promise.reject(Error('本人Firestore転送はPC印刷専用画面から行ってください'));
  if(!canEditNow()&&!['syncList','syncGet'].includes(action))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
  const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
+ return postGoogleBridge_(action,fields,endpoint,key);
+}
+function firestorePrintGooglePostRequest(fields,prefs){
+ if(!TAXIAPP_PRINT_VIEWER_MODE||!accountScope.adminFirestore||
+    accountScope.adminFirestorePreview||!currentLoginScope?.admin||
+    currentLoginScope.uid!==accountScope.uid||
+    currentLoginScope.firebase?.auth?.currentUser?.uid!==accountScope.uid||
+    deviceMode!=='viewer'||!accountDiary.ready())
+  return Promise.reject(Error('PC印刷専用の本人認証が必要です'));
+ return postGoogleBridge_('firestorePrintImport',fields,
+   googleWebAppUrl(prefs.webAppUrl),String(prefs.writeKey||''));
+}
+function postGoogleBridge_(action,fields,endpoint,key){
  if(!endpoint||key.length<24)return Promise.reject(Error('WebアプリURLと接続キーを設定してください'));
  const nonce='tx-'+Date.now()+'-'+Math.random().toString(36).slice(2);
  return new Promise((resolve,reject)=>{
@@ -2556,6 +3377,17 @@ function scheduleGoogleSync(){
   googleSendShift(current,false);
  },3000);
 }
+// Vehicle status changes are Firestore sync events, not GPS or text edits.
+// Keep local persistence first; a busy/offline writer retains its retry queue.
+function saveOperationalEvent(shift){
+ const shiftId=shift.id,generation=accountScopeGeneration,uid=accountScope.uid;
+ const stored=save();
+ if(memberDiary())void stored.then(ok=>{
+  if(ok===true&&generation===accountScopeGeneration&&uid===accountScope.uid&&canEditNow())
+   return syncUI.run(false,[shiftId]);
+ }).catch(error=>console.error('TAXIAPP vehicle event sync failed:',error));
+ return stored;
+}
 async function googleSendAllShifts(){
  if(memberDiary())return syncUI.run(true);
  if(sheetTargetPrefs().syncMode==='on'){await syncUI.run(true);return;}
@@ -2573,16 +3405,94 @@ async function googleSendAllShifts(){
 }
 
 
+// Only the active or most recently returned duty belongs in the normal
+// working set. Older duties may be released ONLY after owner-scoped server
+// read-back proves the complete app-calculated packet is identical.
+// Unsent, conflicting, offline or un-migrated diaries are never released.
+let releasingVerifiedDuties=false;
+function canonicalStoredDuty(value){
+ if(Array.isArray(value))return value.map(canonicalStoredDuty);
+ if(value&&typeof value==='object')
+  return Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonicalStoredDuty(value[k])]));
+ return value;
+}
+function localFirestoreOriginal(shift){
+ if(memberDiary()&&accountScope.adminFirestore){
+  const packet=googleShiftPacket(shift);
+  packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  return packet.shift;
+ }
+ return deepCopy(shift);
+}
+async function releaseVerifiedPreviousDuties(activeId){
+ if(releasingVerifiedDuties||!memberDiary()||!accountDiary.ready()||
+    !canEditNow()||model.activeId!==activeId)return;
+ releasingVerifiedDuties=true;
+ const generation=accountScopeGeneration,uid=accountScope.uid;
+ const sameOwner=()=>accountScopeGeneration===generation&&
+  accountScope.uid===uid&&memberDiary()&&canEditNow()&&model.activeId===activeId;
+ try{
+  for(const old of [...model.shifts]){
+   if(!sameOwner())return;
+   if(old.id===activeId||!old.endedIso&&!old.endedAt||old.draft)continue;
+   // A blank/unfinished or legacy-only record must never be discarded.
+   let expected;
+   try{expected=localFirestoreOriginal(old);}catch{continue;}
+   let server;
+   try{server=await accountDiary.request('syncGet',{shiftId:old.id});}
+   catch{continue;}
+   const confirmedRevision=syncUI.verifiedRevision(old.id);
+   if(!sameOwner()||server?.id!==old.id||
+      confirmedRevision===null||server.revision!==confirmedRevision||
+      JSON.stringify(canonicalStoredDuty(server.shift))!==
+       JSON.stringify(canonicalStoredDuty(expected)))continue;
+   const at=model.shifts.findIndex(item=>item.id===old.id);
+   if(at<0||model.shifts[at].draft||model.shifts[at].id===model.activeId)continue;
+   let stillSame;
+   try{stillSame=JSON.stringify(canonicalStoredDuty(localFirestoreOriginal(model.shifts[at])))===
+    JSON.stringify(canonicalStoredDuty(expected));}catch{continue;}
+   if(!stillSame)continue;
+   const released=model.shifts.splice(at,1)[0];
+   // A failed local write is NOT a completed archive. Reinsert the previous
+   // original in memory rather than silently dropping the last protected copy.
+   if(await save(true)!==true){
+    if(!sameOwner())return; // account switched during IndexedDB write
+    model.shifts.splice(Math.min(at,model.shifts.length),0,released);
+    await save(true);
+    return;
+   } // local-only; never move or delete the Firestore original
+  }
+ }finally{releasingVerifiedDuties=false;}
+}
 /* Cloud synchronization is per-duty, revision checked and opt-in.
  * The current local dataset remains available even during internet outages.
  */
 const syncUI=window.TAXIAPP_SYNC_UI({
+ remoteOnDemand:()=>memberDiary(),
+ // Isolate editor CAS baselines from the production manager's UID state.
+ previewFreshOnly:()=>Boolean(accountScope.adminFirestorePreview),
+ resumeExcludedIds:()=>accountScope.adminFirestore&&!accountScope.adminFirestorePreview?
+  (adminFirestoreManifest(accountScope.uid)?.excludedIds||[]):[],
  canSync:()=>canEditNow(),
+ allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
+  accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
+  currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
+ scopeKey:()=>accountScope.adminFirestorePreview?
+  'firestore-preview-'+accountScope.uid:accountScope.uid,
  isEditing:()=>Boolean(appEl.querySelector('input:focus,textarea:focus,select:focus')),
 
  canView:()=>deviceMode==='viewer'&&Boolean(accountSettingsAuto?.status().enabled),
  getModel:()=>model,
- getPacket:shift=>memberDiary()?{kind:'TAXIAPP_SHIFT_V1',shift:deepCopy(shift)}:googleShiftPacket(shift),
+ getPacket:shift=>{
+  if(memberDiary()&&accountScope.adminFirestore){
+   // The canonical app calculation is saved WITH the Firestore original.
+   // Google never recomputes fares or company remittance.
+   const packet=googleShiftPacket(shift);
+   packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+   return packet;
+  }
+  return memberDiary()?{kind:'TAXIAPP_SHIFT_V1',shift:deepCopy(shift)}:googleShiftPacket(shift);
+ },
  endpoint:()=>memberDiary()?accountDiary.endpoint():googleWebAppUrl(sheetTargetPrefs().webAppUrl),
  configured:()=>memberDiary()?accountDiary.ready():googleIsConfigured(),
  prefs:()=>memberDiary()?{syncMode:'on'}:sheetTargetPrefs(),
@@ -2599,8 +3509,13 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  },
  writerBootstrapAllowed:()=>deviceMode==='writer'&&writerLoadGate,
  onWriterSnapshot:async shifts=>{
-  if(deviceMode!=='writer'||!writerLoadGate)return false;
-  const epoch=writerLoadEpoch;
+  if(deviceMode!=='writer'||!writerLoadGate||!accountScopeLoaded)return false;
+  const epoch=writerLoadEpoch,generation=accountScopeGeneration,
+   uid=accountScope.uid,storageKey=scopedStorageKey();
+  const currentScope=()=>writerLoadEpoch===epoch&&
+   accountScopeGeneration===generation&&accountScope.uid===uid&&
+   scopedStorageKey()===storageKey&&deviceMode==='writer'&&writerLoadGate&&
+   accountScopeLoaded;
   if(!Array.isArray(shifts))throw Error('Googleの乗務一覧が不正です');
   const ids=new Set();
   for(const shift of shifts){
@@ -2610,6 +3525,17 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   }
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
+   if(accountScope.adminFirestore&&!accountScope.adminFirestorePreview){
+    // Migration is validated and each chosen source read back BEFORE the
+    // cutover manifest is committed. A later Firestore CAS edit is allowed to
+    // differ from the preserved legacy source. Bootstrap deliberately fetches
+    // only the latest duty, so comparing all sourceIds here would reject a
+    // valid two-duty migration and every later historical correction.
+    const manifest=adminFirestoreManifest(accountScope.uid);
+    if(!manifest||!Array.isArray(manifest.sourceIds)||
+       (manifest.excludedIds!==undefined&&!Array.isArray(manifest.excludedIds)))
+     throw Error('管理者のFirestore保存先切替記録を確認できません。旧Google原本は保持します');
+   }
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
    // multiple unfinished duties, which can display a stale zero-sale duty.
@@ -2617,20 +3543,25 @@ const syncUI=window.TAXIAPP_SYNC_UI({
    next.activeId=open.length===1?open[0].id:null;
    // A last-resort local recovery copy. It is never uploaded or counted.
    try{localStorage.setItem('taxiapp-pre-cloud-recovery-v1-'+(accountScope.uid||'legacy'),JSON.stringify(previous));}catch{}
-   if(db)await idbPut(db,next,scopedStorageKey());
-   else localStorage.setItem(scopedStorageKey(),JSON.stringify(next));
-   const stored=db?await idbGet(db,scopedStorageKey()):JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+   if(!currentScope())return false;
+   if(db)await idbPut(db,next,storageKey);
+   else localStorage.setItem(storageKey,JSON.stringify(next));
+   const stored=db?await idbGet(db,storageKey):JSON.parse(localStorage.getItem(storageKey)||'null');
    if(!stored||JSON.stringify(stored.shifts)!==JSON.stringify(next.shifts))throw Error('受信した乗務を端末に保存できません');
-   if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+   if(!currentScope())return false;
    model=next;
   }
-  if(writerLoadEpoch!==epoch||deviceMode!=='writer')return false;
+  if(!currentScope())return false;
   return true;
  },
  onWriterBootstrapReady:()=>{
   writerLoadGate=false;writerLoadError='';
   document.body.classList.remove('taxi-viewer');
-  const label=document.getElementById('deviceSessionStatus');if(label)label.textContent='操作可能：Googleの乗務を取得済み';
+  const label=document.getElementById('deviceSessionStatus');
+  if(label)label.textContent=accountScope.adminFirestorePreview?
+   '操作可能：開発用Firestore検証端末（保存確認は乗務ごとに表示）':
+   legacyDiary()&&sheetTargetPrefs().syncMode!=='on'?
+   '操作可能：端末内の乗務（双方向同期OFF）':'操作可能：クラウドの乗務を取得済み';
   render();
  },
  onWriterBootstrapStatus:message=>{writerLoadError=message;render();},
@@ -2639,6 +3570,10 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   const blocked=(conflicts||[]).map(x=>x.id);
   const nextId=window.TAXIAPP_SHIFT_MIRROR.selectActive(model.shifts,model.activeId,blocked);
   if(nextId!==model.activeId){model.activeId=nextId;await save(true);render();}
+  // A first departure check may race with the event upload. Retry after
+  // a confirmed sync; never remove an unsent or conflicting previous duty.
+  if(memberDiary()&&model.shifts.length>1&&getShift()?.id===model.activeId)
+   await releaseVerifiedPreviousDuties(model.activeId);
  },
  request:async(action,fields)=>{
   if(memberDiary())return accountDiary.request(action,fields);
@@ -2654,29 +3589,327 @@ const syncUI=window.TAXIAPP_SYNC_UI({
      (model.shifts.find(x=>x.id===id)?.gpsTrip?.enabled||keypadActive||
       appEl.querySelector('input:focus,textarea:focus,select:focus')))
    throw Error('この端末で編集中の乗務です。GPS・入力を終了してから再同期してください');
+  const generation=accountScopeGeneration,uid=accountScope.uid,
+   storageKey=scopedStorageKey();
+  const sameScope=()=>accountScopeGeneration===generation&&
+   accountScope.uid===uid&&scopedStorageKey()===storageKey&&canEditNow();
   const previous=deepCopy(model);
   const i=model.shifts.findIndex(x=>x.id===id);
   if(i<0)model.shifts.push(deepCopy(incoming));
   else model.shifts[i]=deepCopy(incoming);
   model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
   try{
-   await save(true);
-   const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+   if(await save(true)!==true)throw Error('受信した乗務の端末保存に失敗しました');
+   if(!sameScope())throw Error('受信中にログイン利用者が変更されました');
+   const stored=db?await idbGet(db,storageKey):
+    JSON.parse(localStorage.getItem(storageKey)||'null');
+   if(!sameScope())throw Error('読戻し中にログイン利用者が変更されました');
    const savedShift=stored?.shifts?.find(x=>x.id===id);
    const expectedShift=model.shifts.find(x=>x.id===id);
-   if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))throw Error('受信した乗務を正しく保存できませんでした');
+   if(!savedShift||JSON.stringify(savedShift)!==JSON.stringify(expectedShift))
+    throw Error('受信した乗務を本人用の端末領域へ正しく保存できませんでした');
   }catch(error){
-   model=previous;await save(true);throw error;
+   // A stale cloud callback may finish after another UID has signed in.
+   // Never roll back that newer account's state with the old UID's copy.
+   if(sameScope()){model=previous;await save(true);}
+   throw error;
   }
-  render(); // Cloud reception must refresh operations/summary as well as history.
+  render(); // Cloud reception refreshes the original operations and history.
 
  },
  root:appEl,isSettings:()=>tab==='settings',setStatus:setGoogleStatus,
  render:render,toast,escape:safeText,download,dateStamp
 });
 
+function renderAdminBackendSettings(){
+ if(!accountScope.uid)return '<section class="card"><p>ログインして保存先を確認してください。</p></section>';
+ if(accountScope.adminFirestorePreview){
+  return '<section class="card"><h2 class="h2">開発用：管理者本人Firestore検証</h2>'+
+   '<p class="helper">検証用の端末保存領域を使用します。旧スマホ日報・Google原本・正式な保存先設定は変更しません。</p>'+
+   '<p class="warn">新しく入力する検証乗務は、現在ログイン中の本人UIDのFirestoreへ実際に保存します。合成データだけを入力してください。</p>'+
+   '<div class="actions"><button class="btn primary" data-action="adminFirestorePreviewVerify">現在の乗務をFirestore読戻し確認</button>'+
+   '<button class="btn" data-action="adminFirestorePreviewExit">検証を終了して旧Google運用画面へ戻る</button></div>'+
+   (adminFirestorePreviewMessage?'<p class="caption-note" role="status">'+safeText(adminFirestorePreviewMessage)+'</p>':'')+'</section>';
+ }
+ if(accountScope.adminFirestore){
+  return '<section class="card"><h2 class="h2">現在の原本：本人専用Firestore</h2>'+
+   '<p class="helper">保存先はログイン中の本人UID専用です。元のGoogle原本は残しています。新しい乗務の印刷にはPC側のFirestore取込が必要です。</p>'+
+   '<div class="actions"><button class="btn primary" type="button" data-action="adminFirestorePreviewVerify" '+(adminCutoverBusy?'disabled':'')+'>現在の乗務をFirestore読戻し確認</button>'+
+   '<button class="btn" type="button" data-action="adminFirestoreLegacy">以前のGoogle保存先に戻る</button></div>'+
+   (adminFirestorePreviewMessage?'<p class="caption-note" role="status">'+safeText(adminFirestorePreviewMessage)+'</p>':'')+
+   '<p class="warn">戻してもFirestore内の日報は削除されません。未転記の新しい乗務はGoogleには自動移行しません。</p></section>';
+ }
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">本人専用Firestore</h2><p>乗務員の保存先は本人UIDに固定されています。</p></section>';
+ if(ADMIN_FIRESTORE_PREVIEW_AVAILABLE){
+  return '<section class="card"><h2 class="h2">旧Google原本を維持したままFirestore検証</h2>'+
+   '<p class="helper">この画面では正式な保存先切替・旧原本移行を操作できません。管理者本人UIDで新しい合成乗務を作り、別の端末領域へ保存します。</p>'+
+   '<button class="btn primary" data-action="adminFirestorePreviewStart" '+(adminCutoverBusy?'disabled':'')+'>本人Firestoreの検証を開始</button></section>';
+ }
+ const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ return '<section class="card"><h2 class="h2">現在の原本：Google Sheets（管理者）</h2>'+
+  '<p class="helper">本人UID別Firestoreへ切替する乗務だけ選択してください。不要なテスト乗務は選択しません。旧Google原本と補助簿2ページは変更しません。</p>'+
+  (shifts.length?shifts.map(sh=>'<label class="field" style="display:flex;align-items:center;gap:8px;margin:8px 0">'+
+   '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'" '+(ADMIN_LEGACY_DUTY_MIGRATION_APPROVED?'':'disabled')+'>'+
+   '<span>'+safeText(sh.date||'日付不明')+' ／ '+Number(sh.records?.length||0)+'件 ／ '+safeText(sh.id)+'</span></label>').join(''):
+   '<p class="helper">この端末に乗務がありません。新しい保存先を初期化できます。</p>')+
+  '<label class="field" style="display:flex;gap:8px;margin:12px 0">'+
+  '<input type="checkbox" data-firestore-new-only>'+
+  '<span>既存の端末日報は移行せず、これからの営業日報だけFirestoreへ保存する（旧Google原本は残す）</span></label>'+
+  '<p class="caption-note">既存の日報移行は保存先切替と別承認です。現在は既存データを移行せず新規開始だけを選べます。過去の検証用Firestore日報も通常乗務として自動再開しません。</p>'+
+  '<button class="btn primary" type="button" data-action="adminFirestoreCutover" '+(adminCutoverBusy?'disabled':'')+'>'+
+  (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
+  '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
+}
+// Verify the administrator's current duty in either approved production
+// Firestore mode or the separate development preview, using official totals.
+async function verifyAdminFirestorePreviewDuty(){
+ if(!accountScope.adminFirestore||!canEditNow()||
+    !accountDiary.ready()||adminCutoverBusy)return;
+ const generation=accountScopeGeneration,uid=accountScope.uid;
+ const duty=getShift()||selectedShift();
+ if(!duty){adminFirestorePreviewMessage='確認する乗務がありません。先に検証用乗務を作成してください';render();return;}
+ const id=duty.id,stable=()=>accountScopeGeneration===generation&&
+  accountScope.uid===uid&&accountScope.adminFirestore&&canEditNow();
+ adminFirestorePreviewMessage='端末保存→Firestore送信→原本読戻しを確認中…';render();
+ try{
+  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
+  if(await save(true)!==true||!stable())throw Error('端末への保存を確認できません');
+  if(!await syncUI.run(false,[id])||!stable())
+   throw Error('Firestore同期の保存確認が完了していません');
+  const expected=localFirestoreOriginal(model.shifts.find(x=>x.id===id));
+  const server=await accountDiary.request('syncGet',{shiftId:id});
+  if(!stable())return;
+  const revision=syncUI.verifiedRevision(id);
+  if(server?.id!==id||!Number.isSafeInteger(server?.revision)||
+     revision===null||revision!==server.revision||
+     JSON.stringify(canonicalStoredDuty(server.shift))!==
+      JSON.stringify(canonicalStoredDuty(expected)))
+   throw Error('乗務ID・更新番号・原本内容が一致しません。端末の日報は保持しています');
+  adminFirestorePreviewMessage='保存確認済み：乗務ID '+id+' ／ 更新番号 '+revision+
+   ' ／ 本人Firestore原本と内容一致';
+ }catch(error){
+  if(!stable())return;
+  adminFirestorePreviewMessage='保存未確認：'+String(error?.message||error);
+ }finally{if(stable())render();}
+}
+// A development-only administrator Firestore path. This never writes the
+// permanent cutover preference or imports the existing Google/local originals.
+// The owner deliberately creates new duties in the isolated preview store.
+async function startAdminFirestorePreview(){
+ if(adminCutoverBusy||!ADMIN_FIRESTORE_PREVIEW_AVAILABLE||!legacyDiary()||
+    !currentLoginScope?.admin||!canEditNow())return;
+ const source=currentLoginScope,uid=source.uid,generation=accountScopeGeneration;
+ if(source.firebase?.auth?.currentUser?.uid!==uid){
+  toast('管理者本人のログインを確認できません',true);return;
+ }
+ if(!confirm('【開発用・本人Firestore検証】\n現在の本人UIDに新しく入力した日報を保存します。'+
+  '\n既存スマホ原本・Google原本・正式保存先は切り替えず移行もしません。'+
+  '\nテスト乗務だけを入力して確認しますか？'))return;
+ if(currentLoginScope!==source||accountScopeGeneration!==generation||!canEditNow())return;
+ adminCutoverBusy=true;adminFirestorePreviewOwnerUid=uid;
+ adminFirestorePreviewActive=true;
+ try{
+  await switchAccountScope(source);
+  if(currentLoginScope!==source||accountScope.uid!==uid||
+     !accountScope.adminFirestorePreview)throw Error('管理者本人の検証領域に切り替わりませんでした');
+  if(deviceMode==='writer'&&!await syncUI.bootstrapWriter())
+   throw Error('Firestoreの読戻しと端末保護を確認できません');
+  toast('本人Firestoreの検証領域に接続しました。新しい合成乗務で保存を確認できます。');
+ }catch(error){
+  adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
+  try{
+   if(currentLoginScope===source&&accountScope.uid===uid){
+    await switchAccountScope(source);
+    if(deviceMode==='writer')void syncUI.bootstrapWriter();
+   }
+  }catch(recovery){console.error('admin-preview-recovery',recovery);}
+  toast('Firestoreの検証開始を停止しました。旧Google原本は変更していません：'+
+   String(error?.message||error),true);
+ }finally{adminCutoverBusy=false;render();}
+}
+async function exitAdminFirestorePreview(){
+ if(adminCutoverBusy||!accountScope.adminFirestorePreview||
+    currentLoginScope?.uid!==accountScope.uid||!canEditNow())return;
+ const source=currentLoginScope,uid=source.uid,generation=accountScopeGeneration;
+ if(!confirm('管理者の旧Google運用画面へ戻りますか？\n'+
+  '検証用の端末日報とFirestore原本は削除しません。未同期の内容も検証用領域に保持します。'))return;
+ adminCutoverBusy=true;
+ try{
+  if(await save(true)!==true)throw Error('検証用の端末日報を保存できません');
+  if(currentLoginScope!==source||accountScopeGeneration!==generation||
+     source.firebase?.auth?.currentUser?.uid!==uid)
+   throw Error('ログイン中の管理者本人を確認できません');
+  adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
+  await switchAccountScope(source);
+  if(currentLoginScope!==source||accountScope.uid!==uid||!legacyDiary())
+   throw Error('旧Googleの保存領域を安全に復元できません');
+  if(deviceMode==='writer'&&!await syncUI.bootstrapWriter())
+   throw Error('旧Google日報の端末原本を確認できません');
+  toast('旧Google運用画面に戻りました。Firestoreの検証原本も保持しています。');
+ }catch(error){
+  if(currentLoginScope===source&&accountScope.uid===uid){
+   adminFirestorePreviewActive=true;adminFirestorePreviewOwnerUid=uid;
+   try{await switchAccountScope(source);if(deviceMode==='writer')void syncUI.bootstrapWriter();}
+   catch(recovery){console.error('admin-preview-exit-recovery',recovery);}
+  }
+  toast('旧Google画面への復帰を確認できません：'+String(error?.message||error),true);
+ }finally{adminCutoverBusy=false;render();}
+}
+async function startAdminFirestoreCutover(){
+ if(adminCutoverBusy)return;
+ if(!currentLoginScope?.admin||!legacyDiary()||!canEditNow()){
+  toast('管理者の操作可能端末でログインしてから保存先を変更してください',true);return;
+ }
+ const uid=currentLoginScope.uid,sourceGeneration=accountScopeGeneration,
+  sourceScope=currentLoginScope;
+ const stableOwner=()=>accountScopeGeneration===sourceGeneration&&
+  currentLoginScope===sourceScope&&accountScope.uid===uid&&
+  legacyDiary()&&canEditNow()&&
+  sourceScope.firebase?.auth?.currentUser?.uid===uid;
+ if(!stableOwner()){
+  toast('ログイン中の本人UIDを確認できません',true);return;
+ }
+ const selectedIds=[...appEl.querySelectorAll('[data-firestore-migrate-id]:checked')]
+  .map(e=>e.dataset.firestoreMigrateId);
+ const startFresh=Boolean(appEl.querySelector?.('[data-firestore-new-only]:checked'));
+ if(selectedIds.length&&!ADMIN_LEGACY_DUTY_MIGRATION_APPROVED){
+  toast('既存営業データの移行は保存先切替とは別承認です。移行を停止しました',true);return;
+ }
+ if(startFresh&&(getShift()||model.shifts.some(s=>!s.endedAt&&!s.endedIso))){
+  toast('未入庫の乗務があるため新規保存先へ切り替えられません。入庫と原本確認後に実施してください',true);return;
+ }
+ if(startFresh&&selectedIds.length){
+  toast('新規開始と既存日報の移行を同時には選べません',true);return;
+ }
+ const selected=new Set(selectedIds);
+ if(selected.size!==selectedIds.length||selectedIds.some(id=>!model.shifts.some(s=>s.id===id))){
+  toast('切替対象の日報選択が正しくありません',true);return;
+ }
+ if(!selectedIds.length&&!startFresh){
+  toast('移行する日報を選ぶか「既存日報を移行せず新規開始」を選択してください',true);return;
+ }
+ const summary=selectedIds.map(id=>{const sh=model.shifts.find(s=>s.id===id);
+  return (sh.date||'日付不明')+' '+(sh.records?.length||0)+'件';}).join('\n');
+ if(!confirm('【日報保存先をFirestoreへ変更】\n本人UID：'+uid+
+   '\n保存方法：'+(startFresh?'既存の端末日報を移行せず新規開始':'選択した日報のみ移行')+
+   '\n移行対象：'+selectedIds.length+'乗務\n'+summary+
+   '\n\n旧Google原本はそのまま残します。Firestoreの既存検証日報は、新規開始時に通常の営業日報として自動再開しません。続けますか？'))return;
+ adminCutoverBusy=true;
+ const sourceModel=deepCopy(model),manifestKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
+ let applied=false;
+ try{
+  const backup=JSON.stringify({...sourceModel,ownerUid:uid}),recoveryKey='taxiapp-admin-firestore-recovery-v1-'+uid;
+  localStorage.setItem(recoveryKey,backup);
+  if(localStorage.getItem(recoveryKey)!==backup)throw Error('切替前の端末バックアップを保存できません');
+  download(backup,'TAXIAPP_保存先切替前_'+dateStamp()+'_全日報.json','application/json;charset=utf-8');
+  if(!confirm('切替前の全日報バックアップをダウンロードして保管しましたか？\n保存を確認した場合のみ続けます。'))
+   return;
+  const staging=window.TAXIAPP_ACCOUNT_DIARY.create();
+  staging.bind({uid},{...currentLoginScope.firebase,admin:true,storageBackend:'firestore'});
+  if(!staging.ready())throw Error('本人用Firestoreの認証が完了していません');
+  const listing=await staging.request('syncList',{});
+  if(!stableOwner())throw Error('切替中にログインまたは操作権が変わりました');
+  if(!Array.isArray(listing?.shifts))throw Error('Firestoreの保存済み原本を確認できません');
+  const remote=new Map(listing.shifts.map(item=>[item.id,item]));
+  for(const id of selectedIds){
+   if(!stableOwner())throw Error('切替中に操作権またはログインが変わりました');
+   const original=sourceModel.shifts.find(s=>s.id===id);
+   const packet=googleShiftPacket(original);
+   packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+   if(remote.has(id)){
+    const row=remote.get(id);
+    if(row.deleted)throw Error('移行先でゴミ箱にある日報は上書きしません：'+id);
+    const existing=await staging.request('syncGet',{shiftId:id});
+    if(!stableOwner())throw Error('既存原本の照合中にログインが変わりました');
+    if(JSON.stringify(existing.shift)!==JSON.stringify(packet.shift))
+     throw Error('Firestoreに異なる内容の同じ乗務IDがあります。移行を停止：'+id);
+    continue;
+   }
+   const sent=await staging.request('syncPut',{baseRevision:0,payload:JSON.stringify(packet)});
+   if(!stableOwner())throw Error('保存中にログインが変わりました。Firestore原本を保持して切替は中止しました');
+   if(sent?.id!==id||sent?.revision!==1)throw Error('Firestoreへの保存結果が不明：'+id);
+   const verified=await staging.request('syncGet',{shiftId:id});
+   if(!stableOwner())throw Error('保存後の確認中にログインが変わりました');
+   if(verified.id!==id||JSON.stringify(verified.shift)!==JSON.stringify(packet.shift))
+    throw Error('Firestore原本の保存後検証に失敗しました：'+id);
+  }
+  if(!stableOwner())throw Error('保存先の確定前にログインまたは操作権が変わりました');
+  // The owner's existing synthetic/previous Firestore duties belong to the
+  // same UID. Keep them accessible by explicit history, but do not resume
+  // them as today's working duty after a fresh production cutover.
+  const excludedIds=[...remote.keys()].filter(id=>!selected.has(id));
+  const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:selectedIds,
+   excludedIds,at:Date.now()});
+  localStorage.setItem(manifestKey,manifest);
+  applied=true;
+  if(localStorage.getItem(manifestKey)!==manifest)throw Error('保存先選択を端末に記録できません');
+  await switchAccountScope(sourceScope);
+  const ready=await syncUI.bootstrapWriter();
+  if(!ready)throw Error('Firestoreへ切替後、乗務を安全に表示できませんでした');
+  if(currentLoginScope!==sourceScope||accountScope.uid!==uid||
+     !accountScope.adminFirestore||!canEditNow())
+   throw Error('入力設定の引継ぎ中にログインまたは操作権が変わりました');
+  // Fresh Firestore storage must retain the owner's UI, waiting-place and
+  // business-input preferences, but never copy legacy Google credentials.
+  const ownPrefs=deepCopy(sourceModel.prefs||{});
+  delete ownPrefs.sheetTarget;
+  model.prefs={...model.prefs,...ownPrefs};
+  delete model.prefs.sheetTarget;
+  if(await save(true)!==true)
+   throw Error('Firestore用の入力設定を端末に保存できません');
+  toast('Firestoreに保存・読み戻し済み。本人UID専用の保存先へ切り替えました。');
+ }catch(error){
+  if(applied){
+   try{
+    localStorage.removeItem(manifestKey);
+    // Never switch a newly logged-in account to the old owner's backend.
+    if(currentLoginScope===sourceScope&&accountScope.uid===uid){
+     await switchAccountScope(sourceScope);
+     if(deviceMode==='writer')void syncUI.bootstrapWriter();
+    }
+   }catch(recovery){console.error('cutover-recovery',recovery);}
+  }
+  toast('保存先の切替を中止しました。旧Google原本はそのままです：'+String(error?.message||error),true);
+ }finally{adminCutoverBusy=false;render();}
+}
+async function returnAdminToLegacy(){
+ if(adminCutoverBusy||!accountScope.adminFirestore||!currentLoginScope?.admin||!canEditNow())return;
+ const uid=accountScope.uid,sourceGeneration=accountScopeGeneration,sourceScope=currentLoginScope;
+ if(!confirm('旧Googleの保存先に戻しますか？\nFirestoreに保存した日報は消えませんが、新しく入力した乗務はGoogleには自動で移行しません。先にJSONバックアップを保存してください。'))return;
+ const backup=JSON.stringify({...model,ownerUid:uid});
+ download(backup,'TAXIAPP_Firestore切替前_'+dateStamp()+'.json','application/json;charset=utf-8');
+ if(!confirm('Firestore内の日報のバックアップを保管しましたか？'))return;
+ if(accountScopeGeneration!==sourceGeneration||currentLoginScope!==sourceScope||
+    accountScope.uid!==uid||!accountScope.adminFirestore||!canEditNow()||
+    sourceScope.firebase?.auth?.currentUser?.uid!==uid){
+  toast('ログインまたは操作権が変わったため旧保存先への切替を中止しました',true);return;
+ }
+ adminCutoverBusy=true;
+ const key=ADMIN_FIRESTORE_PREF_PREFIX+uid,previous=localStorage.getItem(key);
+ try{
+  localStorage.removeItem(key);
+  await switchAccountScope(sourceScope);
+  if(currentLoginScope!==sourceScope||accountScope.uid!==uid)
+   throw Error('旧保存先への切替中にログインが変わりました');
+  if(deviceMode==='writer'&&!(await syncUI.bootstrapWriter()))
+   throw Error('旧Googleから日報を安全に受信できませんでした');
+  toast('旧Google保存先に戻りました。Firestore原本は保持しています。');
+ }catch(error){
+  try{
+   if(previous!==null)localStorage.setItem(key,previous);
+   if(currentLoginScope===sourceScope&&accountScope.uid===uid){
+    await switchAccountScope(sourceScope);
+    if(deviceMode==='writer')void syncUI.bootstrapWriter();
+   }
+  }catch(recovery){console.error('legacy-cutover-recovery',recovery);}
+  toast('旧Googleへの切替を停止しました：'+String(error?.message||error),true);
+ }finally{adminCutoverBusy=false;render();}
+}
+
 function renderSheetTargetSettings(){
- if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2><p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>';
+ if(!legacyDiary())return '<section class="card"><h2 class="h2">個人用日報の同期</h2>'+
+  '<p>このアカウント専用のFirebase領域に保存します。他の利用者の日報や管理者の印刷用シートにはアクセスできません。</p></section>'+
+  syncUI.privateDiaryPanel();
  const p=sheetTargetPrefs(),url=validSheetUrl(p.spreadsheetUrl),latest=selectedShift(),ready=googleIsConfigured();
  const choice=(key,options)=>`<select class="control" data-cloud-setting="${key}">${options.map(([v,label])=>`<option value="${v}" ${p[key]===v?'selected':''}>${label}</option>`).join('')}</select>`;
  return `<section class="card sheet-target-settings"><h2 class="h2">Googleスプレッドシートへの保存</h2>
@@ -2751,7 +3984,7 @@ function renderDataManagement(){
  }).join('');
  return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
    <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
-   <p class="warn">削除はこの端末内のみです。Googleスプレッドシートに送信済みのデータは消しません。必要なら先にバックアップを保存してください。</p>
+   <p class="warn">削除後は同じ保存先と同期しても端末へ復活しません。Google原本・他端末の記録は消しません。先にJSONバックアップを保存してください。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
   </section>
   <section class="card"><h2 class="h2">乗務一覧</h2>
@@ -2773,12 +4006,40 @@ function renderDeviceManagementPanel(){
   '<div class="actions"><button class="btn red" type="button" data-action="importDevice">この端末の営業記録と設定をPCデータで上書き</button></div>'+
   '<p class="footnote">取り込み前の端末データを暗号化してバックアップした後に上書きします。移行直後のGoogle送信は手動設定になります。</p></section>';
 }
-function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced"><summary>営業入力の画面サイズ・向き</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の画面サイズと向き</h2><p class="helper">営業入力は1種類に統一しています。必要な項目は「営業入力項目の表示設定」で選択できます。</p><h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-data-management><summary>データ管理（乗務単位の削除）</summary><div class="inner">${renderDataManagement()}</div></details><details class="details settings-advanced" data-business-field-settings><summary>営業画面の表示項目</summary><div class="inner"><details class="details" data-ride-field-settings><summary>日報入力項目の表示設定</summary><div class="inner">${renderRideFieldSettings()}</div></details><details class="details" data-cruising-summary-settings><summary>空車・流し時の上部表示項目</summary><div class="inner">${renderCruisingSummarySettings()}</div></details><details class="details" data-drive-status-settings><summary>営業情報の表示</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の状況表示</h2><p class="helper">画面上部の営業情報をまとめて表示・非表示にできます。下では項目ごとに選べます。非表示にしても日報記録や計算処理はそのままです。</p>${renderUiChoice('driveStatusDisplay',[['on','表示する'],['off','表示しない']])}<h3 class="subsection">表示する項目を選択</h3>${renderDriveStatusFieldSettings()}</section></div></details></div></details><details class="details settings-advanced" data-appearance-settings><summary>画面表示のカスタマイズ</summary><div class="inner"><details class="details" data-text-size-settings><summary>文字の大きさ</summary><div class="inner"><section class="card"><p class="helper">画面全体の文字サイズを設定します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-button-size-settings><summary>ボタンの大きさ</summary><div class="inner"><section class="card"><p class="helper">ボタンを押しやすい大きさに変更します。操作は安全に停車した状態で行ってください。</p>${renderUiChoice('buttons',[['ultra','超コンパクト'],['compact','控えめ'],['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-help-settings><summary>説明文の表示</summary><div class="inner"><section class="card">${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}</section></div></details><details class="details" data-theme-settings><summary>画面の配色・コントラスト</summary><div class="inner"><section class="card"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}</section></div></details><details class="details" data-ui-preview-settings><summary>表示サンプル・表示設定の初期化</summary><div class="inner"><section class="card"><div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details></div></details><details class="details settings-advanced"><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced"><summary>Googleスプレッドシート</summary><div class="inner">${renderSheetTargetSettings()}</div></details><details class="details settings-advanced" data-driver-registration><summary>乗務員登録・車両・キャンセル設定</summary><div class="inner">${renderDriverDefaults()}<details class="details" data-cancel-settings><summary>キャンセル設定</summary><div class="inner"><section class="card"><h2 class="h2">キャンセル時のメーター照合</h2><p class="helper">配車アプリ会社からのキャンセル補填金とは無関係です。車両メーターに初乗り相当額が残るかどうかだけを設定します。補正は実売上・納金に加算しません。</p><label class="field"><span class="field-label">キャンセル後の車両メーター</span><select class="control" data-cancel-meter-mode><option value="retain" ${cancelMeterConfig().mode==='retain'?'selected':''}>初乗り料金が残る</option><option value="reset" ${cancelMeterConfig().mode==='reset'?'selected':''}>0円に戻る（照合補正なし）</option></select></label>${cancelMeterConfig().mode==='retain'?`<label class="field"><span class="field-label">照合用の初乗り料金（円）</span><input class="control" type="number" min="0" max="100000" step="1" data-cancel-meter-amount value="${cancelMeterConfig().amount}"></label>`:''}<p class="caption-note">新たに保存するキャンセルごとに補正額を記録するため、設定を変えても過去の照合額は変わりません。既存の記録は従来の700円で扱います。</p></section></div></details>${shift?`<details class="details" data-fee-settings><summary>計算用金額・手数料設定</summary><div class="inner"><section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section></div></details>`:''}<details class="details" data-duty-plan-settings><summary>勤務形態・1乗務の予定</summary><div class="inner">${renderDutyPlanSettings()}</div></details></div></details><details class="details settings-advanced" data-wait-place-settings><summary>待機場所の設定</summary><div class="inner">${renderWaitPlaceSettings()}</div></details><details class="details settings-advanced" data-distance-address-settings><summary>距離・住所取得</summary><div class="inner"><details class="details" data-gps-settings><summary>走行距離の設定</summary><div class="inner"><section class="card"><h2 class="h2">① 距離を記録しますか？</h2><p class="helper">ONなら距離欄を表示します。手入力や「GPS取得」ボタンが使えます。自動入力するかどうかは次の②で選べます。</p><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（距離を記録する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を記録する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p>${model.prefs.pickupDropDistance!=='off'||model.prefs.highwayDistance!=='off'?`<div class="distance-auto-group"><h2 class="h2">② 距離を自動入力しますか？</h2><p class="helper">手動：距離を自分で入力します。「GPS取得」ボタンも利用できます。自動：時刻・現在地を記録するとき、空欄にGPS距離を入力します。</p><label class="field"><span class="field-label">時刻・現在地の記録時に距離も自動入力</span><select class="control" data-native-auto-distance>
+// Read-only account identity from the SAME authenticated Firebase session
+// that is bound to the currently loaded UID. Never assume Chrome's profile
+// is the TAXIAPP login, and do not cache or write profile data to a diary.
+function renderLoginAccountInfo(){
+ const scope=currentLoginScope,user=scope?.firebase?.auth?.currentUser;
+ const confirmed=Boolean(scope?.uid&&accountScope.uid===scope.uid&&user?.uid===scope.uid);
+ const email=confirmed?String(user.email||'').trim():'';
+ const name=confirmed?String(user.displayName||'').trim():'';
+ const role=confirmed?(scope.admin?'管理者':scope.active?'一般利用者':'利用登録を確認中'):'ログイン確認中';
+ const backend=!confirmed?'保存先を確認中':
+  accountScope.adminFirestorePreview?'本人UID別Firestore（開発検証）':
+  memberDiary()?'本人UID別Firestore':
+  legacyDiary()?'Google Sheets（従来運用）':'保存先を確認中';
+ const permission=!confirmed?'ログイン確認中':
+  deviceMode==='writer'?(writerLoadGate?'操作端末（原本の読込確認中）':'操作端末（操作可能）'):
+  deviceMode==='viewer'?'閲覧専用端末':
+  deviceMode==='pending'?'操作端末の権限を確認中':'操作停止';
+ const row=(title,value)=>'<div class="statline"><span>'+title+'</span><b>'+safeText(value)+'</b></div>';
+ return '<section class="card" aria-label="TAXIAPPのログインアカウント情報">'+
+  '<h2 class="h2">このTAXIAPPでログイン中のアカウント</h2>'+
+  row('アカウント名',name||'未取得')+
+  row('メールアドレス',email||'未確認')+
+  row('利用区分',role)+
+  row('日報原本の保存先',backend)+
+  row('この端末の操作権',permission)+
+  '<p class="caption-note">ここにはChromeのプロフィールではなく、TAXIAPPが認証したGoogleアカウントを表示します。'+
+  '保存先の表示は同期成功の証明ではありません。ログインや保存先の設定はこの欄から変更しません。</p></section>';
+}
+function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced" data-login-account-settings open><summary>ログイン中のアカウント情報</summary><div class="inner">${renderLoginAccountInfo()}</div></details><details class="details settings-advanced"><summary>営業入力の画面サイズ・向き</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の画面サイズと向き</h2><p class="helper">営業入力は1種類に統一しています。必要な項目は「営業入力項目の表示設定」で選択できます。</p><h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-data-management><summary>データ管理（乗務単位の削除）</summary><div class="inner">${renderDataManagement()}</div></details><details class="details settings-advanced" data-business-field-settings><summary>営業画面の表示項目</summary><div class="inner"><details class="details" data-ride-field-settings><summary>日報入力項目の表示設定</summary><div class="inner">${renderRideFieldSettings()}</div></details><details class="details" data-cruising-summary-settings><summary>空車・流し時の上部表示項目</summary><div class="inner">${renderCruisingSummarySettings()}</div></details><details class="details" data-drive-status-settings><summary>営業情報の表示</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の状況表示</h2><p class="helper">画面上部の営業情報をまとめて表示・非表示にできます。下では項目ごとに選べます。非表示にしても日報記録や計算処理はそのままです。</p>${renderUiChoice('driveStatusDisplay',[['on','表示する'],['off','表示しない']])}<h3 class="subsection">表示する項目を選択</h3>${renderDriveStatusFieldSettings()}</section></div></details></div></details><details class="details settings-advanced" data-appearance-settings><summary>画面表示のカスタマイズ</summary><div class="inner"><details class="details" data-text-size-settings><summary>文字の大きさ</summary><div class="inner"><section class="card"><p class="helper">画面全体の文字サイズを設定します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-button-size-settings><summary>ボタンの大きさ</summary><div class="inner"><section class="card"><p class="helper">ボタンを押しやすい大きさに変更します。操作は安全に停車した状態で行ってください。</p>${renderUiChoice('buttons',[['ultra','超コンパクト'],['compact','控えめ'],['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-help-settings><summary>説明文の表示</summary><div class="inner"><section class="card">${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}</section></div></details><details class="details" data-theme-settings><summary>画面の配色・コントラスト</summary><div class="inner"><section class="card"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}</section></div></details><details class="details" data-ui-preview-settings><summary>表示サンプル・表示設定の初期化</summary><div class="inner"><section class="card"><div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details></div></details><details class="details settings-advanced"><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced" data-admin-backend-settings><summary>${legacyDiary()||accountScope.adminFirestore?'日報原本の保存先を変更':'日報原本の保存先'}</summary><div class="inner">${renderAdminBackendSettings()}</div></details><details class="details settings-advanced"><summary>${legacyDiary()?'Googleスプレッドシート':'本人専用クラウド日報'}</summary><div class="inner">${renderSheetTargetSettings()}</div></details><details class="details settings-advanced" data-driver-registration><summary>乗務員登録・車両・キャンセル設定</summary><div class="inner">${renderDriverDefaults()}<details class="details" data-cancel-settings><summary>キャンセル設定</summary><div class="inner"><section class="card"><h2 class="h2">キャンセル時のメーター照合</h2><p class="helper">配車アプリ会社からのキャンセル補填金とは無関係です。車両メーターに初乗り相当額が残るかどうかだけを設定します。補正は実売上・納金に加算しません。</p><label class="field"><span class="field-label">キャンセル後の車両メーター</span><select class="control" data-cancel-meter-mode><option value="retain" ${cancelMeterConfig().mode==='retain'?'selected':''}>初乗り料金が残る</option><option value="reset" ${cancelMeterConfig().mode==='reset'?'selected':''}>0円に戻る（照合補正なし）</option></select></label>${cancelMeterConfig().mode==='retain'?`<label class="field"><span class="field-label">照合用の初乗り料金（円）</span><input class="control" type="number" min="0" max="100000" step="1" data-cancel-meter-amount value="${cancelMeterConfig().amount}"></label>`:''}<p class="caption-note">新たに保存するキャンセルごとに補正額を記録するため、設定を変えても過去の照合額は変わりません。既存の記録は従来の700円で扱います。</p></section></div></details>${shift?`<details class="details" data-fee-settings><summary>計算用金額・手数料設定</summary><div class="inner"><section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section></div></details>`:''}<details class="details" data-duty-plan-settings><summary>勤務形態・1乗務の予定</summary><div class="inner">${renderDutyPlanSettings()}</div></details></div></details><details class="details settings-advanced" data-wait-place-settings><summary>待機場所の設定</summary><div class="inner">${renderWaitPlaceSettings()}</div></details><details class="details settings-advanced" data-distance-address-settings><summary>距離・住所取得</summary><div class="inner"><details class="details" data-gps-settings><summary>走行距離の設定</summary><div class="inner"><section class="card"><h2 class="h2">① 距離を記録しますか？</h2><p class="helper">ONなら距離欄を表示します。手入力や「GPS取得」ボタンが使えます。自動入力するかどうかは次の②で選べます。</p><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（距離を記録する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を記録する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p>${model.prefs.pickupDropDistance!=='off'||model.prefs.highwayDistance!=='off'?`<div class="distance-auto-group"><h2 class="h2">② 距離を自動入力しますか？</h2><p class="helper">手動：距離を自分で入力します。「GPS取得」ボタンも利用できます。自動：時刻・現在地を記録するとき、空欄にGPS距離を入力します。</p><label class="field"><span class="field-label">時刻・現在地の記録時に距離も自動入力</span><select class="control" data-native-auto-distance>
 <option value="on" ${nativeAutoDistanceEnabled()?'selected':''}>ON：時刻・現在地の記録と一緒に自動入力</option>
 <option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：自動入力しない（手入力・GPS取得ボタンは利用可能）</option></select></label>${nativeAutoDistanceEnabled()?`<div class="gps-source-choice"><h2 class="h2">③ 自動入力に使うGPSを選択</h2><p class="helper">ブラウザGPS：Chromeで測定。GPS距離ラボ：Android専用アプリで測定（別途アプリの起動が必要）。</p><label class="field"><span class="field-label">GPSの取得方法</span><select class="control" data-native-diary-gps>
  <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>ブラウザGPS（Chromeの位置情報を利用）</option>
  <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>GPS距離ラボ（Android専用アプリ）</option>
- </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">本番の従来データ保存先を継続します。入力はログインと操作権の確認後に利用できます。</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider"><label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p></section><div class="danger-note">※ 端末への保存はブラウザ内のIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。Googleスプレッドシートへの自動転送・正式な印刷は未接続です。</div></div></details>`;}
+ </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">取得した座標を住所に変換（オンライン時）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>有効（国土地理院へGPS座標を送り、町名・丁目まで推定）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>無効（座標のみ保存）</option></select></label></section></div></details></div></details><details class="details settings-advanced"><summary>バックアップ</summary><div class="inner">${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">バックアップ</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">${accountScope.adminFirestore?'現在の原本は本人UID専用Firestoreです。旧Google原本はそのまま保持します。':memberDiary()?'現在の原本は本人UID専用Firestoreです。ログインと操作権の確認後に利用できます。':'従来のGoogle原本を継続します。入力はログインと操作権の確認後に利用できます。'}</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider">${accountScope.adminFirestore&&!accountScope.adminFirestorePreview?'<label class="field"><span class="field-label">本人Firestoreへ保存済みJSON日報を1乗務取り込む</span><input class="control" style="font-size:13px" type="file" id="importFirestoreBackup" accept=".json,application/json"></label><p class="footnote">入庫済みの1乗務を日付で選択し、本人UIDのFirestoreに新規保存します。現行の営業中データ・設定・旧Google原本は変更しません。既存の同じ乗務IDは上書きしません。</p>':'<label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p>'}</section><div class="danger-note">※ 端末への保存にはIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。${accountScope.adminFirestore?'Firestore原本のGoogle補助簿印刷元への転記はPC側で明示操作します。':memberDiary()?'本人用Firestore原本は他の利用者のデータと分離しています。':'従来のGoogle原本と印刷用シートは維持します。'}</div></div></details>`;}
 function download(textData,file,type){const blob=new Blob([textData],{type}),link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download=file;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 let gpsPermissionText='';
 function setGpsPermissionStatus(message){gpsPermissionText=String(message);const el=appEl.querySelector('[data-gps-permission-status]');if(el)el.textContent=gpsPermissionText;}
@@ -3210,7 +4471,11 @@ function handleAction(action,id){
    else if(canEditNow())syncUI.run(true);
    return;
   }
-  if(!canEditNow()&&action!=='bidirectionalSyncNow'){
+  // Print-only PC mode may read a date and submit the selected source;
+  // all ride, settlement, settings and cloud-mutating actions stay blocked.
+  const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
+   ['loadCloudHistory','firestorePrintToGoogle'].includes(action);
+  if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();
@@ -3298,6 +4563,15 @@ function handleAction(action,id){
  if(action==='exportDevice'){exportDevice();return;}
   if(action==='importDevice'){importDevice();return;}
   if(action==='deleteShift'){deleteWholeShift(id);return;}
+  if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
+  if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
+  if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
+  if(action==='adminFirestorePreviewVerify'){void verifyAdminFirestorePreviewDuty();return;}
+  if(action==='adminFirestorePreviewStart'){void startAdminFirestorePreview();return;}
+  if(action==='adminFirestorePreviewExit'){void exitAdminFirestorePreview();return;}
+  if(action==='firestorePrintToGoogle'){void firestorePrintToGoogle();return;}
+ if(action==='adminFirestoreCutover'){void startAdminFirestoreCutover();return;}
+  if(action==='adminFirestoreLegacy'){void returnAdminToLegacy();return;}
   if(action==='bidirectionalSyncNow'){syncUI.run(true);return;}
  if(action==='syncCurrentShift'){const target=tab==='print'?selectedPrintShift():latest;if(tab==='print'&&!target){toast('印刷する乗務が見つかりません。選び直してください',true);return;}googleSendShift(target,true);return;}
  if(action==='syncAllShifts'){googleSendAllShifts();return;}if(action==='checkGpsPermission'){requestGpsPermission();return;}if(action==='addWaitPlace'){addWaitingPlace(document.getElementById('newWaitPlace')?.value||'');return;}if(action==='resetUi'){model.prefs.ui={...UI_DEFAULTS};applyUi();saveLater();render();toast('表示設定を初期値に戻しました');return;}if(action==='resumeSyncedShift'){
@@ -3306,7 +4580,34 @@ function handleAction(action,id){
   if(!found||!confirm('他の端末で入力中の場合は競合が発生します。'+found.date+'の乗務をこの端末で編集しますか？'))return;
   found.gpsTrip??={};found.gpsTrip.enabled=false;model.activeId=id;tab='drive';
   save();render();toast('同期乗務を開きました。距離は実際の車両トリップを確認してください。');return;
- }if(action==='startShift'){
+ }if(action==='historyAddRecord'){
+  try{startHistoryNewRecord(id);}
+  catch(error){toast(String(error?.message||error),true);}
+  return;
+ }
+ if(action==='historyMarkRecordRemoval'){
+  try{markHistoryRecordRemoval(id);}catch(error){toast(String(error?.message||error),true);}
+  return;
+ }
+ if(action==='historyHighwayAdd'||action==='historyHighwayRemove'){
+  try{editHistoryHighwaySection(action==='historyHighwayAdd'?'add':'remove',id);}
+  catch(error){toast(String(error?.message||error),true);}
+  return;
+ }
+ if(action==='editHistoryLocation'){
+  try{startHistoryLocationEdit(selectedHistoryShift()?.id,id);}
+  catch(error){toast(String(error?.message||error),true);}
+  return;
+ }
+ if(action==='saveHistoryLocationEdit'){void commitHistoryLocationEdit();return;}
+ if(action==='cancelHistoryLocationEdit'){discardHistoryLocationEdit();return;}
+ if(action==='loadCloudHistory'){
+  try{protectOpenHistoryEdit();}
+  catch(error){toast('修正控えを保護できないため再取得を停止：'+String(error?.message||error),true);return;}
+  const date=historyDate||selectedShift()?.date||dateStamp();
+  historyDate=date;void loadHistoryFromCloud(date);return;
+ }
+ if(action==='startShift'){
   if(shift)return;
   const entered=document.getElementById('shiftStartAt')?.value;
   const when=entered?new Date(entered):new Date();
@@ -3318,20 +4619,42 @@ function handleAction(action,id){
    // Capture the actual departure GPS baseline now, before the first fare.
    if(nativeDiaryGpsEnabled()){
     const departingId=newRecord.id,startedAt=newRecord.startedIso;
-    window.TAXIAPP_EXTERNAL_GPS.read().then(data=>{
+    // Read the first fresh GPS fix even when this separate GPS service
+    // contains a gap from before the new duty. Never fabricate a missing
+    // interval after departure; a later/new gap still requires driver input.
+    window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId:departingId,allowUnresolvedGap:true}).then(data=>{
      if(!canEditNow())return;
      const current=getShift();
      if(current?.id!==departingId||current.startedIso!==startedAt||current.endedAt)return;
-     const b=window.TAXIAPP_EXTERNAL_GPS.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
+     const bridge=window.TAXIAPP_EXTERNAL_GPS;
+     const existing=bridge.baseline(localStorage,departingId);
+     const b=bridge.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
+     // A confirmed departure odometer of exactly 0km is a manual baseline.
+     // Accept only an already reported gap at the immediate departure fix;
+     // do not clear gaps raised later during actual driving.
+     const secondsSinceStart=(Date.now()-Date.parse(startedAt))/1000;
+     const confirmedZero=String(odometer).trim()!==''&&Number(odometer)===0;
+     const departureOnly=!existing&&confirmedZero&&data.unresolvedGap===true&&
+      secondsSinceStart>=0&&secondsSinceStart<=10;
+     if(departureOnly)bridge.acknowledgeGap(localStorage,departingId,data.gapCount);
      current.externalGpsSnapshot={tripKm:b.value,rawGpsKm:data.tripKm,at:new Date().toISOString()};
      saveLater();updateElapsedTimer();
-     toast('出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。');
+     toast(departureOnly?'出庫時0kmをGPS基準に登録しました。以後の欠測は手入力が必要です。':
+      data.unresolvedGap?'GPS基準は登録しましたが欠測があるため、最初の距離は車両トリップで確認してください。':
+      '出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。',Boolean(data.unresolvedGap&&!departureOnly));
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
    }
   model.shifts.unshift(newRecord);model.activeId=newRecord.id;tab='drive';
   const nativeGpsLinked=nativeDiaryGpsEnabled();
   const gpsOptIn=nativeAutoDistanceEnabled()||model.prefs.gpsTripAtStart!=='off';
-  save();
+  const departureSaved=save();
+  if(memberDiary())void departureSaved.then(async ok=>{
+   if(ok!==true)return;
+   // Departure is a required synchronization event. Confirm only this duty;
+   // a failed network send remains queued without touching older originals.
+   await syncUI.run(false,[newRecord.id]);
+   await releaseVerifiedPreviousDuties(newRecord.id);
+  }).catch(error=>console.error('TAXIAPP departure sync failed:',error));
   // When native GPS is paired, don't start the older browser GPS tracker in parallel.
   if(!nativeGpsLinked&&gpsOptIn&&gpsTripUI)gpsTripUI.start(newRecord);
   else render();
@@ -3370,7 +4693,23 @@ function handleAction(action,id){
   const ended=new Date();
   shift.startingOdo=startText;shift.endingOdo=endText;
   pauseWaiting(shift,ended,'return');endBreak(shift,ended);shift.endedAt=stamp(ended);shift.endedIso=ended.toISOString();gpsTripUI?.stop(shift,true);model.activeId=null;
-  save();render();toast('入庫距離と帰庫時刻を保存しました。');return;
+  const completedId=shift.id;
+  // Persist the final duty before requesting its one-duty Firestore sync.
+  // Offline / unknown-result originals remain in the device recovery queue.
+  const savedReturn=save();render();
+  void savedReturn.then(async persisted=>{
+   if(!persisted){toast('入庫の日報を端末に保存できません。JSONバックアップを保護してください。',true);return;}
+   if(memberDiary()){
+    const confirmed=await syncUI.run(false,[completedId]);
+    const revision=syncUI.verifiedRevision(completedId);
+    if(confirmed&&revision!==null){toast('入庫日報を端末・本人Firestore原本に保存確認済みです。');return;}
+    toast('入庫日報は端末保存済み。クラウドは未確認のため原本を保持し、次回再照合します。',true);
+    return;
+   }
+   toast('入庫距離と帰庫時刻を端末へ保存しました。');
+  }).catch(error=>{console.error('TAXIAPP final duty save failed:',error);
+   toast('入庫の日報保存を確認できません。端末原本を保持してバックアップしてください。',true);});
+  return;
  }
  if(action==='chooseWaitPlace'){
   const shift=getShift();if(!shift?.waiting||shift.draft)return;
@@ -3382,62 +4721,67 @@ function handleAction(action,id){
  if(action==='closeBreakPage'){breakPageOpen=false;render();return;}
  if(action==='beginBreak'){
   if(!shift||shift.draft||shift.waiting||shift.breakActive)return;
-  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};save();render();getBreakPlaceGps(shift.id,shift.breakActive.id);toast('休憩を開始しました');return;
+  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};saveOperationalEvent(shift);render();getBreakPlaceGps(shift.id,shift.breakActive.id);toast('休憩を開始しました');return;
  }
  if(action==='breakBoard'||action==='breakDispatch'){
   if(!shift||shift.draft||shift.waiting)return;
   if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}
-  breakPageOpen=false;const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');}
-  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');save();render();}return;
+  breakPageOpen=false;const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');}
+  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');saveOperationalEvent(shift);render();}return;
  }
  if(action==='gpsBreakPlace'){if(shift?.breakActive)getBreakPlaceGps(shift.id,shift.breakActive.id);return;}
  if(action==='endBreak'){
   if(!shift?.breakActive)return;
-  endBreak(shift,new Date());breakPageOpen=false;save();render();toast('休憩を終了しました');return;
+  endBreak(shift,new Date());breakPageOpen=false;saveOperationalEvent(shift);render();toast('休憩を終了しました');return;
  }
  if(action==='cancelWaiting'){
   if(!shift?.waiting||shift.draft)return;
   if(!confirm('現在の待機記録を破棄しますか？ 過去の待機履歴や登録済み待機所は削除しません。'))return;
   shift.waiting=null;
-  save();render();toast('現在の待機記録を破棄しました');return;
+  saveOperationalEvent(shift);render();toast('現在の待機記録を破棄しました');return;
  }
  if(action==='beginWait'){
   if(!shift||shift.draft||shift.waiting)return;
-  try{const w=beginWaiting(shift,new Date());gpsTripUI?.fillWaitDistance(shift,w,'waitStart');save();render();getWaitGps(shift,w);toast('待機開始を記録しました。');}catch(e){toast(e.message,true);}return;
+  try{const w=beginWaiting(shift,new Date());gpsTripUI?.fillWaitDistance(shift,w,'waitStart');saveOperationalEvent(shift);render();getWaitGps(shift,w);toast('待機開始を記録しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='beginDispatch'){
   if(!shift||shift.draft)return;
-  try{shift.draft=makeDispatch(shift,new Date(),'G');save();focusDispatchSourceAfterRender=true;render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
+  try{shift.draft=makeDispatch(shift,new Date(),'G');saveOperationalEvent(shift);focusDispatchSourceAfterRender=true;render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='waitNew'){if(shift?.waiting){shift.waiting.place='';shift.waiting.placeId='';shift.waiting.placeSource='manual';saveLater();render();}return;}
  if(action==='gpsWait'){if(shift?.waiting)getWaitGps(shift,shift.waiting);return;}
  if(action==='registerWaitPlace'){if(shift?.waiting&&!shift.draft)registerCurrentWaitingPlace(shift,shift.waiting);return;}
  if(action==='boardDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  flushVisibleDraftInputs(shift);const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');return;
+  flushVisibleDraftInputs(shift);const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');return;
  }
  if(action==='cancelDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  cancelDispatch(shift,new Date());gpsTripUI?.mode(shift,'empty');if(gpsTripUI?.active(shift))shift.draft.meta.gpsCancelTripKm=shift.gpsTrip.tripKm;save();render();return;
+  cancelDispatch(shift,new Date());gpsTripUI?.mode(shift,'empty');if(gpsTripUI?.active(shift))shift.draft.meta.gpsCancelTripKm=shift.gpsTrip.tripKm;saveOperationalEvent(shift);render();return;
  }
  if(action==='beginRide'){
   if(!shift||shift.draft)return;
   const now=new Date(),before=shift.waiting;
   try{const d=makeDraft(shift,'ride',now,'乗');if(before?.startedAt)d.raw.C=before.startedAt;
    if(action==='beginRide'&&before){d.meta.waitingId=before.id||'';d.meta.waitPlace=before.place||'';d.meta.waitOdometer=before.odometer??'';if(number(before.odometer)!==null){d.raw.F=before.odometer;if(before.gpsAutoOdometer?.km===before.odometer){d.meta.gpsFilledFields??={};d.meta.gpsFilledFields.F={...before.gpsAutoOdometer,source:'waitTransfer'};}}if(before.place){d.raw.AL=before.place;d.meta.pickupWaitProvisional=true;}if(before.geo){d.raw.D=`${before.geo.lat.toFixed(6)},${before.geo.lng.toFixed(6)}`;}}
-   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
+   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
  }
  if(action==='gpsPickup'||action==='gpsDrop'){if(shift?.draft)getGps(shift,shift.draft,action==='gpsPickup'?'pickup':'drop');return;}
  if(action==='discardDraft'){if(!shift?.draft)return;if(!confirm('編集中の入力を破棄しますか？ 保存済みの履歴は残ります。'))return;shift.draft=null;gpsTripUI?.mode(shift,'empty');save();render();return;}
  if(action==='saveDraft'){if(!shift?.draft)return;const d=shift.draft;flushVisibleDraftInputs(shift);const gpsAutoDropDiscarded=discardInvalidAutoDropDistance(d);if(d.kind==='ride'&&number(d.raw.K)!==null)stampAlightIfNeeded(shift);if(d.kind==='ride'&&d.raw.M&&gpsTripUI?.active(shift)&&!d.meta?.gpsDistance?.alightedIso)gpsTripUI.alight(shift,d);const issues=[...validateDraft(d),...validatePaymentBreakdown(d,shift.settings,shift.date)];if(issues.length){showSaveProblem('保存できません：'+issues.join('、'));return;}d.status='complete';d.meta.serviceDate=shift.date;syncCashChange(d,shift.settings,shift.date);d.raw=deriveRaw(d,shift.settings);if(d.kind==='empty'){d.raw.P='空';}if(d.kind==='cancel'){d.raw.N='キ';d.raw.B='キャンセル';d.raw.K=0;if(number(d.meta?.cancelMeterAdjustment)===null){const cfg=cancelMeterConfig();d.meta??={};d.meta.cancelMeterAdjustment=cfg.mode==='retain'?cfg.amount:0;}}
  if(d.kind==='ride'&&!d.editId){gpsTripUI?.mode(shift,'empty');d.meta??={};if(!d.meta.settledIso)d.meta.settledIso=new Date().toISOString();}
- if(d.editId){const index=shift.records.findIndex(x=>x.id===d.editId);if(index>=0){d.id=d.editId;delete d.editId;shift.records[index]=d;}}else{if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}shift.records.push(d);}shift.records.forEach((r,i)=>r.raw.A=i+1);shift.draft=null;save();render();toast(`№ ${d.raw.A} を保存しました。`+(gpsAutoDropDiscarded?' GPS降車距離は不正確なため未記録にしました。':''));return;}
+ if(d.editId){const index=shift.records.findIndex(x=>x.id===d.editId);if(index>=0){d.id=d.editId;delete d.editId;shift.records[index]=d;}}else{if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}shift.records.push(d);}shift.records.forEach((r,i)=>r.raw.A=i+1);shift.draft=null;
+  const settledDutyId=shift.id,settledSaved=save();
+  if(memberDiary())void settledSaved.then(ok=>{
+   if(ok===true)return syncUI.run(false,[settledDutyId]);
+  }).catch(error=>console.error('TAXIAPP payment event sync failed:',error));
+  render();toast(`№ ${d.raw.A} を保存しました。`+(gpsAutoDropDiscarded?' GPS降車距離は不正確なため未記録にしました。':''));return;}
  if(action==='editRecord'){if(!shift||shift.draft)return;let original=shift.records.find(x=>x.id===id);if(!original)return;const d=deepCopy(original);d.editId=original.id;d.status=d.kind==='ride'?'alighted':'draft';shift.draft=d;tab='drive';save();render();return;}
  if(action==='deleteRecord'){if(!shift||shift.draft)return;let found=shift.records.find(x=>x.id===id);if(!found||!confirm(`№${found.raw.A} を削除しますか？ 削除すると営業番号を詰め直します。`))return;shift.records=shift.records.filter(x=>x.id!==id);shift.records.forEach((r,i)=>r.raw.A=i+1);save();render();toast('記録を削除しました。');return;}
  if(action==='downloadCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportCsv(latest),exportFileName('入力_RAW_実車',latest),'text/csv;charset=utf-8');toast('44列のCSVを保存しました。');return;}
  if(action==='downloadPaymentsCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportPaymentsCsv(latest),exportFileName('決済内訳',latest),'text/csv;charset=utf-8');toast('決済内訳CSVを保存しました。');return;}
  if(action==='downloadFeesCsv'){if(!latest){toast('書き出す記録がありません',true);return;}download(exportFeesCsv(latest),exportFileName('GO_Uber手数料',latest),'text/csv;charset=utf-8');toast('GO・Uber手数料明細CSVを保存しました。');return;}
- if(action==='downloadJson'){const backup={...model,exportedAt:new Date().toISOString()};download(JSON.stringify(backup,null,2),exportFileName('全データ',latest),'application/json;charset=utf-8');toast('バックアップを保存しました。');return;}}
+ if(action==='downloadJson'){const backup={...model,ownerUid:accountScope.uid||null,exportedAt:new Date().toISOString()};download(JSON.stringify(backup,null,2),exportFileName('全データ',latest),'application/json;charset=utf-8');toast('バックアップを保存しました。');return;}}
 // Make a failed save visible next to the save button, not only in a brief toast.
 function showSaveProblem(message){
  const text=String(message||'保存できませんでした。入力を確認してください。');
@@ -3620,6 +4964,15 @@ function rebaseNativeTripAfterManual(shift,value,stillCurrent){
  }).catch(()=>{ /* No GPS notice for manual input. */ });
 }
 function handleInput(e){const target=e.target;const s=getShift();
+ if(target.id==='historyEditPickup'||target.id==='historyEditDropoff'||
+    target.matches?.('[data-history-edit-field],[data-history-edit-meta],[data-history-edit-split],[data-history-highway-field]')){
+  if(historyLocationEdit&&historyLocationEdit.uid===accountScope.uid){
+   try{historyLocationInputs();}
+   catch(error){historyLocationEdit.message=String(error?.message||error);
+    toast('過去日報の修正控えを保存できません。端末容量を確認してください。',true);}
+  }
+  return;
+ }
  if(target.dataset.hwyIndex!==undefined&&target.dataset.hwyField){
   if(e.type!=='change')return;
   const draft=s?.draft,items=draft?.meta?.highwaySections;
@@ -3992,16 +5345,26 @@ async function importDevice(){
  }catch(e){toast('一括引き継ぎに失敗：'+String(e.message||e),true);}
 }
 async function deleteWholeShift(shiftId){
+ if(!canEditNow()){toast('乗務の削除は認証済みの操作端末で行ってください',true);return;}
  const shift=model.shifts.find(s=>s.id===shiftId);
  if(!shift){toast('削除対象が見つかりません',true);return;}
  if(cloudRunning){toast('Google送信中は削除できません',true);return;}
  const unfinished=shift.id===model.activeId||!shift.endedAt;
  const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
- if(!confirm('【テスト乗務1件をまとめて削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
-  '\nこの乗務の営業明細・編集中の記録・待機履歴・GPSもまとめて端末から削除します。\nGoogleシートへ送信したデータは残ります。\n本当に削除しますか？'))return;
+ if(!confirm('【乗務1件の削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
+  '\nこの端末から削除し、同じ保存先から再取得しても復活させません。\nGoogle・Firestoreの原本やほかの端末は消しません。\n本当に削除しますか？'))return;
  if(unfinished&&!confirm('【未入庫データの削除を最終確認】\nこの乗務はまだ入庫済みになっていません。\n入庫操作をせずに出庫からのテスト記録をすべて破棄し、乗務中の状態も解除します。\n続けますか？'))return;
+ // Download a single-duty recovery copy BEFORE local removal; it contains
+ // no Google connection key or another driver's daily records.
+ download(JSON.stringify({version:1,ownerUid:accountScope.uid||null,shifts:[deepCopy(shift)]}),
+  'TAXIAPP_削除前_'+dateStamp()+'_'+shiftId+'.json','application/json;charset=utf-8');
+ if(!confirm('この乗務のJSONバックアップを保存・保管したことを確認しましたか？\n未保存の場合はキャンセルしてください。'))return;
  const previous=deepCopy(model);
+ let newlyMarked=false;
+ try{
+  if(memberDiary()||googleIsConfigured())newlyMarked=syncUI.markLocalRemoval(shiftId,shift);
+ }catch(error){toast('削除を中止しました。再受信防止情報を保存できません：'+String(error?.message||error),true);return;}
  try{
   // Invalidate any pending save and GPS watch before removing an active duty.
   clearTimeout(persistTimer);persistTimer=0;
@@ -4009,14 +5372,24 @@ async function deleteWholeShift(shiftId){
   if(shift.id===model.activeId)gpsTripUI?.clearWatch();
   model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId,{allowUnfinished:unfinished}).model;
   await save(true);
-  const stored=db?await idbGet(db):JSON.parse(localStorage.getItem('taxiapp-v1')||'null');
+  const key=scopedStorageKey();
+  const stored=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
   if(!stored||!Array.isArray(stored.shifts)||stored.shifts.some(s=>s.id===shiftId)||stored.activeId!==model.activeId)
    throw Error('削除後の記録を保存できません');
   if(historyShiftId===shiftId)historyShiftId='';
   if(printShiftId===shiftId)printShiftId='';
-  render();toast(display+' の乗務を削除しました。');
+  render();
+  if(syncUI.enabled()){
+   toast(display+' の乗務を端末から削除しました。クラウドとの削除状態を同期します。');
+   void syncUI.run(true);
+  }else{
+   toast(display+' の乗務を端末から削除しました。自動同期は無効です。設定の「クラウド保存済み日報の整理」で必要に応じてゴミ箱へ移してください。');
+  }
  }catch(e){
   model=previous;
+  if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(markerError){
+   toast('削除状態の復旧が必要です：'+String(markerError?.message||markerError),true);
+  }
   try{
    await save(true);
    if(!nativeDiaryGpsEnabled()&&getShift()?.gpsTrip?.enabled)gpsTripUI?.start(getShift(),true);
@@ -4027,14 +5400,190 @@ async function deleteWholeShift(shiftId){
   render();toast('削除を取り消しました：'+String(e.message||e),true);
  }
 }
-async function importBackup(file){if(!file)return;if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}let json;try{json=JSON.parse(await file.text());if(json.version!==1||!Array.isArray(json.shifts)||json.shifts.some(s=>!Array.isArray(s.records)||s.records.length>MAX_RECORDS||s.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||!s.settings))throw Error('互換性のないデータです');}catch(e){toast('復元できません: '+e.message,true);return;}const existingIds=new Set(model.shifts.map(s=>s.id));
- const addition=json.shifts.filter(s=>!existingIds.has(s.id));
+// A JSON export can be re-used without importing every historical duty
+// into the phone's one-duty working storage. Never overwrite a remote ID.
+async function importFirestoreBackup(file){
+ if(!file)return;
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    !currentLoginScope?.admin||!canEditNow()||!accountDiary.ready()){
+  toast('管理者本人のFirestore操作端末で取り込んでください',true);return;
+ }
+ const uid=accountScope.uid,generation=accountScopeGeneration,scope=currentLoginScope;
+ const sameOwner=()=>accountScopeGeneration===generation&&accountScope.uid===uid&&
+  currentLoginScope===scope&&accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+  scope.firebase?.auth?.currentUser?.uid===uid&&canEditNow()&&accountDiary.ready();
+ if(file.size>5*1024*1024){toast('JSONバックアップは5MB以内で選択してください',true);return;}
+ let backup,eligible;
+ try{
+  backup=JSON.parse(await file.text());
+  if(backup?.version!==1||!Array.isArray(backup.shifts)||
+     backup.shifts.some(shift=>!shift||
+      !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(shift.id||''))||
+      !Array.isArray(shift.records)||shift.records.length>MAX_RECORDS||
+      shift.records.some(rec=>!rec?.raw||!['ride','empty','cancel'].includes(rec.kind))||
+      !shift.settings||typeof shift.settings!=='object'))
+   throw Error('このTAXIAPPの日報JSON形式ではありません');
+  if(new Set(backup.shifts.map(shift=>shift.id)).size!==backup.shifts.length)
+   throw Error('JSONに同じ乗務IDが複数あります');
+  if(backup.ownerUid!==undefined&&backup.ownerUid!==null&&backup.ownerUid!==uid)
+   throw Error('別の利用者のUIDが記録されています。取込を停止しました');
+  eligible=backup.shifts.filter(shift=>Boolean(shift.endedAt||shift.endedIso)&&
+   /^\d{4}-\d{2}-\d{2}$/.test(String(shift.date||'')));
+  if(!eligible.length)throw Error('入庫済みの日報が見つかりません。元ファイルを保管してください');
+ }catch(error){toast('JSON取込を停止：'+String(error?.message||error),true);return;}
+ if(!sameOwner()){toast('取込準備中にログインまたは操作権が変わりました',true);return;}
+ if((backup.ownerUid===undefined||backup.ownerUid===null)&&
+    !confirm('このバックアップには本人UIDが記録されていません。現在の本人UIDで作成した日報だけを取り込んでください。本人の日報であることを確認しますか？'))return;
+ const dates=[...new Set(eligible.map(shift=>shift.date))].sort().reverse();
+ const date=prompt('取込する乗務日をYYYY-MM-DDで入力してください。候補：\n'+
+  dates.slice(0,20).join(' ／ ')+(dates.length>20?' ほか'+(dates.length-20)+'日':''),dates[0]);
+ if(date===null)return;
+ const options=eligible.filter(shift=>shift.date===date.trim()).sort((a,b)=>
+  String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ if(!options.length){toast('選択した日付の日報はJSONにありません',true);return;}
+ let selected=options[0];
+ if(options.length>1){
+  const selection=prompt('取込する乗務番号を入力してください。\n'+options.map((shift,i)=>
+   (i+1)+'：出庫 '+String(shift.startedAt||'不明')+' ／ '+shift.records.length+
+   '件 ／ ID '+shift.id).join('\n'));
+  if(selection===null)return;
+  if(!/^[1-9][0-9]*$/.test(selection)||Number(selection)>options.length){
+   toast('取込する乗務番号が不正です',true);return;
+  }
+  selected=options[Number(selection)-1];
+ }
+ if(!confirm('本人Firestoreへ新規取込\n日付：'+selected.date+
+   '\n乗務ID：'+selected.id+'\n営業記録：'+selected.records.length+
+   '件\n\n現在の営業中データ、旧Google原本、バックアップJSONは変更しません。続けますか？'))return;
+ if(!sameOwner()){toast('取込開始前にログインが変わりました',true);return;}
+ let packet,attempted=false,confirmed=false,problem='';
+ try{
+  const existing=await accountDiary.request('syncList',{shiftIds:[selected.id]});
+  if(!sameOwner())throw Error('照合中にログインまたは操作権が変わりました');
+  if(!Array.isArray(existing?.shifts))throw Error('既存の日報IDを確認できません');
+  if(existing.shifts.length)throw Error('Firestoreに同じ乗務IDがあります。上書きしません');
+  packet=googleShiftPacket(selected);
+  packet.shift.__taxiPrintSummary=deepCopy(packet.summary);
+  // Only the serialized packet is sent. Compare against the same JSON form.
+  packet=JSON.parse(JSON.stringify(packet));
+  attempted=true;
+  const sent=await accountDiary.request('syncPut',{
+   baseRevision:0,payload:JSON.stringify(packet)
+  });
+  if(!sameOwner())throw Error('送信中に操作端末が変更されました。原本を確認してください');
+  if(!sent?.confirmed||sent.id!==selected.id||sent.revision!==1)
+   throw Error('保存後の版番号が未確認です');
+  const read=await accountDiary.request('syncGet',{shiftId:selected.id});
+  if(!sameOwner())throw Error('読戻し中に操作端末が変更されました');
+  confirmed=read?.id===selected.id&&read.revision===1&&
+   JSON.stringify(canonicalStoredDuty(read.shift))===
+    JSON.stringify(canonicalStoredDuty(packet.shift));
+  if(!confirmed)throw Error('Firestore原本の内容が一致しません');
+ }catch(error){
+  problem=String(error?.message||error);
+  // The transaction can commit even if its response is lost. A read-only
+  // check is safe; never blindly retry creation or overwrite the remote ID.
+  if(attempted&&sameOwner()){
+   try{
+    const read=await accountDiary.request('syncGet',{shiftId:selected.id});
+    if(sameOwner()&&read?.id===selected.id&&read.revision===1&&packet&&
+       JSON.stringify(canonicalStoredDuty(read.shift))===
+        JSON.stringify(canonicalStoredDuty(packet.shift)))confirmed=true;
+   }catch{/* Keep the original backup when delivery is unknown. */}
+  }
+ }
+ if(!sameOwner())return;
+ if(!confirmed){
+  toast((attempted?'取込結果不明：':'取込を中止：')+problem+
+   '。元のJSONを保管し、同じIDを上書きしないでください',true);
+  return;
+ }
+ let resumeProtected=true;
+ try{
+  // This is historical import, not the phone's ordinary working duty.
+  // Keep it available by day-scoped history, but never auto-resume it.
+  const manifest=adminFirestoreManifest(uid);
+  if(!manifest)throw Error('正式保存先の切替記録がありません');
+  const excluded=[...new Set([...(manifest.excludedIds||[]),selected.id])];
+  const text=JSON.stringify({...manifest,excludedIds:excluded});
+  const prefKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
+  localStorage.setItem(prefKey,text);
+  if(localStorage.getItem(prefKey)!==text)throw Error('履歴保持区分を端末へ記録できません');
+ }catch(error){resumeProtected=false;}
+ historyDate=selected.date;historyShiftId=selected.id;tab='history';
+ await loadHistoryFromCloud(selected.date);
+ if(!sameOwner())return;
+ historyCloudMessage='JSONから本人Firestoreへ1乗務を新規保存・読戻し確認しました'+
+  (resumeProtected?'':'。ただし通常乗務からの除外が保存できません。バックアップを保持し、再起動前に設定を確認してください');
+ render();
+}
+async function importBackup(file){
+ if(!file)return;
+ if(!canEditNow()){toast('バックアップの復元は認証済みの操作端末で行ってください',true);return;}
+ const generation=accountScopeGeneration,uid=accountScope.uid,key=scopedStorageKey();
+ const sameOwner=()=>canEditNow()&&accountScopeGeneration===generation&&
+  accountScope.uid===uid&&scopedStorageKey()===key;
+ if(file.size>5*1024*1024){toast('バックアップファイルが大きすぎます。',true);return;}
+ let json;
+ try{
+  json=JSON.parse(await file.text());
+  if(json.ownerUid!==undefined&&json.ownerUid!==null&&json.ownerUid!==uid)
+   throw Error('バックアップの利用者UIDが現在のアカウントと一致しません');
+  if(json.version!==1||!Array.isArray(json.shifts)||
+     json.shifts.some(shift=>!shift||
+      !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(shift.id||''))||
+      !Array.isArray(shift.records)||shift.records.length>MAX_RECORDS||
+      shift.records.some(r=>!r.raw||!r.kind||!['ride','empty','cancel'].includes(r.kind))||
+      !shift.settings))
+   throw Error('互換性のないデータです');
+  if(new Set(json.shifts.map(x=>x.id)).size!==json.shifts.length)
+   throw Error('バックアップ内で乗務IDが重複しています');
+ }catch(e){toast('復元できません: '+e.message,true);return;}
+ if(!sameOwner()){toast('復元準備中にログインが変わりました。処理を中止します',true);return;}
+ const existingIds=new Set(model.shifts.map(s=>s.id));
+ const addition=json.shifts.filter(shift=>!existingIds.has(shift.id));
  const skipped=json.shifts.length-addition.length;
  if(!addition.length){toast(`新規に取り込む乗務はありません（重複 ${skipped}件）`);return;}
  if(!confirm(`バックアップから${addition.length}乗務を追加します。既存${model.shifts.length}乗務は変更しません。\n同じIDの${skipped}乗務は上書きせずスキップします。続けますか？`))return;
- model.shifts.push(...addition);
- model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
- upgradeWaitingHistory();await save();historyDate='';historyShiftId='';tab='history';render();toast(`${addition.length}乗務を追加しました。既存データは維持しました。`);}
+ if(!sameOwner()){toast('確認中にログインが変わりました。復元を中止します',true);return;}
+ const previous=deepCopy(model);
+ try{
+  clearTimeout(persistTimer);persistTimer=0;
+  model.shifts.push(...deepCopy(addition));
+  model.shifts.sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+  upgradeWaitingHistory();
+  await save(true);
+  const saved=db?await idbGet(db,key):JSON.parse(localStorage.getItem(key)||'null');
+  if(!saved||!Array.isArray(saved.shifts)||
+     addition.some(shift=>!saved.shifts.some(x=>x.id===shift.id))||
+     !sameOwner())
+   throw Error('復元後の日報が端末に正しく保存されていないか、ログインが変更されました');
+ }catch(error){
+  if(!sameOwner()){
+   toast('復元途中でログインが変わりました。別の利用者の記録は変更していません。',true);
+   return;
+  }
+  model=previous;
+  await save(true);
+  toast('復元を中止しました。以前の日報を維持します：'+String(error?.message||error),true);
+  return;
+ }
+ const pending=[];
+ if(memberDiary()||googleIsConfigured()){
+  for(const shift of addition){
+   try{syncUI.undoLocalRemoval(shift.id);}
+   catch(error){pending.push(shift.id);}
+  }
+ }
+ historyDate='';historyShiftId='';tab='history';render();
+ if(pending.length){
+  toast(addition.length+'乗務を端末に復元しました。'+pending.length+
+   '乗務は削除済み同期情報を解除できませんでした。クラウド照合前に確認してください。',true);
+ }else{
+  if(syncUI.enabled())syncUI.schedule();
+  toast(addition.length+'乗務を復元しました。クラウド原本がゴミ箱の場合は個別に復元してください。');
+ }
+}
 appEl.addEventListener('click',event=>{
  const hwyTime=event.target.closest('[data-hwy-now]');
  if(hwyTime){
@@ -4074,27 +5623,68 @@ appEl.addEventListener('click',event=>{
   input.dispatchEvent(new Event('change',{bubbles:true}));return;
  }
  const archive=event.target.closest('[data-sync-archive]');if(archive){if(archive.dataset.syncArchive==='list')syncUI.loadArchives(true);else syncUI.archiveAction(archive.dataset.syncArchive,archive.dataset.id);return;}
- const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){closeKeypad(true,true);renderAfterKeypad=false;rideSettingsJumpRequested=tabButton.hasAttribute('data-open-ride-fields');tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
+ const compare=event.target.closest('[data-sync-compare]');if(compare){void syncUI.compare(compare.dataset.syncCompare);return;}
+ const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='hold'?null:conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){
+ if(tab==='history'&&tabButton.dataset.tab!=='history'){
+  try{protectOpenHistoryEdit();}
+  catch(error){toast('修正控えを保護できないため画面移動を停止：'+String(error?.message||error),true);return;}
+ }
+ closeKeypad(true,true);renderAfterKeypad=false;rideSettingsJumpRequested=tabButton.hasAttribute('data-open-ride-fields');tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
-appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
+appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
  if(event.target.matches('[data-ride-field]')){const key=event.target.dataset.rideField;if(!RIDE_FIELD_PREFS.some(([name])=>name===key))return;model.prefs.rideFieldVisibility??={};model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-mode]')){model.prefs.cancelMeterMode=event.target.value==='reset'?'reset':'retain';saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-amount]')){const v=number(event.target.value);if(v===null||v<0||v>100000){toast('照合額は0～100000円で指定してください',true);return;}model.prefs.cancelMeterAmount=String(Math.round(v));saveLater();return;}
  if(event.target.matches('[data-distance-setting],[data-ride-distance-setting]')){const key=event.target.dataset.distanceSetting||event.target.dataset.rideDistanceSetting;if(!['pickupDropDistance','highwayDistance'].includes(key))return;const choice=event.target.matches('[data-ride-distance-setting]')?(event.target.checked?'on':'off'):(event.target.value==='off'?'off':'on');model.prefs[key]=choice;appEl.querySelectorAll('[data-distance-setting]').forEach(input=>{if(input.dataset.distanceSetting===key)input.value=choice;});appEl.querySelectorAll('[data-ride-distance-setting]').forEach(input=>{if(input.dataset.rideDistanceSetting===key)input.checked=choice==='on';});saveLater();render();toast('距離管理の設定を保存しました');return;}
  if(event.target.matches('[data-pref-gps-start]')){model.prefs.gpsTripAtStart=event.target.value==='off'?'off':'on';saveLater();toast('出庫時GPS設定を保存しました');return;}
- if(event.target.id==='historyDate'){historyDate=event.target.value;historyShiftId='';render();return;}
+ if(event.target.id==='historyEditPickup'||event.target.id==='historyEditDropoff'){
+  try{historyLocationInputs();}catch(error){if(historyLocationEdit){historyLocationEdit.message=String(error?.message||error);render();}}
+  return;
+ }
+ if(event.target.id==='historyDate'){
+  try{protectOpenHistoryEdit();}
+  catch(error){
+   event.target.value=historyDate||selectedShift()?.date||dateStamp();
+   toast('修正控えを保護できないため日付変更を停止：'+String(error?.message||error),true);return;
+  }
+  historyDate=event.target.value;historyShiftId='';
+  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';historyCloudBusy=false;
+  render();if(memberDiary())void loadHistoryFromCloud(historyDate);return;}
  if(event.target.id==='printShiftSelect'){printShiftId=event.target.value;render();return;} if(event.target.id==='highwayShiftSelect'){highwayShiftId=event.target.value;render();return;}
- if(event.target.id==='historyShiftSelect'){historyShiftId=event.target.value;render();return;}
+ if(event.target.id==='historyShiftSelect'){
+  try{protectOpenHistoryEdit();}
+  catch(error){
+   event.target.value=historyShiftId||selectedHistoryShift()?.id||'';
+   toast('修正控えを保護できないため乗務切替を停止：'+String(error?.message||error),true);return;
+  }
+  historyShiftId=event.target.value;render();return;}
  if(event.target.matches('[data-plan-end]')){const active=getShift();if(active){active.plannedEndAt=event.target.value;saveLater();render();}return;}
 if(event.target.matches('[data-cloud-token]')){if(setGoogleWriteKey(event.target.value)){setGoogleStatus('接続キーを保存しました。送信テストを行ってください');saveLater();}return;}
 if(event.target.matches('[data-cloud-setting],[data-file-setting]')){handleSheetTargetSetting(event.target);return;}
 if(event.target.matches('[data-col],[data-pref],[data-setting],[data-meta],[data-shiftstart],[data-shift-odo],[data-wait-field],[data-pay-method],[data-hwy-index],[data-native-diary-gps],[data-native-auto-distance],[data-cruising-summary-field],[data-drive-status-field],[data-duty-plan]')){handleInput(event);}});
-window.addEventListener('beforeunload',()=>{if(persistTimer){clearTimeout(persistTimer);save();}});
+// Browser close/reload must protect the latest visible past-duty correction,
+// not only the active duty. Mobile pagehide is a second best-effort safeguard.
+function protectHistoryPageExit(event){
+ if(!historyLocationEdit)return;
+ try{protectOpenHistoryEdit();}
+ catch(error){
+  console.error('TAXIAPP past-duty correction protection failed:',error);
+  if(event?.type==='beforeunload'){
+   event.preventDefault();
+   event.returnValue='';
+  }
+ }
+}
+window.addEventListener('pagehide',protectHistoryPageExit);
+window.addEventListener('beforeunload',event=>{
+ protectHistoryPageExit(event);
+ if(persistTimer){clearTimeout(persistTimer);save();}
+});
 await load();
 // Never display personal records before identifying the signed-in account.
 model=emptyAccountModel();render();

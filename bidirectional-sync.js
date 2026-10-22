@@ -18,7 +18,7 @@ function digest(str){
 }
 function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
-  getEndpoint,toast,localStorage:storage}=deps;
+  getEndpoint,toast,localStorage:storage,getRemoteOnDemand}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
  let scopeEpoch=0;
  let viewerBusy=false,viewerPromise=null,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
@@ -33,10 +33,115 @@ function create(deps){
   try{storage.setItem(localKey(),JSON.stringify(saved));return true;}
   catch{lastError='同期の管理情報を端末に保存できません。データは上書きしません。';return false;}
  }
+ const REMOVAL_PREFIX='taxiapp-sync-v2-local-removals-';
+ const validId=id=>/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(id||''));
+ const removalKey=()=>REMOVAL_PREFIX+digest(String(getEndpoint()||'')+'|'+String(deps.getScopeKey?.()||''));
+ function localRemovals(){
+  if(!getEndpoint())throw Error('同期先が未設定のため削除状態を記録できません');
+  const raw=storage.getItem(removalKey());
+  if(!raw)return {};
+  let data;
+  try{data=JSON.parse(raw)}catch{throw Error('削除済み日報の管理情報が破損しています。再受信を停止しました');}
+  if(!data||typeof data!=='object'||Array.isArray(data)||
+    Object.keys(data).some(id=>{
+     const entry=data[id],at=typeof entry==='number'?entry:entry?.at;
+     return !validId(id)||!Number.isSafeInteger(at)||at<1||
+      (typeof entry==='object'&&(entry===null||typeof entry.hash!=='string'||entry.hash.length>100));
+    }))
+   throw Error('削除済み日報の管理情報が不正です。再受信を停止しました');
+  return data;
+ }
+ function saveRemovals(data){
+  const content=JSON.stringify(data);
+  storage.setItem(removalKey(),content);
+  if(storage.getItem(removalKey())!==content)
+   throw Error('削除済み日報の再受信防止情報を保存できません');
+ }
+ function markLocalRemoval(id,shift){
+  if(!validId(id))throw Error('削除する日報IDが不正です');
+  const state=localRemovals();
+  if(Object.prototype.hasOwnProperty.call(state,id))return false;
+  const entry=shift?{at:Date.now(),hash:localHash(shift)}:Date.now();
+  saveRemovals({...state,[id]:entry});return true;
+ }
+ function undoLocalRemoval(id){
+  const state=localRemovals();
+  if(Object.prototype.hasOwnProperty.call(state,id)){delete state[id];saveRemovals(state);}
+ }
+ function localRemovalIds(){return Object.keys(localRemovals());}
+ function hasLocalRemovals(){return localRemovalIds().length>0;}
+ function excludeLocalRemovals(shifts){
+  const removed=localRemovals();
+  return (shifts||[]).filter(x=>!Object.prototype.hasOwnProperty.call(removed,x.id));
+ }
+ // A login's cloud-first snapshot must never overwrite unsynced local shifts.
+ // A matching prior hash means the local copy is unchanged since its last sync.
+ // With no baseline, only byte-identical projected data can be safely adopted.
+ // On login, merge nonconflicting cloud originals with local-only drafts.
+ // A local duty without a known cloud ancestor is never dropped by a pull.
+ // A previously synced duty missing in the cloud is a conflict, not a new upload.
+ function planSafeWriterSnapshot(incoming){
+  if(!Array.isArray(incoming))throw Error('クラウドの日報一覧が不正です');
+  const cloud=new Map(incoming.map(shift=>[shift.id,shift]));
+  if(cloud.size!==incoming.length)throw Error('クラウドの乗務IDが重複しています');
+  const saved=getSaved(),local=[...(getModel()?.shifts||[])];
+  const pendingIds=[],heldIds=[],localIds=new Set();
+  const result=new Map(cloud);
+  for(const shift of local){
+   if(!shift||!validId(shift.id)||localIds.has(shift.id))
+    throw Error('端末の日報IDが不正です。受信せず保持します');
+   localIds.add(shift.id);
+   const remote=cloud.get(shift.id),base=saved[shift.id];
+   if(!remote){
+    if(base?.revision>0){
+     // Deleted/absent server originals are NOT new uploads. Keep the local
+     // restored duty accessible and require explicit cloud reconciliation.
+     heldIds.push(shift.id);
+     continue;
+    }
+    pendingIds.push(shift.id);
+    continue;
+   }
+   const localValue=localHash(shift),remoteValue=remoteHash(remote);
+   if(localValue===remoteValue)continue;
+   // If the server's revision AND packet are unchanged from our previous
+   // confirmed baseline, only the phone has edits. Keep those edits, then
+   // enqueue the exact duty after the writer session is confirmed.
+   const serverRevision=viewerCache.get(shift.id)?.revision;
+   if(base?.hash===remoteValue&&base.revision===serverRevision){
+    result.set(shift.id,shift);
+    pendingIds.push(shift.id);
+    continue;
+   }
+   // Only the cloud changed. Local packet still matches the known baseline.
+   if(base?.hash===localValue)continue;
+   // Unknown ancestor or both sides edited: neither side is safe to replace.
+   throw Error('端末とクラウドの乗務 '+shift.id+
+    ' の変更が競合しています。双方の原本を保護し、受信を停止しました');
+  }
+  const extra=local.filter(shift=>!cloud.has(shift.id));
+  return {shifts:[...result.values(),...extra],pendingIds,heldIds};
+ }
+ function assertSafeWriterSnapshot(incoming){
+  planSafeWriterSnapshot(incoming);return true;
+ }
  const localHash=shift=>digest(stable(getPacket(shift).shift));
  const remoteHash=shift=>digest(stable(getPacket(shift).shift));
  function status(){
   return {busy,conflicts:Object.values(conflict),lastError,lastSyncAt};
+ }
+ // The phone may release a previous original only when its complete current
+ // packet still matches a confirmed, owner-scoped server revision.
+ function verifiedRevision(id){
+  if(!validId(id)||busy||conflict[id])return null;
+  const shift=getModel()?.shifts?.find(item=>item.id===id);
+  if(!shift)return null;
+  const base=getSaved()[id];
+  if(!base||base.receiving===true||!Number.isSafeInteger(base.revision)||
+     base.revision<1||base.hash!==localHash(shift))return null;
+  try{if(Object.prototype.hasOwnProperty.call(localRemovals(),id))return null;}
+  catch{return null;}
+  return base.revision;
  }
  const isConflict=id=>Boolean(conflict[id]);
  function markConflict(id,reason,localRevision,remoteRevision){
@@ -59,17 +164,57 @@ function create(deps){
   try{
    const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
+   // Reject malformed/duplicated server listings before any writes or pulls.
+   // Map alone would silently retain only the last occurrence of an ID.
+   const seenRemoteIds=new Set();
+   for(const item of listing.shifts){
+    const id=String(item?.id||''),revision=Number(item?.revision);
+    if(!validId(id)||!Number.isSafeInteger(revision)||revision<1||seenRemoteIds.has(id))
+     throw Error('クラウドの日報一覧に不正または重複したIDがあります。同期を停止しました');
+    seenRemoteIds.add(id);
+   }
    const cloud=new Map(listing.shifts.map(item=>[String(item.id),item]));
+   const removed=localRemovals();
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
    const present=new Map(shifts.map(s=>[s.id,s]));
    const nextConflict=selected?Object.fromEntries(Object.entries(conflict).filter(([id])=>!selected.has(id))):{};
-   // Pull cloud-only shifts first. Do not silently create an editing session
-   // if the phone has its own active duty.
-   for(const remote of listing.shifts){
+   // Send explicit deletion intent even though the duty is no longer in model.
+   // Require the original content to match the version actually deleted locally.
+   for(const [id,marker] of Object.entries(removed)){
+    if(selected&&!selected.has(id))continue;
+    const remote=cloud.get(id);
+    if(!remote||remote.deleted===true)continue;
+    if(typeof marker!=='object'||typeof marker.hash!=='string')continue;
+    const base=saved[id];
+    if(base&&base.revision!==remote.revision){
+     nextConflict[id]={id,reason:'削除後に別端末が原本を更新しました。自動削除を保留',localRevision:base.revision,remoteRevision:remote.revision};
+     continue;
+    }
+    const received=await scopedRequest('syncGet',{shiftId:id});
+    if(!received?.shift||received.id!==id||received.revision!==remote.revision||
+       remoteHash(received.shift)!==marker.hash){
+     nextConflict[id]={id,reason:'削除対象のクラウド原本が端末で確認した内容と異なります',localRevision:base?.revision??null,remoteRevision:remote.revision};
+     continue;
+    }
+    const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:remote.revision});
+    if(!done||done.id!==id||done.deleted!==true||done.revision!==remote.revision+1)
+     throw Error('クラウド側の削除状態を確認できません');
+    const next={revision:done.revision,hash:marker.hash};
+    if(!setSaved({...saved,[id]:next}))throw Error(lastError);
+    saved[id]=next;
+   }
+   // Firestore on-demand mode never pulls historical cloud-only duties
+   // into the phone's persistent working model during a routine sync.
+   // Explicit past-date viewing uses the separate read-only history API.
+   for(const remote of (getRemoteOnDemand?.()?[]:listing.shifts)){
     if(selected&&!selected.has(remote.id))continue;
+    if(remote.deleted===true)continue;
+    if(Object.prototype.hasOwnProperty.call(removed,remote.id))continue;
     if(present.has(remote.id))continue;
     const received=await scopedRequest('syncGet',{shiftId:remote.id});
-    if(!received?.shift||received.id!==remote.id)throw Error('クラウドから乗務を読み戻せません');
+    if(!received?.shift||received.id!==remote.id||received.shift.id!==remote.id||
+       Number(received.revision)!==Number(remote.revision))
+     throw Error('クラウド受信中に乗務の更新番号が変わりました。端末の記録を保持して再照合してください');
     const local=getModel()?.shifts?.find(s=>s.id===remote.id);
     if(local){nextConflict[remote.id]={id:remote.id,reason:'受信中に同じIDの記録が追加されました',localRevision:0,remoteRevision:remote.revision};continue;}
     const clone=received.shift;
@@ -82,7 +227,12 @@ function create(deps){
    for(const original of shifts){
     const id=original.id;
     if(selected&&!selected.has(id))continue;
+    if(Object.prototype.hasOwnProperty.call(removed,id))continue;
     delete nextConflict[id];
+    if(cloud.get(id)?.deleted===true){
+     nextConflict[id]={id,reason:'クラウド側でゴミ箱に移動済みです。端末の日報は安全のため保持しています',localRevision:saved[id]?.revision??null,remoteRevision:cloud.get(id).revision};
+     continue;
+    }
     const remote=cloud.get(id),base=saved[id];
     let current=getModel()?.shifts?.find(s=>s.id===id);
     if(!current)continue;
@@ -103,7 +253,9 @@ function create(deps){
      // A migrated device without a known common ancestor cannot decide
      // which distinct record is newer. Only identical content can be linked.
      const got=await scopedRequest('syncGet',{shiftId:id});
-     if(!got?.shift||got.id!==id)throw Error('既存乗務を照合できません');
+     if(!got?.shift||got.id!==id||got.shift.id!==id||
+        Number(got.revision)!==Number(remote.revision))
+      throw Error('既存乗務の照合中に更新番号が変わりました。自動同期せず再確認してください');
      if(remoteHash(got.shift)!==currentHash){
       nextConflict[id]={id,reason:'初回照合：端末とクラウドの内容が異なります',localRevision:null,remoteRevision:got.revision};
       continue;
@@ -119,12 +271,32 @@ function create(deps){
     const localChanged=currentHash!==base.hash;
     const remoteChanged=remote.revision!==base.revision;
     if(localChanged&&remoteChanged){
+     // A Firestore commit can succeed even when its read-back response is
+     // lost. Reopen that exact owner's duty before calling this a conflict.
+     // Identical content at the latest server revision is a safe recovery;
+     // never resend it or silently adopt genuinely different content.
+     const got=await scopedRequest('syncGet',{shiftId:id});
+     if(!got?.shift||got.id!==id||got.shift.id!==id||
+        Number(got.revision)!==Number(remote.revision))
+      throw Error('送信結果不明の日報を読み戻せません。端末原本を保持して再照合してください');
+     const latest=getModel()?.shifts?.find(s=>s.id===id);
+     if(!latest||localHash(latest)!==currentHash){
+      nextConflict[id]={id,reason:'保存確認中に端末の日報が変更されました',localRevision:base.revision,remoteRevision:got.revision};
+      continue;
+     }
+     if(remoteHash(got.shift)===currentHash){
+      if(!setSaved({...saved,[id]:{revision:got.revision,hash:currentHash}}))throw Error(lastError);
+      saved[id]={revision:got.revision,hash:currentHash};
+      continue;
+     }
      nextConflict[id]={id,reason:'この端末と別端末の両方で変更されました',localRevision:base.revision,remoteRevision:remote.revision};
      continue;
     }
     if(remoteChanged){
      const got=await scopedRequest('syncGet',{shiftId:id});
-     if(!got?.shift||got.id!==id)throw Error('クラウドから乗務を読み込めません');
+     if(!got?.shift||got.id!==id||got.shift.id!==id||
+        Number(got.revision)!==Number(remote.revision))
+      throw Error('クラウド受信中に乗務の更新番号が変わりました。端末の記録を保持して再照合してください');
      const latest=getModel()?.shifts?.find(s=>s.id===id);
      if(!latest||localHash(latest)!==currentHash){
       nextConflict[id]={id,reason:'受信中に端末側で編集されました',localRevision:base.revision,remoteRevision:got.revision};
@@ -186,6 +358,7 @@ function create(deps){
    const previous=viewerEndpoint===endpoint?viewerCache:new Map();
    const updated=new Map();
    for(const item of listing.shifts){
+    if(item?.deleted===true)continue;
     const id=String(item?.id||''),revision=Number(item?.revision);
     if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||
        !Number.isSafeInteger(revision)||revision<1||updated.has(id))
@@ -213,6 +386,22 @@ function create(deps){
   finally{if(viewerPromise===job)viewerPromise=null;}
  }
  function viewerStatus(){return {lastError:viewerLastError,lastSyncAt:viewerLastSyncAt};}
+ // A fresh phone has no local ancestor for the duty reopened from the
+ // server. Record its checked revision ONLY after IndexedDB has confirmed
+ // saving that exact original; the next local edit can then use ordinary CAS.
+ // This never uploads a record or adopts an unrelated local revision.
+ function adoptReceivedDuty(received){
+  const id=String(received?.id||''),revision=Number(received?.revision);
+  const shift=received?.shift,endpoint=String(getEndpoint()||'');
+  if(busy||!endpoint||!validId(id)||!shift||shift.id!==id||
+     !Number.isSafeInteger(revision)||revision<1)return false;
+  const stored=getModel()?.shifts?.find(row=>row.id===id);
+  if(!stored||localHash(stored)!==remoteHash(shift))return false;
+  const saved=getSaved(),hash=localHash(stored);
+  if(!setSaved({...saved,[id]:{revision,hash}}))return false;
+  delete conflict[id];lastError='';lastSyncAt=Date.now();
+  return true;
+ }
  // Only after cloud originals have been durably saved locally, establish
  // their server revisions as the new synchronization baseline.
  function adoptViewerBaseline(){
@@ -279,7 +468,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,isConflict,digest,resetAccount};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);

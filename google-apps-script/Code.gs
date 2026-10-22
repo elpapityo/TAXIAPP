@@ -1,8 +1,8 @@
 /**
  * TAXIAPP -> Google Sheets bridge.
- * ADD as a new .gs file in Extensions > Apps Script; do not replace any old
- * scripts or macros. Then deploy a Web App
- * ("Execute as: Me", "Who has access: Anyone"). A separate random shared key is
+ * Version 3 was deployed to the existing GAS Web App on 2026-10-22.
+ * This source is maintained for parity and future reviewed changes; do not
+ * redeploy solely from a GitHub update. A separate random shared key is
  * required for EVERY POST, so the /exec URL alone cannot write to this sheet.
  * No web credentials belong in public GitHub code.
  *
@@ -106,8 +106,25 @@ function doPost(e) {
   var key=PropertiesService.getScriptProperties().getProperty('TAXIAPP_WRITE_KEY');
   if(!key||String(params.key||'')!==key)throw Error('接続キーが違います');
   var action=String(params.action||'');
-  if(['syncList','syncGet','syncPut','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore'].indexOf(action)<0&&action!=='sync')
+  if(['syncList','syncGet','syncPut','syncTrash','syncRestore','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore','firestorePrintImport'].indexOf(action)<0&&action!=='sync')
    throw Error('未対応の処理です');
+  if(action==='firestorePrintImport'){
+   // Dedicated PC operation: existing shared key plus owner's Firebase ID
+   // token. The token is not retained; Firestore rules enforce the UID.
+   var id=String(params.shiftId||'');
+   if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))
+    throw Error('転送する乗務IDが不正です');
+   var date=String(params.date||'');
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))
+    throw Error('指定した乗務日が不正です');
+   var token=String(params.firebaseIdToken||'');
+   if(token.length<100||token.length>8192||token.split('.').length!==3)
+    throw Error('本人のFirebase認証がありません');
+   if(typeof firestorePrintSelectedDutyDraft_!=='function')
+    throw Error('Firestoreの本人専用印刷取込コードを導入してください');
+   var result=firestorePrintSelectedDutyDraft_(id,date,token);
+   return replyToPhone_(nonce,true,result,{id:id,date:date},audience);
+  }
   var lock=LockService.getScriptLock();
   if(!lock.tryLock(25000))throw Error('別の同期を処理中です');
   try{
@@ -118,6 +135,9 @@ function doPost(e) {
     if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('乗務IDが不正です');
     return replyToPhone_(nonce,true,'乗務を取得しました',syncGetV2_(id),audience);
    }
+   if(action==='syncTrash'||action==='syncRestore')return replyToPhone_(nonce,true,
+    action==='syncTrash'?'乗務をゴミ箱へ移しました':'乗務を復元しました',
+    syncSetTrashV2_(String(params.shiftId||''),params.baseRevision,action==='syncTrash'),audience);
    if(action==='conflictList')return replyToPhone_(nonce,true,'競合保管一覧',conflictVaultList_(),audience);
    if(action==='conflictGet')return replyToPhone_(nonce,true,'競合保管を取得しました',conflictVaultGet_(String(params.archiveId||'')),audience);
    if(action==='conflictTrash'||action==='conflictRestore')return replyToPhone_(nonce,true,'競合保管の状態を変更しました',conflictVaultSetTrash_(String(params.archiveId||''),action==='conflictTrash'),audience);
@@ -164,7 +184,8 @@ function syncRevisionV2_(ss,id) {
   var rows=s.getRange(2,1,s.getLastRow()-1,4).getValues();
   for(var i=0;i<rows.length;i++){
    if(String(rows[i][0])===id)
-    return {revision:Number(rows[i][1])||0,managed:String(rows[i][3])==='v2',updatedAt:String(rows[i][2]||'')};
+    return {revision:Number(rows[i][1])||0,managed:['v2','v2_deleted'].indexOf(String(rows[i][3]))>=0,
+     deleted:String(rows[i][3])==='v2_deleted',updatedAt:String(rows[i][2]||'')};
   }
  }
  var originals=ss.getSheetByName('TAXIAPP_同期原本');
@@ -182,15 +203,16 @@ function syncListV2_() {
  var rows=originals.getRange(2,1,originals.getLastRow()-1,2).getValues();
  var states=ss.getSheetByName(TAXIAPP_REVISION_SHEET),lookup={};
  if(states&&states.getLastRow()>1){
-  states.getRange(2,1,states.getLastRow()-1,3).getValues().forEach(function(r){
-   lookup[String(r[0])]={revision:Number(r[1])||1,updatedAt:String(r[2]||'')};
+  states.getRange(2,1,states.getLastRow()-1,4).getValues().forEach(function(r){
+   lookup[String(r[0])]={revision:Number(r[1])||1,updatedAt:String(r[2]||''),
+    deleted:String(r[3])==='v2_deleted'};
   });
  }
  var result=rows.filter(function(r){return /^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(String(r[0]));})
   .map(function(r){
    var id=String(r[0]),info=lookup[id];
    return {id:id,revision:info?info.revision:1,
-    updatedAt:info?info.updatedAt:String(r[1]||'')};
+    deleted:Boolean(info&&info.deleted),updatedAt:info?info.updatedAt:String(r[1]||'')};
   });
  return {shifts:result};
 }
@@ -198,6 +220,7 @@ function syncGetV2_(id) {
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var shift=loadShift_(ss,id);
  var rev=syncRevisionV2_(ss,id);
+ if(rev.deleted)throw Error('この乗務はクラウドのゴミ箱にあります。復元してください');
  return {id:id,revision:rev.revision,shift:shift,updatedAt:rev.updatedAt};
 }
 function syncPutV2_(packet,baseRevision) {
@@ -206,6 +229,7 @@ function syncPutV2_(packet,baseRevision) {
   throw Error('同期の基準版が不正です');
  var id=String(packet.shift.id),ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var current=syncRevisionV2_(ss,id);
+ if(current.deleted)throw Error('削除済みの原本は上書きできません。復元してください');
  if(current.revision!==base)
   throw Error('SYNC_CONFLICT:'+current.revision+':他端末で更新されたため、上書きを停止しました');
  // Validate the packet before changing sheet content, and only increment
@@ -215,7 +239,24 @@ function syncPutV2_(packet,baseRevision) {
  syncWriteRevisionV2_(ss,id,rev,true);
  return {id:id,revision:rev,updatedAt:now};
 }
-function syncWriteRevisionV2_(ss,id,revision,modern){
+// Reversible server-side deletion: original packet and printed sheets stay intact.
+function syncSetTrashV2_(id,baseRevision,deleteRequested){
+ if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('削除する乗務IDが不正です');
+ var base=Number(baseRevision);
+ if(!Number.isSafeInteger(base)||base<1)throw Error('同期の基準版が不正です');
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID),current=syncRevisionV2_(ss,id);
+ if(current.revision!==base)throw Error('SYNC_CONFLICT:'+current.revision+':他端末の更新を先に確認してください');
+ var orig=ss.getSheetByName('TAXIAPP_同期原本');
+ if(!orig||orig.getLastRow()<2||
+   !orig.getRange(2,1,orig.getLastRow()-1,1).getValues()
+     .some(function(r){return String(r[0])===id;}))
+  throw Error('クラウドに保存済みの原本がありません');
+ if(Boolean(current.deleted)===deleteRequested)
+  return {id:id,revision:base,deleted:deleteRequested};
+ syncWriteRevisionV2_(ss,id,base+1,true,deleteRequested);
+ return {id:id,revision:base+1,deleted:deleteRequested};
+}
+function syncWriteRevisionV2_(ss,id,revision,modern,deleted){
  var state=ss.getSheetByName(TAXIAPP_REVISION_SHEET);
  if(!state){
   state=ss.insertSheet(TAXIAPP_REVISION_SHEET);
@@ -226,7 +267,7 @@ function syncWriteRevisionV2_(ss,id,revision,modern){
  var index=rows.findIndex(function(row){return String(row[0])===id;});
  var rowNumber=index<0?state.getLastRow()+1:index+2;
  var now=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd HH:mm:ss');
- state.getRange(rowNumber,1,1,4).setValues([[id,revision,now,modern?'v2':'legacy']]);
+ state.getRange(rowNumber,1,1,4).setValues([[id,revision,now,modern?(deleted?'v2_deleted':'v2'):'legacy']]);
 }
 function validatePacket_(packet) {
  if (!packet || packet.kind !== 'TAXIAPP_SHIFT_V1' || !packet.shift)
@@ -341,9 +382,24 @@ function selectLatestTAXIAPPShift() {
  try {SpreadsheetApp.getUi().alert('最新乗務を選択しました',latest,SpreadsheetApp.getUi().ButtonSet.OK);}
  catch(e){Logger.log('最新乗務を選択: '+latest);}
 }
-function savePacket_(data) {
+function savePacket_(data,options) {
+ var printOnly=options&&options.firestorePrintOnly===true;
  var ss = SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
- ensureStorageSheets_(ss);
+ if(printOnly){
+  // PC-only manual Firestore pull. Never create/touch original, old archive,
+  // legacy versions or the actual two paper-print sheets.
+  var originals=ss.getSheetByName('TAXIAPP_同期原本');
+  if(!originals)throw Error('既存Google同期原本が見つかりません');
+  var id=String(data&&data.shift&&data.shift.id||'');
+  if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('Firestoreの乗務IDが不正です');
+  var count=Math.max(0,originals.getLastRow()-1);
+  if(count&&originals.getRange(2,1,count,1).getValues().some(function(r){return String(r[0])===id;}))
+   throw Error('旧Google原本に同じ乗務があります。自動的に上書きしません');
+  ['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計',
+   'TAXIAPP_乗務一覧','TAXIAPP_印刷操作','補助簿印刷用','補助簿印刷用_2頁']
+   .forEach(function(name){if(!ss.getSheetByName(name))throw Error('既存の印刷シートがありません：'+name);});
+  validatePacket_(data);
+ }else ensureStorageSheets_(ss);
  // Ignore legacy 700-yen cancel fee values from older app versions.
  // A cancelled dispatch is recorded, but always has zero fare and zero revenue.
  var submitted=data.shift;
@@ -357,7 +413,7 @@ function savePacket_(data) {
   }
   // Older TAXIAPP clients wrongly deducted the 200-yen GO collection fee
   // from the company portion of the tender. Restore it even on resends.
-  if(record.kind==='ride'&&record.status==='complete'&&record.raw&&record.raw.E==='G'&&numeric_(record.amounts&&record.amounts.goFee)>0){
+  if(!printOnly&&record.kind==='ride'&&record.status==='complete'&&record.raw&&record.raw.E==='G'&&numeric_(record.amounts&&record.amounts.goFee)>0){
    return {...record,payments:(record.payments||[]).map(function(p){
     var paid=numeric_(p.received),prior=numeric_(p.company);
     var missing=Math.max(0,paid-prior);
@@ -370,19 +426,29 @@ function savePacket_(data) {
  })};
  var id=String(shift.id);
  var summary={...(data.summary||{}),cancellation:0};
- summary.cashRemittance=numeric_(summary.cashRemittance)+restoredGoCash;
- summary.paymentAllocated=numeric_(summary.paymentAllocated)+restoredGoPayments;
- // GO fees already belong to the tender received; do not add them twice.
- summary.totalRemittance=summary.cashRemittance+numeric_(summary.etcRemittance);
- var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+ if(!printOnly){
+  summary.cashRemittance=numeric_(summary.cashRemittance)+restoredGoCash;
+  summary.paymentAllocated=numeric_(summary.paymentAllocated)+restoredGoPayments;
+  // GO fees already belong to the tender received; do not add them twice.
+  summary.totalRemittance=summary.cashRemittance+numeric_(summary.etcRemittance);
+ }else{
+  // The smartphone's confirmed totals are the only source of amounts.
+  ['meter','discount','goFee','uberSurcharge','cashRemittance',
+    'etcRemittance','totalRemittance','cashReceived','paymentAllocated']
+   .forEach(function(k){if(typeof summary[k]!=='number'||!Number.isFinite(summary[k]))
+     throw Error('Firestoreの計算済み金額がありません：'+k);});
+ }
+ var printedAt=printOnly?new Date(String(data.printRecordedAt||'')):new Date();
+ if(!Number.isFinite(printedAt.getTime()))throw Error('Firestore原本の更新時刻が不正です');
+ var now = Utilities.formatDate(printedAt, 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
  var records = shift.records || [];
  var shiftRows = [[id,shift.date,shiftTimestamp_(shift.startedIso,shift.date,shift.startedAt),
   shiftTimestamp_(shift.endedIso,shift.date,shift.endedAt),shift.driver||'',shift.driverNo||'',
   shift.vehicle||'',records.length,numeric_(summary.meter),numeric_(summary.discount),
   numeric_(summary.goFee),numeric_(summary.uberSurcharge),
   numeric_(summary.cashRemittance),numeric_(summary.etcRemittance),
-  numeric_(summary.totalRemittance),now,'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
- replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
+  numeric_(summary.totalRemittance),now,printOnly?'Firestore印刷済':'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
  var storage=[],payments=[],print=[];
  records.forEach(function(record) {
   var raw = record.raw||{},amounts=record.amounts||{};
@@ -409,24 +475,45 @@ function savePacket_(data) {
    raw.AL||'',raw.AM||'',raw.AQ||'',raw.W||'',raw.AI||'',raw.AR||'',
    meta.settledIso||'']);
  });
- replaceRowsForShift_(ss,'TAXIAPP_乗務保管',id,storage,19);
- replaceRowsForShift_(ss,'TAXIAPP_決済内訳',id,payments,11);
- replaceRowsForShift_(ss,'TAXIAPP_印刷データ',id,print,14);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務保管',id,storage,19);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_決済内訳',id,payments,11);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_印刷データ',id,print,14);
  var items = ['meter','discount','goFee','uberSurcharge','cashRemittance',
   'etcRemittance','totalRemittance','realToll','emptyToll','cancellation','tip',
   'reservation','cashReceived','paymentAllocated'];
  var aggregate = items.map(function(key){
   return [id,key,numeric_(summary[key]),'TAXIAPP 計算済み',now];
  });
- replaceRowsForShift_(ss,'TAXIAPP_集計',id,aggregate,5);
- // Save a lossless shift snapshot in 30,000-character chunks (under cell limit).
- var json = JSON.stringify(shift);
- var chunks = [];
- for (var start = 0; start < json.length; start += TAXIAPP_CHUNK_SIZE)
-  chunks.push(json.slice(start,start+TAXIAPP_CHUNK_SIZE));
- if (chunks.length > TAXIAPP_MAX_CHUNKS) throw Error('乗務データが大きすぎます');
- var originals = [id,now,chunks.length].concat(chunks);
- replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
+ if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_集計',id,aggregate,5);
+ else {
+  var printBatches=[
+   {name:'TAXIAPP_印刷データ',rows:print,width:14},
+   {name:'TAXIAPP_決済内訳',rows:payments,width:11},
+   {name:'TAXIAPP_集計',rows:aggregate,width:5},
+   {name:'TAXIAPP_乗務一覧',rows:shiftRows,width:19}
+  ];
+  if(options&&options.verifyFirestorePrintOnly===true)
+   firestorePrintVerifyRowsDraft_(ss,id,printBatches);
+  else if(options&&Number.isSafeInteger(options.firestoreRevision)&&
+      options.firestoreOwnerUid)
+   firestorePrintPublishVersionedDraft_(ss,id,printBatches,
+    options.firestoreRevision,options.firestoreOwnerUid,
+    options&&options.verifyCurrentSource);
+  else throw Error('Firestore印刷元の更新番号・本人UIDが不足しています');
+ }
+ // Only the legacy Google workflow stores a lossless original snapshot.
+ // Firestore printing already uses the owner UID's original and has written
+ // its four verified print sources above. Do not reject that successful
+ // transfer later because of an unused legacy chunk-count restriction.
+ if(!printOnly){
+  var json = JSON.stringify(shift);
+  var chunks = [];
+  for (var start = 0; start < json.length; start += TAXIAPP_CHUNK_SIZE)
+   chunks.push(json.slice(start,start+TAXIAPP_CHUNK_SIZE));
+  if (chunks.length > TAXIAPP_MAX_CHUNKS) throw Error('乗務データが大きすぎます');
+  var originals = [id,now,chunks.length].concat(chunks);
+  replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
+ }
  return '保存完了：' + shift.date + ' / ' + records.length + '件';
 }
 
@@ -483,7 +570,9 @@ function resolvePrintShiftId_(ss,operation) {
  for(var i=0;i<rows.length;i++){
   var id=String(rows[i][0]||'').trim();
   var label=String(rows[i][20]||'').trim();
-  if(!savedIds.has(id))continue;
+  // Legacy snapshots and verified Firestore print-source rows can both be selected.
+  // The Firestore-only path is independently rechecked at print time.
+  if(!savedIds.has(id)&&String(rows[i][16]||'').trim()!=='Firestore印刷済')continue;
   if(requested===id||requested===label)return id;
  }
  // Compatible with older sheets where the row-aligned U formula is absent.
@@ -501,16 +590,55 @@ function applySelectedPrintShift() {
  // raw shift IDs directly to B17 cannot trigger false "not found" errors.
  var id=resolvePrintShiftId_(ss,operation);
  if(!id)throw Error('印刷対象が見つかりません。B15にチェックを入れるか、B17から乗務を選んでください');
- var shift=loadShift_(ss,id);
+ if(typeof syncRevisionV2_==='function'&&syncRevisionV2_(ss,id).deleted)
+  throw Error('ゴミ箱内の乗務は印刷できません。復元してください');
+ var originals=ss.getSheetByName('TAXIAPP_同期原本');
+ var last=originals?originals.getLastRow():0;
+ var legacy=last>1&&originals.getRange(2,1,last-1,1).getDisplayValues()
+  .some(function(row){return String(row[0]||'').trim()===id;});
+ var shift,expected;
+ if(legacy){
+  // Preserve existing trusted legacy print confirmation unchanged.
+  shift=loadShift_(ss,id);
+  expected=shift.records.reduce(function(sum,r) {
+   return sum + (r.status==='complete'&&r.kind==='ride'?numeric_(r.raw&&r.raw.K):0);
+  },0);
+ }else{
+  // Firestore-only duties must never be loaded from the retired Google original.
+  // This branch is read-only and uses the application's EXISTING totals.
+  if(typeof firestorePrintConfigDraft_!=='function'||
+     typeof firestorePrintVerifyPublishedDraft_!=='function')
+   throw Error('本人Firestore印刷元の版管理は未設定です。旧Google原本は変更しません');
+  var index=ss.getSheetByName('TAXIAPP_乗務一覧');
+  var rows=index.getLastRow()>1?index.getRange(2,1,index.getLastRow()-1,17).getDisplayValues():[];
+  var matching=rows.filter(function(row){return String(row[0]||'').trim()===id;});
+  if(matching.length!==1||String(matching[0][16]||'').trim()!=='Firestore印刷済')
+   throw Error('Firestore由来の印刷元を確認できません');
+  // A stale C17 formula must never confirm a different duty on paper.
+  if(String(operation.getRange('C17').getDisplayValue()||'').trim()!==id)
+   throw Error('印刷対象IDの式と選択中の乗務が一致しません');
+  // The Google Sheets UI has no Firebase login token. Confirm only the
+  // explicitly imported, owner-authorized print source and its version journal.
+  // Newer Firestore edits require a deliberate PC TAXIAPP re-import.
+  if(typeof firestorePrintVerifyPublishedDraft_!=='function')
+   throw Error('本人Firestore印刷元の版管理を確認できません');
+  var published=firestorePrintVerifyPublishedDraft_(ss,id);
+  shift={id:id,date:published.date,records:Array(published.records).fill(null)};
+  expected=published.meter;
+  if(!Number.isFinite(expected)||Number(matching[0][7])!==published.records)
+   throw Error('取り込んだ印刷元の件数・金額が一致しません');
+  // The journal checks every cell in the four print-source sheets.
+  // The Google Sheet alone cannot claim that Firestore has not changed;
+  // the PC must re-import the latest revision before confirming print.
+  if(Number(matching[0][8])!==expected)
+   throw Error('本人認証済み印刷元のメーター売上が一致しません');
+ }
  if(!Array.isArray(shift.records)||shift.records.length>60)
   throw Error('営業データを確認してください');
  var first=ss.getSheetByName('補助簿印刷用');
  var second=ss.getSheetByName('補助簿印刷用_2頁');
  if(!first||!second)throw Error('補助簿の印刷用シートがありません');
  SpreadsheetApp.flush();
- var expected=shift.records.reduce(function(sum,r) {
-  return sum + (r.status==='complete'&&r.kind==='ride'?numeric_(r.raw&&r.raw.K):0);
- },0);
  var actual=Number(first.getRange('X23').getValue()||0);
  if (Math.abs(expected-actual)>0.01)
   throw Error('集計表のメーター売上が一致しません。B17を再選択してください。');
@@ -609,4 +737,33 @@ function conflictVaultSetTrash_(archiveId,trash){
  });
  if(!found)throw Error('対象の競合保管データがありません');
  return {archiveId:archiveId,trashed:trash};
+}
+
+/**
+ * 本番GAS v3の公開前に確認済みの読み取り専用チェック。旧原本を変更しない。
+ * 実行は必要な場合のみ。公開時の承認と確認は2026-10-22に完了。
+ */
+function taxiappGASReleaseReadOnlyCheck(){
+ var p=PropertiesService.getScriptProperties();
+ if(!p.getProperty('TAXIAPP_WRITE_KEY'))throw Error('既存Google接続キーが未設定です');
+ if(typeof firestorePrintConfigDraft_!=='function'||
+    typeof firestorePrintSelectedDutyDraft_!=='function'||
+    typeof firestorePrintVerifyPublishedDraft_!=='function'||
+    typeof firestorePrintPublishVersionedDraft_!=='function')
+  throw Error('Firestore印刷連携の3ファイルが揃っていません');
+ var cfg=firestorePrintConfigDraft_();
+ if(cfg.project!=='taxiapp-2b6bd')throw Error('FirebaseプロジェクトIDが対象と違います');
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ ['TAXIAPP_同期原本','TAXIAPP_印刷操作','補助簿印刷用','補助簿印刷用_2頁'].forEach(function(name){
+  if(!ss.getSheetByName(name))throw Error('既存シートが見つかりません：'+name);
+ });
+ Object.keys(TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS).forEach(function(name){
+  var sheet=ss.getSheetByName(name),expected=TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name];
+  if(!sheet)throw Error('印刷元シートが見つかりません：'+name);
+  var actual=sheet.getRange(1,1,1,expected.length).getValues()[0];
+  if(JSON.stringify(actual)!==JSON.stringify(expected))
+   throw Error('印刷元の見出しが異なります：'+name);
+ });
+ Logger.log('TAXIAPP_GAS_READ_ONLY_OK 設定・接続コード・旧原本・補助簿2頁・印刷元4シートを確認。書込みなし');
+ return 'TAXIAPP_GAS_READ_ONLY_OK';
 }

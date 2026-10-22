@@ -1,0 +1,241 @@
+'use strict';
+/* Firestore OWNER original -> existing Sheets 4 sources, synthetic only */
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
+const load=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const script=[load('google-apps-script/Code.gs'),
+ load('google-apps-script/FirestorePrintPullDraft.gs'),
+ load('google-apps-script/FirestorePrintSourcesDraft.gs')].join('\n');
+const names=['TAXIAPP_乗務一覧','TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計'];
+const head={
+ 'TAXIAPP_乗務一覧':['乗務ID','乗務日','出庫日時','入庫日時','運転者','社員番号','車両番号','営業件数','メーター売上','障がい者割引','GO手数料','Uber配車手数料','現金納金','ETC','総入金額','更新日時','転送状態','出庫km','入庫km'],
+ 'TAXIAPP_印刷データ':['乗務ID','営業番号','配車区分','支払表示','表示金額','乗車時刻','降車時刻','乗車地','降車地','GO手数料確認','実車高速','空車高速','障がい者割引','精算完了日時'],
+ 'TAXIAPP_決済内訳':['乗務ID','営業番号','決済内訳番号','支払金種','支払金額','アプリ決済額','現金受取','高速料金','割引額','手数料','備考'],
+ 'TAXIAPP_集計':['乗務ID','種類','金額','計算根拠','更新日時']
+};
+const values=new Map();
+for(const name of [...names,'TAXIAPP_同期原本','TAXIAPP_乗務保管',
+ 'TAXIAPP_印刷操作','補助簿印刷用','補助簿印刷用_2頁']){
+ values.set(name,new Map());
+ if(head[name])head[name].forEach((v,i)=>values.get(name).set('1:'+ (i+1),v));
+}
+values.get('TAXIAPP_同期原本').set('2:1','shift-999-legacy');
+values.get('補助簿印刷用').set('1:1','=DO_NOT_CHANGE()');
+values.get('補助簿印刷用_2頁').set('1:1','=SECOND_PAGE()');
+values.get('TAXIAPP_乗務一覧').set('2:20','=DO_NOT_CHANGE_SELECTOR()');
+const key=(r,c)=>r+':'+c;
+class FakeSheet{
+ constructor(name){this.name=name;this.data=values.get(name);}
+ getName(){return this.name;}
+ getMaxRows(){return 1200;}
+ getMaxColumns(){return 24;}
+ getLastRow(){return Math.max(1,...[...this.data.keys()].map(k=>Number(k.split(':')[0])));}
+ getRange(r,c,n=1,m=1){
+  const data=this.data;
+  return {
+   getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>data.get(key(r+i,c+j))??'')),
+   getFormulas:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>{
+     const v=data.get(key(r+i,c+j));return typeof v==='string'&&v[0]==='='?v:'';})),
+   setValues:rows=>{if(syntheticWriteFailure&&syntheticWriteFailure===this.name){syntheticWriteFailure='';throw Error('合成の印刷元書込失敗');}
+    assert.equal(rows.length,n);for(let i=0;i<n;i++){
+    assert.equal(rows[i].length,m);for(let j=0;j<m;j++)data.set(key(r+i,c+j),rows[i][j]);}},
+   clearContent:()=>{for(let i=0;i<n;i++)for(let j=0;j<m;j++)data.delete(key(r+i,c+j));}
+  };
+ }
+}
+const sh=Object.fromEntries([...values.keys()].map(n=>[n,new FakeSheet(n)]));
+const ss={getSheetByName:n=>sh[n]||null};
+const id='shift-1792600000000-synthetic',uid='ownerSyntheticUID',project='taxiapp-test-project';
+const shift={id,date:'2026-10-21',startedAt:'09:00',endedAt:'11:00',
+ startedIso:'2026-10-21T00:00:00.000Z',endedIso:'2026-10-21T02:00:00.000Z',
+ startingOdo:'0',endingOdo:'10',records:[{kind:'ride',status:'complete',
+ raw:{A:1,E:'G',N:'現',K:1000,G:'09:15',M:'09:25',AL:'【合成】乗車',AM:'【合成】降車',AQ:200,W:0,AR:0},
+ amounts:{meter:1000,goFee:200,uberSurcharge:0,realToll:0,discount:0},
+ payments:[{type:'現',received:700,company:700},{type:'Q',received:500,company:500}],
+ meta:{settledIso:'2026-10-21T00:25:00.000Z'}}],settings:{},
+ __taxiPrintSummary:{meter:1000,discount:0,goFee:200,uberSurcharge:0,
+  cashRemittance:700,etcRemittance:0,totalRemittance:700,
+  realToll:0,emptyToll:0,cancellation:0,tip:0,reservation:0,
+  cashReceived:700,paymentAllocated:1200}};
+const toField=v=>v===null?{nullValue:null}:typeof v==='string'?{stringValue:v}:
+ typeof v==='boolean'?{booleanValue:v}:typeof v==='number'?
+ (Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v}):
+ Array.isArray(v)?{arrayValue:{values:v.map(toField)}}:
+ {mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,toField(x)]))}};
+const payload={format:'TAXIAPP_PRIVATE_SHIFT_V1',revision:1,shift,updatedAt:'2026-10-21T02:01:00.000Z'};
+let returnedUid=uid;
+const doc=(which=id,what=payload)=>({name:'projects/'+project+'/databases/(default)/documents/privateDuties/'+returnedUid+'/shifts/'+which,
+ fields:Object.fromEntries(Object.entries(what).map(([k,x])=>[k,toField(x)]))});
+const fetches=[],journalStorage=new Map();
+let syntheticWriteFailure='';
+const ctx={Date,JSON,Object,Number,Error,RegExp,String,Array,console,
+ SpreadsheetApp:{openById:()=>ss},PropertiesService:{getScriptProperties:()=>({
+  getProperty:k=>({'TAXIAPP_FIRESTORE_PROJECT_ID':project,
+    'TAXIAPP_FIRESTORE_OWNER_UID':uid})[k]||journalStorage.get(k)||'',
+  setProperty:(k,v)=>journalStorage.set(k,v),deleteProperty:k=>journalStorage.delete(k)
+ })},
+ ScriptApp:{getOAuthToken:()=>{throw Error('Google IAMトークンの利用は禁止');}},
+ UrlFetchApp:{fetch:(url,opts)=>{
+  fetches.push({url,auth:opts.headers.Authorization});
+  const legacy=url.endsWith('/shift-999-legacy');
+  const responseDoc=legacy?doc('shift-999-legacy',
+   {...payload,shift:{...shift,id:'shift-999-legacy'}}):doc();
+  const reply=url.includes('?pageSize=100')?{documents:[doc()]}:responseDoc;
+  return {getResponseCode:()=>200,getContentText:()=>JSON.stringify(reply)};
+ }},
+ LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
+ Utilities:{formatDate:()=> '2026-10-21 11:00:00',
+  DigestAlgorithm:{SHA_256:'SHA-256'},Charset:{UTF_8:'UTF-8'},
+  computeDigest:(_algo,value)=>[...crypto.createHash('sha256').update(value).digest()],
+  base64EncodeWebSafe:bytes=>Buffer.from(bytes).toString('base64url')}};
+vm.createContext(ctx);vm.runInContext(script,ctx);
+// Owner Firebase tokens alone authorize the Firestore read. The print bridge
+// never falls back to a Google project-wide IAM credential.
+const syntheticToken='signed.'+'synthetic-uid-ownerSyntheticUID'.repeat(5)+'.signature';
+assert.throws(()=>ctx.firestorePrintDocDraft_({project,uid},id),
+ /本人のFirebase認証/,'本人IDトークンのないFirestore要求は拒否');
+const originalPull=ctx.firestorePrintSelectedDutyDraft_;
+const originalDocument=ctx.firestorePrintDocDraft_;
+ctx.firestorePrintSelectedDutyDraft_=(shiftId,date,token=syntheticToken)=>
+ originalPull(shiftId,date,token);
+ctx.firestorePrintDocDraft_=(config,shiftId,token=syntheticToken)=>
+ originalDocument(config,shiftId,token);
+const original=values.get('TAXIAPP_同期原本').get('2:1');
+const amount=shift.__taxiPrintSummary.cashRemittance;
+const result=ctx.firestorePrintSelectedDutyDraft_(id);
+assert.match(result,/保存完了/);
+assert.equal(shift.__taxiPrintSummary.cashRemittance,amount,'app finances stay authoritative');
+assert.equal(values.get('TAXIAPP_同期原本').size,1);
+assert.equal(values.get('TAXIAPP_同期原本').get('2:1'),original);
+assert.equal(values.get('補助簿印刷用').get('1:1'),'=DO_NOT_CHANGE()');
+assert.equal(values.get('補助簿印刷用_2頁').get('1:1'),'=SECOND_PAGE()');
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:20'),'=DO_NOT_CHANGE_SELECTOR()');
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:1'),id);
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:9'),1000);
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:13'),700);
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:5'),1000);
+assert.equal(values.get('TAXIAPP_集計').get('6:3'),700);
+assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500).length,1);
+assert.ok(fetches.length===3,'read before lock, inside lock, and immediately before index publication');
+assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer '+syntheticToken));
+const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+// Firestore print-only import must not depend on the legacy Google original
+// 30,000-character chunk limit AFTER the four sheets are already updated.
+// Setting the legacy limit to zero makes this regression immediately visible.
+ctx.TAXIAPP_MAX_CHUNKS=0;
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'Firestore印刷元の取込に旧Google原本の分割保存制限を適用しない');
+ctx.TAXIAPP_MAX_CHUNKS=20;
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
+ '同じ版の再取込は印刷元も旧Google原本も変更しない');
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'the identical Firebase revision may be read again without duplicate rows');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
+ 'idempotent read must leave all sheets unchanged');
+// A second server read is necessary even when the print-source values are
+// already equal: reject a changed Firestore original before acknowledging.
+const actualDoc=ctx.firestorePrintDocDraft_;
+let unchangedReadCount=0;
+ctx.firestorePrintDocDraft_=(cfg,shiftId)=>{
+ unchangedReadCount++;
+ if(unchangedReadCount===3)throw Error('同版取込確認中にFirestore原本が更新されました');
+ return actualDoc(cfg,shiftId);
+};
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),
+ /同版取込確認中にFirestore原本が更新されました/,
+ '変更のない再取込でも原本が書換えられたら成功通知を返さない');
+ctx.firestorePrintDocDraft_=actualDoc;
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
+ '変更を検出した再取込は既存印刷元を変更しない');
+// Reading the same four source sheets at PC print confirmation must use
+// the original application's stored calculated packet, without writing.
+const checked=ctx.firestorePrintDocDraft_({project,uid},id);
+assert.match(ctx.savePacket_(checked.packet,{firestorePrintOnly:true,
+ verifyFirestorePrintOnly:true}),/保存完了/);
+const beforeConfirm=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+const printData=values.get('TAXIAPP_印刷データ');
+const originalPickup=printData.get('2:8');
+printData.set('2:8','【合成】別の乗車地');
+assert.throws(()=>ctx.savePacket_(checked.packet,{firestorePrintOnly:true,
+ verifyFirestorePrintOnly:true}),/明細が一致しません/,'同額でも印刷元の乗車地が異なれば停止');
+printData.set('2:8',originalPickup);
+const sameSecondEdited={
+ ...checked.packet,
+ shift:{...checked.packet.shift,records:[{...checked.packet.shift.records[0],
+  raw:{...checked.packet.shift.records[0].raw,AL:'【合成】同一秒の修正'}}]}
+};
+assert.throws(()=>ctx.savePacket_(sameSecondEdited,{firestorePrintOnly:true,
+ verifyFirestorePrintOnly:true}),/明細が一致しません/,
+ '金額・件数・更新秒が同一でも修正済み原本の古い印刷を停止');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),
+ beforeConfirm,'PCの全明細照合は既存4シートにも帳票にも書き込まない');
+// Safe same-ID revised source: never overwrite legacy originals or formulas.
+const journalKey='TAXIAPP_FS_PRINT_REV1_'+uid+'_'+id;
+const initialJournal=JSON.parse(journalStorage.get(journalKey));
+assert.equal(initialJournal.revision,1);
+assert.equal(initialJournal.state,'ready');
+payload.revision=2;
+shift.records[0].raw.AL='【合成】変更後の乗車地';
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'a newer confirmed revision can replace the same ID without duplicate rows');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'【合成】変更後の乗車地');
+assert.equal(values.get('TAXIAPP_同期原本').get('2:1'),original);
+assert.equal(values.get('補助簿印刷用').get('1:1'),'=DO_NOT_CHANGE()');
+assert.equal(values.get('補助簿印刷用_2頁').get('1:1'),'=SECOND_PAGE()');
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:20'),'=DO_NOT_CHANGE_SELECTOR()');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,2);
+const postUpdate=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,'same revision is idempotent');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),postUpdate,
+ 'repeated revision creates no additional rows');
+payload.revision=3;
+shift.records[0].raw.AL='【合成】さらに修正';
+syntheticWriteFailure='TAXIAPP_印刷データ';
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/旧印刷元に戻しました/,
+ 'a partial write failure restores the prior verified source');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'【合成】変更後の乗車地',
+ 'failed revision must not destroy previous printed data');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,2,
+ 'rollback restores the prior revision journal');
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,'retry after safe rollback');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,3);
+const oldPickup=values.get('TAXIAPP_印刷データ').get('2:8');
+values.get('TAXIAPP_印刷データ').set('2:8','第三者の編集');
+payload.revision=4;
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/手動照合/,
+ 'unverified manual edits to old print-source rows must block a new revision');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'第三者の編集');
+values.get('TAXIAPP_印刷データ').set('2:8',oldPickup);
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,4);
+// The last sheet block can grow or shrink without touching later duties.
+payload.revision=5;
+shift.records[0].payments.push({type:'交',received:0,company:0});
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(values.get('TAXIAPP_決済内訳').get('4:4'),'交','追加決済行を末尾に確保');
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:20'),'=DO_NOT_CHANGE_SELECTOR()');
+payload.revision=6;
+shift.records[0].payments.pop();
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(values.get('TAXIAPP_決済内訳').get('4:4'),'',
+ '以前の余剰決済行は他の乗務を動かさず空白に戻す');
+// Never enlarge a non-last block into the next duty's rows.
+values.get('TAXIAPP_決済内訳').set('5:1','shift-1792699000000-other');
+payload.revision=7;
+shift.records[0].payments.push({type:'交',received:0,company:0});
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/行を増やせません/,
+ '別乗務の後ろにある明細ブロックを押し下げない');
+assert.equal(values.get('TAXIAPP_決済内訳').get('5:1'),'shift-1792699000000-other');
+values.get('TAXIAPP_決済内訳').delete('5:1');
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,7);
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
+returnedUid='anotherSyntheticOwner';
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID・プロジェクト/);
+returnedUid=uid;
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('shift-999-legacy'),/同じ乗務/,
+ 'same-ID legacy original must not be automatically converted');
+assert.match(load('index.html'),/ADMIN_FIRESTORE_CUTOVER_ENABLED=false/,
+ 'real production cutover stays OFF until separate authorization');
+assert.match(load('index.html'),/__taxiPrintSummary=deepCopy\(packet.summary\)/);
+assert.doesNotMatch(load('google-apps-script/FirestorePrintPullDraft.gs'),/function doPost\(/);
+console.log('Firestore owner print pull PASS: exact UID, same source recheck, four print sources only, no original/selector/formula writes.');

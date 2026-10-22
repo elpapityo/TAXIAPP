@@ -101,7 +101,8 @@ const syncWindow={
   return {
    async run(){cloudStatus.lastSyncAt=Date.now();return true;},
    status(){return cloudStatus;},
-   async resolve(){return true;}
+   async resolve(){return true;},
+   hasLocalRemovals:()=>false,localRemovalIds:()=>[]
   };
  }},
  confirm(){return true;}

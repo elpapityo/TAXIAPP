@@ -75,3 +75,15 @@
 - 送信キーはスマホ端末内だけに保存し、JSONバックアップには含めません。
 - Apps Scriptのデプロイを許可した人以外はGoogleへの書き込みができないよう、送信時に接続キーを照合します。ただしキーを知った人には書き込み権限が生じるため、キーは厳重に保管してください。
 - 接続テストと紙の印刷が終わるまで、本番帳票として使わないでください。
+
+## 開発PR #119：本人Firebase認証で既存Google補助簿へ印刷取込（未公開）
+
+**従来のGoogle保存・紙帳票の手順はそのままです。正式導入は別承認が必要です。**
+
+- **PC印刷専用**：`https://elpapityo.github.io/TAXIAPP/?printViewer=1` で管理者本人としてFirebaseログインします。Galaxyの編集権は引き継ぎません。
+- アプリの「営業履歴」→ 対象日を指定してFirestoreから読み込む → 対象乗務を選び「Google補助簿の4印刷元に転送・改版更新」を実行。GAS URLと既存Google接続キーは初回のみPCで設定します。
+- GASは受信した**本人Firebase IDトークン**だけで指定UIDのFirestoreを読みます。Firestore Security Rulesで本人の原本に限定され、Googleの全UID閲覧IAMは不要です。`FirestorePrintManifestDraft.json` から `datastore` OAuthスコープも除外しました。
+- 取込は `Code.gs` と `FirestorePrintPullDraft.gs`・`FirestorePrintSourcesDraft.gs` を既存GASに追加・更新し、Script Propertiesの`TAXIAPP_FIRESTORE_PROJECT_ID`と`TAXIAPP_FIRESTORE_OWNER_UID`を本人に固定します。本番GAS変更とScript Properties設定には**個別承認が必要**です。
+- 同じ乗務IDの旧Google原本は上書きしません。4印刷元だけ書込、計算済みデータを利用、更新番号とハッシュによる改版保護、途中失敗時の復元、帳票2ページの数式・書式・マクロ保護を維持します。
+- Google側のB15/B17/C17で既存どおり印刷対象を選択します。GoogleシートはFirebase IDトークンを保持しないため、**Firestoreで原本修正した際は必ずPCのTAXIAPPから再転送**してから印刷します。Googleシート単独のFirebase読取メニューは安全のため廃止しました。
+- PR作成とテスト成功は本番反映ではありません。実機の正式経路、GAS公開版の更新、JSON取込実ファイルは未検証です。既存Google印刷テストを繰り返しません。

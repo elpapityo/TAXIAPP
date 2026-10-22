@@ -62,7 +62,8 @@ const readOnlyPrintSheet = {
 const spreadsheet = {
   getSheetByName: name => name === 'TAXIAPP_印刷操作' ? (missingOperation ? null : {}) :
     name === '補助簿印刷用' ? readOnlyPrintSheet :
-    name === '補助簿印刷用_2頁' ? (missingSecond ? null : readOnlyPrintSheet) : null,
+    name === '補助簿印刷用_2頁' ? (missingSecond ? null : readOnlyPrintSheet) :
+    name === 'TAXIAPP_同期原本' ? {getLastRow:()=>2,getRange:()=>({getDisplayValues:()=>[[shiftId]]})} : null,
   toast: () => { if (toastFails) throw Error('notification unavailable'); notices.push('toast'); }
 };
 const runtime = {
