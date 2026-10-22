@@ -3442,11 +3442,13 @@ function renderAdminBackendSettings(){
    '<p class="warn">戻してもFirestore内の日報は削除されません。未転記の新しい乗務はGoogleには自動移行しません。</p></section>';
  }
  if(!legacyDiary())return '<section class="card"><h2 class="h2">本人専用Firestore</h2><p>乗務員の保存先は本人UIDに固定されています。</p></section>';
+ if(ADMIN_FIRESTORE_PREVIEW_AVAILABLE){
+  return '<section class="card"><h2 class="h2">旧Google原本を維持したままFirestore検証</h2>'+
+   '<p class="helper">この画面では正式な保存先切替・旧原本移行を操作できません。管理者本人UIDで新しい合成乗務を作り、別の端末領域へ保存します。</p>'+
+   '<button class="btn primary" data-action="adminFirestorePreviewStart" '+(adminCutoverBusy?'disabled':'')+'>本人Firestoreの検証を開始</button></section>';
+ }
  const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  return '<section class="card"><h2 class="h2">現在の原本：Google Sheets（管理者）</h2>'+
-  (ADMIN_FIRESTORE_PREVIEW_AVAILABLE?
-   '<div class="actions"><button class="btn primary" data-action="adminFirestorePreviewStart" '+(adminCutoverBusy?'disabled':'')+'>本人Firestoreの検証を開始（旧原本は移行しない）</button></div>'+
-   '<p class="helper">localhost限定の開発経路です。専用端末領域で新規の合成乗務を作ります。正式な保存先変更ではありません。</p>':'')+
   '<p class="helper">本人UID別Firestoreへ切替する乗務だけ選択してください。不要なテスト乗務は選択しません。旧Google原本と補助簿2ページは変更しません。</p>'+
   (shifts.length?shifts.map(sh=>'<label class="field" style="display:flex;align-items:center;gap:8px;margin:8px 0">'+
    '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'">'+
