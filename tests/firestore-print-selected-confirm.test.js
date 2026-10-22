@@ -9,6 +9,7 @@ const shift={id,date:'2026-10-21',records:[{kind:'ride',status:'complete',raw:{K
 let selected=label,derived=id,latest=false,sourceAvailable=true,printMeter=1000;
 let rowState='Firestore印刷済',indexCount='1',indexMeter='1000';
 let indexUpdatedAt='2026-10-21 11:00:00',legacy=false,reads=0,notices=[];
+let detailMatches=true,changeDuringVerification=false,version=3,detailChecks=0;
 function range(values){
  return {getDisplayValues:()=>values,getValues:()=>values,
  getDisplayValue:()=>String(values[0]?.[0]??''),getValue:()=>values[0]?.[0]};
@@ -37,15 +38,24 @@ const ss={getSheetByName:name=>({
 })[name]||null,toast:text=>notices.push(text)};
 const ctx={Date,console,SpreadsheetApp:{openById:()=>ss,flush:()=>{}},
  Utilities:{formatDate:()=> '2026-10-21 11:00:00'},
+ firestorePrintVerifyRowsDraft_:()=>true,
  Logger:{log:()=>{}},Number,Error,Set,
  firestorePrintConfigDraft_:()=>({uid:'ownerSyntheticUID'}),
  firestorePrintDocDraft_:()=>{reads++;if(!sourceAvailable)throw Error('Firebase権限拒否');
-  return {packet:{shift,summary:{meter:1000},printRecordedAt:'2026-10-21T02:00:00.000Z'}};}
+  return {revision:version,packet:{shift,summary:{meter:1000},printRecordedAt:'2026-10-21T02:00:00.000Z'}};}
 };
 vm.createContext(ctx);vm.runInContext(code,ctx);
+ctx.savePacket_=(packet,options)=>{
+ assert.equal(options.firestorePrintOnly,true);
+ assert.equal(options.verifyFirestorePrintOnly,true,'印刷確認は既存印刷元を読み取りのみで照合する');
+ detailChecks++;
+ if(!detailMatches)throw Error('Firestoreの原本と既存印刷元の明細が一致しません');
+ if(changeDuringVerification){changeDuringVerification=false;version++;}
+};
 const good=ctx.applySelectedPrintShift();
 assert.equal(good.ok,true);assert.equal(good.shiftId,id);assert.equal(good.meter,1000);
-assert.equal(reads,1,'Firestore document must be re-fetched at print verification');
+assert.equal(reads,2,'印刷明細照合前後に本人Firestoreを2度読み戻す');
+assert.equal(detailChecks,1,'Firestoreの印刷明細をすべて照合する');
 selected='別の乗務';
 assert.throws(()=>ctx.applySelectedPrintShift(),/印刷対象/);
 selected=label;derived='shift-9999999999999-other';
@@ -60,7 +70,13 @@ printMeter=1000;indexUpdatedAt='2026-10-20 11:00:00';
 assert.throws(()=>ctx.applySelectedPrintShift(),/更新日時/,'同額・同件数の修正済み日報を拒否する');
 indexUpdatedAt='2026-10-21 11:00:00';indexMeter='999';
 assert.throws(()=>ctx.applySelectedPrintShift(),/メーター売上/);
-indexMeter='1000';sourceAvailable=false;
+indexMeter='1000';detailMatches=false;
+assert.throws(()=>ctx.applySelectedPrintShift(),/明細が一致しません/,
+ '同額・同件数・同秒の修正でも4印刷元との明細不一致を拒否する');
+detailMatches=true;changeDuringVerification=true;
+assert.throws(()=>ctx.applySelectedPrintShift(),/印刷確認中にFirestore原本が更新/,
+ '印刷元照合中に原本が改版されれば再取得の更新番号で停止する');
+sourceAvailable=false;
 assert.throws(()=>ctx.applySelectedPrintShift(),/Firebase権限拒否/);
 sourceAvailable=true;legacy=true;rowState='受信済み';
 let legacyLoad=0;ctx.loadShift_=(spread,id0)=>{legacyLoad++;assert.equal(id0,id);return shift;};
