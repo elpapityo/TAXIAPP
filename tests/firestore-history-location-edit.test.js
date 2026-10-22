@@ -158,7 +158,7 @@ vm.runInContext(source.slice(begin,end),ctx);
  assert.ok(localSaves>=1,'サーバー保存後の修正版を端末へ永続保存');
  assert.equal(ctx.canEditCloudHistory(ctx.historyCloudRows[0].shift),true,
   'CAS再保存後の同じ乗務は引き続き編集可能');
- assert.match(source,/editableHistory\?<button class="linkbutton" data-action="editHistoryLocation"/,
+ assert.ok(source.includes('editableHistory?\`<button class="linkbutton" data-action="editHistoryLocation"'),
   '実際の営業履歴の明細修正ボタンも安全な編集可能判定を使う');
  console.log('Firestore過去日報：追加・削除、送信不明の再確認、変更なしの無駄な同期防止を検証');
 })().catch(error=>{console.error(error);process.exitCode=1;});
