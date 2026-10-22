@@ -117,7 +117,9 @@ function create(deps){
    }
    // Only the cloud changed. Local packet still matches the known baseline.
    if(base?.hash===localValue)continue;
-   // Unknown ancestor or both sides edited: neither side is safe to replace.
+   // Record bootstrap conflicts in the same resolution store as normal sync.
+   // Never replace either original while the user has not chosen a version.
+   markConflict(shift.id,'端末版とクラウド版の内容が異なります',base?.revision||0,viewerCache.get(shift.id)?.revision||0);
    throw Error('端末とクラウドの乗務 '+shift.id+
     ' の変更が競合しています。双方の原本を保護し、受信を停止しました');
   }
