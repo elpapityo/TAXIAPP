@@ -7,7 +7,7 @@ import webbrowser
 
 ROOT = Path(__file__).resolve().parent
 HOST, PORT = "127.0.0.1", 8787
-URL = "http://localhost:8787/?adminFirestorePreview=1&build=v0.3.126-pr119"
+URL = "http://localhost:8787/?adminFirestorePreview=1&build=v0.3.128-pr119"
 ALLOWED = {".html", ".js", ".css", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp"}
 
 class StaticFiles(BaseHTTPRequestHandler):
@@ -44,7 +44,7 @@ class StaticFiles(BaseHTTPRequestHandler):
                 pass
 
 if __name__ == "__main__":
-    print("TAXIAPP v0.3.126 - PR #119 development preview", flush=True)
+    print("TAXIAPP v0.3.128 - PR #119 development preview", flush=True)
     try:
         with ThreadingHTTPServer((HOST, PORT), StaticFiles) as server:
             print("Server ready:", URL, flush=True)
