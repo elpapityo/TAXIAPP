@@ -155,8 +155,8 @@ const id='shift-1234-abc',shift={id,date:'2026-10-22',records:[],settings:{},sta
  selected=await R.request('syncList',{resumeOnly:true});
  assert.deepEqual(selected.shifts.map(x=>x.id),[closedShift.id],
   '直近のゴミ箱原本を除外し以前の入庫済みを選択する');
- assert.deepEqual((await B.request('syncList',{resumeOnly:true})).shifts,[],
-  '他UIDの候補を検索しない');
+ await assert.rejects(()=>B.request('syncList',{resumeOnly:true}),/検索項目がない既存日報/,
+  '検索用時刻がない旧原本を日報なしと扱わず保護する');
  await assert.rejects(()=>R.request('syncList',{resumeOnly:true,shiftIds:[closedShift.id]}),
   /同時に使えません/);
  const safeWithoutQuery=factory.create();
