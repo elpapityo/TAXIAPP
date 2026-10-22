@@ -359,7 +359,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   viewerTimer=null;viewerFeedback='';viewerFingerprint=null;
  }
  async function compare(id){
-  if(!enabled()||!status().conflicts.some(x=>x.id===id))return false;
+  if(!(enabled()||(d.canReviewBlockedConflict?.()&&status().conflicts.length))||!status().conflicts.some(x=>x.id===id))return false;
   const uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||''),epoch=cloudEpoch;
   const check=()=>uid===String(d.scopeKey?.()||'')&&endpoint===String(d.endpoint()||'')&&epoch===cloudEpoch;
   try{
@@ -384,7 +384,7 @@ root.TAXIAPP_SYNC_UI=function(d){
   }
  }
  async function resolve(id,localWins){
-  if(!enabled())return;
+  if(!(enabled()||d.canReviewBlockedConflict?.()))return;
   if(localWins===null){
    writerFeedback='競合を保留しました。端末・Firestoreの双方は変更していません。';
    d.setStatus(message());d.toast(writerFeedback);return;
