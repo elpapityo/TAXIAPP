@@ -20,6 +20,8 @@ function create(deps){
  const {getModel, getPacket, replaceRemoteShift, saveLocal, request,
   getEndpoint,toast,localStorage:storage,getRemoteOnDemand}=deps;
  let busy=false, conflict={},lastError='',lastSyncAt=0;
+ let sendingId=null;
+ const unknownSendIds=new Set();
  let scopeEpoch=0;
  let viewerBusy=false,viewerPromise=null,viewerLastError='',viewerLastSyncAt=0,viewerEndpoint='',viewerCache=new Map();
  const localKey=()=>KEY_PREFIX+digest(String(getEndpoint()||''));
@@ -130,6 +132,7 @@ function create(deps){
  function status(){
   return {busy,conflicts:Object.values(conflict),lastError,lastSyncAt};
  }
+ const isSendUnknown=id=>unknownSendIds.has(id);
  // The phone may release a previous original only when its complete current
  // packet still matches a confirmed, owner-scoped server revision.
  function verifiedRevision(id){
@@ -160,7 +163,7 @@ function create(deps){
     throw Error('ログインまたは保存先が変わったため同期を停止しました');
    return result;
   };
-  busy=true;lastError='';
+  busy=true;lastError='';sendingId=null;
   try{
    const listing=await scopedRequest('syncList',selected?{shiftIds:[...selected]}:{});
    if(!Array.isArray(listing?.shifts))throw Error('同期APIに乗務一覧がありません（Google側の更新を確認）');
@@ -242,11 +245,13 @@ function create(deps){
       nextConflict[id]={id,reason:'クラウドに以前の記録が見つかりません',localRevision:base.revision,remoteRevision:0};
       continue;
      }
+     sendingId=id;
      const sent=await scopedRequest('syncPut',{baseRevision:0,payload:JSON.stringify(getPacket(current))});
      if(!sent||sent.id!==id||sent.revision!==1)throw Error('新規送信の応答が不正です');
      const savedHash=currentHash;
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:savedHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:savedHash};
+     sendingId=null;unknownSendIds.delete(id);
      continue;
     }
     if(!base){
@@ -314,17 +319,22 @@ function create(deps){
     if(localChanged){
      const payload=getPacket(current);
      const sentHash=currentHash;
+     sendingId=id;
      const sent=await scopedRequest('syncPut',{baseRevision:base.revision,payload:JSON.stringify(payload)});
      if(!sent||sent.id!==id||sent.revision!==base.revision+1)
       throw Error('送信の更新番号を確認できません');
      if(!setSaved({...saved,[id]:{revision:sent.revision,hash:sentHash}}))throw Error(lastError);
      saved[id]={revision:sent.revision,hash:sentHash};
+     sendingId=null;unknownSendIds.delete(id);
     }
    }
    conflict=nextConflict;
+   for(const shift of shifts){const base=saved[shift.id];if(base?.revision>0&&base.hash===localHash(shift)&&!nextConflict[shift.id])unknownSendIds.delete(shift.id);}
    lastSyncAt=Date.now();
    return Object.keys(conflict).length===0;
   }catch(e){
+   if(sendingId)unknownSendIds.add(sendingId);
+   sendingId=null;
    lastError=String(e?.message||e);
    if(lastError.includes('SYNC_CONFLICT')){
     const idMatch=lastError.match(/SYNC_CONFLICT:(\d+)/);
@@ -399,7 +409,7 @@ function create(deps){
   if(!stored||localHash(stored)!==remoteHash(shift))return false;
   const saved=getSaved(),hash=localHash(stored);
   if(!setSaved({...saved,[id]:{revision,hash}}))return false;
-  delete conflict[id];lastError='';lastSyncAt=Date.now();
+  delete conflict[id];unknownSendIds.delete(id);lastError='';lastSyncAt=Date.now();
   return true;
  }
  // Only after cloud originals have been durably saved locally, establish
@@ -458,17 +468,17 @@ function create(deps){
     await replaceRemoteShift(id,remote.shift,true);
     if(!setSaved({...saved,[id]:base}))throw Error(lastError);
    }
-   delete conflict[id];lastError='';lastSyncAt=Date.now();return true;
+   delete conflict[id];unknownSendIds.delete(id);lastError='';lastSyncAt=Date.now();return true;
   }catch(e){lastError=String(e?.message||e);return false;}
   finally{busy=false;}
  }
  function resetAccount(){
   scopeEpoch++;
   busy=false;viewerBusy=false;viewerPromise=null;
-  conflict={};lastError='';lastSyncAt=0;
+  conflict={};lastError='';lastSyncAt=0;sendingId=null;unknownSendIds.clear();
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,isSendUnknown,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
