@@ -124,7 +124,17 @@ function create(){
        throw Error('未入庫乗務の検索項目が不足しています。過去日報を自動選択せず保護します');
       return {shifts:[item]};
      }
-     if(rows.docs.length<pageSize)return {shifts:[]};
+     if(rows.docs.length<pageSize){
+      if(!last&&rows.docs.length===0){
+       // The timestamp index excludes documents missing startedIso. Do not
+       // mistake an existing old original for an empty account.
+       const existing=await f.getDocsFromServer(f.query(source,f.limit(1)));
+       ownerCheck(c);
+       if(existing.docs.length)
+        throw Error('開始時刻の検索項目がない既存日報があります。全件取得・自動復旧は行わず保留します');
+      }
+      return {shifts:[]};
+     }
      last=rows.docs[rows.docs.length-1];
     }
     throw Error('再開候補にゴミ箱内の原本が多数あります。全履歴取得せず確認を保留します');
