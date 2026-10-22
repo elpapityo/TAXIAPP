@@ -3378,7 +3378,9 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   writerLoadGate=false;writerLoadError='';
   document.body.classList.remove('taxi-viewer');
   const label=document.getElementById('deviceSessionStatus');
-  if(label)label.textContent=legacyDiary()&&sheetTargetPrefs().syncMode!=='on'?
+  if(label)label.textContent=accountScope.adminFirestorePreview?
+   '操作可能：開発用端末領域（Firestore保存未確認）':
+   legacyDiary()&&sheetTargetPrefs().syncMode!=='on'?
    '操作可能：端末内の乗務（双方向同期OFF）':'操作可能：クラウドの乗務を取得済み';
   render();
  },
