@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
-<meta name="description" content="TAXIAPP 乗務日報・PR #119 開発検証版">
+<meta name="description" content="TAXIAPP 乗務日報・営業支援">
 <title>TAXIAPP v0.3.128 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
@@ -1699,7 +1699,7 @@ function header(){
   ?`<div class="viewer-sync-controls"><button class="btn" style="min-height:34px;padding:5px 10px;font-size:12px;border-radius:8px" type="button" data-action="writerRefresh" ${syncUI.status().busy?'disabled aria-busy="true"':''}>${writerLoadGate?'↻ 再試行':syncUI.status().busy?'◌ 照合中':'↻ 同期'}</button><span class="viewer-sync-time" role="status">${safeText(writerLoadGate?writerLoadError:syncUI.message())}</span></div>`:'';
  const viewerTools=deviceMode==='viewer'
   ?`<div class="viewer-sync-controls"><button class="btn" type="button" data-action="viewerRefresh" ${syncUI.message()==='取得中…'?'disabled aria-busy="true"':''}>${syncUI.message()==='取得中…'?'◌ 取得中…':'↻ 最新データを取得'}</button><span class="viewer-sync-time">${safeText(syncUI.message())}</span></div>`:'';
- return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}（開発版 PR #119）</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>`;
+ return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>`;
 }
 let pendingRender=false, renderAfterKeypad=false;
 let focusDispatchSourceAfterRender=false;
