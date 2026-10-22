@@ -158,7 +158,6 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
  var planned=batches.map(function(b){return {name:b.name,rows:b.rows.map(function(row){
    return row.map(safeCell_);
   })};});
- var incomingDigest=firestorePrintDigestDraft_(planned);
  var recorded=journal.record;
  if(recorded&&recorded.digest!==existingDigest)
   throw Error('前回の確認後に印刷元が変更されています。自動上書きせず手動照合してください');
@@ -172,8 +171,6 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
    journal.properties.setProperty(journal.key,JSON.stringify({
     uid:uid,id:id,revision:revision,digest:existingDigest,state:'ready'
    }));
-  }else if(revision===recorded.revision&&incomingDigest!==existingDigest){
-   throw Error('同じ更新番号で印刷明細が変わっています');
   }
   return {id:id,changedSheets:[],oldOriginalUnchanged:true,paperFormsUnchanged:true};
  }
@@ -254,7 +251,8 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
     if(!now.every(function(row,i){
       return row.every(function(cell,j){
        return cell===''||cell===null||
-        firestorePrintSameCellDraft_(cell,plan.rows[i][j]);
+        firestorePrintSameCellDraft_(cell,plan.rows[i][j])||
+        firestorePrintSameCellDraft_(cell,plan.before[i][j]);
       });
     }))throw Error('他者の変更あり');
     plan.range.setValues(plan.before);
