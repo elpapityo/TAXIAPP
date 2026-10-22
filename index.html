@@ -1622,6 +1622,7 @@ async function switchAccountScope(scope){
  viewerLocalModel=null;viewerCloudLoaded=false;viewerCloudError=false;viewerOpenCount=0;
  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';
  historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;
+ firestorePrintPcMessage='';
  syncUI.cancelViewer();
  syncUI.resetAccount();
  if(!scope||scope.uid!==adminFirestorePreviewOwnerUid){
@@ -2166,6 +2167,108 @@ function gpsDistanceSummary(shift){
  return `<section class="card"><h2 class="h2">GPS走行距離（参考値）</h2>
  ${rows.map(([label,value])=>`<div class="statline"><span>${safeText(label)}</span><b>${safeText(value)}</b></div>`).join('')}
  <p class="footnote">GPSの推定値と車両の実際のトリップは必ずしも一致しません。中断区間は未加算です。実車・空車のGPS実測と手動補正差は別管理しています。</p></section>`;
+}
+// A PC-only print bridge, isolated from the old administrator's Google
+// diary sync preferences and from every other Firebase user.
+let firestorePrintPcMessage='';
+function firestorePrintPcStorageKey(uid=accountScope.uid){
+ return 'taxiapp-firestore-print-pc-v1-'+encodeURIComponent(String(uid||''));
+}
+function firestorePrintPcSettings(){
+ if(!accountScope.adminFirestore||!currentLoginScope?.admin)return {webAppUrl:'',writeKey:''};
+ try{
+  const data=JSON.parse(localStorage.getItem(firestorePrintPcStorageKey())||'null');
+  return {webAppUrl:String(data?.webAppUrl||''),writeKey:String(data?.writeKey||'')};
+ }catch{return {webAppUrl:'',writeKey:''};}
+}
+function firestorePrintPcSettingChange(el){
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    currentLoginScope?.uid!==accountScope.uid||!currentLoginScope?.admin)return;
+ const field=el.dataset.firestorePrintSetting;
+ if(!['webAppUrl','writeKey'].includes(field))return;
+ const old=firestorePrintPcSettings();
+ const next={...old,[field]:String(el.value||'').trim()};
+ if(field==='webAppUrl'&&next.webAppUrl&&!googleWebAppUrl(next.webAppUrl)){
+  firestorePrintPcMessage='Google Apps Scriptの /exec URLを確認してください';
+  render();return;
+ }
+ if(field==='writeKey'&&next.writeKey.length>0&&next.writeKey.length<24){
+  firestorePrintPcMessage='Google接続キーは24文字以上必要です';
+  render();return;
+ }
+ try{
+  localStorage.setItem(firestorePrintPcStorageKey(),JSON.stringify(next));
+  firestorePrintPcMessage='この本人UIDのPCに接続設定を保存しました';
+ }catch(error){firestorePrintPcMessage='接続設定を保護できません：'+String(error?.message||error);}
+ render();
+}
+function firestorePrintPcPanel(shift,date){
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview)return '';
+ const prefs=firestorePrintPcSettings();
+ const verified=Boolean(shift&&historyCloudUid===accountScope.uid&&
+  historyCloudDate===date&&historyCloudRows.some(row=>
+   row.id===shift.id&&row.shift?.date===date&&
+   Boolean(row.shift?.endedAt||row.shift?.endedIso)));
+ const ready=verified&&deviceMode==='writer'&&!writerLoadGate&&
+  googleWebAppUrl(prefs.webAppUrl)&&prefs.writeKey.length>=24;
+ return '<section class="card"><h2 class="h2">PCからGoogle補助簿へ転送（本人Firestore）</h2>'+
+  '<p class="helper">PCのこのTAXIAPPへ管理者本人でログインし、上の「クラウドからこの日付を取得」で入庫済み日報を選んでください。'+
+  'Googleに他の利用者の日報閲覧権限は付与しません。印刷する乗務の選択はGoogleシートのB15/B17で従来どおり行います。</p>'+
+  '<label class="field"><span class="field-label">Google Apps Scriptの /exec URL（このPCのみ保存）</span>'+
+  '<input class="control" type="url" data-firestore-print-setting="webAppUrl" value="'+safeText(prefs.webAppUrl)+'" placeholder="https://script.google.com/macros/s/.../exec"></label>'+
+  '<label class="field"><span class="field-label">既存Google接続キー（このPCのみ保存）</span>'+
+  '<input class="control" type="password" data-firestore-print-setting="writeKey" value="'+safeText(prefs.writeKey)+'" autocomplete="off"></label>'+
+  '<p class="caption-note">送信対象：'+safeText(verified?
+    date+'／出庫 '+String(shift.startedAt||'不明')+'／'+shift.records.length+'件':
+    '日付を指定してFirestoreから入庫済みの日報を取得してください')+'</p>'+
+  '<button type="button" class="btn primary" data-action="firestorePrintToGoogle" '+(ready?'':'disabled')+
+  '>選択した日報をGoogle補助簿の4印刷元に転送・改版更新</button>'+
+  (firestorePrintPcMessage?'<p class="caption-note" role="status">'+safeText(firestorePrintPcMessage)+'</p>':'')+
+  '<p class="footnote">印刷元が最新かどうかはこの転送時にFirestore原本を再取得して確認します。Googleシートだけでは原本の改版を自動検出できません。修正後は必ず再転送してください。</p>'+
+  '</section>';
+}
+async function firestorePrintToGoogle(){
+ if(!accountScope.adminFirestore||accountScope.adminFirestorePreview||
+    !currentLoginScope?.admin||!canEditNow()||writerLoadGate)return;
+ const scope=currentLoginScope,uid=accountScope.uid,generation=accountScopeGeneration;
+ const stable=()=>currentLoginScope===scope&&accountScopeGeneration===generation&&
+  accountScope.uid===uid&&accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+  scope.firebase?.auth?.currentUser?.uid===uid&&canEditNow();
+ const shift=selectedHistoryShift(),date=historyDate||selectedShift()?.date||dateStamp();
+ const row=historyCloudRows.find(item=>item.id===shift?.id&&
+  item.shift?.date===date&&Boolean(item.shift?.endedAt||item.shift?.endedIso));
+ if(!row||historyCloudUid!==uid||historyCloudDate!==date){
+  firestorePrintPcMessage='本人Firestoreから日付を指定して入庫済み乗務を取得してください';render();return;
+ }
+ const prefs=firestorePrintPcSettings();
+ if(!googleWebAppUrl(prefs.webAppUrl)||prefs.writeKey.length<24){
+  firestorePrintPcMessage='Google Apps ScriptのURLと接続キーを設定してください';render();return;
+ }
+ if(!confirm('PCのGoogle補助簿へ転送しますか？\\n'+date+' ／ 乗務ID：'+row.id+
+  '\\n既存Google同期原本・印刷操作の選択・補助簿2ページは変更しません。'))return;
+ if(!stable())return;
+ firestorePrintPcMessage='本人Firebase認証で4印刷元に転送中…';render();
+ try{
+  const auth=scope.firebase?.auth?.currentUser;
+  if(typeof auth?.getIdToken!=='function')throw Error('本人Firebase認証を取得できません');
+  const token=await auth.getIdToken(true);
+  if(!stable())return;
+  if(typeof token!=='string'||token.split('.').length!==3)
+   throw Error('Firebaseログインを確認できません');
+  const reply=await googlePostRequest('firestorePrintImport',{
+   shiftId:row.id,date,firebaseIdToken:token
+  },prefs);
+  if(!stable())return;
+  if(reply?.data?.id!==row.id||reply?.data?.date!==date)
+   throw Error('Googleの受信確認と選択した乗務IDが一致しません');
+  firestorePrintPcMessage='Google4印刷元へ転送確認済み：'+date+
+   ' ／ '+row.id+'。PCのGoogleシートでB15/B17から対象を選んでください。';
+ }catch(error){
+  if(!stable())return;
+  firestorePrintPcMessage='Google取込は未確認：'+String(error?.message||error)+
+   '。Googleシートの転送状態を確認するまで連続再送は避けてください';
+ }
+ if(stable())render();
 }
 function historyRecordTime(record){
  if(record.kind==='cancel')return String(record.meta?.dispatchAt||record.raw.C||'').slice(0,8)+' ～ '+String(record.meta?.cancelAt||'').slice(0,8);
@@ -2823,7 +2926,7 @@ function historyFoldSection(key,title,html){
   '<summary>'+safeText(title)+'</summary><div class="inner">'+body+'</div></details>';
 }
 function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
-<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
+<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存されている日付だけ表示します（シートの「過去データ」は自動取り込みされません）。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div></div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
 ${editableHistory?'<div class="actions"><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">明細修正</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
 ${shift.records.length?`<details class="details history-fold-panel history-detail-section" data-history-panel="records"><summary>営業明細の詳細（${shift.records.length}件）</summary><div class="inner"><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</div></details>`:''}`}`;}
@@ -3149,10 +3252,15 @@ function googleShiftPacket(shift){
 // POST through a hidden form avoids browser CORS restrictions on Apps Script Web Apps.
 // The receiver returns an HTML acknowledgement via postMessage; opaque fetch success
 // is NEVER treated as evidence that records reached Google Sheets.
-function googlePostRequest(action,fields={}){
- if(!legacyDiary())return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
+function googlePostRequest(action,fields={},printBridge=null){
+ const ownerPrint=action==='firestorePrintImport'&&
+  Boolean(accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+   currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&printBridge);
+ if(!ownerPrint&&!legacyDiary())
+  return Promise.reject(Error('この利用者には管理者用Googleシートへの接続権限がありません'));
  if(!canEditNow()&&!['syncList','syncGet'].includes(action))return Promise.reject(Error('閲覧専用端末ではGoogleへ書き込めません'));
- const endpoint=googleWebAppUrl(sheetTargetPrefs().webAppUrl),key=googleWriteKey();
+ const endpoint=ownerPrint?googleWebAppUrl(printBridge.webAppUrl):googleWebAppUrl(sheetTargetPrefs().webAppUrl);
+ const key=ownerPrint?String(printBridge.writeKey||''):googleWriteKey();
  if(!endpoint||key.length<24)return Promise.reject(Error('WebアプリURLと接続キーを設定してください'));
  const nonce='tx-'+Date.now()+'-'+Math.random().toString(36).slice(2);
  return new Promise((resolve,reject)=>{
@@ -4414,7 +4522,8 @@ function handleAction(action,id){
   if(action==='adminFirestorePreviewVerify'){void verifyAdminFirestorePreviewDuty();return;}
   if(action==='adminFirestorePreviewStart'){void startAdminFirestorePreview();return;}
   if(action==='adminFirestorePreviewExit'){void exitAdminFirestorePreview();return;}
-  if(action==='adminFirestoreCutover'){void startAdminFirestoreCutover();return;}
+  if(action==='firestorePrintToGoogle'){void firestorePrintToGoogle();return;}
+ if(action==='adminFirestoreCutover'){void startAdminFirestoreCutover();return;}
   if(action==='adminFirestoreLegacy'){void returnAdminToLegacy();return;}
   if(action==='bidirectionalSyncNow'){syncUI.run(true);return;}
  if(action==='syncCurrentShift'){const target=tab==='print'?selectedPrintShift():latest;if(tab==='print'&&!target){toast('印刷する乗務が見つかりません。選び直してください',true);return;}googleSendShift(target,true);return;}
@@ -5479,7 +5588,7 @@ appEl.addEventListener('click',event=>{
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
-appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
+appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
  if(event.target.matches('[data-ride-field]')){const key=event.target.dataset.rideField;if(!RIDE_FIELD_PREFS.some(([name])=>name===key))return;model.prefs.rideFieldVisibility??={};model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-mode]')){model.prefs.cancelMeterMode=event.target.value==='reset'?'reset':'retain';saveLater();render();return;}
