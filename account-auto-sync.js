@@ -175,7 +175,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     if(!api.same(result,beginning))await apply(result);
     if(!stillCurrent(accountUid))return;
     storeBase(result);
-    status('設定はGoogleと同期済み');
+    status('設定情報の同期確認済み（日報とは別）');
    }finally{
     busy=false;
     // Applying a remote update is not a user edit.
