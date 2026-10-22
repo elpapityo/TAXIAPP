@@ -10,13 +10,34 @@ const fire={
  collection(_db,_folder,uid,_leaf){return {uid};},
  doc(_db,_folder,uid,_leaf,id){return {uid,id};},
  where(field,op,value){return {field,op,value};},
- query(collection,filter){return {...collection,filter};},
+ orderBy(field,direction){return {sortField:field,direction};},
+ limit(count){return {count};},
+ startAfter(snapshot){return {afterId:snapshot.id};},
+ query(collection,...constraints){return {...collection,constraints};},
  async getDocsFromServer(collection){
-  const found=keys(collection).filter(([,row])=>{
-   if(!collection.filter)return true;
-   const {field,op,value}=collection.filter;
-   return field==='shift.date'&&op==='=='&&row.shift?.date===value;
-  });
+  const constraints=collection.constraints||[];
+  let found=keys(collection);
+  for(const item of constraints){
+   if(item.field){
+    assert.equal(item.op,'==');
+    found=found.filter(([,row])=>
+     item.field.split('.').reduce((value,key)=>value?.[key],row)===item.value);
+   }
+  }
+  const order=constraints.find(item=>item.sortField);
+  if(order){
+   const valueOf=([,row])=>order.sortField.split('.').reduce((v,k)=>v?.[k],row);
+   found=found.filter(entry=>valueOf(entry)!==undefined);
+   found.sort((a,b)=>String(valueOf(a)).localeCompare(String(valueOf(b)))*
+    (order.direction==='desc'?-1:1));
+  }
+  const after=constraints.find(item=>item.afterId);
+  if(after){
+   const offset=found.findIndex(([key])=>key.split('/')[1]===after.afterId);
+   found=offset<0?[]:found.slice(offset+1);
+  }
+  const max=constraints.find(item=>Number.isInteger(item.count));
+  if(max)found=found.slice(0,max.count);
   return {docs:found.map(([key,row])=>({
    id:key.split('/')[1],data:()=>clone(row)
   }))};
@@ -103,6 +124,47 @@ const id='shift-1234-abc',shift={id,date:'2026-10-22',records:[],settings:{},sta
  assert.equal(restored.revision,3);
  assert.equal(restored.deleted,false);
  assert.equal((await C.request('syncGet',{shiftId:source.id})).shift.id,source.id);
+ // A fresh phone is allowed to retrieve only one current duty, not all
+ // historical documents. An older unfinished duty wins over a newer return.
+ const resumeUser={uid:'user-resume'};
+ const R=factory.create(),resumeAuth={currentUser:{uid:resumeUser.uid}};
+ R.bind(resumeUser,{f:fire,db:{},auth:resumeAuth,session:fakeSession});
+ const closedShift={...shift,id:'shift-1792700000001',startedIso:'2026-10-22T11:00:00Z',
+  endedAt:'18:00:00',endedIso:'2026-10-22T09:00:00Z'};
+ const openShift={...shift,id:'shift-1792690000001',startedIso:'2026-10-21T10:00:00Z',
+  endedAt:'',endedIso:''};
+ await R.request('syncPut',{baseRevision:0,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:closedShift})});
+ await R.request('syncPut',{baseRevision:0,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:openShift})});
+ let selected=await R.request('syncList',{resumeOnly:true});
+ assert.deepEqual(selected.shifts.map(x=>x.id),[openShift.id],
+  '端末0件では直近の入庫済みより未入庫原本を優先する');
+ const secondOpen={...openShift,id:'shift-1792680000001',
+  startedIso:'2026-10-20T10:00:00Z'};
+ await R.request('syncPut',{baseRevision:0,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:secondOpen})});
+ await assert.rejects(()=>R.request('syncList',{resumeOnly:true}),/未入庫乗務が複数/,
+  '未入庫原本を勝手に1件へ絞らない');
+ await R.request('syncTrash',{shiftId:secondOpen.id,baseRevision:1});
+ await R.request('syncTrash',{shiftId:openShift.id,baseRevision:1});
+ selected=await R.request('syncList',{resumeOnly:true});
+ assert.deepEqual(selected.shifts.map(x=>x.id),[closedShift.id],
+  '未入庫が全てゴミ箱にある場合は直近の入庫済みだけを返す');
+ const newerTrashed={...closedShift,id:'shift-1792790000001',
+  startedIso:'2026-10-23T11:00:00Z'};
+ await R.request('syncPut',{baseRevision:0,payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:newerTrashed})});
+ await R.request('syncTrash',{shiftId:newerTrashed.id,baseRevision:1});
+ selected=await R.request('syncList',{resumeOnly:true});
+ assert.deepEqual(selected.shifts.map(x=>x.id),[closedShift.id],
+  '直近のゴミ箱原本を除外し以前の入庫済みを選択する');
+ assert.deepEqual((await B.request('syncList',{resumeOnly:true})).shifts,[],
+  '他UIDの候補を検索しない');
+ await assert.rejects(()=>R.request('syncList',{resumeOnly:true,shiftIds:[closedShift.id]}),
+  /同時に使えません/);
+ const safeWithoutQuery=factory.create();
+ safeWithoutQuery.bind(resumeUser,{f:{...fire,orderBy:undefined},db:{},
+  auth:resumeAuth,session:fakeSession});
+ await assert.rejects(()=>safeWithoutQuery.request('syncList',{resumeOnly:true}),
+  /全件の取得は行わず保留/,'インデックス取得が使えなければ全件検索に退避しない');
+ console.log('Firestore新端末：未入庫優先、複数停止、ゴミ箱除外、別UID保護、全件取得禁止を確認');
  console.log('本人専用Firestoreゴミ箱：原本保持・CAS復元・他UID分離を合成確認');
  console.log('Private duty store tests passed: UID isolation, CAS, auth changes, owner legacy separation.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
