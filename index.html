@@ -1303,6 +1303,9 @@ window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 // 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
 const ADMIN_FIRESTORE_CUTOVER_ENABLED=false; // Default legacy: only an individually verified opt-in is allowed.
+// Existing production duty migration requires independent approval beyond
+// the future approval to change where newly created duties are saved.
+const ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false;
 // Print-only PC mode does not claim this UID's active phone editing session.
 const TAXIAPP_PRINT_VIEWER_MODE=(()=>{
  try{return new URLSearchParams(window.location.search).get('printViewer')==='1';}
@@ -3646,13 +3649,13 @@ function renderAdminBackendSettings(){
  return '<section class="card"><h2 class="h2">現在の原本：Google Sheets（管理者）</h2>'+
   '<p class="helper">本人UID別Firestoreへ切替する乗務だけ選択してください。不要なテスト乗務は選択しません。旧Google原本と補助簿2ページは変更しません。</p>'+
   (shifts.length?shifts.map(sh=>'<label class="field" style="display:flex;align-items:center;gap:8px;margin:8px 0">'+
-   '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'">'+
+   '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'" '+(ADMIN_LEGACY_DUTY_MIGRATION_APPROVED?'':'disabled')+'>'+
    '<span>'+safeText(sh.date||'日付不明')+' ／ '+Number(sh.records?.length||0)+'件 ／ '+safeText(sh.id)+'</span></label>').join(''):
    '<p class="helper">この端末に乗務がありません。新しい保存先を初期化できます。</p>')+
   '<label class="field" style="display:flex;gap:8px;margin:12px 0">'+
   '<input type="checkbox" data-firestore-new-only>'+
   '<span>既存の端末日報は移行せず、これからの営業日報だけFirestoreへ保存する（旧Google原本は残す）</span></label>'+
-  '<p class="caption-note">新規開始を選ぶ場合、上の日報にはチェックを入れないでください。過去の検証用Firestore日報も通常乗務として自動再開しません。</p>'+
+  '<p class="caption-note">既存の日報移行は保存先切替と別承認です。現在は既存データを移行せず新規開始だけを選べます。過去の検証用Firestore日報も通常乗務として自動再開しません。</p>'+
   '<button class="btn primary" type="button" data-action="adminFirestoreCutover" '+(adminCutoverBusy?'disabled':'')+'>'+
   (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
   '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
@@ -3769,6 +3772,12 @@ async function startAdminFirestoreCutover(){
  const selectedIds=[...appEl.querySelectorAll('[data-firestore-migrate-id]:checked')]
   .map(e=>e.dataset.firestoreMigrateId);
  const startFresh=Boolean(appEl.querySelector?.('[data-firestore-new-only]:checked'));
+ if(selectedIds.length&&!ADMIN_LEGACY_DUTY_MIGRATION_APPROVED){
+  toast('既存営業データの移行は保存先切替とは別承認です。移行を停止しました',true);return;
+ }
+ if(startFresh&&(getShift()||model.shifts.some(s=>!s.endedAt&&!s.endedIso))){
+  toast('未入庫の乗務があるため新規保存先へ切り替えられません。入庫と原本確認後に実施してください',true);return;
+ }
  if(startFresh&&selectedIds.length){
   toast('新規開始と既存日報の移行を同時には選べません',true);return;
  }
@@ -3776,7 +3785,7 @@ async function startAdminFirestoreCutover(){
  if(selected.size!==selectedIds.length||selectedIds.some(id=>!model.shifts.some(s=>s.id===id))){
   toast('切替対象の日報選択が正しくありません',true);return;
  }
- if(model.shifts.length&&!selectedIds.length&&!startFresh){
+ if(!selectedIds.length&&!startFresh){
   toast('移行する日報を選ぶか「既存日報を移行せず新規開始」を選択してください',true);return;
  }
  const summary=selectedIds.map(id=>{const sh=model.shifts.find(s=>s.id===id);
