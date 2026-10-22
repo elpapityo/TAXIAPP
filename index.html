@@ -2751,8 +2751,15 @@ async function commitHistoryLocationEdit(){
    }
    if(accountScope.uid!==draft.uid||accountScopeGeneration!==generation||
       epoch!==historyCloudEpoch||historyLocationEdit!==draft)return;
-   if(!syncUI.adoptHistoryDuty({id:draft.id,revision:saved.revision,shift:packet.shift}))
-    throw Error('Firestoreには保存済みですが、端末の更新番号を確定できません。修正控えを保持しました');
+   if(!syncUI.adoptHistoryDuty({id:draft.id,revision:saved.revision,shift:packet.shift})){
+    // CAS already succeeded remotely, but a concurrent event sync may hold
+    // the baseline lock. Restore the previously verified local original so
+    // the protected correction can safely be retried via server read-back.
+    model.shifts[localIndex]=oldLocal;
+    if(await save(true)!==true)
+     throw Error('Firestoreには保存済みですが端末の旧原本への復旧に失敗しました。修正控えを保持しました');
+    throw Error('Firestoreには保存済みですが、端末の更新番号を確定できません。旧原本と修正控えを保持しました');
+   }
   }
   const i=historyCloudRows.findIndex(item=>item.id===draft.id);
   if(i>=0)historyCloudRows[i]={id:draft.id,revision:saved.revision,shift:deepCopy(packet.shift)};
@@ -3319,6 +3326,8 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  remoteOnDemand:()=>memberDiary(),
  // Isolate editor CAS baselines from the production manager's UID state.
  previewFreshOnly:()=>Boolean(accountScope.adminFirestorePreview),
+ resumeExcludedIds:()=>accountScope.adminFirestore&&!accountScope.adminFirestorePreview?
+  (adminFirestoreManifest(accountScope.uid)?.excludedIds||[]):[],
  canSync:()=>canEditNow(),
  allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
   accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
@@ -3372,31 +3381,15 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
    if(accountScope.adminFirestore&&!accountScope.adminFirestorePreview){
-    // The old administrator's 2 real duties may still live in the existing
-    // local IndexedDB key. Never hide them just because the new cloud is empty.
-    const legacy=db?await idbGet(db,KEY):
-     JSON.parse(localStorage.getItem(KEY)||'null');
-    if(!currentScope())return false;
-    const cloudById=new Map(shifts.map(x=>[x.id,x]));
-    const manifest=typeof adminFirestoreManifest==='function'?adminFirestoreManifest(accountScope.uid):null;
-    const allLegacy=Array.isArray(legacy?.shifts)?legacy.shifts:[];
-    // Only user-selected, individually migrated duties block the cutover.
-    // Excluded old test duties stay untouched in the original Google/local copy.
-    const selected=new Set(manifest?.sourceIds||allLegacy.map(x=>x.id));
-    const source=allLegacy.filter(x=>selected.has(x.id));
-    const canonical=shift=>{
-     // Compare the pre-existing raw duty using the SAME official app pricing
-     // projection, not a second fare calculator or two different schemas.
-     const projected=googleShiftPacket(shift).shift;
-     return JSON.stringify({...projected,__taxiPrintSummary:undefined,
-      records:projected.records.map(r=>({...r,amounts:undefined,payments:undefined}))});
-    };
-    const missing=source.filter(x=>!cloudById.has(x.id));
-    const different=source.filter(x=>cloudById.has(x.id)&&
-     canonical(x)!==canonical(cloudById.get(x.id)));
-    if(missing.length||different.length)
-     throw Error('旧端末の実日報がFirestoreに未移行です（未保存'+missing.length+
-      '件／内容相違'+different.length+'件）。旧日報を保護するため切替を中止しました');
+    // Migration is validated and each chosen source read back BEFORE the
+    // cutover manifest is committed. A later Firestore CAS edit is allowed to
+    // differ from the preserved legacy source. Bootstrap deliberately fetches
+    // only the latest duty, so comparing all sourceIds here would reject a
+    // valid two-duty migration and every later historical correction.
+    const manifest=adminFirestoreManifest(accountScope.uid);
+    if(!manifest||!Array.isArray(manifest.sourceIds)||
+       (manifest.excludedIds!==undefined&&!Array.isArray(manifest.excludedIds)))
+     throw Error('管理者のFirestore保存先切替記録を確認できません。旧Google原本は保持します');
    }
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
    // Match the viewer selection rule: do not arbitrarily select one of
@@ -3512,6 +3505,10 @@ function renderAdminBackendSettings(){
    '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'">'+
    '<span>'+safeText(sh.date||'日付不明')+' ／ '+Number(sh.records?.length||0)+'件 ／ '+safeText(sh.id)+'</span></label>').join(''):
    '<p class="helper">この端末に乗務がありません。新しい保存先を初期化できます。</p>')+
+  '<label class="field" style="display:flex;gap:8px;margin:12px 0">'+
+  '<input type="checkbox" data-firestore-new-only>'+
+  '<span>既存の端末日報は移行せず、これからの営業日報だけFirestoreへ保存する（旧Google原本は残す）</span></label>'+
+  '<p class="caption-note">新規開始を選ぶ場合、上の日報にはチェックを入れないでください。過去の検証用Firestore日報も通常乗務として自動再開しません。</p>'+
   '<button class="btn primary" type="button" data-action="adminFirestoreCutover" '+(adminCutoverBusy?'disabled':'')+'>'+
   (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
   '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
@@ -3627,18 +3624,23 @@ async function startAdminFirestoreCutover(){
  }
  const selectedIds=[...appEl.querySelectorAll('[data-firestore-migrate-id]:checked')]
   .map(e=>e.dataset.firestoreMigrateId);
+ const startFresh=Boolean(appEl.querySelector('[data-firestore-new-only]:checked'));
+ if(startFresh&&selectedIds.length){
+  toast('新規開始と既存日報の移行を同時には選べません',true);return;
+ }
  const selected=new Set(selectedIds);
  if(selected.size!==selectedIds.length||selectedIds.some(id=>!model.shifts.some(s=>s.id===id))){
   toast('切替対象の日報選択が正しくありません',true);return;
  }
- if(model.shifts.length&&!selectedIds.length){
-  toast('移行する実日報を選択してください。不要な日報は選択しないでください。',true);return;
+ if(model.shifts.length&&!selectedIds.length&&!startFresh){
+  toast('移行する日報を選ぶか「既存日報を移行せず新規開始」を選択してください',true);return;
  }
  const summary=selectedIds.map(id=>{const sh=model.shifts.find(s=>s.id===id);
   return (sh.date||'日付不明')+' '+(sh.records?.length||0)+'件';}).join('\n');
  if(!confirm('【日報保存先をFirestoreへ変更】\n本人UID：'+uid+
+   '\n保存方法：'+(startFresh?'既存の端末日報を移行せず新規開始':'選択した日報のみ移行')+
    '\n移行対象：'+selectedIds.length+'乗務\n'+summary+
-   '\n\n旧Google原本はそのまま残し、選択した乗務だけ新規の本人用Firestoreへ保存します。続けますか？'))return;
+   '\n\n旧Google原本はそのまま残します。Firestoreの既存検証日報は、新規開始時に通常の営業日報として自動再開しません。続けますか？'))return;
  adminCutoverBusy=true;
  const sourceModel=deepCopy(model),manifestKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
  let applied=false;
@@ -3679,7 +3681,12 @@ async function startAdminFirestoreCutover(){
     throw Error('Firestore原本の保存後検証に失敗しました：'+id);
   }
   if(!stableOwner())throw Error('保存先の確定前にログインまたは操作権が変わりました');
-  const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:selectedIds,at:Date.now()});
+  // The owner's existing synthetic/previous Firestore duties belong to the
+  // same UID. Keep them accessible by explicit history, but do not resume
+  // them as today's working duty after a fresh production cutover.
+  const excludedIds=[...remote.keys()].filter(id=>!selected.has(id));
+  const manifest=JSON.stringify({mode:'firestore',uid,sourceIds:selectedIds,
+   excludedIds,at:Date.now()});
   localStorage.setItem(manifestKey,manifest);
   applied=true;
   if(localStorage.getItem(manifestKey)!==manifest)throw Error('保存先選択を端末に記録できません');

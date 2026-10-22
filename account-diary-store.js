@@ -77,6 +77,12 @@ function create(){
    let docs;
    if(fields.resumeOnly===true){
     if(ids!==undefined)throw Error('再開候補と乗務ID指定は同時に使えません');
+    const excludedIds=fields.excludeIds??[];
+    if(!Array.isArray(excludedIds)||excludedIds.length>1000||
+       excludedIds.some(id=>typeof id!=='string'||!ID.test(id))||
+       new Set(excludedIds).size!==excludedIds.length)
+     throw Error('Firestoreの再開除外IDが不正です。自動受信を停止しました');
+    const excluded=new Set(excludedIds);
     const f=c.f,source=collectionRef(c);
     if(['query','where','orderBy','limit','startAfter'].some(name=>typeof f[name]!=='function'))
      throw Error('Firestoreの限定取得に対応していません。過去日報全件の取得は行わず保留します');
@@ -98,7 +104,7 @@ function create(){
      ownerCheck(c);
      for(const doc of rows.docs){
       const item=meta(doc);
-      if(item.deleted||item.ended)continue;
+      if(item.deleted||item.ended||excluded.has(item.id))continue;
       const prev=open.get(item.id);
       if(prev&&prev.revision!==item.revision)
        throw Error('未入庫乗務の照合中に更新がありました。原本を保護して再試行してください');
@@ -119,7 +125,7 @@ function create(){
      ownerCheck(c);
      for(const doc of rows.docs){
       const item=meta(doc);
-      if(item.deleted)continue;
+      if(item.deleted||excluded.has(item.id))continue;
       if(!item.ended)
        throw Error('未入庫乗務の検索項目が不足しています。過去日報を自動選択せず保護します');
       return {shifts:[item]};

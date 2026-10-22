@@ -114,7 +114,8 @@ root.TAXIAPP_SYNC_UI=function(d){
       // A normal new device resumes just one owner duty. A development-only
       // administrator preview is different: never import an unrelated live
       // owner original into the isolated synthetic-data editor.
-      const listing=await d.request('syncList',{resumeOnly:true});
+      const listing=await d.request('syncList',{resumeOnly:true,
+       excludeIds:d.resumeExcludedIds?.()||[]});
       if(!stable())return false;
       if(!Array.isArray(listing?.shifts))
         throw Error('Firestoreの再開候補を確認できません');
