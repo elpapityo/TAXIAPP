@@ -386,6 +386,22 @@ function create(deps){
   finally{if(viewerPromise===job)viewerPromise=null;}
  }
  function viewerStatus(){return {lastError:viewerLastError,lastSyncAt:viewerLastSyncAt};}
+ // A fresh phone has no local ancestor for the duty reopened from the
+ // server. Record its checked revision ONLY after IndexedDB has confirmed
+ // saving that exact original; the next local edit can then use ordinary CAS.
+ // This never uploads a record or adopts an unrelated local revision.
+ function adoptReceivedDuty(received){
+  const id=String(received?.id||''),revision=Number(received?.revision);
+  const shift=received?.shift,endpoint=String(getEndpoint()||'');
+  if(busy||!endpoint||!validId(id)||!shift||shift.id!==id||
+     !Number.isSafeInteger(revision)||revision<1)return false;
+  const stored=getModel()?.shifts?.find(row=>row.id===id);
+  if(!stored||localHash(stored)!==remoteHash(shift))return false;
+  const saved=getSaved(),hash=localHash(stored);
+  if(!setSaved({...saved,[id]:{revision,hash}}))return false;
+  delete conflict[id];lastError='';lastSyncAt=Date.now();
+  return true;
+ }
  // Only after cloud originals have been durably saved locally, establish
  // their server revisions as the new synchronization baseline.
  function adoptViewerBaseline(){
@@ -452,7 +468,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,resolve,status,verifiedRevision,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
