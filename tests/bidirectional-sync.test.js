@@ -266,3 +266,37 @@ const LOCAL_REMOVAL_TEST_CASE=true;
  assert.match(html,/confirmedRevision===null\|\|server\.revision!==confirmedRevision/);
  console.log('前回乗務の端末整理：確認済み更新番号と未同期状態を検証');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+
+// A successful Firestore write with a lost response must be confirmed by
+// reading the original, not duplicated or automatically treated as conflict.
+(async()=>{
+ const svc=server(),id='shift-20261022-unknown';
+ const local={shifts:[{id,date:'2026-10-22',records:[],settings:{},startedAt:'07:00'}]};
+ let loseReply=false,uploads=0;
+ const api={request:async(action,data)=>{
+  if(action==='syncPut'){
+   uploads++;
+   const result=await svc.request(action,data);
+   if(loseReply){loseReply=false;throw Error('保存後の読戻し応答を受信できません');}
+   return result;
+  }
+  return svc.request(action,data);
+ }};
+ const owner=client('lostReceiptRecovery',api,local,false,true);
+ assert.equal(await owner.app.run(),true);
+ local.shifts[0].startedAt='08:00';
+ loseReply=true;
+ assert.equal(await owner.app.run(),false,'応答喪失時は保存済みと即断しない');
+ assert.equal(svc.cloud.get(id).revision,2,'原本自体は確定している');
+ assert.equal(await owner.app.run(),true,'再試行で同じ原本の読み戻しに成功する');
+ assert.equal(uploads,2,'同一内容を重複送信しない');
+ assert.equal(owner.app.verifiedRevision(id),2,'版番号と内容を確定済みとして扱える');
+ local.shifts[0].startedAt='09:00';
+ svc.cloud.get(id).revision=3;
+ svc.cloud.get(id).shift.startedAt='10:00';
+ assert.equal(await owner.app.run(),false,'端末とサーバーの異なる変更は保留する');
+ assert.equal(owner.app.status().conflicts.length,1);
+ assert.equal(svc.cloud.get(id).shift.startedAt,'10:00','別端末の内容を上書きしない');
+ console.log('Firestore送信応答不明：同内容読戻しで復旧・異内容は競合保護');
+})().catch(e=>{console.error(e);process.exitCode=1;});
