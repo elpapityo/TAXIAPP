@@ -263,7 +263,8 @@ const d=root.TAXIAPP_SYNC_UI({
   canView:()=>false,writerBootstrapAllowed:()=>gated,
   onWriterSnapshot:async shifts=>{model.shifts=clone(shifts);return true;},
   onWriterBootstrapReady:()=>{gated=false;},
-  setStatus:()=>{},toast:()=>{},dateStamp:()=> '20261022'
+  onWriterSynced:async()=>{},root:{querySelector:()=>null},
+  isSettings:()=>true,setStatus:()=>{},toast:()=>{},dateStamp:()=> '20261022'
  });
  assert.equal(await adapter.bootstrapWriter(),true,'管理者の検証専用空領域で開始可能');
  assert.equal(model.shifts.length,0,'旧Firestore原本をプレビューへ持ち込まない');
