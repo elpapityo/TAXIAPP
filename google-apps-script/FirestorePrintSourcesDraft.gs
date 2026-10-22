@@ -177,8 +177,22 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   }
   return {id:id,changedSheets:[],oldOriginalUnchanged:true,paperFormsUnchanged:true};
  }
- if(!recorded)
-  throw Error('同一乗務IDの旧印刷元に確認済み更新番号がありません。初回の原本と照合し、手動復旧してください');
+ if(!recorded){
+  if(previous.some(function(x){return x.rows.length;}))
+   throw Error('同一乗務IDの旧印刷元に確認済み更新番号がありません。初回の原本と照合し、手動復旧してください');
+  // First transfer uses the existing append + safe rollback implementation.
+  var first=firestorePrintPublishRowsDraft_(ss,id,batches,verifyBeforeIndex);
+  var published=firestorePrintSnapshotDraft_(ss,id,batches);
+  if(!published.every(function(x,i){
+   return firestorePrintSameRowsDraft_(x.rows,planned[i].rows);
+  }))throw Error('Firestore初回の4印刷元に不一致があります。確認が必要です');
+  journal.properties.setProperty(journal.key,JSON.stringify({
+   uid:uid,id:id,revision:revision,
+   digest:firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(published)),
+   state:'ready'
+  }));
+  return first;
+ }
  if(revision===recorded.revision)
   throw Error('同じ更新番号で印刷明細が変わっています。自動上書きしません');
  // A growing block is safe only when it is the last occupied block. No
