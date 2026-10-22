@@ -1310,7 +1310,7 @@ const ADMIN_FIRESTORE_PREVIEW_AVAILABLE=(()=>{
   new URLSearchParams(window.location.search).get('adminFirestorePreview')==='1';}
  catch{return false;}
 })();
-let adminFirestorePreviewActive=false,adminFirestorePreviewOwnerUid='';
+let adminFirestorePreviewActive=false,adminFirestorePreviewOwnerUid='',adminFirestorePreviewMessage='';
 let currentLoginScope=null,adminCutoverBusy=false;
 function adminFirestoreManifest(uid){
  if(!uid)return null;
@@ -1622,6 +1622,7 @@ async function switchAccountScope(scope){
  if(!scope||scope.uid!==adminFirestorePreviewOwnerUid){
   adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
  }
+ adminFirestorePreviewMessage='';
  currentLoginScope=scope||null;
  const adminFirestorePreview=Boolean(scope?.admin&&
   ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
@@ -3395,7 +3396,9 @@ function renderAdminBackendSettings(){
   return '<section class="card"><h2 class="h2">開発用：管理者本人Firestore検証</h2>'+
    '<p class="helper">検証用の端末保存領域を使用します。旧スマホ日報・Google原本・正式な保存先設定は変更しません。</p>'+
    '<p class="warn">新しく入力する検証乗務は、現在ログイン中の本人UIDのFirestoreへ実際に保存します。合成データだけを入力してください。</p>'+
-   '<button class="btn" data-action="adminFirestorePreviewExit">検証を終了して旧Google運用画面へ戻る</button></section>';
+   '<div class="actions"><button class="btn primary" data-action="adminFirestorePreviewVerify">現在の乗務をFirestore読戻し確認</button>'+
+   '<button class="btn" data-action="adminFirestorePreviewExit">検証を終了して旧Google運用画面へ戻る</button></div>'+
+   (adminFirestorePreviewMessage?'<p class="caption-note" role="status">'+safeText(adminFirestorePreviewMessage)+'</p>':'')+'</section>';
  }
  if(accountScope.adminFirestore){
   return '<section class="card"><h2 class="h2">現在の原本：本人専用Firestore</h2>'+
@@ -3417,6 +3420,38 @@ function renderAdminBackendSettings(){
   '<button class="btn primary" type="button" data-action="adminFirestoreCutover" '+(adminCutoverBusy?'disabled':'')+'>'+
   (adminCutoverBusy?'保存先変更中…':'選択した乗務を確認してFirestoreへ切り替える')+'</button>'+
   '<p class="warn">開始前にJSONバックアップを保存します。Firestoreが正常に保存・読み戻せなければ旧Google運用を維持します。新しい原本からの印刷は別途PC側の取込設定が必要です。</p></section>';
+}
+// Explicit server verification for the administrator's preview duty.
+// All monetary calculations reuse the app's existing packet functions.
+async function verifyAdminFirestorePreviewDuty(){
+ if(!accountScope.adminFirestorePreview||!canEditNow()||
+    !accountDiary.ready()||adminCutoverBusy)return;
+ const generation=accountScopeGeneration,uid=accountScope.uid;
+ const duty=getShift()||selectedShift();
+ if(!duty){adminFirestorePreviewMessage='確認する乗務がありません。先に検証用乗務を作成してください';render();return;}
+ const id=duty.id,stable=()=>accountScopeGeneration===generation&&
+  accountScope.uid===uid&&accountScope.adminFirestorePreview&&canEditNow();
+ adminFirestorePreviewMessage='端末保存→Firestore送信→原本読戻しを確認中…';render();
+ try{
+  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
+  if(await save(true)!==true||!stable())throw Error('端末への保存を確認できません');
+  if(!await syncUI.run(false,[id])||!stable())
+   throw Error('Firestore同期の保存確認が完了していません');
+  const expected=localFirestoreOriginal(model.shifts.find(x=>x.id===id));
+  const server=await accountDiary.request('syncGet',{shiftId:id});
+  if(!stable())return;
+  const revision=syncUI.verifiedRevision(id);
+  if(server?.id!==id||!Number.isSafeInteger(server?.revision)||
+     revision===null||revision!==server.revision||
+     JSON.stringify(canonicalStoredDuty(server.shift))!==
+      JSON.stringify(canonicalStoredDuty(expected)))
+   throw Error('乗務ID・更新番号・原本内容が一致しません。端末の日報は保持しています');
+  adminFirestorePreviewMessage='保存確認済み：乗務ID '+id+' ／ 更新番号 '+revision+
+   ' ／ 本人Firestore原本と内容一致';
+ }catch(error){
+  if(!stable())return;
+  adminFirestorePreviewMessage='保存未確認：'+String(error?.message||error);
+ }finally{if(stable())render();}
 }
 // A development-only administrator Firestore path. This never writes the
 // permanent cutover preference or imports the existing Google/local originals.
@@ -4233,6 +4268,7 @@ function handleAction(action,id){
   if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
   if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
   if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
+  if(action==='adminFirestorePreviewVerify'){void verifyAdminFirestorePreviewDuty();return;}
   if(action==='adminFirestorePreviewStart'){void startAdminFirestorePreview();return;}
   if(action==='adminFirestorePreviewExit'){void exitAdminFirestorePreview();return;}
   if(action==='adminFirestoreCutover'){void startAdminFirestoreCutover();return;}
