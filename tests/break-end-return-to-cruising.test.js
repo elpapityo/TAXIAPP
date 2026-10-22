@@ -10,7 +10,7 @@ const endFnFinish=html.indexOf("function elapsedWaitingText(",endFnStart);
 assert.ok(start>0&&finish>start&&endFnStart>0&&endFnFinish>endFnStart,
  'expected exact break ending action and session close function');
 const handler=html.slice(start,finish);
-assert.match(handler,/endBreak\(shift,new Date\(\)\);breakPageOpen=false;save\(\);render\(\);toast\('休憩を終了しました'\);return;/,
+assert.match(handler,/endBreak\(shift,new Date\(\)\);breakPageOpen=false;saveOperationalEvent\(shift\);render\(\);toast\('休憩を終了しました'\);return;/,
  'close the break page after recording a completed session, before rerender');
 assert.match(html,/if\(resting\|\|breakPageOpen\)return renderBreakPage\(shift\);/,
  'closing the break page must return the normal cruising action grid');
@@ -30,6 +30,7 @@ const ctx={
    destination:shift.breakActive||ctx.breakPageOpen?'休憩管理':'空車・流し'};},
  toast(v){toasts.push(v);}
 };
+ctx.saveOperationalEvent=()=>ctx.save();
 vm.createContext(ctx);
 vm.runInContext(html.slice(endFnStart,endFnFinish)+'\n(function(){'+handler+'})()',ctx);
 assert.equal(saves,1);
