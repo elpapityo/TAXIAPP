@@ -1304,6 +1304,13 @@ let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 // 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
 const ADMIN_FIRESTORE_CUTOVER_ENABLED=false; // Default legacy: only an individually verified opt-in is allowed.
 const ADMIN_FIRESTORE_PREF_PREFIX='taxiapp-admin-firestore-optin-v1-';
+// Opt-in development mode on localhost only. Production backend stays legacy.
+const ADMIN_FIRESTORE_PREVIEW_AVAILABLE=(()=>{
+ try{return ['localhost','127.0.0.1','[::1]'].includes(window.location.hostname)&&
+  new URLSearchParams(window.location.search).get('adminFirestorePreview')==='1';}
+ catch{return false;}
+})();
+let adminFirestorePreviewActive=false;
 let currentLoginScope=null,adminCutoverBusy=false;
 function adminFirestoreManifest(uid){
  if(!uid)return null;
@@ -1317,7 +1324,9 @@ let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
-const scopedStorageKey=()=>memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
+const scopedStorageKey=()=>accountScope.adminFirestorePreview?
+ 'taxiapp-admin-firestore-preview-v1-'+accountScope.uid:
+ memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
 const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let accountScopeLoaded=false;
@@ -1611,10 +1620,13 @@ async function switchAccountScope(scope){
  syncUI.cancelViewer();
  syncUI.resetAccount();
  currentLoginScope=scope||null;
+ const adminFirestorePreview=Boolean(scope?.admin&&
+  ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive);
  const adminFirestore=Boolean(scope?.admin&&
-   (ADMIN_FIRESTORE_CUTOVER_ENABLED||adminFirestoreManifest(scope.uid)));
+  (adminFirestorePreview||ADMIN_FIRESTORE_CUTOVER_ENABLED||adminFirestoreManifest(scope.uid)));
  accountDiary.bind(scope?{uid:scope.uid}:null,scope?{...scope.firebase,admin:scope.admin,storageBackend:adminFirestore?'firestore':undefined}:{});
- accountScope=scope?{kind:scope.admin&&!adminFirestore?'legacy':'member',uid:scope.uid,adminFirestore}:{kind:'pending',uid:''};
+ accountScope=scope?{kind:scope.admin&&!adminFirestore?'legacy':'member',uid:scope.uid,
+  adminFirestore,adminFirestorePreview}:{kind:'pending',uid:''};
  const key=scopedStorageKey();
  // Blank the previous account immediately, before any async IndexedDB read.
  model=emptyAccountModel();render();
@@ -3274,7 +3286,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   }
   if(shifts.length||memberDiary()){
    const previous=deepCopy(model);
-   if(accountScope.adminFirestore){
+   if(accountScope.adminFirestore&&!accountScope.adminFirestorePreview){
     // The old administrator's 2 real duties may still live in the existing
     // local IndexedDB key. Never hide them just because the new cloud is empty.
     const legacy=db?await idbGet(db,KEY):
@@ -3375,6 +3387,12 @@ const syncUI=window.TAXIAPP_SYNC_UI({
 
 function renderAdminBackendSettings(){
  if(!accountScope.uid)return '<section class="card"><p>ログインして保存先を確認してください。</p></section>';
+ if(accountScope.adminFirestorePreview){
+  return '<section class="card"><h2 class="h2">開発用：管理者本人Firestore検証</h2>'+
+   '<p class="helper">検証用の端末保存領域を使用します。旧スマホ日報・Google原本・正式な保存先設定は変更しません。</p>'+
+   '<p class="warn">新しく入力する検証乗務は、現在ログイン中の本人UIDのFirestoreへ実際に保存します。合成データだけを入力してください。</p>'+
+   '<button class="btn" data-action="adminFirestorePreviewExit">検証を終了して旧Google運用画面へ戻る</button></section>';
+ }
  if(accountScope.adminFirestore){
   return '<section class="card"><h2 class="h2">現在の原本：本人専用Firestore</h2>'+
    '<p class="helper">保存先はログイン中の本人UID専用です。元のGoogle原本は残しています。新しい乗務の印刷にはPC側のFirestore取込が必要です。</p>'+
@@ -3384,6 +3402,9 @@ function renderAdminBackendSettings(){
  if(!legacyDiary())return '<section class="card"><h2 class="h2">本人専用Firestore</h2><p>乗務員の保存先は本人UIDに固定されています。</p></section>';
  const shifts=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
  return '<section class="card"><h2 class="h2">現在の原本：Google Sheets（管理者）</h2>'+
+  (ADMIN_FIRESTORE_PREVIEW_AVAILABLE?
+   '<div class="actions"><button class="btn primary" data-action="adminFirestorePreviewStart" '+(adminCutoverBusy?'disabled':'')+'>本人Firestoreの検証を開始（旧原本は移行しない）</button></div>'+
+   '<p class="helper">localhost限定の開発経路です。専用端末領域で新規の合成乗務を作ります。正式な保存先変更ではありません。</p>':'')+
   '<p class="helper">本人UID別Firestoreへ切替する乗務だけ選択してください。不要なテスト乗務は選択しません。旧Google原本と補助簿2ページは変更しません。</p>'+
   (shifts.length?shifts.map(sh=>'<label class="field" style="display:flex;align-items:center;gap:8px;margin:8px 0">'+
    '<input type="checkbox" data-firestore-migrate-id="'+safeText(sh.id)+'">'+
@@ -4145,6 +4166,8 @@ function handleAction(action,id){
   if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
   if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
   if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
+  if(action==='adminFirestorePreviewStart'){void startAdminFirestorePreview();return;}
+  if(action==='adminFirestorePreviewExit'){void exitAdminFirestorePreview();return;}
   if(action==='adminFirestoreCutover'){void startAdminFirestoreCutover();return;}
   if(action==='adminFirestoreLegacy'){void returnAdminToLegacy();return;}
   if(action==='bidirectionalSyncNow'){syncUI.run(true);return;}
