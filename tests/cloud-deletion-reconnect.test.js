@@ -130,7 +130,7 @@ function adapter(){
 (async()=>{
  // A confirmed returned duty can be moved to the owner's trash, then
  // released locally; unsynced edits must stop before syncTrash.
- const id='shift-1792700000100-manual-trash';
+ const id='shift-1792700000100-manualtrash';
  const localShift={id,date:'2026-10-22',startedAt:'08:00',endedAt:'18:00',
   records:[],settings:{},startedIso:'2026-10-21T23:00:00.000Z'};
  const local={shifts:[copy(localShift)]};
@@ -176,7 +176,7 @@ function adapter(){
  assert.equal(local.shifts.length,1,'server trash does not silently erase local recovery copy');
  assert.equal(sync.markLocalRemoval(id,local.shifts[0]),true);
  assert.equal(sync.verifiedRevision(id),null,'manual delete marker prevents automatic reimport');
- const id2='shift-1792700000200-unconfirmed-trash';
+ const id2='shift-1792700000200-unknowntrash';
  const local2={shifts:[{...localShift,id:id2}]};
  let requests=0;
  const blocked=globalThis.TAXIAPP_SYNC_UI({
@@ -202,7 +202,7 @@ function adapter(){
  const from=index.indexOf('async function legacyCasSaveHistoricalShift(');
  const to=index.indexOf('async function commitHistoryLocationEdit(',from);
  assert.ok(from>0&&to>from,'旧GoogleのCAS更新経路が実装されている');
- const id='shift-1792700000300-google-edit';
+ const id='shift-1792700000300-googleedit';
  const original={id,date:'2026-10-20',startedAt:'08:00',endedAt:'18:00',records:[],settings:{}};
  const next={...copy(original),startedAt:'09:00'};
  const state={shifts:[copy(original)],activeId:null};
