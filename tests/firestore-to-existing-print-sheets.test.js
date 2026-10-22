@@ -172,6 +172,27 @@ assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),'第三者の編�
 values.get('TAXIAPP_印刷データ').set('2:8',oldPickup);
 assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
 assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,4);
+// The last sheet block can grow or shrink without touching later duties.
+payload.revision=5;
+shift.records[0].payments.push({type:'交',received:0,company:0});
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(values.get('TAXIAPP_決済内訳').get('4:4'),'交','追加決済行を末尾に確保');
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:20'),'=DO_NOT_CHANGE_SELECTOR()');
+payload.revision=6;
+shift.records[0].payments.pop();
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(values.get('TAXIAPP_決済内訳').get('4:4'),'',
+ '以前の余剰決済行は他の乗務を動かさず空白に戻す');
+// Never enlarge a non-last block into the next duty's rows.
+values.get('TAXIAPP_決済内訳').set('5:1','shift-1792699000000-other');
+payload.revision=7;
+shift.records[0].payments.push({type:'交',received:0,company:0});
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/行を増やせません/,
+ '別乗務の後ろにある明細ブロックを押し下げない');
+assert.equal(values.get('TAXIAPP_決済内訳').get('5:1'),'shift-1792699000000-other');
+values.get('TAXIAPP_決済内訳').delete('5:1');
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,7);
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
 returnedUid='anotherSyntheticOwner';
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID・プロジェクト/);
