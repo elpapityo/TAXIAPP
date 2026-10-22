@@ -44,9 +44,9 @@ start "TAXIAPP Local Preview (close to stop)" cmd /k node start-admin-firestore-
 goto launch
 :launch
 timeout /t 2 /nobreak >nul
-start "" "http://localhost:8787/?adminFirestorePreview=1&build=v0.3.126-dev.119"
+start "" "http://localhost:8787/?adminFirestorePreview=1&build=v0.3.126-pr119"
 echo.
-echo TAXIAPP development preview: v0.3.126-dev.119 - PR #119
+echo TAXIAPP development preview: v0.3.126-pr119 - PR #119
 echo This server is available only on this PC. Close its console window to stop.
 echo The real owner's Firebase sign-in must still be verified in the browser.
 exit /b 0
