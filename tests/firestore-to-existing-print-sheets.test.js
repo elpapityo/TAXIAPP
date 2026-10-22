@@ -111,6 +111,21 @@ assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
  'the identical Firebase revision may be read again without duplicate rows');
 assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
  'idempotent read must leave all sheets unchanged');
+// A second server read is necessary even when the print-source values are
+// already equal: reject a changed Firestore original before acknowledging.
+const actualDoc=ctx.firestorePrintDocDraft_;
+let unchangedReadCount=0;
+ctx.firestorePrintDocDraft_=(cfg,shiftId)=>{
+ unchangedReadCount++;
+ if(unchangedReadCount===3)throw Error('同版取込確認中にFirestore原本が更新されました');
+ return actualDoc(cfg,shiftId);
+};
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),
+ /同版取込確認中にFirestore原本が更新されました/,
+ '変更のない再取込でも原本が書換えられたら成功通知を返さない');
+ctx.firestorePrintDocDraft_=actualDoc;
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),savedState,
+ '変更を検出した再取込は既存印刷元を変更しない');
 // Reading the same four source sheets at PC print confirmation must use
 // the original application's stored calculated packet, without writing.
 const checked=ctx.firestorePrintDocDraft_({project,uid},id);
