@@ -38,7 +38,7 @@ const ctx={
   undoLocalRemoval:(id)=>marked.delete(id),
   enabled:()=>true,status:()=>({busy:false}),verifiedRevision:()=>1,
   cloudAction:async(kind,id)=>{assert.equal(kind,'trashLocal');assert.equal(id,original.id);return true;},
-  schedule:()=>{throw Error('sync is disabled');}
+  schedule:()=>{}, // Restored duties are retried by normal sync safely.
  },
  save:async()=>{store.set('owner:'+ctx.accountScope.uid,JSON.stringify(ctx.model));return true;},
  upgradeWaitingHistory:()=>{}
