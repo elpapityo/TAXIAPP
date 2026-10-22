@@ -168,7 +168,11 @@ function create(){
     seen.add(id);
     return {id,revision,deleted:data?.trashed===true,
      ended:Boolean(data?.shift?.endedAt||data?.shift?.endedIso),
-     startedIso:String(data?.shift?.startedIso||'')};
+     startedIso:String(data?.shift?.startedIso||''),
+     date:String(data?.shift?.date||''),
+     recordsCount:Array.isArray(data?.shift?.records)?data.shift.records.length:null,
+     // Display the stored calculation only; never calculate charges in a list.
+     meter:Number.isFinite(data?.shift?.__taxiPrintSummary?.meter)?data.shift.__taxiPrintSummary.meter:null};
    })};
   }
   if(action==='syncHistoryDate'){
