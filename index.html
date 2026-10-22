@@ -3065,6 +3065,17 @@ function scheduleGoogleSync(){
   googleSendShift(current,false);
  },3000);
 }
+// Vehicle status changes are Firestore sync events, not GPS or text edits.
+// Keep local persistence first; a busy/offline writer retains its retry queue.
+function saveOperationalEvent(shift){
+ const shiftId=shift.id,generation=accountScopeGeneration,uid=accountScope.uid;
+ const stored=save();
+ if(memberDiary())void stored.then(ok=>{
+  if(ok===true&&generation===accountScopeGeneration&&uid===accountScope.uid&&canEditNow())
+   return syncUI.run(false,[shiftId]);
+ }).catch(error=>console.error('TAXIAPP vehicle event sync failed:',error));
+ return stored;
+}
 async function googleSendAllShifts(){
  if(memberDiary())return syncUI.run(true);
  if(sheetTargetPrefs().syncMode==='on'){await syncUI.run(true);return;}
@@ -4217,50 +4228,50 @@ function handleAction(action,id){
  if(action==='closeBreakPage'){breakPageOpen=false;render();return;}
  if(action==='beginBreak'){
   if(!shift||shift.draft||shift.waiting||shift.breakActive)return;
-  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};save();render();getBreakPlaceGps(shift.id,shift.breakActive.id);toast('休憩を開始しました');return;
+  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};saveOperationalEvent(shift);render();getBreakPlaceGps(shift.id,shift.breakActive.id);toast('休憩を開始しました');return;
  }
  if(action==='breakBoard'||action==='breakDispatch'){
   if(!shift||shift.draft||shift.waiting)return;
   if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}
-  breakPageOpen=false;const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');}
-  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');save();render();}return;
+  breakPageOpen=false;const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');}
+  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');saveOperationalEvent(shift);render();}return;
  }
  if(action==='gpsBreakPlace'){if(shift?.breakActive)getBreakPlaceGps(shift.id,shift.breakActive.id);return;}
  if(action==='endBreak'){
   if(!shift?.breakActive)return;
-  endBreak(shift,new Date());breakPageOpen=false;save();render();toast('休憩を終了しました');return;
+  endBreak(shift,new Date());breakPageOpen=false;saveOperationalEvent(shift);render();toast('休憩を終了しました');return;
  }
  if(action==='cancelWaiting'){
   if(!shift?.waiting||shift.draft)return;
   if(!confirm('現在の待機記録を破棄しますか？ 過去の待機履歴や登録済み待機所は削除しません。'))return;
   shift.waiting=null;
-  save();render();toast('現在の待機記録を破棄しました');return;
+  saveOperationalEvent(shift);render();toast('現在の待機記録を破棄しました');return;
  }
  if(action==='beginWait'){
   if(!shift||shift.draft||shift.waiting)return;
-  try{const w=beginWaiting(shift,new Date());gpsTripUI?.fillWaitDistance(shift,w,'waitStart');save();render();getWaitGps(shift,w);toast('待機開始を記録しました。');}catch(e){toast(e.message,true);}return;
+  try{const w=beginWaiting(shift,new Date());gpsTripUI?.fillWaitDistance(shift,w,'waitStart');saveOperationalEvent(shift);render();getWaitGps(shift,w);toast('待機開始を記録しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='beginDispatch'){
   if(!shift||shift.draft)return;
-  try{shift.draft=makeDispatch(shift,new Date(),'G');save();focusDispatchSourceAfterRender=true;render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
+  try{shift.draft=makeDispatch(shift,new Date(),'G');saveOperationalEvent(shift);focusDispatchSourceAfterRender=true;render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='waitNew'){if(shift?.waiting){shift.waiting.place='';shift.waiting.placeId='';shift.waiting.placeSource='manual';saveLater();render();}return;}
  if(action==='gpsWait'){if(shift?.waiting)getWaitGps(shift,shift.waiting);return;}
  if(action==='registerWaitPlace'){if(shift?.waiting&&!shift.draft)registerCurrentWaitingPlace(shift,shift.waiting);return;}
  if(action==='boardDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  flushVisibleDraftInputs(shift);const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');return;
+  flushVisibleDraftInputs(shift);const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');return;
  }
  if(action==='cancelDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  cancelDispatch(shift,new Date());gpsTripUI?.mode(shift,'empty');if(gpsTripUI?.active(shift))shift.draft.meta.gpsCancelTripKm=shift.gpsTrip.tripKm;save();render();return;
+  cancelDispatch(shift,new Date());gpsTripUI?.mode(shift,'empty');if(gpsTripUI?.active(shift))shift.draft.meta.gpsCancelTripKm=shift.gpsTrip.tripKm;saveOperationalEvent(shift);render();return;
  }
  if(action==='beginRide'){
   if(!shift||shift.draft)return;
   const now=new Date(),before=shift.waiting;
   try{const d=makeDraft(shift,'ride',now,'乗');if(before?.startedAt)d.raw.C=before.startedAt;
    if(action==='beginRide'&&before){d.meta.waitingId=before.id||'';d.meta.waitPlace=before.place||'';d.meta.waitOdometer=before.odometer??'';if(number(before.odometer)!==null){d.raw.F=before.odometer;if(before.gpsAutoOdometer?.km===before.odometer){d.meta.gpsFilledFields??={};d.meta.gpsFilledFields.F={...before.gpsAutoOdometer,source:'waitTransfer'};}}if(before.place){d.raw.AL=before.place;d.meta.pickupWaitProvisional=true;}if(before.geo){d.raw.D=`${before.geo.lat.toFixed(6)},${before.geo.lng.toFixed(6)}`;}}
-   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);save();render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
+   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
  }
  if(action==='gpsPickup'||action==='gpsDrop'){if(shift?.draft)getGps(shift,shift.draft,action==='gpsPickup'?'pickup':'drop');return;}
  if(action==='discardDraft'){if(!shift?.draft)return;if(!confirm('編集中の入力を破棄しますか？ 保存済みの履歴は残ります。'))return;shift.draft=null;gpsTripUI?.mode(shift,'empty');save();render();return;}
