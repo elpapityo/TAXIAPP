@@ -64,7 +64,7 @@ assert.equal((displayed.match(/data-action="deleteShift"/g)||[]).length,2);
 assert.ok(displayed.indexOf('shift-open')<displayed.indexOf('shift-closed'));
 assert.ok(!displayed.includes('<script>alert(1)</script>'));
 assert.ok(displayed.includes('JSONバックアップ'));
-assert.ok(displayed.includes('手動削除では本人Firestore原本をゴミ箱へ移して確認'));
+assert.ok(displayed.includes('手動のゴミ箱移動は別操作'));
 assert.equal(JSON.stringify(model),before);
 ctx.model={...model,activeId:null,shifts:[]};
 const empty=ctx.renderDataManagement();
