@@ -1407,7 +1407,7 @@ function blockViewerEdit(event){
 }
 for(const eventName of ['click','pointerdown','input','change','keydown','submit'])
  document.addEventListener(eventName,blockViewerEdit,true);
-let historyDate='',historyShiftId='',printShiftId='',highwayShiftId='',storageStatus='確認中';
+let historyDate='',historyShiftId='',cloudManagementDate='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
 let historyCloudRows=[],historyLocationEdit=null,historyDateCorrection=null;
 // The combined business-status screen remembers which sections the driver opened.
@@ -1649,7 +1649,7 @@ async function switchAccountScope(scope){
   adminFirestorePreviewActive=false;adminFirestorePreviewOwnerUid='';
  }
  adminFirestorePreviewMessage='';
- currentLoginScope=scope||null;
+ currentLoginScope=scope||null;cloudManagementDate='';
  const adminFirestorePreview=Boolean(scope?.admin&&
   ADMIN_FIRESTORE_PREVIEW_AVAILABLE&&adminFirestorePreviewActive&&
   scope.uid===adminFirestorePreviewOwnerUid);
@@ -4060,7 +4060,32 @@ function handleSheetTargetSetting(target){const field=target.dataset.cloudSettin
 // Render as full-width touch cards, not a horizontally scrollable table.
 function managementSubNav(){return '<div class="actions" style="margin-bottom:16px"><button class="btn" type="button" data-tab="manage">管理</button><button class="btn" type="button" data-tab="cloud">☁ クラウド日報</button><button class="btn" type="button" data-tab="files">▣ ファイル管理</button></div>';}
 function renderManagementHome(){return titleBlock('管理','MANAGEMENT','日報の管理とファイル操作を別々に扱います。')+'<section class="card"><h2 class="h2">クラウド日報管理</h2><p class="helper">本人のサーバー日報の閲覧・修正・保存状態とゴミ箱</p><button class="btn primary" type="button" data-tab="cloud">クラウド日報管理を開く</button></section>'+'<section class="card"><h2 class="h2">ファイル管理</h2><p class="helper">JSON・CSV・バックアップ・取込・端末内整理</p><button class="btn primary" type="button" data-tab="files">ファイル管理を開く</button></section>';}
-function renderCloudManagement(){return titleBlock('クラウド日報管理','CLOUD DIARY','本人UIDの保存済み原本を管理します。')+managementSubNav()+(memberDiary()?'<section class="card"><h2 class="h2">過去日報を閲覧・編集</h2><p class="helper">営業履歴で日付を指定して取得します。営業中の日報は変更しません。</p><button class="btn primary" type="button" data-tab="history">日付指定で取得する</button></section>':'<section class="card"><h2 class="h2">現行原本はGoogle Sheets</h2><p class="warn">管理者の旧Google原本を維持中です。Firestoreへの移行は別途承認が必要です。</p></section>')+(memberDiary()?syncUI.privateDiaryPanel():'');}
+
+function renderCloudManagement(){
+ const date=cloudManagementDate||historyDate||dateStamp();
+ const loaded=memberDiary()&&historyCloudUid===accountScope.uid&&historyCloudDate===date;
+ const rows=loaded?historyCloudRows:[];
+ const cards=rows.map(row=>{
+  const sh=row.shift,editable=canEditCloudHistory(sh);
+  const amount=totals(sh.records||[],sh.settings||{},sh.date||'').meter;
+  return '<article class="card"><strong>'+safeText(sh.date)+' ／ 営業'+sh.records.length+'件 ／ '+money(amount)+'</strong>'+
+   '<p class="caption-note" style="overflow-wrap:anywhere">乗務ID：'+safeText(row.id)+'</p>'+
+   '<p class="panel-strip">本人Firestore取得済み（取得時点の更新番号 '+row.revision+'）</p>'+
+   '<button class="btn" type="button" data-action="cloudManageOpen" data-id="'+safeText(row.id)+'">'+
+    (editable?'編集画面を開く':'閲覧画面を開く')+'</button></article>';
+ }).join('');
+ const filter=memberDiary()?
+  '<section class="card"><h2 class="h2">乗務日を指定して取得</h2>'+
+  '<label class="field">乗務日<input type="date" class="control" id="cloudManagementDate" value="'+safeText(date)+'"></label>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="cloudManageLoad" '+(historyCloudBusy?'disabled':'')+'>この日付をFirestoreから取得</button></div>'+
+  '<p class="caption-note">'+safeText(historyCloudMessage)+'</p></section>'+
+  (loaded?(cards||'<section class="card">この日付の日報はありません。</section>'):''):
+  '<section class="card"><h2 class="h2">現行原本はGoogle Sheets</h2>'+
+  '<p class="warn">旧Google原本は維持中です。管理者のFirestore保存先切替と既存日報移行には別途承認が必要です。</p></section>';
+ return titleBlock('クラウド日報管理','CLOUD DIARY','本人UIDの日報を必要な日付だけ取得します。')+
+  managementSubNav()+filter+(memberDiary()?syncUI.privateDiaryPanel():'');
+}
+
 function renderFileManagement(){const shift=selectedShift(),latest=shift,p=sheetTargetPrefs();return `
 ${titleBlock('ファイル管理','FILES','JSON・CSV・端末間移行・端末内データ整理')}${managementSubNav()}
 ${renderDeviceManagementPanel()}<section class="card"><h2 class="h2">JSONバックアップ・復元</h2><div class="statline"><span>現在の端末保存先</span><b>${safeText(storageStatus)}</b></div><p class="caption-note">${accountScope.adminFirestore?'現在の原本は本人UID専用Firestoreです。旧Google原本はそのまま保持します。':memberDiary()?'現在の原本は本人UID専用Firestoreです。ログインと操作権の確認後に利用できます。':'従来のGoogle原本を継続します。入力はログインと操作権の確認後に利用できます。'}</p><p class="helper">JSONは全乗務記録・位置座標・Uber手数料用の入力内容も保持します。通常CSVは44列、手数料CSVは別表です。</p><div class="actions"><button class="btn primary" data-action="downloadJson">⇩ JSONバックアップを保存</button><button class="btn" data-action="downloadCsv" ${shift?'':'disabled'}>⇩ 44列CSV</button><button class="btn" data-action="downloadFeesCsv" ${shift?'':'disabled'}>⇩ 手数料明細CSV</button></div><hr class="divider">${accountScope.adminFirestore&&!accountScope.adminFirestorePreview?'<label class="field"><span class="field-label">本人Firestoreへ保存済みJSON日報を1乗務取り込む</span><input class="control" style="font-size:13px" type="file" id="importFirestoreBackup" accept=".json,application/json"></label><p class="footnote">入庫済みの1乗務を日付で選択し、本人UIDのFirestoreに新規保存します。現行の営業中データ・設定・旧Google原本は変更しません。既存の同じ乗務IDは上書きしません。</p>':'<label class="field"><span class="field-label">バックアップから復元</span><input class="control" style="font-size:13px" type="file" id="importBackup" accept=".json,application/json"></label><p class="footnote">追加復元方式です。現在の乗務・設定は上書きせず、同じIDの乗務はスキップします。復元前にもバックアップを取ってください。</p>'}</section><div class="danger-note">※ 端末への保存にはIndexedDBを使用します。機種変更・ブラウザデータ消去に備えてバックアップが必要です。${accountScope.adminFirestore?'Firestore原本のGoogle補助簿印刷元への転記はPC側で明示操作します。':memberDiary()?'本人用Firestore原本は他の利用者のデータと分離しています。':'従来のGoogle原本と印刷用シートは維持します。'}</div>
@@ -4711,6 +4736,17 @@ function handleAction(action,id){
  }
  if(action==='saveHistoryLocationEdit'){void commitHistoryLocationEdit();return;}
  if(action==='cancelHistoryLocationEdit'){discardHistoryLocationEdit();return;}
+ if(action==='cloudManageLoad'){
+  try{protectOpenHistoryEdit();}catch(e){toast('修正控えの保護に失敗：'+String(e.message||e),true);return;}
+  if(!memberDiary()||!accountDiary.ready()){toast('本人Firestore接続を確認してください',true);return;}
+  const date=cloudManagementDate||historyDate||dateStamp();historyDate=date;historyShiftId='';
+  void loadHistoryFromCloud(date);return;
+ }
+ if(action==='cloudManageOpen'){
+  if(!memberDiary()||historyCloudUid!==accountScope.uid)return;
+  const row=historyCloudRows.find(x=>x.id===id&&x.shift?.date===historyCloudDate);if(!row)return;
+  historyDate=historyCloudDate;historyShiftId=id;tab='history';render();return;
+ }
  if(action==='loadCloudHistory'){
   try{protectOpenHistoryEdit();}
   catch(error){toast('修正控えを保護できないため再取得を停止：'+String(error?.message||error),true);return;}
@@ -5756,6 +5792,11 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
   d.newDate=String(event.target.value||'');d.message='';
   try{localStorage.setItem(historyDateCorrectionKey(d.uid,d.id),JSON.stringify(d));}catch{d.message='訂正日を端末に保存できません';}
   render();return;
+ }
+ if(event.target.id==='cloudManagementDate'){
+  const date=String(event.target.value||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+  cloudManagementDate=date;render();return;
  }
  if(event.target.id==='historyDate'){
   try{protectOpenHistoryEdit();}
