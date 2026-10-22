@@ -37,6 +37,7 @@ const ctx={
   return {id:shift.id,revision:item.revision,confirmed:true};
  }},
  memberDiary:()=>true,canEditNow:()=>true,
+ getShift:()=>ctx.model.shifts.find(item=>item.id===ctx.model.activeId)||null,
  syncUI:{verifiedRevision:()=>null},
  localFirestoreOriginal:shift=>clone(shift),save:async()=>true,
  selectedHistoryShift:()=>ctx.historyCloudRows[0]?.shift,
@@ -84,8 +85,11 @@ vm.runInContext(source.slice(begin,end),ctx);
  // 保留中の修正控えは利用者が取り消すまで残す。後続の編集テストでは明示的に取り消す。
  ctx.discardHistoryLocationEdit();
  assert.equal(storage.size,0,'競合控えを本人が取り消した場合だけ解放');
- // 端末に同じ乗務があるときは直接編集を止める。
+ // Same ID retained on the phone but not verified against Firestore:
+ // the history editor button must remain hidden.
  ctx.model.shifts.push(clone(original));
+ assert.equal(ctx.canEditCloudHistory(original),false,
+  '保存未確認の直近端末原本には修正ボタンを表示しない');
  assert.throws(()=>ctx.startHistoryLocationEdit(original.id,'ride-1'),/保存確認済みでは/);
  ctx.model.shifts.pop();
  ctx.historyCloudRows=[{id:original.id,revision:4,shift:clone(server.get(original.id).shift)}];
@@ -138,6 +142,8 @@ vm.runInContext(source.slice(begin,end),ctx);
   shift:clone(retained)}];
  let confirmedBefore=server.get(original.id).revision;
  ctx.syncUI.verifiedRevision=()=>confirmedBefore;
+ assert.equal(ctx.canEditCloudHistory(retained),true,
+  '本人FirestoreとID・内容・版一致なら直近の入庫済み乗務にも修正を表示');
  let adopted=null,localSaves=0;
  ctx.syncUI.adoptHistoryDuty=info=>{adopted=info;confirmedBefore=info.revision;return true;};
  ctx.save=async()=>{localSaves++;return true;};
@@ -150,5 +156,9 @@ vm.runInContext(source.slice(begin,end),ctx);
  assert.equal(server.get(original.id).shift.records[0].raw.AL,'端末の直近日報を修正');
  assert.equal(adopted.revision,server.get(original.id).revision,'改版したCASを端末へ採用');
  assert.ok(localSaves>=1,'サーバー保存後の修正版を端末へ永続保存');
+ assert.equal(ctx.canEditCloudHistory(ctx.historyCloudRows[0].shift),true,
+  'CAS再保存後の同じ乗務は引き続き編集可能');
+ assert.match(source,/editableHistory\?<button class="linkbutton" data-action="editHistoryLocation"/,
+  '実際の営業履歴の明細修正ボタンも安全な編集可能判定を使う');
  console.log('Firestore過去日報：追加・削除、送信不明の再確認、変更なしの無駄な同期防止を検証');
 })().catch(error=>{console.error(error);process.exitCode=1;});
