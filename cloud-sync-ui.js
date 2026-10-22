@@ -384,7 +384,7 @@ root.TAXIAPP_SYNC_UI=function(d){
      };
     })
    });
-   comparedDuties[id]={local:present(local),remote:present(server.shift)};
+   comparedDuties[id]={local:present(local),remote:present(server.shift),differences:conflictDifferences(local,server.shift)};
    refreshPanel();return true;
   }catch(error){
    if(check()){writerFeedback='競合比較エラー：'+String(error?.message||error);d.toast(writerFeedback,true);}
@@ -658,6 +658,32 @@ root.TAXIAPP_SYNC_UI=function(d){
    (archiveError?'<p class="warn">'+escape(archiveError)+'</p>':'')+
    raw+(rows||'<p class="helper">一覧を取得してください。</p>');
  }
+ function conflictFieldLabel(path){
+  const parts=path.split('.'),top=parts[0],field=parts[parts.length-1];
+  const raw={G:'乗車時刻',M:'降車時刻',K:'メーター料金',AL:'乗車地',AM:'降車地',W:'支払方法',C:'出庫時刻',D:'乗車地点の座標',H:'降車地点の座標'};
+  const named={date:'乗務日',startedAt:'出庫時刻',startedIso:'出庫時刻',endedAt:'入庫時刻',endedIso:'入庫時刻',records:'営業記録',settings:'乗務設定',status:'営業状態',kind:'記録区分',paymentMethod:'支払方法',startingOdo:'出庫時オドメーター',endingOdo:'入庫時オドメーター',gpsTrip:'GPS距離記録',distance:'走行距離',amounts:'計算済み金額',payments:'支払内訳',meta:'営業補足情報',raw:'営業入力項目',__taxiPrintSummary:'印刷用集計'};
+  const ride=top==='records'?'営業'+(Number(parts[1])+1)+'件目・':'';
+  return ride+(top==='records'&&parts[2]==='raw'&&raw[field]?raw[field]:(named[field]||named[top]||'記録詳細'))+
+   (named[field]||raw[field]?'':'（'+path.replace(/[^a-zA-Z0-9_.\[\]-]/g,'').slice(0,65)+'）');
+ }
+ function conflictDifferences(a,b){
+  const result=[],push=(path,left,right)=>{
+   if(result.length>=80)return;
+   const val=v=>v===undefined?'（なし）':v===null?'（未設定）':
+    typeof v==='object'?'（内容が異なります）':String(v).slice(0,90)||'（空欄）';
+   result.push({label:conflictFieldLabel(path),local:val(left),remote:val(right)});
+  };
+  const walk=(x,y,path,depth)=>{
+   if(result.length>=80||Object.is(x,y))return;
+   if(depth>8){if(JSON.stringify(x)!==JSON.stringify(y))push(path,x,y);return;}
+   if(x&&y&&typeof x==='object'&&typeof y==='object'&&Array.isArray(x)===Array.isArray(y)){
+    const keys=new Set([...Object.keys(x),...Object.keys(y)]);
+    for(const key of keys)walk(x[key],y[key],path?path+'.'+key:key,depth+1);
+   }else if(x!==y)push(path,x,y);
+  };
+  walk(a,b,'',0);
+  return result;
+ }
  function conflictMarkup(s){
   const summary=(heading,info)=>'<div class="card"><strong>'+heading+'</strong>'+
    '<p class="caption-note">乗務日 '+d.escape(info.date)+' ／ 営業記録 '+info.count+'件</p>'+
@@ -673,8 +699,9 @@ root.TAXIAPP_SYNC_UI=function(d){
   const conflicts=s.conflicts.map(c=>{const local=d.getModel()?.shifts?.find(sh=>sh.id===c.id);const reviewed=Boolean(comparedDuties[c.id]);return '<div class="card"><strong>'+d.escape(local?.date||comparedDuties[c.id]?.remote?.date||'日付確認中')+'の日報で保存内容が異なります</strong>'+ '<p class="caption-note">対象の乗務ID：'+d.escape(c.id)+'</p>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
    '<button class="btn" type="button" data-sync-compare="'+d.escape(c.id)+'">端末版とサーバー版を比較</button>'+
-   (comparedDuties[c.id]?'<div class="form-grid">'+summary('端末版',comparedDuties[c.id].local)+
-     summary('Firestore版',comparedDuties[c.id].remote)+'</div>':'')+
+   (comparedDuties[c.id]?'<section class="card"><strong>実際に異なる項目</strong>'+
+     (comparedDuties[c.id].differences.length?comparedDuties[c.id].differences.map(diff=>'<p class="caption-note"><strong>'+d.escape(diff.label)+'</strong>：端末「'+d.escape(diff.local)+'」／クラウド「'+d.escape(diff.remote)+'」</p>').join(''):'<p class="caption-note">記録項目の差は検出されませんでした。更新番号などの同期情報を確認してください。</p>')+'</section><div class="form-grid">'+summary('端末版',comparedDuties[c.id].local)+
+     summary(d.remoteOnDemand?.()?'Firestore版':'旧Google原本',comparedDuties[c.id].remote)+'</div>':'')+
    '<p class="caption-note">'+(reviewed?'比較後、残したい原本を選んでください。選ばれない側も暗号化バックアップに保存します。':'先に「端末版とクラウド版を比較」を押してください。比較するまで選択はできません。')+'</p>'+ '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>クラウド原本を残す</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>端末原本を残す</button>'+
    '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（両方残す）</button></div></div>';}).join('');
