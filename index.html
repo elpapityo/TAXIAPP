@@ -2976,7 +2976,7 @@ function correctShiftDate(shift,newDate){
  const day=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s))throw Error('日付が不正です');
   const ms=Date.parse(s+'T00:00:00Z');if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==s)throw Error('存在しない日付です');return ms;};
  const delta=day(newDate)-day(old);
- if(Math.abs(delta)>366*86400000)throw Error('1年を超える日付訂正はできません');
+ // Keep the original shift ID for any valid corrected date.
  const walk=(v,k='')=>{
   if(Array.isArray(v))return v.map(x=>walk(x,k));
   if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([name,x])=>[name,walk(x,name)]));
@@ -4090,12 +4090,12 @@ function renderDataManagement(){
     <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
     ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
    </div>
-   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">この乗務を削除</button>
+   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">端末からこの乗務を削除</button>
   </article>`;
  }).join('');
  return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
-   <p class="helper">削除すると、その乗務の営業明細・キャンセル・待機・GPS・集計も一緒に消えます。別の乗務や設定は残ります。</p>
-   <p class="warn">削除後は同じ保存先と同期しても端末へ復活しません。Google原本・他端末の記録は消しません。先にJSONバックアップを保存してください。</p>
+   <p class="helper">端末内の対象乗務だけを整理します。未同期・競合・送信結果不明の原本は消さずに保護してください。</p>
+   <p class="warn">端末の削除マーカーは再受信を停止しますが、クラウドのゴミ箱は変更しません。本人Firestoreの読戻しとJSONバックアップを確認してから操作してください。</p>
    <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
   </section>
   <section class="card"><h2 class="h2">乗務一覧</h2>
@@ -5493,12 +5493,7 @@ async function deleteWholeShift(shiftId){
   if(historyShiftId===shiftId)historyShiftId='';
   if(printShiftId===shiftId)printShiftId='';
   render();
-  if(syncUI.enabled()){
-   toast(display+' の乗務を端末から削除しました。クラウドとの削除状態を同期します。');
-   void syncUI.run(true);
-  }else{
-   toast(display+' の乗務を端末から削除しました。自動同期は無効です。設定の「クラウド保存済み日報の整理」で必要に応じてゴミ箱へ移してください。');
-  }
+  toast(display+' の乗務を端末から削除しました。クラウド原本とゴミ箱は変更していません。');
  }catch(e){
   model=previous;
   if(newlyMarked)try{syncUI.undoLocalRemoval(shiftId);}catch(markerError){
