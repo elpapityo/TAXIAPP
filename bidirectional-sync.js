@@ -181,31 +181,9 @@ function create(deps){
    const saved=getSaved(),shifts=[...(getModel()?.shifts||[])];
    const present=new Map(shifts.map(s=>[s.id,s]));
    const nextConflict=selected?Object.fromEntries(Object.entries(conflict).filter(([id])=>!selected.has(id))):{};
-   // Send explicit deletion intent even though the duty is no longer in model.
-   // Require the original content to match the version actually deleted locally.
-   for(const [id,marker] of Object.entries(removed)){
-    if(selected&&!selected.has(id))continue;
-    const remote=cloud.get(id);
-    if(!remote||remote.deleted===true)continue;
-    if(typeof marker!=='object'||typeof marker.hash!=='string')continue;
-    const base=saved[id];
-    if(base&&base.revision!==remote.revision){
-     nextConflict[id]={id,reason:'削除後に別端末が原本を更新しました。自動削除を保留',localRevision:base.revision,remoteRevision:remote.revision};
-     continue;
-    }
-    const received=await scopedRequest('syncGet',{shiftId:id});
-    if(!received?.shift||received.id!==id||received.revision!==remote.revision||
-       remoteHash(received.shift)!==marker.hash){
-     nextConflict[id]={id,reason:'削除対象のクラウド原本が端末で確認した内容と異なります',localRevision:base?.revision??null,remoteRevision:remote.revision};
-     continue;
-    }
-    const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:remote.revision});
-    if(!done||done.id!==id||done.deleted!==true||done.revision!==remote.revision+1)
-     throw Error('クラウド側の削除状態を確認できません');
-    const next={revision:done.revision,hash:marker.hash};
-    if(!setSaved({...saved,[id]:next}))throw Error(lastError);
-    saved[id]=next;
-   }
+   // Local device removal markers prevent automatic re-download only.
+   // They must never trigger a server trash/delete action. Server trash is
+   // exclusively the owner's explicit cloudAction('trash') with confirmation.
    // Firestore on-demand mode never pulls historical cloud-only duties
    // into the phone's persistent working model during a routine sync.
    // Explicit past-date viewing uses the separate read-only history API.
