@@ -1380,9 +1380,20 @@ function setDeviceMode(next,previous='',detail=''){
 function blockViewerEdit(event){
  if(canEditNow()||!document.getElementById('app')?.contains(event.target))return;
  const target=event.target;
+ // A print-only PC is a viewer by design: it must never claim the
+ // Galaxy's editing session. Permit only date/shift navigation, explicit
+ // authenticated print transfer, and this PC's Google bridge settings.
+ const printViewerOwner=Boolean(TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
+  accountScope.adminFirestore&&!accountScope.adminFirestorePreview&&
+  currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
+  accountDiary.ready());
+ const readOnlySelection=target.matches?.(
+  '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect');
+ const pcPrintControl=printViewerOwner&&(
+  target.closest?.('[data-action="firestorePrintToGoogle"]')||
+  target.matches?.('[data-firestore-print-setting]'));
  const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"]')||
-  (['change','input'].includes(event.type)&&target.matches?.(
-   '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect'));
+  readOnlySelection||pcPrintControl;
  if(safe)return;
  if(!['click','pointerdown','input','change','keydown','submit'].includes(event.type))return;
  event.preventDefault();event.stopImmediatePropagation();
