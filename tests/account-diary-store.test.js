@@ -202,6 +202,22 @@ const id='shift-1234-abc',shift={id,date:'2026-10-22',records:[],settings:{},sta
  await assert.rejects(()=>admin.request('syncPut',{baseRevision:1,
   payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:adminDuty})}),/SYNC_CONFLICT/,
   '古い更新番号による上書きを拒否');
+ // PC printing must be server-readonly, even when the user is the owner.
+ const printPc=factory.create();
+ printPc.bind({uid:adminUid},{f:fire,db:{},auth:adminAuth,session:fakeSession,
+  admin:true,storageBackend:'firestore',readOnly:true});
+ const pcHistory=await printPc.request('syncHistoryDate',{date:'2026-10-22'});
+ assert.deepEqual(pcHistory.shifts.map(x=>x.id),[adminId],
+  'PC印刷専用から本人の入庫日報を読み取れる');
+ const beforePc=clone(shifts.get(adminUid+'/'+adminId));
+ await assert.rejects(()=>printPc.request('syncPut',{baseRevision:2,
+  payload:JSON.stringify({kind:'TAXIAPP_SHIFT_V1',shift:corrected})}),/読み取り専用/,
+  'PCから日報の上書きを禁止');
+ await assert.rejects(()=>printPc.request('syncTrash',{shiftId:adminId,baseRevision:2}),
+  /閲覧端末/, 'PCからゴミ箱変更を禁止');
+ assert.deepEqual(shifts.get(adminUid+'/'+adminId),beforePc,
+  'PC閲覧ではFirestore原本を変更しない');
+ console.log('PC印刷専用：本人日報の指定日取得のみ許可・保存とゴミ箱操作は拒否');
  console.log('管理者本人Firestore：保存→ID・版・内容読戻し→指定日過去日報→修正CAS再保存を合成確認');
  console.log('Private duty store tests passed: UID isolation, CAS, auth changes, owner legacy separation.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
