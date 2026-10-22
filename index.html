@@ -3916,6 +3916,8 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  resumeExcludedIds:()=>accountScope.adminFirestore&&!accountScope.adminFirestorePreview?
   (adminFirestoreManifest(accountScope.uid)?.excludedIds||[]):[],
  canSync:()=>canEditNow(),
+ canReviewBlockedConflict:()=>deviceMode==='writer'&&writerLoadGate&&accountScopeLoaded&&
+  currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
  allowLegacyLocalWriter:()=>deviceMode==='writer'&&writerLoadGate&&
   accountScopeLoaded&&legacyDiary()&&Boolean(currentLoginScope?.admin)&&
   currentLoginScope?.firebase?.auth?.currentUser?.uid===accountScope.uid,
