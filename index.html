@@ -2947,8 +2947,8 @@ async function legacyCasSaveHistoricalShift(original,updated,sourceHash,sourceRe
  const expected=detached?original:googleShiftPacket(original).shift;
  if(!equal(remote.shift,expected)||(detached&&Number(remote.revision)!==sourceRevision))
   throw Error('Google原本の内容または更新番号が変わりました。無断上書きせず修正控えを保持します');
- if(!stable()||detached?model.shifts.some(x=>x.id===shiftId):
-    !local()||historyLegacyHash(local())!==sourceHash)
+ if(!stable()||(detached?model.shifts.some(x=>x.id===shiftId):
+    !local()||historyLegacyHash(local())!==sourceHash))
   throw Error('確認中に端末原本または保存先が変更されました。修正控えを保持します');
  const packet=googleShiftPacket(updated),baseRevision=Number(remote.revision);
  let ack=null,sendError=null;
