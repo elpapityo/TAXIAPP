@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title TAXIAPP v0.3.127 PR119 local preview
+title TAXIAPP v0.3.128 PR119 local preview
 
 echo =========================================================
-echo TAXIAPP v0.3.127 - Development PR119 local launch
+echo TAXIAPP v0.3.128 - Development PR119 local launch
  echo =========================================================
 echo.
 echo This window MUST remain open while using the local app.
