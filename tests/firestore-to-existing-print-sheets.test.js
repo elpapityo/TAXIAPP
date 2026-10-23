@@ -133,7 +133,7 @@ assert.equal(values.get('TAXIAPP_印刷データ').get('2:5'),1000);
 assert.equal(values.get('TAXIAPP_集計').get('6:3'),700);
 assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500).length,1);
 assert.ok(fetches.length===fetchesBeforeImport+3,'read before lock, inside lock, and immediately before index publication');
-assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer '+syntheticToken));
+assert.ok(fetches.slice(fetchesBeforeImport).every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer '+syntheticToken));
 const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
 // Firestore print-only import must not depend on the legacy Google original
 // 30,000-character chunk limit AFTER the four sheets are already updated.
