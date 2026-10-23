@@ -14,6 +14,9 @@
  */
 var TAXIAPP_FIRESTORE_BUTTON_SHEET_='TAXIAPP_印刷操作';
 var TAXIAPP_FIRESTORE_BUTTON_CELL_='B20';
+var TAXIAPP_FIRESTORE_DATE_CELL_='B30';
+var TAXIAPP_FIRESTORE_ID_CELL_='B31';
+var TAXIAPP_FIRESTORE_RESULT_CELL_='B32';
 
 function firestoreSheetOwner_(eventUser){
  var p=PropertiesService.getScriptProperties();
@@ -105,6 +108,52 @@ function firestoreSheetCandidates_(date,idToken){
  return result;
 }
 
+/**
+ * Shared write path: same CAS, original readback and print-source protections
+ * as the existing PC import. Never recompute money or select B17 automatically.
+ */
+function firestoreSheetCommitSelected_(picked,date,token){
+ var verified=firestorePrintDocDraft_(firestorePrintConfigDraft_(),picked.id,token);
+ if(verified.revision!==picked.revision||verified.packet.shift.date!==date)
+  throw Error('原本の更新番号が変わりました。再取得してください');
+ var result=firestorePrintSelectedDutyDraft_(picked.id,date,token);
+ SpreadsheetApp.openById(TAXIAPP_SHEET_ID).toast(
+  'Firestore印刷元の転送を確認しました。B15/B17で乗務を選択してください','TAXIAPP',8);
+ return {id:picked.id,date:date,revision:picked.revision,result:result};
+}
+/**
+ * A checkbox edit trigger must not open modal prompts. B30/B31 hold
+ * explicit date and optional exact ID. If the date has >1 completed duty,
+ * do not guess or silently select the newest.
+ */
+function firestoreSheetCheckboxImport_(eventUser){
+ firestoreSheetOwner_(eventUser);
+ var page=SpreadsheetApp.openById(TAXIAPP_SHEET_ID)
+  .getSheetByName(TAXIAPP_FIRESTORE_BUTTON_SHEET_);
+ if(!page)throw Error('印刷操作シートがありません');
+ var input=page.getRange(TAXIAPP_FIRESTORE_DATE_CELL_).getValue();
+ var date=Object.prototype.toString.call(input)==='[object Date]'?
+   Utilities.formatDate(input,'Asia/Tokyo','yyyy-MM-dd'):String(input||'').trim();
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||
+    new Date(date+'T12:00:00Z').toISOString().slice(0,10)!==date)
+  throw Error('B30へ正しい乗務日をYYYY-MM-DDで入力してください');
+ var id=String(page.getRange(TAXIAPP_FIRESTORE_ID_CELL_).getDisplayValue()||'').trim();
+ if(id&&!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))
+  throw Error('B31の乗務IDが不正です');
+ var token=firestoreSheetFirebaseToken_(eventUser);
+ var list=firestoreSheetCandidates_(date,token);
+ if(!list.length)throw Error('指定日に入庫済みの日報はありません');
+ var selected;
+ if(id){
+  selected=list.filter(function(d){return d.id===id;})[0];
+  if(!selected)throw Error('B31の乗務IDが指定日にありません');
+ }else{
+  if(list.length!==1)throw Error('同日に複数の日報があります。B31へ乗務IDを入力してください');
+  selected=list[0];
+ }
+ return firestoreSheetCommitSelected_(selected,date,token);
+}
+
 /** This is the operation the spreadsheet menu/checkbox starts. */
 function firestoreSheetDirectImport_(eventUser){
  var ui=SpreadsheetApp.getUi();
@@ -139,15 +188,7 @@ function firestoreSheetDirectImport_(eventUser){
   '従来の補助簿2ページ、旧Google同期原本、選択セルB15/B17/C17は維持します。',
   ui.ButtonSet.OK_CANCEL);
  if(ok!==ui.Button.OK)return {cancelled:true};
- // Existing implementation verifies full original before lock, inside lock
- // and before publication, and uses only the existing computed packet.
- var verified=firestorePrintDocDraft_(firestorePrintConfigDraft_(),picked.id,token);
- if(verified.revision!==picked.revision||verified.packet.shift.date!==date)
-  throw Error('原本の更新番号が変わりました。再取得してください');
- var result=firestorePrintSelectedDutyDraft_(picked.id,date,token);
- var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
- ss.toast('Firestore印刷元の転送が完了しました。B15/B17で対象乗務を選択してください','TAXIAPP',8);
- return {id:picked.id,date:date,revision:picked.revision,result:result};
+ return firestoreSheetCommitSelected_(picked,date,token);
 }
 
 function firestoreSheetImportMenu_(){
@@ -176,13 +217,19 @@ function firestoreSheetImportCheckboxEdit_(e){
     String(e.value||'')!=='TRUE')return;
  // A checkbox state isn't an acknowledgement of a successful transfer.
  e.range.setValue(false);
- var email=String(e.user?.getEmail?.()||'');
+ var email=String(e.user?.getEmail?.()||''),page=e.range.getSheet();
  try{
   if(!email)throw Error('操作したGoogle利用者を識別できません。メニューから実行してください');
-  return firestoreSheetDirectImport_(email);
+  page.getRange(TAXIAPP_FIRESTORE_RESULT_CELL_).setValue('取得中：Firestoreと原本を照合中');
+  var done=firestoreSheetCheckboxImport_(email);
+  page.getRange(TAXIAPP_FIRESTORE_RESULT_CELL_).setValue(
+   '転送確認：'+done.date+' ／ '+done.id+' ／ 更新番号 '+done.revision);
+  return done;
  }catch(error){
-  SpreadsheetApp.getActiveSpreadsheet().toast(
-   'Firestore取込未実行：'+String(error.message||error).slice(0,180),'TAXIAPP',10);
+  page.getRange(TAXIAPP_FIRESTORE_RESULT_CELL_).setValue(
+   '取込結果未確認・印刷元を確認：'+String(error.message||error).slice(0,105));
+  SpreadsheetApp.openById(TAXIAPP_SHEET_ID).toast(
+   'Firestore取込停止：'+String(error.message||error).slice(0,170),'TAXIAPP',10);
   throw error;
  }
 }
@@ -198,6 +245,12 @@ function setupFirestoreSheetImportButton_(){
  if(typeof firestorePrintSelectedDutyDraft_!=='function'||
     typeof firestorePrintDocDraft_!=='function')
   throw Error('Firestore印刷連携3ファイルが未導入です');
+ // Do not overwrite any cells that became part of another user's workflow.
+ ['A30','B30','A31','B31','A32','B32'].forEach(function(a1){
+  var cell=page.getRange(a1);
+  if(cell.getValue()!==''||cell.getFormula())
+   throw Error('新しいFirestore操作欄に既存値があります：'+a1+'。変更せず中止します');
+ });
  var handlers=ScriptApp.getProjectTriggers().map(function(t){return t.getHandlerFunction();});
  if(handlers.indexOf('firestoreSheetImportCheckboxEdit_')<0)
   ScriptApp.newTrigger('firestoreSheetImportCheckboxEdit_').forSpreadsheet(ss).onEdit().create();
@@ -206,8 +259,12 @@ function setupFirestoreSheetImportButton_(){
  var range=page.getRange(TAXIAPP_FIRESTORE_BUTTON_CELL_);
  range.setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
  range.setValue(false);
- range.setNote('チェック後に本人Google/Firebase認証で日付・乗務を選択して取得。未導入のGASでは実行されません。');
+ range.setNote('B30の日付を指定し、同日に複数乗務がある場合はB31に乗務IDを入力してチェックしてください。');
  page.getRange('A20').setValue('Firestore取得 ▶');
+ page.getRange('A30').setValue('取得する乗務日（YYYY-MM-DD）');
+ page.getRange('A31').setValue('乗務ID（同日に複数乗務がある場合）');
+ page.getRange('A32').setValue('Firestore取得結果');
+ page.getRange('B32').setValue('未実行：B30の日付入力後にB20をチェック');
  firestoreSheetImportMenuCreate_();
  ss.toast('Firestore取得ボタンを設定しました。取込前に本人Google認証を確認します','TAXIAPP',7);
 }
