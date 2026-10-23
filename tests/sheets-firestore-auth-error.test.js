@@ -8,7 +8,7 @@ const ctx={Date,JSON,Number,String,Object,Array,Error,RegExp,console,
  ScriptApp:{getIdentityToken:()=> 'eyJ.aGVsbG8.signature'},
  firestorePrintConfigDraft_:()=>({project:'test-project',uid:'owner-uid'}),
  UrlFetchApp:{fetch:()=>({getResponseCode:()=>400,getContentText:()=>JSON.stringify({error:{
- message:'INVALID_IDP_RESPONSE',private:'private-oauth'}})})}
+ message:'INVALID_IDP_RESPONSE : Token rejected',private:'private-oauth'}})})}
 };
 vm.createContext(ctx);vm.runInContext(source,ctx);
 assert.throws(()=>ctx.firestoreSheetFirebaseToken_(),e=>{
