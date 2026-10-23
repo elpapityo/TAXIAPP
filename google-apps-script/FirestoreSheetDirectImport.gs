@@ -245,8 +245,11 @@ function setupFirestoreSheetImportButton_(){
  if(typeof firestorePrintSelectedDutyDraft_!=='function'||
     typeof firestorePrintDocDraft_!=='function')
   throw Error('Firestore印刷連携3ファイルが未導入です');
- // Do not overwrite any cells that became part of another user's workflow.
- ['A30','B30','A31','B31','A32','B32'].forEach(function(a1){
+ // Idempotent setup. Never overwrite another user's cells or formulas.
+ var present=page.getRange('A30').getDisplayValue()==='取得する乗務日（YYYY-MM-DD）'&&
+  page.getRange('A31').getDisplayValue()==='乗務ID（同日に複数乗務がある場合）'&&
+  page.getRange('A32').getDisplayValue()==='Firestore取得結果';
+ if(!present)['A30','B30','A31','B31','A32','B32'].forEach(function(a1){
   var cell=page.getRange(a1);
   if(cell.getValue()!==''||cell.getFormula())
    throw Error('新しいFirestore操作欄に既存値があります：'+a1+'。変更せず中止します');
@@ -264,7 +267,7 @@ function setupFirestoreSheetImportButton_(){
  page.getRange('A30').setValue('取得する乗務日（YYYY-MM-DD）');
  page.getRange('A31').setValue('乗務ID（同日に複数乗務がある場合）');
  page.getRange('A32').setValue('Firestore取得結果');
- page.getRange('B32').setValue('未実行：B30の日付入力後にB20をチェック');
+ if(!present)page.getRange('B32').setValue('未実行：B30の日付入力後にB20をチェック');
  firestoreSheetImportMenuCreate_();
  ss.toast('Firestore取得ボタンを設定しました。取込前に本人Google認証を確認します','TAXIAPP',7);
 }
