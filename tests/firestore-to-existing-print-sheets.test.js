@@ -245,6 +245,33 @@ assert.equal(values.get('TAXIAPP_決済内訳').get('5:1'),'shift-1792699000000-
 values.get('TAXIAPP_決済内訳').delete('5:1');
 assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
 assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,7);
+// Fresh Firestore data may arrive just after the first PC server read.
+// The print source must receive ALL fields from the new complete original,
+// not fail due solely to the old snapshot's revision mismatch.
+const beforeConcurrentDoc=ctx.firestorePrintDocDraft_;
+let concurrentReads=0;
+ctx.firestorePrintDocDraft_=(cfg,shiftId,token)=>{
+ concurrentReads++;
+ const read=beforeConcurrentDoc(cfg,shiftId,token);
+ if(concurrentReads===1){
+  payload.revision=8;
+  shift.records[0].raw.AL='【合成】最新の乗車地を全件再取得';
+  shift.records[0].raw.AM='【合成】最新の降車地';
+ }
+ return read;
+};
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/,
+ 'Firestoreの新版を改めてダウンロードしてから印刷元へ反映');
+ctx.firestorePrintDocDraft_=beforeConcurrentDoc;
+assert.ok(concurrentReads>=3,'最新版の全文を2回一致するまで読み戻す');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:8'),
+ '【合成】最新の乗車地を全件再取得');
+assert.equal(values.get('TAXIAPP_印刷データ').get('2:9'),
+ '【合成】最新の降車地');
+assert.equal(JSON.parse(journalStorage.get(journalKey)).revision,8);
+assert.equal(values.get('TAXIAPP_同期原本').get('2:1'),original);
+assert.equal(values.get('補助簿印刷用').get('1:1'),'=DO_NOT_CHANGE()');
+assert.equal(values.get('補助簿印刷用_2頁').get('1:1'),'=SECOND_PAGE()');
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('invalid'),/乗務ID/);
 returnedUid='anotherSyntheticOwner';
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID・プロジェクト/);
