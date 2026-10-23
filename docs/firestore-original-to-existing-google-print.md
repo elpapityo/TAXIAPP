@@ -51,3 +51,13 @@
 - 旧GAS版で印刷元に登録済みの同一IDに、版管理がないまま**異なる内容**が存在する場合、自動更新しない。同じ計算済み4印刷元と完全一致する場合に限り、既存の状態をそのFirestore版の基準として記録できる。
 - この実装は**PR #119上の開発コード**。旧Google原本を移行・削除したり、本番GASへ導入したりしていない。Google Apps Script本番の導入・OAuth/IAM変更、既存実Sheetsへの書込み・正式公開には個別承認とバックアップ／復旧手順が必要。紙への実印刷は今回の確認対象外とする。
 - 合成テストで、初回取込、同版再取込、改版更新、行増減、他乗務の行保護、他者変更による停止、途中失敗時の復旧を確認する。**実Google認証／シートへの転送は未検証**。
+
+## 2026年10月23日：本番導入の承認と実装状況
+
+- 利用者はGAS本番へのFirestore取込導入と補助簿2ページへの転送確認を承認済み。ただし実本番データの移行・削除・保存先切替は今回実施していない。
+- GitHub main: google-apps-script/Code.gs に本人認証済み取込 firestorePrintImport と読取専用 firestorePrintProbe を準備。FirestorePrintPullDraft.gs の firestorePrintProbeDraft_ は本人UID・対象乗務日・版番号・対象シート・旧Google同一IDを照合し、データを書き換えない。
+- index.html v0.3.147: PC本人認証モードに読取専用事前照合ボタンを追加。既存の4印刷元への転送機能、B15/B17/C17の乗務選択、紙の補助簿2ページ、旧Google原本は保持。
+- 既存スプレッドシートの TAXIAPP_印刷操作!B20 にはPC本人認証画面を開くリンクが設定済み。
+- 本番GAS再デプロイは未実行。接続中のGoogle Drive/SheetsではApps Scriptのプロジェクトコード更新・デプロイを操作できず、GitHub ActionsにもGASデプロイ機能は存在しない。旧本番GASを勝手に置き換えない。
+- 本番へ導入するには既存GAS・4印刷元のバックアップを取り、Code.gsの差分とFirestorePrintPullDraft.gsおよびFirestorePrintSourcesDraft.gsを既存プロジェクトへ導入し、Script PropertiesのTAXIAPP_FIRESTORE_PROJECT_IDとTAXIAPP_FIRESTORE_OWNER_UIDを本人のGoogle環境内で設定する。認証キー・UID・トークンを公開しない。
+- 再デプロイ後の順序：PC本人ログイン、対象乗務取得、読取専用事前照合、実転送、4印刷元と2ページの実照合。ID衝突・版番号不一致・通信結果不明では停止。未確認のまま移行・削除・再送信しない。
