@@ -88,7 +88,7 @@ assert.match(source,/renderDriveStatusFieldSettings\(\)/);
 assert.match(source,/if\(target\.dataset\.driveStatusField\)/);
 assert.match(source,/model\.prefs\.driveStatusFields\[key\]=target\.checked/);
 assert.match(source,/data-cruising-summary-field\],\[data-drive-status-field\]/);
-assert.match(source,/if\(!columns\.length&&!routeWithSave\)return '';/);
+assert.match(source,/if\(!columns\.length&&!routeWithSave&&!elapsedVisible\)return '';/);
 assert.match(source,/stickySaveButton:'off'/,'既存利用者の上部登録ボタンは初期OFF');
 assert.match(source,/<title>TAXIAPP v\d+\.\d+\.\d+(?:-dev\.\d+)? — 乗務日報<\/title>/);
 // Meter-only alighting clock must be a selectable header CARD, not mandatory "other" content.
