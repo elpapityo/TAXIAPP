@@ -128,16 +128,34 @@ function firestorePrintProbeDraft_(id,expectedDate,idToken){
 /** Manual PC operation only. Never registered in public doPost. */
 function firestorePrintSelectedDutyDraft_(id,expectedDate,idToken){
  var cfg=firestorePrintConfigDraft_();
- var first=firestorePrintDocDraft_(cfg,id,idToken);
- if(expectedDate&&first.packet.shift.date!==expectedDate)
+ // Fetch only this explicitly selected duty. If a newer Firestore version
+ // appears during comparison, download its full content before printing.
+ // Never replace phone originals, unrelated shifts or legacy Google originals.
+ var previous=firestorePrintDocDraft_(cfg,id,idToken);
+ if(expectedDate&&previous.packet.shift.date!==expectedDate)
   throw Error('日付指定した乗務と取得したFirestore原本の日付が一致しません');
  var lock=LockService.getScriptLock();
  if(!lock.tryLock(25000))throw Error('別の印刷転送が実行中です');
  try{
-  var current=firestorePrintDocDraft_(cfg,id,idToken);
-  if(current.revision!==first.revision||
-     JSON.stringify(first.packet)!==JSON.stringify(current.packet))
-   throw Error('印刷転送中にFirestore原本が更新されました');
+  var current=previous,stable=false;
+  // A normal event sync may update Firestore between two server reads.
+  // Only print when two complete consecutive reads match ID, revision,
+  // content and print timestamp; never accept a stale first snapshot.
+  for(var attempt=0;attempt<4;attempt++){
+   var fetched=firestorePrintDocDraft_(cfg,id,idToken);
+   if(expectedDate&&fetched.packet.shift.date!==expectedDate)
+    throw Error('Firestore原本の乗務日が変わりました。自動印刷せず確認してください');
+   if(fetched.revision<current.revision)
+    throw Error('Firestore原本の更新番号が逆行しました。印刷元を変更しません');
+   if(fetched.revision===current.revision&&
+      JSON.stringify(fetched.packet)===JSON.stringify(current.packet)){
+    stable=true;current=fetched;break;
+   }
+   if(fetched.revision===current.revision)
+    throw Error('同一更新番号でFirestore原本の内容が異なります。印刷元を変更しません');
+   current=fetched;
+  }
+  if(!stable)throw Error('Firestore原本が連続更新中のため照合できません。印刷元を変更しません');
   // The original Google sync storage and existing 2-page print forms
   // are NOT changed. Only the four existing print-source sheets receive rows.
   return savePacket_(current.packet,{firestorePrintOnly:true,
