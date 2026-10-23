@@ -125,6 +125,30 @@ function firestorePrintProbeDraft_(id,expectedDate,idToken){
   readOnly:true};
 }
 
+/**
+ * Firestore REST mapValue fields have no guaranteed member ordering.
+ * JSON.stringify() on decoded objects can therefore disagree across reads
+ * even when the document/revision/content are identical. Preserve arrays
+ * and *every* value, and compare object keys in canonical order.
+ * Never relax real same-revision data conflicts or ignore stored timestamps.
+ */
+function firestorePrintSamePacketDraft_(a,b){
+ function canonical(value,depth){
+  if(depth>45)throw Error('Firestore原本の照合が深すぎます');
+  if(value===null||typeof value!=='object'){
+   var primitive=JSON.stringify(value);
+   if(primitive===undefined)throw Error('Firestore原本の照合に未対応の値があります');
+   return primitive;
+  }
+  if(Array.isArray(value))
+   return '['+value.map(function(entry){return canonical(entry,depth+1);}).join(',')+']';
+  return '{'+Object.keys(value).sort().map(function(key){
+   return JSON.stringify(key)+':'+canonical(value[key],depth+1);
+  }).join(',')+'}';
+ }
+ return canonical(a,0)===canonical(b,0);
+}
+
 /** Manual PC operation only. Never registered in public doPost. */
 function firestorePrintSelectedDutyDraft_(id,expectedDate,idToken){
  var cfg=firestorePrintConfigDraft_();
@@ -148,7 +172,7 @@ function firestorePrintSelectedDutyDraft_(id,expectedDate,idToken){
    if(fetched.revision<current.revision)
     throw Error('Firestore原本の更新番号が逆行しました。印刷元を変更しません');
    if(fetched.revision===current.revision&&
-      JSON.stringify(fetched.packet)===JSON.stringify(current.packet)){
+      firestorePrintSamePacketDraft_(fetched.packet,current.packet)){
     stable=true;current=fetched;break;
    }
    if(fetched.revision===current.revision)
@@ -163,7 +187,7 @@ function firestorePrintSelectedDutyDraft_(id,expectedDate,idToken){
    verifyCurrentSource:function(){
     var beforeIndex=firestorePrintDocDraft_(cfg,id,idToken);
     if(beforeIndex.revision!==current.revision||
-       JSON.stringify(beforeIndex.packet)!==JSON.stringify(current.packet))
+       !firestorePrintSamePacketDraft_(beforeIndex.packet,current.packet))
      throw Error('印刷元の公開直前にFirestore原本が更新されました。転送を停止します');
    }});
  }finally{lock.releaseLock();}
