@@ -1340,6 +1340,7 @@ const accountDiary=window.TAXIAPP_ACCOUNT_DIARY.create();
 let accountScope={kind:'pending',uid:''};
 let accountScopeGeneration=0;
 let lastVerifiedPreviousDuty=null;
+let oldGoogleIndex=[],oldGoogleIndexUid='',oldGoogleIndexLoaded=false,oldGoogleIndexBusy=false,oldGoogleIndexMessage='';
 const memberDiary=()=>accountScope.kind==='member';
 const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>accountScope.adminFirestorePreview?
@@ -1748,6 +1749,7 @@ async function switchAccountScope(scope){
  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';
  historyCloudMessage='';historyCloudBusy=false;historyLocationEdit=null;historyDateCorrection=null;
   lastVerifiedPreviousDuty=null;
+ oldGoogleIndex=[];oldGoogleIndexUid='';oldGoogleIndexLoaded=false;oldGoogleIndexBusy=false;oldGoogleIndexMessage='';
  firestorePrintPcMessage='';
  syncUI.cancelViewer();
  syncUI.resetAccount();
@@ -3415,8 +3417,40 @@ function historyFoldSection(key,title,html){
   '<summary>'+safeText(title)+'</summary><div class="inner">'+body+'</div></details>';
 }
 
+async function fetchOldGoogleHistoryIndex(){
+ if(oldGoogleIndexBusy||!legacyDiary()||!googleIsConfigured()||!canEditNow())return;
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ const stable=()=>uid===accountScope.uid&&generation===accountScopeGeneration&&legacyDiary()&&canEditNow();
+ oldGoogleIndexBusy=true;oldGoogleIndexMessage='旧Google原本の一覧を確認中…';render();
+ try{
+  const listing=(await googlePostRequest('syncList',{}))?.data?.shifts;
+  if(!stable())return;
+  if(!Array.isArray(listing)||listing.length>120)throw Error('旧Google原本一覧の形式・件数が不正です');
+  const rows=[],seen=new Set();
+  for(const entry of listing){
+   if(!stable())return;
+   const id=String(entry?.id||''),rev=Number(entry?.revision);
+   if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id)||seen.has(id)||
+      !Number.isSafeInteger(rev)||rev<1)throw Error('旧Google原本のID・更新番号が不正です');
+   seen.add(id);
+   if(entry.deleted)continue;
+   const row=(await googlePostRequest('syncGet',{shiftId:id}))?.data,shift=row?.shift;
+   if(!stable())return;
+   if(row?.id!==id||Number(row.revision)!==rev||shift?.id!==id||
+      !Array.isArray(shift.records)||!shift.settings)
+    throw Error('取得中に旧Google原本が変更されました');
+   rows.push({id,date:shift.date,startedIso:shift.startedIso||'',
+    count:shift.records.length,meter:totals(shift.records,shift.settings,shift.date).meter,
+    ended:Boolean(shift.endedAt||shift.endedIso)});
+  }
+  if(!stable())return;
+  oldGoogleIndex=rows;oldGoogleIndexUid=uid;oldGoogleIndexLoaded=true;
+  oldGoogleIndexMessage='旧Googleの'+rows.length+'乗務を確認しました。端末の原本は変更しません。';
+ }catch(e){if(stable())oldGoogleIndexMessage='一覧取得失敗：'+String(e?.message||e);}
+ finally{if(stable()){oldGoogleIndexBusy=false;render();}}
+}
 function historyOneRowIndex(){
- const cloud=memberDiary()?syncUI.cloudEntries():null;
+ const cloud=memberDiary()?syncUI.cloudEntries():oldGoogleIndexLoaded&&oldGoogleIndexUid===accountScope.uid?oldGoogleIndex:null;
  const local=(model.shifts||[]).map(s=>({id:s.id,date:s.date,startedIso:s.startedIso||'',
   count:(s.records||[]).length,meter:totals(s.records||[],s.settings||{},s.date||'').meter,
   ended:Boolean(s.endedAt||s.endedIso),local:true}));
@@ -3426,7 +3460,7 @@ function historyOneRowIndex(){
   const known=entries.get(r.id);
   entries.set(r.id,{id:r.id,date:r.date||known?.date||'',
    startedIso:r.startedIso||known?.startedIso||'',
-   count:Number.isInteger(r.recordsCount)?r.recordsCount:known?.count,
+   count:Number.isInteger(r.recordsCount)?r.recordsCount:Number.isInteger(r.count)?r.count:known?.count,
    meter:Number.isFinite(r.meter)?r.meter:known?.meter,
    ended:r.ended,local:false});
  }
@@ -3440,7 +3474,9 @@ function historyOneRowIndex(){
    '<button class="btn" data-action="historyIndexOpen" data-id="'+safeText(r.id)+'">開く</button></div>').join('');
  return '<section class="card"><h2 class="h2">過去の乗務一覧（1乗務1行）</h2>'+
   '<p class="caption-note">端末保持分と取得済みの本人Firestore一覧です。対象の日報だけ開きます。</p>'+
-  (memberDiary()&&!TAXIAPP_PRINT_VIEWER_MODE?'<button class="btn" data-action="historyIndexLoad">Firestore一覧を取得・更新</button>':'')+
+  (memberDiary()&&!TAXIAPP_PRINT_VIEWER_MODE?'<button class="btn" data-action="historyIndexLoad">Firestore一覧を取得・更新</button>':
+  legacyDiary()?'<button class="btn" data-action="oldGoogleHistoryIndexLoad" '+(oldGoogleIndexBusy?'disabled':'')+'>旧Googleの乗務一覧を取得</button>':'')+
+  (oldGoogleIndexMessage?'<p class="caption-note">'+safeText(oldGoogleIndexMessage)+'</p>':'')+
   (memberDiary()&&!cloud?'<p class="caption-note">Firestoreの一覧はまだ取得していません。</p>':'')+
   (html||'<p class="caption-note">端末に日報がありません。必要な日付を指定して取得してください。</p>')+
   '</section>';
@@ -5215,21 +5251,24 @@ function handleAction(action,id){
  if(action==='historyDateEditStart'){try{beginHistoryDateCorrection();}catch(e){toast(String(e.message||e),true);}return;}
  if(action==='historyDateSave'){void saveHistoryDateCorrection();return;}
  if(action==='historyDateCancel'){cancelHistoryDateCorrection();return;}
-  if(action==='historyIndexLoad'){
+  if(action==='oldGoogleHistoryIndexLoad'){void fetchOldGoogleHistoryIndex();return;}
+   if(action==='historyIndexLoad'){
    if(!memberDiary()||!canEditNow())return;
    void syncUI.cloudAction('load').then(()=>render());return;
   }
   if(action==='historyIndexOpen'||action==='cloudIndexOpen'){
    const cloud=memberDiary()?syncUI.cloudEntry(id):null;
    const local=model.shifts.find(s=>s.id===id);
+   const old=legacyDiary()&&oldGoogleIndexLoaded&&oldGoogleIndexUid===accountScope.uid?oldGoogleIndex.find(x=>x.id===id):null;
    const chosen=cloud&&!cloud.deleted?{id,date:cloud.date,fromCloud:true}:
-    local?{id,date:local.date,fromCloud:false}:null;
+    old?{id,date:old.date,fromOldGoogle:true}:local?{id,date:local.date,fromCloud:false}:null;
    if(!chosen?.date){toast('日付を確認できません。Firestore一覧を更新してください',true);return;}
    try{protectOpenHistoryEdit();}catch(e){
     toast('編集内容を保護できないため切替を停止しました：'+String(e?.message||e),true);return;
    }
    historyDate=chosen.date;historyShiftId=id;tab='history';
    if(chosen.fromCloud)void loadHistoryFromCloud(chosen.date);
+   else if(chosen.fromOldGoogle)void loadLegacyHistoryById(id);
    else render();
    return;
   }
