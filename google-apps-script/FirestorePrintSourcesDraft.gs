@@ -148,6 +148,85 @@ function firestorePrintSnapshotDraft_(ss,shiftId,batches){
 function firestorePrintJournalRowsDraft_(snapshot){
  return snapshot.map(function(p){return {name:p.name,rows:p.rows};});
 }
+/**
+ * A first print import can stop after detail rows were written but before the
+ * other three sources. If such rows differ from the CURRENT authenticated
+ * Firestore duty, preserve ALL old print cells in a separate audit sheet
+ * before replacing only that selected duty's incomplete source rows.
+ * An already-published index or a revision journal is never handled here.
+ * The audit copy is durable, read back, and never automatically deleted.
+ */
+function firestorePrintRecoverUnverifiedDraft_(ss,id,previous,verifyBeforeIndex){
+ if(previous.length!==4||previous[3].rows.length||
+    !previous.some(function(p){return p.rows.length;}))
+  throw Error('確定済み印刷元または保護対象不明のため自動復旧できません');
+ // Recheck the actual full server original immediately before recovery.
+ if(typeof verifyBeforeIndex==='function')verifyBeforeIndex();
+ var backups=[],chunks=[];
+ previous.forEach(function(part){
+  if(!part.rows.length)return;
+  if(part.start<2||part.start+part.rows.length-1>part.sheet.getMaxRows())
+   throw Error('未完了印刷元の行範囲が不正です：'+part.name);
+  var range=part.sheet.getRange(part.start,1,part.rows.length,part.width);
+  var actual=range.getValues(),formula=range.getFormulas();
+  if(formula.some(function(row){return row.some(Boolean);})||
+     !firestorePrintSameRowsDraft_(actual,part.rows))
+   throw Error('前回の印刷元が照合中に変わりました。上書きしません：'+part.name);
+  var originals=actual.map(function(row){
+   return row.map(function(cell){
+    return Object.prototype.toString.call(cell)==='[object Date]'?
+     {date:cell.toISOString()}:cell;
+   });
+  });
+  originals.forEach(function(row,index){
+   var json=JSON.stringify(row);
+   if(json.length>40000)throw Error('復旧保護内容が長すぎるため保存できません');
+   chunks.push([new Date().toISOString(),id,part.name,part.start+index,json]);
+  });
+  backups.push({part:part,range:range,rows:actual});
+ });
+ var label='TAXIAPP_転送中断保護';
+ var backup=ss.getSheetByName(label);
+ if(!backup){
+  if(typeof ss.insertSheet!=='function')
+   throw Error('未完了データの保護シートを作成できないため中止します');
+  backup=ss.insertSheet(label);
+ }
+ var header=['保護日時','乗務ID','元の印刷シート','元の行番号','元の値(JSON)'];
+ if(backup.getMaxColumns()<header.length)
+  throw Error('未完了データの保護先列数が不足しています');
+ var existing=backup.getRange(1,1,1,header.length).getValues()[0];
+ if(existing.every(function(x){return x===''||x===null;})){
+  backup.getRange(1,1,1,header.length).setValues([header]);
+ }else if(JSON.stringify(existing)!==JSON.stringify(header))
+  throw Error('保護先が既存シートと衝突しています。何も削除しません');
+ var start=backup.getLastRow()+1;
+ if(start+chunks.length-1>backup.getMaxRows()){
+  if(typeof backup.insertRowsAfter!=='function')
+   throw Error('未完了データを保護する行数が不足しています');
+  backup.insertRowsAfter(backup.getMaxRows(),start+chunks.length-1-backup.getMaxRows());
+ }
+ var archive=backup.getRange(start,1,chunks.length,header.length);
+ // Back up first, and read back every archived original value.
+ archive.setValues(chunks);
+ if(JSON.stringify(archive.getValues())!==JSON.stringify(chunks))
+  throw Error('未完了印刷元の保護が確認できません。既存行を変更しません');
+ // Verify the partial rows are still exactly the ones we archived.
+ backups.forEach(function(part){
+  if(part.range.getFormulas().some(function(row){return row.some(Boolean);})||
+     !firestorePrintSameRowsDraft_(part.range.getValues(),part.rows))
+   throw Error('保護後に印刷元が変わったため復旧を停止しました：'+part.part.name);
+ });
+ backups.forEach(function(part){
+  part.range.clearContent(); // only the archived, unverified rows for this ID
+  var empty=part.range.getValues();
+  if(empty.some(function(row){return row.some(function(cell){
+   return cell!==''&&cell!==null;
+  });}))throw Error('保護後の未完了印刷元を空欄にできません：'+part.part.name);
+ });
+ return {sheet:label,archived:chunks.length};
+}
+
 function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyBeforeIndex){
  if(!Number.isSafeInteger(revision)||revision<1||!uid||
     !Array.isArray(batches)||batches.length!==4)
@@ -189,7 +268,13 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   var partial=previous.some(function(x){return x.rows.length>0;});
   if(partial&&!previous.every(function(x,i){
    return !x.rows.length||firestorePrintSameRowsDraft_(x.rows,planned[i].rows);
-  }))throw Error('未完了印刷元が最新Firestore原本と異なるため再開しません');
+  })){
+   // A real completed Google original and confirmed Firestore print
+   // are NEVER overwritten. This is only an unjournaled first import
+   // with no index, safely archived before any source-cell removal.
+   firestorePrintRecoverUnverifiedDraft_(ss,id,previous,verifyBeforeIndex);
+   partial=false;
+  }
   var first=firestorePrintPublishRowsDraft_(ss,id,batches,verifyBeforeIndex,partial);
   var published=firestorePrintSnapshotDraft_(ss,id,batches);
   if(!published.every(function(x,i){
