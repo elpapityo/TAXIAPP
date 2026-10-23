@@ -66,7 +66,8 @@ const shift={id:'shift-111-xyz',date:'2026-10-20',startedIso:'2026-10-20T06:00:0
  assert.match(index,/TAXIAPP_PRINT_VIEWER_MODE/);
  assert.match(index,/firestorePrintGooglePostRequest/);
  assert.match(index,/const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&/);
- assert.match(index,/\['loadCloudHistory','firestorePrintToGoogle'\]\.includes\(action\)/);
+ assert.match(index,/\['loadCloudHistory','firestorePrintToGoogle','historyIndexLoad','historyIndexOpen','cloudIndexOpen','cloudTrashList'\]\.includes\(action\)/);
+  assert.doesNotMatch(index,/\['loadCloudHistory','firestorePrintToGoogle'[^\n]*'cloudTrash'[^\n]*\]\.includes\(action\)/,'印刷専用の閲覧端末に削除操作は許可しない');
  assert.match(index,/const verifiedOctoberTransfer=action==='migrateOctober16GoogleDuty'/);
  assert.match(index,/if\(!canEditNow\(\)&&action!=='bidirectionalSyncNow'&&!printReadAction&&!verifiedOctoberTransfer\)/);
  assert.match(session,/claimedOnce=Boolean\(oldId\)\|\|!claimOnLogin/);
