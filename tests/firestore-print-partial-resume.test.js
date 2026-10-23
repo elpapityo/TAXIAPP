@@ -95,6 +95,6 @@ journal.clear();store.get('TAXIAPP_印刷データ').set('2:8','別の乗車地'
 for(const name of tables.slice(1)){for(const key of [...store.get(name).keys()])if(!key.startsWith('1:'))store.get(name).delete(key);}
 const beforeUnsafe=modifications;
 assert.throws(()=>ctx.firestorePrintPublishVersionedDraft_(workbook,id,batches,7,uid,()=>sourceChecks++),
- /未完了印刷元が最新Firestore原本と異なります/);
+ /未完了印刷元が最新Firestore原本と異なるため再開しません/);
 assert.equal(modifications,beforeUnsafe);
 console.log('印刷元の時刻Date変換と中断後の正確な部分転送再開を確認');
