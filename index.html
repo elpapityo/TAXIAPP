@@ -5585,6 +5585,29 @@ function handleAction(action,id){
   shift.waiting=null;
   saveOperationalEvent(shift);render();toast('現在の待機記録を破棄しました');return;
  }
+ if(action==='meterEmptyHighway'){
+  if(!shift||shift.draft||shift.waiting||shift.breakActive||shift.records.length>=MAX_RECORDS)return;
+  shift.draft=makeDraft(shift,'empty',new Date());
+  saveOperationalEvent(shift);render();return;
+ }
+ if(action==='meterSettle'){
+  if(shift?.draft?.kind!=='ride')return;
+  stampAlightIfNeeded(shift);shift.draft.status='alighted';
+  saveOperationalEvent(shift);render();return;
+ }
+ if(action==='meterDiscount'){
+  if(shift?.draft?.kind!=='ride')return;
+  handleSetCol('O',shift.draft.raw.O==='シ'?'':'シ');return;
+ }
+ if(action==='meterHighway'){
+  if(shift?.draft?.kind!=='ride')return;
+  const details=appEl.querySelector('.meter-details');
+  if(details)details.open=true;
+  const target=details?.querySelector('[data-highway-fold]');
+  if(target){target.open=true;target.scrollIntoView({behavior:'smooth',block:'center'});}
+  else toast('詳細入力から高速記録を確認してください。');
+  return;
+ }
  if(action==='beginWait'){
   if(!shift||shift.draft||shift.waiting)return;
   try{const w=beginWaiting(shift,new Date());gpsTripUI?.fillWaitDistance(shift,w,'waitStart');saveOperationalEvent(shift);render();getWaitGps(shift,w);toast('待機開始を記録しました。');}catch(e){toast(e.message,true);}return;
