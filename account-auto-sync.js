@@ -243,8 +243,19 @@ root.TAXIAPP_ACCOUNT_AUTO={
     if(!enabled){status('利用者登録を確認できないため操作権を取得できません');return;}
     deviceSession?.claim().catch(e=>status('切替失敗：'+String(e.message||e)));
    });
-   $('accountSignOut')?.addEventListener('click',()=>{
-    if(auth)fb.signOut(auth).catch(e=>status('ログアウト失敗：'+String(e.code||e.message||e)));
+   $('accountSignOut')?.addEventListener('click',async()=>{
+    if(!auth)return;
+    const button=$('accountSignOut');
+    if(button)button.disabled=true;
+    try{
+     const allowed=await deps.beforeSignOut?.();
+     if(allowed===false){
+      status('日報の最終保存を確認できません。端末原本を保持し、ログアウトを保留しました。');
+      return;
+     }
+     await fb.signOut(auth);
+    }catch(e){status('ログアウト前の照合に失敗：'+String(e.code||e.message||e));}
+    finally{controls();}
    });
    try{
     const version='12.4.0';
