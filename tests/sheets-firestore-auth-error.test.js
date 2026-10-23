@@ -5,7 +5,7 @@ const ctx={Date,JSON,Number,String,Object,Array,Error,RegExp,console,
  PropertiesService:{getScriptProperties:()=>({getProperty:key=>({
  TAXIAPP_PRINT_OWNER_EMAIL:'owner@example.com',TAXIAPP_FIREBASE_WEB_API_KEY:'A'.repeat(30)})[key]||''})},
  Session:{getActiveUser:()=>({getEmail:()=> 'owner@example.com'}),getEffectiveUser:()=>({getEmail:()=> 'owner@example.com'})},
- ScriptApp:{getOAuthToken:()=> 'private-oauth'},
+ ScriptApp:{getIdentityToken:()=> 'eyJ.aGVsbG8.signature'},
  firestorePrintConfigDraft_:()=>({project:'test-project',uid:'owner-uid'}),
  UrlFetchApp:{fetch:()=>({getResponseCode:()=>400,getContentText:()=>JSON.stringify({error:{
  message:'INVALID_IDP_RESPONSE',private:'private-oauth'}})})}
