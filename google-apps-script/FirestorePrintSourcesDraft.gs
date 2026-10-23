@@ -29,7 +29,37 @@ function firestorePrintSameCellDraft_(actual,expected){
   if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(expected))
    return Utilities.formatDate(actual,'Asia/Tokyo','yyyy-MM-dd HH:mm:ss')===expected;
  }
+ // Sheets sometimes coerces numeric strings in the existing raw print
+ // source columns to Numbers. Match only unambiguous decimal literals.
+ // Shift IDs and leading-zero strings remain strict text matches.
+ if(typeof actual==='number'&&Number.isFinite(actual)&&
+    typeof expected==='string'&&/^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(expected)&&
+    Number(expected)===actual&&
+    (Number.isSafeInteger(actual)||String(actual)===expected))return true;
+ if(typeof expected==='number'&&Number.isFinite(expected)&&
+    typeof actual==='string'&&/^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(actual)&&
+    Number(actual)===expected&&
+    (Number.isSafeInteger(expected)||String(expected)===actual))return true;
  return JSON.stringify(actual)===JSON.stringify(expected);
+}
+/** Error reports contain only the first mismatching index and types, not values. */
+function firestorePrintFirstMismatchDraft_(actual,expected){
+ if(actual.length!==expected.length)return '行数';
+ for(var i=0;i<expected.length;i++){
+  if(!Array.isArray(actual[i])||actual[i].length!==expected[i].length)
+   return (i+1)+'行目の列数';
+  for(var j=0;j<expected[i].length;j++){
+   if(!firestorePrintSameCellDraft_(actual[i][j],expected[i][j])){
+    var type=function(v){
+     return Object.prototype.toString.call(v)==='[object Date]'?'日時':
+      v===''||v===null?'空欄':typeof v;
+    };
+    return (i+1)+'行目・'+(j+1)+'列目（実:'+type(actual[i][j])+
+     '／原本:'+type(expected[i][j])+'）';
+   }
+  }
+ }
+ return '差異なし';
 }
 function firestorePrintSameRowsDraft_(actual,expected){
  return actual.length===expected.length&&actual.every(function(row,i){
@@ -449,7 +479,8 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex,al
    range.setValues(plan.rows);
    var actual=range.getValues();
    if(!firestorePrintSameRowsDraft_(actual,plan.rows))
-    throw Error('印刷元の転送確認に失敗しました：'+plan.name);
+    throw Error('印刷元の転送確認に失敗しました：'+plan.name+'／'+
+     firestorePrintFirstMismatchDraft_(actual,plan.rows));
   });
  }catch(writeError){
   var recovery=[],rollbackErrors=[];
