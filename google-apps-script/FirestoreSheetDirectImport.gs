@@ -158,6 +158,9 @@ function firestoreSheetCommitSelected_(picked,date,token){
  if(latest.revision!==published.revision||
     latest.packet.shift.date!==date)
   throw Error('転送後にFirestore原本が更新されました。印刷元の最新版照合が必要です');
+ // Read every projected row, not only the revision: a same-revision content
+ // divergence must not be reported as an accurate printed duty.
+ savePacket_(latest.packet,{firestorePrintOnly:true,verifyFirestorePrintOnly:true});
  ss.toast('Firestoreの最新改版を印刷元へ転送・照合しました','TAXIAPP',8);
  return {id:picked.id,date:date,revision:published.revision,result:result};
 }
