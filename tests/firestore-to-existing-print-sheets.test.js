@@ -99,6 +99,22 @@ ctx.firestorePrintSelectedDutyDraft_=(shiftId,date,token=syntheticToken)=>
  originalPull(shiftId,date,token);
 ctx.firestorePrintDocDraft_=(config,shiftId,token=syntheticToken)=>
  originalDocument(config,shiftId,token);
+// Authenticated preflight reads only; no print-source, selector, old original
+// or journal mutation, including failed validation and same-ID collisions.
+const probeBefore=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
+const probeJournalBefore=journalStorage.size;
+const preview=ctx.firestorePrintProbeDraft_(id,'2026-10-21',syntheticToken);
+assert.equal(preview.readOnly,true);
+assert.equal(preview.ready,true);
+assert.equal(preview.id,id);
+assert.equal(preview.revision,1);
+assert.equal(preview.records,1);
+assert.throws(()=>ctx.firestorePrintProbeDraft_(id,'2026-10-20',syntheticToken),/乗務日/);
+const duplicate=ctx.firestorePrintProbeDraft_('shift-999-legacy','2026-10-21',syntheticToken);
+assert.equal(duplicate.ready,false,'旧Google原本と同一IDなら取込前に止める');
+assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),probeBefore,
+ '読取専用検査では印刷元・原本・補助簿の全セルを変更しない');
+assert.equal(journalStorage.size,probeJournalBefore,'読取検査でスクリプト版管理も変更しない');
 const original=values.get('TAXIAPP_同期原本').get('2:1');
 const amount=shift.__taxiPrintSummary.cashRemittance;
 const result=ctx.firestorePrintSelectedDutyDraft_(id);
