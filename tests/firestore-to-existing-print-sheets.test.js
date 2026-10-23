@@ -115,6 +115,7 @@ assert.equal(duplicate.ready,false,'旧Google原本と同一IDなら取込前に
 assert.equal(JSON.stringify([...values].map(([name,rows])=>[name,[...rows]])),probeBefore,
  '読取専用検査では印刷元・原本・補助簿の全セルを変更しない');
 assert.equal(journalStorage.size,probeJournalBefore,'読取検査でスクリプト版管理も変更しない');
+const fetchesBeforeImport=fetches.length;
 const original=values.get('TAXIAPP_同期原本').get('2:1');
 const amount=shift.__taxiPrintSummary.cashRemittance;
 const result=ctx.firestorePrintSelectedDutyDraft_(id);
@@ -131,7 +132,7 @@ assert.equal(values.get('TAXIAPP_乗務一覧').get('2:13'),700);
 assert.equal(values.get('TAXIAPP_印刷データ').get('2:5'),1000);
 assert.equal(values.get('TAXIAPP_集計').get('6:3'),700);
 assert.equal([...values.get('TAXIAPP_決済内訳').values()].filter(v=>v===500).length,1);
-assert.ok(fetches.length===3,'read before lock, inside lock, and immediately before index publication');
+assert.ok(fetches.length===fetchesBeforeImport+3,'read before lock, inside lock, and immediately before index publication');
 assert.ok(fetches.every(f=>f.url.includes('/privateDuties/'+uid+'/shifts/'+id)&&f.auth==='Bearer '+syntheticToken));
 const savedState=JSON.stringify([...values].map(([name,rows])=>[name,[...rows]]));
 // Firestore print-only import must not depend on the legacy Google original
