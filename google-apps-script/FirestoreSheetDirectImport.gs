@@ -154,6 +154,43 @@ function firestoreSheetCheckboxImport_(eventUser){
  return firestoreSheetCommitSelected_(selected,date,token);
 }
 
+/**
+ * Read-only preparation check. Require a successful owner Firebase login
+ * before modifying even B20 or creating an installable trigger.
+ * Never return, persist or log Google/Firebase authentication tokens.
+ */
+function firestoreSheetPreflight_(){
+ var cfg=firestorePrintConfigDraft_();
+ if(!cfg||!cfg.project||!cfg.uid)
+  throw Error('本人FirestoreのプロジェクトとUIDを確認できません');
+ if(typeof firestorePrintSelectedDutyDraft_!=='function'||
+    typeof firestorePrintDocDraft_!=='function'||
+    typeof TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS==='undefined')
+  throw Error('Firestore印刷連携の本番GASファイルが揃っていません');
+ // This exchange is read-only. An OAuth/Firebase failure must abort setup.
+ var verifiedToken=firestoreSheetFirebaseToken_();
+ if(!verifiedToken||typeof verifiedToken!=='string')
+  throw Error('Firebase本人認証を確認できません');
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var names=['TAXIAPP_同期原本','TAXIAPP_印刷操作','補助簿印刷用',
+  '補助簿印刷用_2頁'];
+ names.forEach(function(name){
+  if(!ss.getSheetByName(name))
+   throw Error('既存の印刷シートを確認できません：'+name);
+ });
+ Object.keys(TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS).forEach(function(name){
+  var sheet=ss.getSheetByName(name);
+  if(!sheet)throw Error('Firestore印刷元が見つかりません：'+name);
+  var headings=TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS[name];
+  var actual=sheet.getRange(1,1,1,headings.length).getValues()[0];
+  if(JSON.stringify(actual)!==JSON.stringify(headings))
+   throw Error('印刷元の見出しが既存仕様と違います：'+name);
+ });
+ // Do not include cfg.uid, owner email or token in the return value.
+ return {ready:true,readOnly:true,checkedSheets:names.length+
+  Object.keys(TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS).length};
+}
+
 /** This is the operation the spreadsheet menu/checkbox starts. */
 function firestoreSheetDirectImport_(eventUser){
  var ui=SpreadsheetApp.getUi();
@@ -238,7 +275,10 @@ function firestoreSheetImportCheckboxEdit_(e){
  * the two new Script Properties; duplicates are not added on repeated setup.
  */
 function setupFirestoreSheetImportButton_(){
- firestoreSheetOwner_();
+ // Validate live authentication and all four print sources before *any*
+ // checkbox, label or trigger change. A failed OAuth exchange leaves the
+ // existing spreadsheet operations untouched.
+ firestoreSheetPreflight_();
  var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
  var page=ss.getSheetByName(TAXIAPP_FIRESTORE_BUTTON_SHEET_);
  if(!page)throw Error('印刷操作シートがありません');
