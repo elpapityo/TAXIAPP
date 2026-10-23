@@ -137,13 +137,29 @@ function firestoreSheetCandidates_(date,idToken){
  * as the existing PC import. Never recompute money or select B17 automatically.
  */
 function firestoreSheetCommitSelected_(picked,date,token){
- var verified=firestorePrintDocDraft_(firestorePrintConfigDraft_(),picked.id,token);
- if(verified.revision!==picked.revision||verified.packet.shift.date!==date)
-  throw Error('原本の更新番号が変わりました。再取得してください');
+ // The date list is metadata and can become stale before B20 is clicked.
+ // Read the *entire* owner-authenticated duty and adopt a newer revision
+ // for printing, but never a different ID/date or a revision rollback.
+ var checked=firestorePrintDocDraft_(firestorePrintConfigDraft_(),picked.id,token);
+ if(checked.packet.shift.date!==date||checked.id!==picked.id||
+    checked.revision<picked.revision)
+  throw Error('取得したFirestore原本の乗務ID・日付・更新番号が一致しません');
+ // The selected-duty import itself re-reads the latest full server version
+ // under the print lock and verifies the published rows; no stale overwrite.
  var result=firestorePrintSelectedDutyDraft_(picked.id,date,token);
- SpreadsheetApp.openById(TAXIAPP_SHEET_ID).toast(
-  'Firestore印刷元の転送を確認しました。B15/B17で乗務を選択してください','TAXIAPP',8);
- return {id:picked.id,date:date,revision:picked.revision,result:result};
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ var published=firestorePrintVerifyPublishedDraft_(ss,picked.id);
+ if(published.id!==picked.id||published.date!==date||
+    published.revision<checked.revision)
+  throw Error('印刷元の読戻し結果がFirestore原本と一致しません');
+ // Fresh server version check: do not advertise "complete" if a new event
+ // happened after publication. The next operator action can safely recheck.
+ var latest=firestorePrintDocDraft_(firestorePrintConfigDraft_(),picked.id,token);
+ if(latest.revision!==published.revision||
+    latest.packet.shift.date!==date)
+  throw Error('転送後にFirestore原本が更新されました。印刷元の最新版照合が必要です');
+ ss.toast('Firestoreの最新改版を印刷元へ転送・照合しました','TAXIAPP',8);
+ return {id:picked.id,date:date,revision:published.revision,result:result};
 }
 /**
  * A checkbox edit trigger must not open modal prompts. B30/B31 hold
