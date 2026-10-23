@@ -260,11 +260,29 @@ function firestoreSheetImportMenu_(){
   throw error;
  }
 }
-/** Does not replace existing onOpen, onEdit or legacy macros. */
+/**
+ * One-time cleanup: remove only the obsolete standalone menu onOpen trigger.
+ * Never delete the Firestore checkbox onEdit or any preexisting GAS trigger.
+ * Does not read or mutate sales records, print sheets, or credentials.
+ */
+function cleanupFirestoreSheetMenuTrigger(){
+ var removed=0;
+ ScriptApp.getProjectTriggers().forEach(function(trigger){
+  if(trigger.getHandlerFunction()==='firestoreSheetImportMenuCreate_'){
+   ScriptApp.deleteTrigger(trigger);
+   removed++;
+  }
+ });
+ Logger.log('Firestoreの不要なメニュートリガー解除：'+removed+'件');
+ return removed;
+}
+
+/** This GAS project is standalone, so a custom spreadsheet menu cannot be
+ * displayed. Keep the obsolete handler as a no-op for existing triggers.
+ * The B20 checkbox is the supported UI; legacy scripts stay intact.
+ */
 function firestoreSheetImportMenuCreate_(){
- SpreadsheetApp.getUi().createMenu('TAXIAPP Fire取得')
-  .addItem('Firestoreから日報を取得・印刷元に反映','firestoreSheetImportMenu_')
-  .addToUi();
+ // No SpreadsheetApp.getUi() from a standalone script.
 }
 /**
  * Installable onEdit trigger only (creator runs as owner).
@@ -321,8 +339,7 @@ function setupFirestoreSheetImportButton_(){
  var handlers=ScriptApp.getProjectTriggers().map(function(t){return t.getHandlerFunction();});
  if(handlers.indexOf('firestoreSheetImportCheckboxEdit_')<0)
   ScriptApp.newTrigger('firestoreSheetImportCheckboxEdit_').forSpreadsheet(ss).onEdit().create();
- if(handlers.indexOf('firestoreSheetImportMenuCreate_')<0)
-  ScriptApp.newTrigger('firestoreSheetImportMenuCreate_').forSpreadsheet(ss).onOpen().create();
+ // Do not install an onOpen menu trigger from a standalone project.
  var range=page.getRange(TAXIAPP_FIRESTORE_BUTTON_CELL_);
  range.setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
  range.setValue(false);
@@ -332,6 +349,5 @@ function setupFirestoreSheetImportButton_(){
  page.getRange('A31').setValue('乗務ID（同日に複数乗務がある場合）');
  page.getRange('A32').setValue('Firestore取得結果');
  if(!present)page.getRange('B32').setValue('未実行：B30の日付入力後にB20をチェック');
- firestoreSheetImportMenuCreate_();
  ss.toast('Firestore取得ボタンを設定しました。取込前に本人Google認証を確認します','TAXIAPP',7);
 }
