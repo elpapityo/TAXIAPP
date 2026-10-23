@@ -370,3 +370,11 @@ function setupFirestoreSheetImportButton_(){
  if(!present)page.getRange('B32').setValue('未実行：B30の日付入力後にB20をチェック');
  ss.toast('Firestore取得ボタンを設定しました。取込前に本人Google認証を確認します','TAXIAPP',7);
 }
+
+/** Public entrypoints visible in the Apps Script function selector. */
+function checkFirestoreConnection(){
+ return firestoreSheetPreflight_();
+}
+function setupFirestoreButton(){
+ return setupFirestoreSheetImportButton_();
+}
