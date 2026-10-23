@@ -55,6 +55,10 @@ function firestoreSheetFirebaseToken_(eventUser){
   try{
    var returned=JSON.parse(response.getContentText());
    var rawCode=String(returned&&returned.error&&returned.error.message||'');
+   // Firebase may append an explanation after the machine-readable error name.
+   // Never show the suffix: it can contain provider identifiers or tokens.
+   var prefix=rawCode.match(/^([A-Z][A-Z0-9_]{2,63})(?:\s|:|$)/);
+   var code=prefix?prefix[1]:'';
    var allowed=['INVALID_IDP_RESPONSE','INVALID_CREDENTIAL','INVALID_GRANT',
     'OPERATION_NOT_ALLOWED','FEDERATED_USER_ID_ALREADY_LINKED',
     'EMAIL_EXISTS','INVALID_API_KEY','API_KEY_INVALID','PROJECT_NOT_FOUND',
@@ -62,7 +66,8 @@ function firestoreSheetFirebaseToken_(eventUser){
     'INVALID_OAUTH_CLIENT_ID','INVALID_OAUTH_RESPONSE','INVALID_PENDING_TOKEN',
     'UNAUTHORIZED_DOMAIN','INVALID_IDENTIFIER',
     'INVALID_PASSWORD','TOO_MANY_ATTEMPTS_TRY_LATER'];
-   if(allowed.indexOf(rawCode)>=0)category=rawCode;
+   if(allowed.indexOf(code)>=0)category=code;
+   else if(code&&code.indexOf('INVALID_')===0)category=code;
   }catch(ignore){}
   throw Error('Firebase本人認証に失敗：HTTP '+response.getResponseCode()+
    '／理由 '+category+'。原本・印刷先は変更していません。');
