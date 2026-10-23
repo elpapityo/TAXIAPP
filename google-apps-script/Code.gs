@@ -106,9 +106,9 @@ function doPost(e) {
   var key=PropertiesService.getScriptProperties().getProperty('TAXIAPP_WRITE_KEY');
   if(!key||String(params.key||'')!==key)throw Error('接続キーが違います');
   var action=String(params.action||'');
-  if(['syncList','syncGet','syncPut','syncTrash','syncRestore','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore','firestorePrintImport'].indexOf(action)<0&&action!=='sync')
+  if(['syncList','syncGet','syncPut','syncTrash','syncRestore','conflictSave','conflictList','conflictGet','conflictTrash','conflictRestore','firestorePrintImport','firestorePrintProbe'].indexOf(action)<0&&action!=='sync')
    throw Error('未対応の処理です');
-  if(action==='firestorePrintImport'){
+  if(action==='firestorePrintImport'||action==='firestorePrintProbe'){
    // Dedicated PC operation: existing shared key plus owner's Firebase ID
    // token. The token is not retained; Firestore rules enforce the UID.
    var id=String(params.shiftId||'');
@@ -122,6 +122,12 @@ function doPost(e) {
     throw Error('本人のFirebase認証がありません');
    if(typeof firestorePrintSelectedDutyDraft_!=='function')
     throw Error('Firestoreの本人専用印刷取込コードを導入してください');
+   if(action==='firestorePrintProbe'){
+    if(typeof firestorePrintProbeDraft_!=='function')
+     throw Error('Firestore接続確認コードが本番GASへ導入されていません');
+    var checked=firestorePrintProbeDraft_(id,date,token);
+    return replyToPhone_(nonce,true,'Firestore取込前の照合が完了しました',checked,audience);
+   }
    var result=firestorePrintSelectedDutyDraft_(id,date,token);
    return replyToPhone_(nonce,true,result,{id:id,date:date},audience);
   }
