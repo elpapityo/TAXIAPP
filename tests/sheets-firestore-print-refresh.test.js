@@ -5,6 +5,7 @@ const id='shift-1792699000000-live',date='2026-10-22';
 let printed=0,reads=0,compared=0,currentRev=5,lastPrinted=0;
 const doc=()=>({id,revision:currentRev,packet:{shift:{id,date,records:[{id:'r'+currentRev}]}}});
 const ctx={Date,JSON,Object,Array,Number,String,Error,RegExp,console,
+ TAXIAPP_SHEET_ID:'synthetic-sheet',
  firestorePrintConfigDraft_:()=>({uid:'owner',project:'test'}),
  firestorePrintDocDraft_:()=>{reads++;return doc();},
  firestorePrintSelectedDutyDraft_:(gotId,gotDate)=>{
