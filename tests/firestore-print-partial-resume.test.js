@@ -57,6 +57,16 @@ const ctx={Object,Array,JSON,String,Number,Boolean,Date,Error,RegExp,console,
 };
 vm.createContext(ctx);vm.runInContext(source,ctx);
 ctx.safeCell_=x=>x==null?'':x;
+// Actual Sheets converts raw fare/count strings into numeric cells.
+assert.equal(ctx.firestorePrintSameCellDraft_(5200,'5200'),true);
+assert.equal(ctx.firestorePrintSameCellDraft_(1,'1'),true);
+assert.equal(ctx.firestorePrintSameCellDraft_(520,'520'),true);
+assert.equal(ctx.firestorePrintSameCellDraft_(520,'0520'),false,
+ 'leading-zero identifiers must remain strict');
+assert.equal(ctx.firestorePrintSameCellDraft_(520,'521'),false,
+ 'different amounts must never be accepted');
+assert.equal(ctx.firestorePrintSameCellDraft_('北本町2','北本町２'),false,
+ 'different passenger location texts must remain distinct');
 const headings=ctx.TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS;
 for(const name of tables)
  headings[name].forEach((x,i)=>store.get(name).set('1:'+(i+1),x));
