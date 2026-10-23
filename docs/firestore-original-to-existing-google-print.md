@@ -61,3 +61,14 @@
 - 本番GAS再デプロイは未実行。接続中のGoogle Drive/SheetsではApps Scriptのプロジェクトコード更新・デプロイを操作できず、GitHub ActionsにもGASデプロイ機能は存在しない。旧本番GASを勝手に置き換えない。
 - 本番へ導入するには既存GAS・4印刷元のバックアップを取り、Code.gsの差分とFirestorePrintPullDraft.gsおよびFirestorePrintSourcesDraft.gsを既存プロジェクトへ導入し、Script PropertiesのTAXIAPP_FIRESTORE_PROJECT_IDとTAXIAPP_FIRESTORE_OWNER_UIDを本人のGoogle環境内で設定する。認証キー・UID・トークンを公開しない。
 - 再デプロイ後の順序：PC本人ログイン、対象乗務取得、読取専用事前照合、実転送、4印刷元と2ページの実照合。ID衝突・版番号不一致・通信結果不明では停止。未確認のまま移行・削除・再送信しない。
+
+## 2026年10月23日：スプレッドシートから直接押すFirestore取得操作
+
+- 利用者は単なるTAXIAPP閲覧リンクではなく、**Googleスプレッドシート内の操作から本人Firestoreを取得**して補助簿の既存4印刷元へ反映することを希望。
+- GitHubの `google-apps-script/FirestoreSheetDirectImport.gs` に独立した専用メニュー `TAXIAPP Fire取得` と `TAXIAPP_印刷操作!B20` のチェック操作を追加。`setupFirestoreSheetImportButton_()` は本番GASファイル導入後に一度だけ実行し、既存の `doPost` や `onOpen`・印刷用マクロを置換しない。
+- 押した場合に本人Googleアカウントの一致を確認。Google Apps Scriptの一時OAuthアクセストークンをFirebase Auth REST `accounts:signInWithIdp` でFirebase IDトークンに交換する設計。Firebase UIDが固定本人UIDと一致しなければ処理停止。**このGoogle OAuth → Firebase交換は実本番認証未検証であり、ログイン不可時は安全停止する。** Google IAMの全Firestore読取権限は要求しない。
+- 入力した乗務日の本人UID内でFirestoreの軽量一覧（本文なし）を取得し、日報IDと日時を明示選択。対象原本は既存の `firestorePrintSelectedDutyDraft_` と `savePacket_` のCAS・内容一致・旧Google同ID拒否・4シートのみ書込を利用。計算式・金額・GPS・手数料等の再計算を新設しない。
+- 必要なGAS Script Propertiesは `TAXIAPP_FIRESTORE_PROJECT_ID`・`TAXIAPP_FIRESTORE_OWNER_UID`（既存）と `TAXIAPP_FIREBASE_WEB_API_KEY`・`TAXIAPP_PRINT_OWNER_EMAIL`（追加）。値はGoogle環境内だけに保存し、GitHubに書かない。明示OAuthスコープは `https://www.googleapis.com/auth/spreadsheets`、`https://www.googleapis.com/auth/script.external_request`、`https://www.googleapis.com/auth/script.scriptapp`、`https://www.googleapis.com/auth/userinfo.email`、`openid`。既存manifestの他スコープを無断で削除しない。
+- Google Apps Script本番プロジェクトへの新ファイル導入・トリガー作成は**未実施**。接続済みGoogle Drive/SheetsツールはGASの更新/デプロイ権限を公開しておらず、Google Drive検索でもApps Script本体が取得できなかった。B20の既存リンクは、この未完成状態でチェックだけ置いて誤認させないため、現状維持。
+- 既存GASをバックアップし、必要ファイルの導入・Script Properties確認・`setupFirestoreSheetImportButton_()` の一度だけの実行と本人Google認証許可が必要。シート上にボタンを「設置済み・稼働」と報告できるのは、B20の本番チェックで本人日報を4印刷元へ取り込み、2ページを紙またはPDFで実照合した後のみ。
+- シート内にチェックボックスを作る方法はGASのインストール可能な `onEdit` トリガーであり、作成者の権限で実行されるため、操作ユーザーのGoogleメールが取得できない時は停止する。ブラウザ側で編集ユーザーを特定できずUIを開けない場合は、専用メニューから実行する。
