@@ -5170,7 +5170,9 @@ function syncFloatingDutySummary(){
  });
  // Avoid a trapped input area when "other information" is expanded or the mobile keyboard is up.
  const allowedHeight=window.innerHeight-80;
- const height=pinned.getBoundingClientRect().height||120;
+ // Measure the visible copy, not the hidden element (which reports zero height).
+ pinned.hidden=false;
+ const height=pinned.getBoundingClientRect().height;
  pinned.hidden=top+height>allowedHeight||right-left<180;
 }
 function jumpFromDutyPanel(key){
