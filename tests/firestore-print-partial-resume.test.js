@@ -21,6 +21,7 @@ const makeSheet=name=>{
  const access=(r,c)=>r+':'+c;
  return {
   getMaxRows:()=>200,getMaxColumns:()=>24,
+  getLastRow:()=>Math.max(1,...[...map.keys()].map(x=>Number(x.split(':')[0]))),
   getRange:(r,c,height=1,width=1)=>({
    getValues:()=>Array.from({length:height},(_,i)=>Array.from({length:width},(_,j)=>map.get(access(r+i,c+j))??'')),
    getFormulas:()=>Array.from({length:height},()=>Array(width).fill('')),
@@ -39,7 +40,10 @@ const makeSheet=name=>{
  };
 };
 const sheets=Object.fromEntries(tables.map(name=>[name,makeSheet(name)]));
-const workbook={getSheetByName:n=>sheets[n]};
+const workbook={
+ getSheetByName:n=>sheets[n]||null,
+ insertSheet:n=>{if(sheets[n])throw Error('duplicate');return sheets[n]=makeSheet(n);}
+};
 const ctx={Object,Array,JSON,String,Number,Boolean,Date,Error,RegExp,console,
  TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS:undefined,
  PropertiesService:{getScriptProperties:()=>({
@@ -90,11 +94,32 @@ const record=JSON.parse(journal.get('TAXIAPP_FS_PRINT_REV1_'+uid+'_'+id));
 assert.equal(record.state,'ready');assert.equal(record.revision,7);
 const match=ctx.firestorePrintVerifyRowsDraft_(workbook,id,batches);
 assert.equal(match.readOnly,true);
-// Another partial with a different passenger location must never resume.
+// An unverified first import with stale partial rows may be recovered ONLY
+// after preserving all original data in a read-back verified audit sheet.
 journal.clear();store.get('TAXIAPP_印刷データ').set('2:8','別の乗車地');
-for(const name of tables.slice(1)){for(const key of [...store.get(name).keys()])if(!key.startsWith('1:'))store.get(name).delete(key);}
-const beforeUnsafe=modifications;
-assert.throws(()=>ctx.firestorePrintPublishVersionedDraft_(workbook,id,batches,7,uid,()=>sourceChecks++),
- /未完了印刷元が最新Firestore原本と異なるため再開しません/);
+for(const name of tables.slice(1)){
+ for(const key of [...store.get(name).keys()])
+  if(!key.startsWith('1:'))store.get(name).delete(key);
+}
+const rescue=ctx.firestorePrintPublishVersionedDraft_(workbook,id,batches,8,uid,()=>sourceChecks++);
+assert.equal(rescue.id,id);
+assert.equal(JSON.parse(journal.get('TAXIAPP_FS_PRINT_REV1_'+uid+'_'+id)).revision,8);
+assert.equal(store.get('TAXIAPP_印刷データ').get('2:8'),'北本町1');
+const archive=store.get('TAXIAPP_転送中断保護');
+assert.ok(archive,'old partial rows must be preserved in new audit sheet');
+assert.equal(archive.get('1:1'),'保護日時');
+assert.equal(archive.get('2:3'),'TAXIAPP_印刷データ');
+assert.equal(JSON.parse(archive.get('2:5'))[7],'別の乗車地',
+ 'old source contents survive in the verified backup without being lost');
+assert.equal(JSON.parse(archive.get('3:5'))[0],id);
+assert.equal(ctx.firestorePrintVerifyRowsDraft_(workbook,id,batches).readOnly,true);
+// Do not replace anything if a published index exists, even if a journal was
+// erased or missing. A completed source must never be treated as abandoned.
+journal.clear();
+store.get('TAXIAPP_印刷データ').set('2:8','疑わしい別の乗車地');
+const beforeUnsafe=modifications,archiveRows=archive.size;
+assert.throws(()=>ctx.firestorePrintPublishVersionedDraft_(workbook,id,batches,9,uid,()=>sourceChecks++),
+ /確定済み印刷元または保護対象不明/);
 assert.equal(modifications,beforeUnsafe);
-console.log('印刷元の時刻Date変換と中断後の正確な部分転送再開を確認');
+assert.equal(archive.size,archiveRows);
+console.log('時刻型変換、未完了明細の退避・再取得・再開と確定済みデータ保護を確認');
