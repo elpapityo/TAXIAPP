@@ -82,7 +82,7 @@ const before=JSON.stringify([...store.get('TAXIAPP_印刷データ')]);
 const result=ctx.firestorePrintPublishVersionedDraft_(workbook,id,batches,7,uid,()=>sourceChecks++);
 assert.equal(result.id,id);
 assert.equal(sourceChecks,1);
-assert.deepEqual(result.changedSheets,tables.slice(1));
+assert.deepEqual(Array.from(result.changedSheets),tables.slice(1));
 assert.equal(JSON.stringify([...store.get('TAXIAPP_印刷データ')]),before,
  'previous valid partial rows must not be modified, cleared or duplicated');
 for(const name of tables)assert.ok(store.get(name).has('2:1'),name+' populated');
