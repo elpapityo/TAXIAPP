@@ -417,6 +417,9 @@ function firestorePrintVerifyPublishedDraft_(ss,id){
  if(!Number.isSafeInteger(records)||records<0||records>60||
     !Number.isFinite(meter))
   throw Error('印刷元の件数またはメーター売上が不正です');
- return {id:id,date:String(item[1]),records:records,meter:meter,
+ var dateValue=item[1];
+ var date=Object.prototype.toString.call(dateValue)==='[object Date]'?
+  Utilities.formatDate(dateValue,'Asia/Tokyo','yyyy-MM-dd'):String(dateValue);
+ return {id:id,date:date,records:records,meter:meter,
   revision:journal.record.revision};
 }
