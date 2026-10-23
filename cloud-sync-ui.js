@@ -481,7 +481,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  // Existing remote originals remain intact; a user must explicitly select
  // each old test duty for trash. This also covers deleted-before-update records.
  function cloudTrashMarkup(){
-  const esc=d.escape;
+  const esc=d.escape,viewOnly=Boolean(d.allowCloudIndexView?.()&&d.canView?.());
   const rows=[...cloudRows].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||''))).map(r=>{
    const n=Number.isSafeInteger(r.recordsCount)?r.recordsCount:r.shift?.records?.length;
    const amount=Number.isFinite(r.meter)?r.meter.toLocaleString('ja-JP')+'円':'金額未記録';
@@ -489,9 +489,9 @@ root.TAXIAPP_SYNC_UI=function(d){
     esc(r.date||r.shift?.date||'日付未記録')+' ／ '+(n==null?'件数未記録':n+'件')+' ／ '+amount+
     '</strong><p class="caption-note">'+(r.deleted?'ゴミ箱（復元可能）':r.ended?'入庫済み':'未入庫')+
     ' ／ 更新番号 '+r.revision+' ／ '+esc(r.id)+'</p><div class="actions">'+
-    (r.deleted?'<button class="btn" data-action="cloudRestore" data-id="'+esc(r.id)+'">クラウドから復元</button>':
-    '<button class="btn" data-action="cloudIndexOpen" data-id="'+esc(r.id)+'">内容を確認・編集</button>'+
-    '<button class="btn red" data-action="cloudTrash" data-id="'+esc(r.id)+'">クラウドのゴミ箱へ移動</button>')+
+    (r.deleted?(viewOnly?'ゴミ箱内・操作不可':'<button class="btn" data-action="cloudRestore" data-id="'+esc(r.id)+'">クラウドから復元</button>'):
+    '<button class="btn" data-action="cloudIndexOpen" data-id="'+esc(r.id)+'">'+(viewOnly?'内容を確認':'内容を確認・編集')+'</button>'+
+    (viewOnly?'':'<button class="btn red" data-action="cloudTrash" data-id="'+esc(r.id)+'">クラウドのゴミ箱へ移動</button>'))+
     '</div></div>';
   }).join('');
   return '<h3 class="subsection">Firestore日報一覧（1乗務1行）</h3>'+
@@ -505,15 +505,17 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(cloudBusy)return false;
   // A manual owner-approved cleanup must work with automatic two-way sync OFF.
   // Never enable background upload merely to reach an old Google-only duty.
-  if(!d.configured()||(d.canSync&&!d.canSync())||d.canView?.()){
-   d.toast('操作可能な本人端末でクラウド接続を確認してください',true);return false;
+  const listViewer=kind==='load'&&Boolean(d.allowCloudIndexView?.())&&Boolean(d.canView?.());
+  if(!d.configured()||(!listViewer&&((d.canSync&&!d.canSync())||d.canView?.()))){
+   d.toast('本人認証と端末権限を確認してください',true);return false;
   }
   cloudBusy=true;cloudError='';refreshPanel(true);
   const epoch=cloudEpoch,uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||'');
   const verifyScope=()=>{
    if(cloudEpoch!==epoch||String(d.scopeKey?.()||'')!==uid||
       String(d.endpoint()||'')!==endpoint||!d.configured()||
-      (d.canSync&&!d.canSync())||d.canView?.())
+      (!listViewer&&((d.canSync&&!d.canSync())||d.canView?.()))||
+      (listViewer&&(!d.allowCloudIndexView?.()||!d.canView?.())))
     throw Error('ログイン利用者または保存先が変更されたため操作を停止しました');
   };
   const scopedRequest=async(action,payload)=>{
