@@ -28,7 +28,7 @@ function target(kind){
   matches:(selectors)=>kind==='historyDate'&&selectors.includes('#historyDate')||
    kind==='historyShiftSelect'&&selectors.includes('#historyShiftSelect')||
    kind==='pcSetting'&&selectors.includes('[data-firestore-print-setting]'),
-  closest:(selectors)=>kind==='pcPrint'&&selectors.includes('[data-action="firestorePrintToGoogle"]')||
+  closest:(selectors)=>(kind==='pcPrint'&&selectors.includes('[data-action="firestorePrintToGoogle"]')||kind==='pcProbe'&&selectors.includes('[data-action="firestorePrintProbe"]'))||
    kind==='historyFetch'&&selectors.includes('[data-action="loadCloudHistory"]')
  };
 }
@@ -44,6 +44,7 @@ assert.equal(allowed('historyShiftSelect','click'),true,'同じ日の乗務を�
 assert.equal(allowed('historyFetch','click'),true,'日付指定の本人日報取得を許可');
 assert.equal(allowed('pcSetting','input'),true,'PCの接続先を入力できる');
 assert.equal(allowed('pcSetting','change'),true,'PCの接続設定を保存できる');
+assert.equal(allowed('pcProbe','click'),true,'本人Firebaseの読取確認を許可');
 assert.equal(allowed('pcPrint','click'),true,'本人認証済みPCの印刷転送を許可');
 assert.equal(allowed('other','click'),false,'閲覧専用の営業編集を拒否');
 context.TAXIAPP_PRINT_VIEWER_MODE=false;
