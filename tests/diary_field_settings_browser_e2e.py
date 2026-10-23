@@ -89,13 +89,13 @@ try:
     assert not status_fields.get('missing'),status_fields
     assert status_fields['nested'],status_fields
     assert status_fields['keys']==[
-       'state','dispatchSource','waiting','dispatchType','payment','meter','highway','from','to'
+       'state','dispatchSource','waiting','dispatchType','payment','meter','highway','from','to','elapsed'
     ],status_fields
-    assert status_fields['checked']==[True]*9,status_fields
+    assert status_fields['checked']==[True]*10,status_fields
     assert status_fields['master']==2,status_fields
     assert status_fields['underDiary']==0,status_fields
     assert '配車区分' in status_fields['text'] and '降車地' in status_fields['text'],status_fields
-    print('PASS Chrome: upper ride status now has nine independent checkbox controls inside the requested settings menu')
+    print('PASS Chrome: upper ride status has ten independent checkbox controls including elapsed time')
     print('PASS Chrome: nine optional controls, two shared distance settings,'
           ' fixed inputs and safely read-only client layout')
 finally:
