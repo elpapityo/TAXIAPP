@@ -33,11 +33,11 @@ function firestorePrintSameCellDraft_(actual,expected){
  // source columns to Numbers. Match only unambiguous decimal literals.
  // Shift IDs and leading-zero strings remain strict text matches.
  if(typeof actual==='number'&&Number.isFinite(actual)&&
-    typeof expected==='string'&&/^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(expected)&&
+    typeof expected==='string'&&/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(expected)&&
     Number(expected)===actual&&
     (Number.isSafeInteger(actual)||String(actual)===expected))return true;
  if(typeof expected==='number'&&Number.isFinite(expected)&&
-    typeof actual==='string'&&/^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(actual)&&
+    typeof actual==='string'&&/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(actual)&&
     Number(actual)===expected&&
     (Number.isSafeInteger(expected)||String(expected)===actual))return true;
  return JSON.stringify(actual)===JSON.stringify(expected);
