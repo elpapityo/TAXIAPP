@@ -2,7 +2,7 @@
  * TAXIAPP 本人Firestore → 既存Google補助簿
  * スプレッドシート上から選ぶ操作。既存の GAS v3 / 2ページ帳票は置換しない。
  *
- * Google IAM でDB全体を読まない。Google利用者の短期OAuth認証を
+ * Google IAM でDB全体を読まない。Google利用者の短期OpenID認証を
  * Firebase Auth RESTで本人UIDのIDトークンへ交換し、Firestore Rulesで読む。
  * この交換方式は本番Googleログインで未検証。失敗時は何も転送しない。
  *
@@ -33,12 +33,16 @@ function firestoreSheetOwner_(eventUser){
 
 function firestoreSheetFirebaseToken_(eventUser){
  var owner=firestoreSheetOwner_(eventUser),cfg=firestorePrintConfigDraft_();
- var googleToken=ScriptApp.getOAuthToken();
- if(!googleToken)throw Error('本人のGoogleログイントークンを取得できません');
+ // Firebase accepts Google OpenID identity tokens. Apps Script's OAuth
+ // access token is scoped for Google API access and is not the same thing.
+ // getIdentityToken() requires the "openid" scope in appsscript.json.
+ var googleIdToken=ScriptApp.getIdentityToken();
+ if(typeof googleIdToken!=='string'||googleIdToken.split('.').length!==3)
+  throw Error('Google IDトークンを取得できません。appsscript.json の openid 権限を確認してください');
  var url='https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key='+
   encodeURIComponent(owner.apiKey);
- var body={requestUri:'https://elpapityo.github.io/TAXIAPP/',
-  postBody:'access_token='+encodeURIComponent(googleToken)+'&providerId=google.com',
+ var body={requestUri:'http://localhost',
+  postBody:'id_token='+encodeURIComponent(googleIdToken)+'&providerId=google.com',
   returnSecureToken:true};
  var response=UrlFetchApp.fetch(url,{
   method:'post',contentType:'application/json',
