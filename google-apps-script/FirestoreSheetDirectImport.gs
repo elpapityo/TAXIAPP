@@ -44,10 +44,25 @@ function firestoreSheetFirebaseToken_(eventUser){
   method:'post',contentType:'application/json',
   payload:JSON.stringify(body),muteHttpExceptions:true
  });
- // Do not include Google/Firebase tokens, response contents or personal data in errors.
- if(response.getResponseCode()!==200)
-  throw Error('GoogleアカウントとFirebase本人UIDを連携できません。未転送のまま停止しました（HTTP '+
-   response.getResponseCode()+'）。PCのTAXIAPP本人ログイン方式をご利用ください');
+ // Expose ONLY a strict allowlisted Firebase error category. Never log
+ // arbitrary provider text, OAuth tokens, Firebase ID tokens or identities.
+ if(response.getResponseCode()!==200){
+  var category='UNKNOWN';
+  try{
+   var returned=JSON.parse(response.getContentText());
+   var rawCode=String(returned&&returned.error&&returned.error.message||'');
+   var allowed=['INVALID_IDP_RESPONSE','INVALID_CREDENTIAL','INVALID_GRANT',
+    'OPERATION_NOT_ALLOWED','FEDERATED_USER_ID_ALREADY_LINKED',
+    'EMAIL_EXISTS','INVALID_API_KEY','API_KEY_INVALID','PROJECT_NOT_FOUND',
+    'INVALID_PROVIDER_ID','MISSING_REQUEST_URI',
+    'INVALID_OAUTH_CLIENT_ID','INVALID_OAUTH_RESPONSE','INVALID_PENDING_TOKEN',
+    'UNAUTHORIZED_DOMAIN','INVALID_IDENTIFIER',
+    'INVALID_PASSWORD','TOO_MANY_ATTEMPTS_TRY_LATER'];
+   if(allowed.indexOf(rawCode)>=0)category=rawCode;
+  }catch(ignore){}
+  throw Error('Firebase本人認証に失敗：HTTP '+response.getResponseCode()+
+   '／理由 '+category+'。原本・印刷先は変更していません。');
+ }
  var result=JSON.parse(response.getContentText());
  if(result.localId!==cfg.uid||
     String(result.email||'').toLowerCase()!==owner.email||
