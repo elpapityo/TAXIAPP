@@ -20,6 +20,10 @@ var TAXIAPP_FIRESTORE_PRINT_SOURCE_HEADERS={
 function firestorePrintSameCellDraft_(actual,expected){
  if(Object.prototype.toString.call(actual)==='[object Date]' &&
     typeof expected==='string' && Number.isFinite(actual.getTime())){
+  // Google Sheets TIME formatting turns HH:mm(:ss) text into native Date.
+  if(/^\d{2}:\d{2}(?::\d{2})?$/.test(expected))
+   return Utilities.formatDate(actual,'Asia/Tokyo',
+    expected.length===5?'HH:mm':'HH:mm:ss')===expected;
   if(/^\d{4}-\d{2}-\d{2}$/.test(expected))
    return Utilities.formatDate(actual,'Asia/Tokyo','yyyy-MM-dd')===expected;
   if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(expected))
@@ -179,10 +183,14 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   return {id:id,changedSheets:[],oldOriginalUnchanged:true,paperFormsUnchanged:true};
  }
  if(!recorded){
-  if(previous.some(function(x){return x.rows.length;}))
-   throw Error('同一乗務IDの旧印刷元に確認済み更新番号がありません。初回の原本と照合し、手動復旧してください');
-  // First transfer uses the existing append + safe rollback implementation.
-  var first=firestorePrintPublishRowsDraft_(ss,id,batches,verifyBeforeIndex);
+  // A failed initial transfer may have left an exact copy of a subset
+  // of this shift's four print sources. Resume only when every existing
+  // row matches the latest owner-authenticated original, never overwrite.
+  var partial=previous.some(function(x){return x.rows.length>0;});
+  if(partial&&!previous.every(function(x,i){
+   return !x.rows.length||firestorePrintSameRowsDraft_(x.rows,planned[i].rows);
+  }))throw Error('未完了印刷元が最新Firestore原本と異なるため再開しません');
+  var first=firestorePrintPublishRowsDraft_(ss,id,batches,verifyBeforeIndex,partial);
   var published=firestorePrintSnapshotDraft_(ss,id,batches);
   if(!published.every(function(x,i){
    return firestorePrintSameRowsDraft_(x.rows,planned[i].rows);
@@ -285,7 +293,7 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   .map(function(p){return p.name;}),oldOriginalUnchanged:true,paperFormsUnchanged:true};
 }
 
-function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
+function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex,allowVerifiedResume){
  if(!ss||typeof ss.getSheetByName!=='function'||
     !/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId)||
     !Array.isArray(batches)||batches.length!==4)
@@ -338,7 +346,7 @@ function firestorePrintPublishRowsDraft_(ss,shiftId,batches,verifyBeforeIndex){
  // A prior partially written transfer requires manual reconciliation.
  var active=plans.filter(function(x){return x.rows.length>0||x.mode==='unchanged';});
  var unchanged=active.filter(function(x){return x.mode==='unchanged';}).length;
- if(unchanged>0&&unchanged<active.length)
+ if(unchanged>0&&unchanged<active.length&&!allowVerifiedResume)
   throw Error('同じ乗務IDの印刷元が一部だけ残っています。自動追記せず手作業で確認してください');
  // Complete printable detail/payment/aggregate FIRST, index LAST.
  // When a new duty fails mid-append, remove ONLY cells written by this
