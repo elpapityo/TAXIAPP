@@ -96,6 +96,35 @@ function firestorePrintDocDraft_(cfg,id,idToken){
  validatePacket_(packet);
  return {revision:data.revision,id:id,packet:packet};
 }
+/**
+ * PC preflight: always get a fresh owner-authenticated Firestore original.
+ * Verify the four destinations and legacy-ID collision without writing any
+ * Google cells, script property, Firestore document or printer output.
+ */
+function firestorePrintProbeDraft_(id,expectedDate,idToken){
+ var cfg=firestorePrintConfigDraft_();
+ var original=firestorePrintDocDraft_(cfg,id,idToken);
+ var duty=original.packet.shift;
+ if(expectedDate&&duty.date!==expectedDate)
+  throw Error('指定した乗務日とFirestore原本が一致しません');
+ var ss=SpreadsheetApp.openById(TAXIAPP_SHEET_ID);
+ ['TAXIAPP_乗務一覧','TAXIAPP_印刷データ',
+  'TAXIAPP_決済内訳','TAXIAPP_集計',
+  'TAXIAPP_印刷操作','補助簿印刷用','補助簿印刷用_2頁']
+  .forEach(function(name){
+   if(!ss.getSheetByName(name))throw Error('既存の印刷先が見つかりません：'+name);
+  });
+ var prior=ss.getSheetByName('TAXIAPP_同期原本');
+ if(!prior)throw Error('旧Google原本の保存先を確認できません');
+ var n=Math.max(0,prior.getLastRow()-1),collision=false;
+ if(n)collision=prior.getRange(2,1,n,1).getValues()
+  .some(function(row){return String(row[0])===id;});
+ return {id:id,date:duty.date,revision:original.revision,
+  records:duty.records.length,ready:!collision,
+  reason:collision?'旧Google原本に同一IDが存在します。安全のため自動取込できません':'',
+  readOnly:true};
+}
+
 /** Manual PC operation only. Never registered in public doPost. */
 function firestorePrintSelectedDutyDraft_(id,expectedDate,idToken){
  var cfg=firestorePrintConfigDraft_();
