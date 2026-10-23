@@ -31,7 +31,7 @@ const context={
 vm.createContext(context);
 vm.runInContext(js,context);
 const keys=Array.from(vm.runInContext('DRIVE_STATUS_FIELDS.map(x=>x[0])',context));
-assert.deepEqual(keys,['state','dispatchSource','waiting','dispatchType','payment','meter','highway','from','to']);
+assert.deepEqual(keys,['state','dispatchSource','waiting','dispatchType','payment','meter','highway','from','to','elapsed']);
 const render=()=>vm.runInContext('renderDutyStatus(shift)',Object.assign(context,{shift:blank}));
 const cells=[
  ['state','data-duty-field="state"'],
@@ -44,10 +44,10 @@ const cells=[
 ];
 const fields=vm.runInContext('renderDriveStatusFieldSettings()',context);
 for(const key of keys)assert.ok(fields.includes('data-drive-status-field="'+key+'"'),'setting checkbox missing '+key);
-assert.equal((fields.match(/data-drive-status-field=/g)||[]).length,9);
+assert.equal((fields.match(/data-drive-status-field=/g)||[]).length,10);
 const oldValue={...status},saved={records:[],breakSessions:[],fields:{raw:'preserve'}};
 const stored=JSON.stringify(saved);
-for(let mask=0;mask<512;mask++){
+for(let mask=0;mask<1024;mask++){
  model.prefs.driveStatusFields=Object.fromEntries(keys.map((k,i)=>[k,Boolean(mask&(1<<i))]));
  const output=render();
  for(const [key,token] of cells){
@@ -88,7 +88,30 @@ assert.match(source,/renderDriveStatusFieldSettings\(\)/);
 assert.match(source,/if\(target\.dataset\.driveStatusField\)/);
 assert.match(source,/model\.prefs\.driveStatusFields\[key\]=target\.checked/);
 assert.match(source,/data-cruising-summary-field\],\[data-drive-status-field\]/);
-assert.match(source,/if\(!columns\.length&&!routeWithSave\)return '';/);
+assert.match(source,/if\(!columns\.length&&!routeWithSave&&!elapsedVisible\)return '';/);
 assert.match(source,/stickySaveButton:'off'/,'既存利用者の上部登録ボタンは初期OFF');
 assert.match(source,/<title>TAXIAPP v\d+\.\d+\.\d+(?:-dev\.\d+)? — 乗務日報<\/title>/);
-console.log('PASS 512 combinations × ride duty status cells, master ON/OFF, dispatch, waiting and cruising separation; old data untouched');
+// Meter-only alighting clock must be a selectable header CARD, not mandatory "other" content.
+context.window={TAXIAPP_ALIGHT_CLOCK:{reference:()=>({hasAlight:true,seconds:125})}};
+context.durationJapanese=()=> '00時間02分05秒';
+model.prefs.ui.driveLayout='meter';
+model.prefs.ui.driveStatusDisplay='on';
+model.prefs.cruisingSummaryFields={state:true,sales:true,elapsed:true};
+model.prefs.driveStatusFields={state:true,elapsed:true};
+blank.draft=null;
+status.state='空車・流し中';status.waiting=false;status.dispatch=false;
+let meterView=render();
+assert.match(meterView,/data-duty-field="elapsed"/,'selected elapsed card must be visible');
+assert.match(meterView,/data-meter-elapsed-label>前回の降車から/);
+assert.ok(meterView.indexOf('data-duty-field="elapsed"')<meterView.indexOf('meter-summary-more'),
+ 'the selected clock must be outside the other-information accordion');
+assert.doesNotMatch(meterView,/meter-elapsed-panel/);
+model.prefs.cruisingSummaryFields.elapsed=false;
+assert.doesNotMatch(render(),/data-duty-field="elapsed"/,'unselected clock must be hidden');
+blank.draft={kind:'ride',raw:{M:'08:30'}};status.state='実車中';
+model.prefs.driveStatusFields.elapsed=true;
+assert.match(render(),/data-duty-field="elapsed"/,'ride clock card is individually configurable');
+model.prefs.driveStatusFields.elapsed=false;
+assert.doesNotMatch(render(),/data-duty-field="elapsed"/,'ride clock card can be hidden');
+
+console.log('PASS 1024 visibility combinations and selectable meter-mode alight clock; existing duty data untouched');
