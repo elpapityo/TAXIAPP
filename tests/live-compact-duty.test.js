@@ -30,6 +30,7 @@ const end=script.indexOf('let breakPageOpen=false;',begin);
 assert.ok(end>begin);
 let current=null;
 const context={
+ lastVerifiedPreviousDuty:null,accountScope:{uid:''},
  getShift:()=>current,
  titleBlock:()=>'<h1>乗務入力のヘッダー</h1>',
  renderDriveLayoutChooser:()=>'<div>営業入力</div>',
