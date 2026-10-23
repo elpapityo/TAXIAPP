@@ -25,6 +25,8 @@ const ctx={JSON,Number,Object,Array,String,Date,RegExp,Error,console,
  LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock(){}})},
  firestorePrintConfigDraft_:()=>({uid:'owner',project:'test'})};
 vm.createContext(ctx);vm.runInContext(source,ctx);
+// Local test synthetic config overrides the script-property lookup only.
+ctx.firestorePrintConfigDraft_=()=>({uid:'owner',project:'test'});
 assert.equal(ctx.firestorePrintSamePacketDraft_(first,reordered),true,
  'Firestore map property order must not make the same revision look changed');
 const actuallyDifferent=JSON.parse(JSON.stringify(reordered));
