@@ -2166,10 +2166,14 @@ function renderDutyStatus(shift){
  const route=status.dispatch
   ?(allowFrom?`<div class="preview-duty-route">${location('from','お迎え場所',status.from)}</div>`:'')
   :(allowFrom||allowTo?`<div class="preview-duty-route">${allowFrom?location('from','乗車地',status.from):''}${allowFrom&&allowTo?'<span>➜</span>':''}${allowTo?location('to','降車地',status.to):''}</div>`:'');
- if(!columns.length&&!route)return ''; // Do not show an empty frame when all optional cells are hidden.
- return `<section class="preview-duty-summary" aria-label="現在の営業情報">
-  ${columns.length?`<div class="preview-duty-stats">${columns.join('')}</div>`:''}
-  ${route}</section>`;
+ const quick=displayPrefs().stickySaveButton==='on'&&shift.draft?.kind==='ride'?
+  '<button type="button" class="duty-quick-save" data-action="saveDraft" '+(canRegisterCurrentDraft(shift)?'':'disabled')+'>✓ 登録</button>':'';
+ const routeWithSave=route?(quick?route.replace(/<\/div>$/,quick+'</div>'):route):
+  (quick?'<div class="preview-duty-route">'+quick+'</div>':'');
+ if(!columns.length&&!routeWithSave)return '';
+ return '<section class="preview-duty-summary" aria-label="現在の営業情報">'+
+   (columns.length?'<div class="preview-duty-stats">'+columns.join('')+'</div>':'')+
+   routeWithSave+'</section>';
 }
 function renderGuidedHeading(shift){
  const d=shift.draft;
@@ -5736,6 +5740,7 @@ function updateEstimate(){
  const uber=uberAppAmounts(s.draft);const put=(sel,val)=>{const el=appEl.querySelector(sel);if(el)el.textContent=val;};put('[data-uber-app-payment]',uber?.valid?money(uber.appPaid):'—');put('[data-uber-cabin-fare]',uber?.valid?money(uber.displayed):'—');put('[data-uber-dispatch]',uberDispatchFeeApplies(s.draft,s.date,s.settings)?money(st.uberSurcharge):'¥0');
 
   const fee=appEl.querySelector('[data-uber-preview]');if(fee)fee.textContent='—（未計算）';
+ refreshQuickRegisterButtons();
 }
 function setDeposit(value){const s=getShift();if(!s?.draft)return;
  const d=s.draft,quote=cashChange(d,s.settings,s.date).due;
