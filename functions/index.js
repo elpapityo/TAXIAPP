@@ -132,3 +132,134 @@ exports.deleteTestAccount=onCall(options,async request=>{
  return {uid,message:'認証情報・オプチャネーム・サーバー日報・設定の削除が完了しました。'
    +' 再登録防止の最小記録のみ保持しています。'};
 });
+
+
+// ==========================================
+// 管理者による別UIDの日報閲覧と1乗務単位のゴミ箱移動
+// クライアント向けFirestoreルールは本人だけのまま変更しない。
+// ==========================================
+const {FieldPath}=require('firebase-admin/firestore');
+const SHIFT_ID=/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/;
+function checkedShiftId(value){
+ if(typeof value!=='string'||!SHIFT_ID.test(value))
+  fail('invalid-argument','乗務IDの形式が不正です');
+ return value;
+}
+async function readableAccount(uid){
+ const [member,admin]=await Promise.all([
+  db.doc('users/'+uid).get(),db.doc('admins/'+uid).get()
+ ]);
+ if(!member.exists&&!admin.exists)
+  fail('not-found','対象アカウントが登録されていません');
+ if(member.get('status')==='deleted'||member.get('status')==='deleting')
+  fail('failed-precondition','削除中または削除済みアカウントは閲覧対象外です');
+ return {member,admin};
+}
+async function auditAccess(actor,uid,action,shiftId){
+ await db.collection('adminAccessAudit').add({
+  actorUid:actor,targetUid:uid,action,
+  ...(shiftId?{shiftId}:{}),
+  at:FieldValue.serverTimestamp()
+ });
+}
+function listingMeta(snapshot){
+ const value=snapshot.data()||{},shift=value.shift||{};
+ return {
+  id:snapshot.id,date:String(shift.date||''),
+  startedIso:String(shift.startedIso||''),ended:Boolean(shift.endedAt||shift.endedIso),
+  recordCount:Array.isArray(shift.records)?shift.records.length:0,
+  revision:value.revision,trashed:value.trashed===true
+ };
+}
+// ページングで50乗務単位。起動時・ユーザー選択時の全件原本取得は禁止。
+exports.listAdminAccountDuties=onCall(options,async request=>{
+ const actor=await administrator(request),uid=requestedUid(request.data);
+ await readableAccount(uid);
+ const cursor=request.data?.afterId||'';
+ if(cursor)checkedShiftId(cursor);
+ let q=db.collection('privateDuties').doc(uid).collection('shifts')
+  .orderBy(FieldPath.documentId()).limit(50);
+ if(cursor)q=q.startAfter(cursor);
+ const snap=await q.get();
+ const last=snap.docs.length?snap.docs[snap.docs.length-1].id:'';
+ await auditAccess(actor,uid,'list_duties');
+ return {
+  uid,shifts:snap.docs.map(listingMeta),
+  nextAfterId:snap.docs.length===50?last:null
+ };
+});
+exports.getAdminDutyDetail=onCall(options,async request=>{
+ const actor=await administrator(request),uid=requestedUid(request.data),
+  shiftId=checkedShiftId(request.data?.shiftId);
+ await readableAccount(uid);
+ const snapshot=await db.doc('privateDuties/'+uid+'/shifts/'+shiftId).get();
+ if(!snapshot.exists)fail('not-found','指定乗務は存在しません');
+ const value=snapshot.data();
+ if(value?.shift?.id!==shiftId||value?.format!=='TAXIAPP_PRIVATE_SHIFT_V1')
+  fail('failed-precondition','乗務IDと原本の形式が一致しません');
+ await auditAccess(actor,uid,'read_duty',shiftId);
+ // 元の日報・料金計算済みデータを再計算せず、そのまま読む。
+ // 操作端末識別子等のアクセス制御用フィールドは公開しない。
+ return {uid,shiftId,revision:value.revision,trashed:value.trashed===true,
+  shift:value.shift};
+});
+exports.getAdminAccountSettings=onCall(options,async request=>{
+ const actor=await administrator(request),uid=requestedUid(request.data);
+ await readableAccount(uid);
+ const snapshot=await db.doc('accountSettings/'+uid).get();
+ await auditAccess(actor,uid,'read_settings');
+ if(!snapshot.exists)return {uid,exists:false};
+ const value=snapshot.data()||{};
+ return {uid,exists:true,schemaVersion:value.schemaVersion,
+  prefs:value.prefs||{}};
+});
+// 「個別削除」は既存のtrashed仕様に従い1乗務だけをゴミ箱へ。
+// 完全削除ではない。実データの破棄、再計算、別UIDへの移行は行わない。
+exports.adminTrashAccountDuty=onCall(options,async request=>{
+ const actor=await administrator(request,true),uid=requestedUid(request.data),
+  shiftId=checkedShiftId(request.data?.shiftId);
+ confirmed(request.data,uid);
+ if(request.data?.confirmationShiftId!==shiftId)
+  fail('failed-precondition','乗務IDの確認が一致しません');
+ const revision=request.data?.expectedRevision;
+ if(!Number.isSafeInteger(revision)||revision<1)
+  fail('invalid-argument','原本の更新番号を確認してください');
+ if(request.data?.confirmTrash!==true)
+  fail('failed-precondition','個別日報の削除確認が必要です');
+ if(uid===actor)fail('permission-denied','管理者本人の日報はこの画面で削除できません');
+ await db.runTransaction(async tx=>{
+  const adminRef=db.doc('admins/'+uid),
+   userRef=db.doc('users/'+uid),
+   dutyRef=db.doc('privateDuties/'+uid+'/shifts/'+shiftId);
+  const [admin,member,duty]=await Promise.all([
+   tx.get(adminRef),tx.get(userRef),tx.get(dutyRef)
+  ]);
+  if(admin.exists||!member.exists||
+    !['active','suspended'].includes(member.get('status')))
+   fail('permission-denied','削除対象が通常の利用者ではありません');
+  if(!duty.exists)fail('not-found','指定乗務がありません');
+  const original=duty.data();
+  if(original?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+     original?.shift?.id!==shiftId)
+   fail('failed-precondition','原本のIDまたは形式が不正です');
+  if(original.trashed===true)
+   fail('failed-precondition','この日報は既にゴミ箱に入っています');
+  if(original.revision!==revision)
+   fail('aborted','更新番号が変わりました。詳細を読み直してください');
+  if(!original.shift.endedAt&&!original.shift.endedIso)
+   fail('failed-precondition','進行中の乗務は削除できません。入庫済みだけを選択してください');
+  tx.update(dutyRef,{
+   trashed:true,revision:revision+1,updatedAt:FieldValue.serverTimestamp()
+  });
+  tx.create(db.collection('adminAccessAudit').doc(),{
+   actorUid:actor,targetUid:uid,action:'trash_duty',shiftId,
+   beforeRevision:revision,afterRevision:revision+1,
+   at:FieldValue.serverTimestamp()
+  });
+ });
+ const check=await db.doc('privateDuties/'+uid+'/shifts/'+shiftId).get();
+ if(!check.exists||check.get('revision')!==revision+1||check.get('trashed')!==true)
+  fail('unavailable','ゴミ箱移動後のサーバー確認ができません。再読み込みしてください');
+ return {uid,shiftId,revision:revision+1,trashed:true,
+  message:'指定した1乗務をゴミ箱へ移動しました。原本内容は保持されています。'};
+});
