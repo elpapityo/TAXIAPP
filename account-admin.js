@@ -4,7 +4,7 @@
  */
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
 import {getAuth,onAuthStateChanged,GoogleAuthProvider,signInWithPopup,signOut,reauthenticateWithPopup} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
-import {getFirestore,doc,getDocFromServer,collection,query,limit,getDocs} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
+import {getFirestore,doc,getDocFromServer,collection,query,limit,getDocsFromServer} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js';
 import './firebase-config.js';
 const $=id=>document.getElementById(id);
@@ -72,7 +72,7 @@ function renderList(){
 }
 async function loadList(){
  const myEpoch=epoch;
- const snap=await getDocs(query(collection(db,'users'),limit(150)));
+ const snap=await getDocsFromServer(query(collection(db,'users'),limit(150)));
  if(myEpoch!==epoch||!adminUid)return;
  users=snap.docs.map(s=>({uid:s.id,...s.data()}))
   .sort((a,b)=>String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
@@ -80,8 +80,8 @@ async function loadList(){
  renderList();
  notice('登録一覧を更新しました。');
 }
-async function execute(fn){
- if(busy||!adminUid)return;
+async function execute(fn,requireAdmin=true){
+ if(busy||(requireAdmin&&!adminUid))return;
  busy=true;buttons();const myEpoch=epoch;
  try{await fn();}catch(e){
   if(epoch===myEpoch)notice('操作できません：'+String(e?.message||e),true);
@@ -116,8 +116,8 @@ onAuthStateChanged(auth,async user=>{
 });
 $('signIn').addEventListener('click',()=>execute(async()=>{
  await signInWithPopup(auth,new GoogleAuthProvider());
-}));
-$('signOut').addEventListener('click',()=>execute(async()=>{await signOut(auth);}));
+},false));
+$('signOut').addEventListener('click',()=>execute(async()=>{await signOut(auth);},false));
 $('reload').addEventListener('click',()=>execute(loadList));
 $('search').addEventListener('input',renderList);
 $('confirmUid').addEventListener('input',buttons);
