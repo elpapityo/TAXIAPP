@@ -289,8 +289,13 @@ async function readDuty(shiftId){
  $('dutyTrashSection').hidden=!!selected.isAdmin;
  $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
   '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
- // No HTML rendering: contents may contain passengers' addresses and GPS.
- $('dutyDetail').textContent=JSON.stringify(duty.shift,null,2);
+ // 日報は元の保存データに基づく日本語閲覧専用UIで表示する。
+ // textContentからDOMを構築するため、住所・GPSをHTMLとして解釈しない。
+ if(!window.TAXIAPP_ADMIN_DUTY_VIEW?.render)
+  throw Error('日報の表示部品を読み込めません。画面を再読み込みしてください');
+ window.TAXIAPP_ADMIN_DUTY_VIEW.render($('dutyDetail'),duty.shift,{
+  revision:duty.revision,trashed:duty.trashed
+ });
  $('trashConfirmId').value='';$('trashConfirmAck').checked=false;
  buttons();
  notice('選択した1乗務の原本を読み取り専用で表示しました。');
