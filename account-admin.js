@@ -13,6 +13,8 @@ const auth=getAuth(app),db=getFirestore(app),functions=getFunctions(app,'asia-no
 let adminUid='',users=[],selected=null,preview=null,busy=false,epoch=0;
 let selectedDuty=null,dutyCursor=null,dutyRows=[],dutyUid='';
 let editDraft=null;
+// 本番で管理用Cloud Functions未配信、Spark無料運用中。公開操作を有効化しない。
+const ADMIN_CALLABLES_READY=false;
 const api={
  mark: httpsCallable(functions,'markTestAccount'),
  preview: httpsCallable(functions,'previewTestAccountDeletion'),
@@ -53,9 +55,11 @@ function buttons(){
  $('probeAdminName').disabled=busy||!activeTarget;
  $('cancelAdminName').disabled=busy;
  $('closeAccountDelete').disabled=busy;
- $('loadDuties').disabled=!selected||busy;
- $('loadSettings').disabled=!selected||busy;
- $('moreDuties').disabled=!selected||busy||!dutyCursor;
+ const ownView=selected?.uid===adminUid;
+ $('loadDuties').disabled=!selected||busy||(!ADMIN_CALLABLES_READY&&!ownView);
+ $('loadSettings').disabled=!selected||busy||(!ADMIN_CALLABLES_READY&&!ownView);
+ $('moreDuties').disabled=!selected||busy||!dutyCursor||(!ADMIN_CALLABLES_READY&&!ownView);
+ $('otherAccountReadNotice').hidden=!selected||ADMIN_CALLABLES_READY||ownView;
  $('trashDuty').disabled=!validSelectedDuty();
  $('restoreDuty').hidden=!selectedDuty||selectedDuty.trashed!==true;
  $('restoreDuty').disabled=!selectedDuty||busy||selectedDuty.trashed!==true||
@@ -71,7 +75,17 @@ function buttons(){
  $('adminEditSave').disabled=busy||!editDraft;
  $('markTest').disabled=!ok||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
  $('preview').disabled=!ok||selected.isAdmin||selected.status==='deleted';
- $('deleteAccount').disabled=!ok||selected.isAdmin||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
+ $('deleteAccount').disabled=!ADMIN_CALLABLES_READY||!ok||selected.isAdmin||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
+ if(!ADMIN_CALLABLES_READY){
+  for(const id of ['openNameEdit','openAccountDelete','saveAdminName',
+    'probeAdminName','markTest','preview','deleteAccount','editDuty',
+    'trashDutyShortcut','restoreDuty','trashDuty','adminEditSave'])
+   $(id).disabled=true;
+  $('openAccountDelete').hidden=true;
+  $('editDuty').hidden=true;
+  $('trashDutyShortcut').hidden=true;
+  $('restoreDuty').hidden=true;
+ }
  for(const id of ['reload','search','signIn','signOut'])$(id).disabled=busy;
 }
 function clearDutyPanel(){
@@ -91,6 +105,15 @@ function selectUser(user){
  $('selectedPanel').hidden=false;
  $('selectedAccountHeading').textContent=(user.openChatName||'（名前未登録）')+
   '（'+(user.isAdmin?'管理者':'一般利用者')+'）／ UID：'+user.uid;
+ // Firestore Consoleの選択UIDドキュメントへ直接移動。
+ // active/suspended users の名前が正本ならusers、それ以外の管理者はadmins。
+ const source=['active','suspended'].includes(user.status)?'users':
+  user.isAdmin?'admins':'users';
+ const consoleUrl='https://console.firebase.google.com/project/taxiapp-2b6bd/'+
+  'firestore/databases/-default-/data/~2F'+source+'~2F'+encodeURIComponent(user.uid);
+ $('openNameConsole').href=consoleUrl;
+ $('adminNameTarget').textContent='編集対象：'+source+'/'+user.uid+
+  ' ／ 現在の名前：'+(user.storedOpenChatName||'（未設定）');
  // 別ユーザーを選ぶと開閉状態だけを初期化。データの読み込みや原本は変更しない。
  $('accountInfoFold').open=false;
  $('accountActionsFold').open=false;
