@@ -340,3 +340,52 @@ exports.adminUpdateDutyLocations=onCall(options,async request=>{
  return {uid,shiftId,recordId,revision:revision+1,
   pickup,dropoff,message:'乗車地・降車地を保存し、サーバー原本を読戻し確認しました。'};
 });
+
+
+// 管理者本人・一般利用者のゴミ箱日報を、CAS確認して1件だけ復元する。
+exports.adminRestoreAccountDuty=onCall(options,async request=>{
+ const actor=await administrator(request,true),uid=requestedUid(request.data),
+  shiftId=checkedShiftId(request.data?.shiftId);
+ confirmed(request.data,uid);
+ if(request.data?.confirmationShiftId!==shiftId||
+    request.data?.confirmRestore!==true)
+  fail('failed-precondition','乗務IDと復元操作を確認してください');
+ const revision=request.data?.expectedRevision;
+ if(!Number.isSafeInteger(revision)||revision<1)
+  fail('invalid-argument','原本の更新番号が不正です');
+ await db.runTransaction(async tx=>{
+  const adminRef=db.doc('admins/'+uid),userRef=db.doc('users/'+uid),
+   dutyRef=db.doc('privateDuties/'+uid+'/shifts/'+shiftId);
+  const [targetAdmin,targetUser,duty]=await Promise.all([
+   tx.get(adminRef),tx.get(userRef),tx.get(dutyRef)
+  ]);
+  const authorisedTarget=uid===actor?
+   targetAdmin.exists&&targetAdmin.get('enabled')===true:
+   !targetAdmin.exists&&targetUser.exists&&
+   ['active','suspended'].includes(targetUser.get('status'));
+  if(!authorisedTarget)fail('permission-denied','この利用者の日報は復元できません');
+  if(!duty.exists)fail('not-found','日報原本がありません');
+  const saved=duty.data();
+  if(saved?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||saved?.shift?.id!==shiftId)
+   fail('failed-precondition','乗務IDと原本が一致しません');
+  if(saved.trashed!==true)
+   fail('failed-precondition','ゴミ箱内の日報ではありません');
+  if(saved.revision!==revision)
+   fail('aborted','更新番号が変わりました。原本を読み直してください');
+  tx.update(dutyRef,{
+   trashed:false,revision:revision+1,
+   updatedAt:FieldValue.serverTimestamp()
+  });
+  tx.create(db.collection('adminAccessAudit').doc(),{
+   actorUid:actor,targetUid:uid,action:'restore_duty',shiftId,
+   beforeRevision:revision,afterRevision:revision+1,
+   at:FieldValue.serverTimestamp()
+  });
+ });
+ const check=await db.doc('privateDuties/'+uid+'/shifts/'+shiftId).get();
+ if(!check.exists||check.get('revision')!==revision+1||
+    check.get('trashed')!==false||check.get('shift')?.id!==shiftId)
+  fail('unavailable','復元後の原本を照合できません。再読み込みしてください');
+ return {uid,shiftId,revision:revision+1,trashed:false,
+  message:'対象の1乗務をゴミ箱から復元しました。'};
+});
