@@ -136,7 +136,7 @@ exports.deleteTestAccount=onCall(options,async request=>{
 
 // ==========================================
 // 管理者による別UIDの日報閲覧と1乗務単位のゴミ箱移動
-// クライアント向けFirestormルールは本人だけのまま変更しない。
+// クライアント向けFirestoreルールは本人だけのまま変更しない。
 // ==========================================
 const {FieldPath}=require('firebase-admin/firestore');
 const SHIFT_ID=/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/;
