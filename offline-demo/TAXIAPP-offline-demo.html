@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><title>TAXIAPP 独立オフラインデモ</title><style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(max-width:1050px){.layout{padding:14px 17px 90px}.content-layout{grid-template-columns:185px minmax(0,1fr);gap:14px}.sidebar-note{padding:0}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.details .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.layout{padding:12px 12px 100px}.content-layout{display:block}.sidebar{position:fixed;bottom:0;left:0;right:0;top:auto;z-index:30;background:white;box-shadow:0 -4px 22px #0d2e4d19;padding:7px 4px max(6px,env(safe-area-inset-bottom))}.sidebar .nav{display:flex;gap:0;padding:0}.sidebar .nav button{flex:1;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:6px 2px;border-radius:8px;text-align:center}.sidebar .nav button.selected{box-shadow:inset 0 -3px #247bd0}.sidebar .nav-ico{font-size:20px}.sidebar .nav-label{font-size:10px}.sidebar-note{display:none}.topbar{margin-bottom:17px}.brand-name{font-size:20px}.brand-icon{width:39px;height:39px}.status-pill{font-size:11px;padding:4px 9px}.card{padding:17px 16px;border-radius:15px;margin-bottom:12px}.hero{padding:18px}.h1{font-size:22px}.hero-heading{font-size:20px}.metrics{gap:8px;margin:14px 0}.metric{padding:12px}.metric strong{font-size:21px}.form-grid{grid-template-columns:1fr}.form-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.details .form-grid{grid-template-columns:1fr}.action-grid{grid-template-columns:1fr 1fr}.btn.big{min-height:61px;font-size:17px;padding:14px 8px}.stats-split{grid-template-columns:1fr}.toast{bottom:90px}.section-heading{display:block}.section-heading>*+*{margin-top:10px}}
+@media(max-width:380px){.brand-tag{font-size:10px}.brand-name{font-size:18px}.chip{min-width:51px;padding:7px 10px}.chip.active{padding:6px 9px}.metric strong{font-size:19px}}
+
+.local-warning{border:1px solid #e3bd65;background:#fff8e5;color:#5c450c;border-radius:12px;padding:13px 16px;font-size:13px;font-weight:700;margin-bottom:14px}
+
+.gps-status{font-size:12px;padding:7px 10px;border:1px solid #d4e4f1;background:#f1f7fb;color:#1a314a;border-radius:7px;margin:10px 0}
+html[data-ui-theme="night"] .gps-status{background:#243a54;color:#edf5ff;border-color:#6588a9}
+html[data-ui-theme="night"] .gps-control [data-gps-permission-status]{background:#243a54!important;color:#edf5ff!important;border-color:#6588a9!important;opacity:1!important;-webkit-text-fill-color:#edf5ff!important}
+@media(max-width:700px){input[type="datetime-local"]{font-size:16px}.stats-split{grid-template-columns:1fr}}
+
+/* v0.1.4 One-meter operation UI (independent of the business logic) */
+:root{--ui-font:1.30;--ui-touch:62px;--ui-primary-touch:78px;--ui-button-touch:62px;--ui-button-primary:78px}
+html[data-ui-text="normal"]{--ui-font:1}
+html[data-ui-text="large"]{--ui-font:1.30}
+html[data-ui-text="extra"]{--ui-font:1.55}
+html[data-ui-buttons="normal"]{--ui-touch:48px;--ui-primary-touch:66px;--ui-button-touch:48px;--ui-button-primary:66px}
+html[data-ui-buttons="ultra"]{--ui-touch:42px;--ui-primary-touch:48px;--ui-button-touch:38px;--ui-button-primary:42px}
+html[data-ui-buttons="compact"]{--ui-touch:48px;--ui-primary-touch:58px;--ui-button-touch:42px;--ui-button-primary:49px}
+html[data-ui-buttons="large"]{--ui-touch:62px;--ui-primary-touch:78px;--ui-button-touch:62px;--ui-button-primary:78px}
+html[data-ui-buttons="extra"]{--ui-touch:78px;--ui-primary-touch:96px;--ui-button-touch:78px;--ui-button-primary:96px}
+html[data-ui-buttons="compact"] .btn{padding-block:7px}
+html[data-ui-buttons="compact"] .btn.big{padding-block:9px}
+html[data-ui-buttons="compact"] .chip{padding-block:7px}
+.h1{font-size:calc(27px * var(--ui-font));line-height:1.24}
+.h2{font-size:calc(19px * var(--ui-font));line-height:1.3}
+.hero-heading{font-size:calc(23px * var(--ui-font));line-height:1.35}
+.field .field-label,.field-label{font-size:calc(13px * var(--ui-font));line-height:1.45}
+.field-sub{font-size:calc(11px * var(--ui-font))}
+.helper,.meta,.panel-strip,.warn,.danger-note,.statline,.sidebar-note,.ui-preview p{font-size:calc(13px * var(--ui-font));line-height:1.5}
+.caption-note,.tag,.footnote,.wait-history,.small,.pill,.eyebrow,.brand-tag,.metric .label,.metric small{font-size:calc(12px * var(--ui-font));line-height:1.5}
+.metric strong{font-size:calc(23px * var(--ui-font))}
+.metric .label{font-size:calc(12px * var(--ui-font))}
+.control{font-size:calc(17px * var(--ui-font));min-height:var(--ui-touch);line-height:1.4}
+.btn{font-size:calc(14px * var(--ui-font));min-height:var(--ui-button-touch);padding:10px 13px;line-height:1.4}
+.btn.big{font-size:calc(19px * var(--ui-font));min-height:var(--ui-button-primary);padding:14px 15px}
+.chip{font-size:calc(14px * var(--ui-font));min-height:var(--ui-button-touch);min-width:var(--ui-touch);line-height:1.3;padding:10px 11px}
+.chip.label-chip{font-size:calc(13px * var(--ui-font));min-width:var(--ui-touch)}
+.details summary{font-size:calc(15px * var(--ui-font));min-height:var(--ui-touch)}
+.nav button{min-height:var(--ui-button-touch)}.nav-label{font-size:calc(13px * var(--ui-font));line-height:1.25}
+.nav-ico{font-size:calc(19px * var(--ui-font))}
+.settings-advanced>summary{font-size:calc(16px * var(--ui-font));border-radius:12px;background:#e7f1fa;padding:18px 16px}.settings-advanced>.inner{padding:12px}.settings-advanced>.inner .card{padding:17px}
+/* Consistent comfortable insets across all settings accordions and cards. */
+.settings-advanced>.inner{padding:12px}
+.settings-advanced>.inner>.card{padding:14px;margin-bottom:12px}
+.settings-advanced .details{min-width:0;width:100%;margin-top:12px}
+.settings-advanced .details>.inner{padding:12px}
+.settings-advanced .details .card{padding:14px;margin-bottom:12px}
+.settings-advanced .field,.settings-advanced .control{min-width:0;max-width:100%}
+.settings-advanced [data-distance-address-settings]>.inner{padding:12px}
+[data-distance-address-settings]>.inner{padding:12px}
+[data-distance-address-settings]>.inner>[data-gps-settings],
+[data-distance-address-settings]>.inner>[data-address-settings]{min-width:0;width:100%;margin-inline:0}
+[data-distance-address-settings]>.inner>[data-gps-settings]>.inner,
+[data-distance-address-settings]>.inner>[data-address-settings]>.inner{padding:12px}
+@media(max-width:700px){
+ .settings-advanced>.inner{padding:10px}
+ .settings-advanced>.inner>.card{padding:12px;margin-bottom:10px}
+ .settings-advanced .details>.inner{padding:10px}
+ .settings-advanced .details .card{padding:12px;margin-bottom:10px}
+ [data-distance-address-settings]>.inner{padding:10px}
+ [data-distance-address-settings]>.inner>[data-gps-settings]>.inner,
+ [data-distance-address-settings]>.inner>[data-address-settings]>.inner{padding:10px}
+ .settings-advanced>summary{padding-inline:12px}
+}
+/* Light single-line framing for all settings panels, including nested menus. */
+.settings-advanced{border-width:1px;box-shadow:none}
+.settings-advanced .details{border-width:1px;box-shadow:none}
+.settings-advanced .card{border-width:1px;box-shadow:none}
+html[data-ui-theme="night"] .settings-advanced,
+html[data-ui-theme="night"] .settings-advanced .details,
+html[data-ui-theme="night"] .settings-advanced .card{border-color:#425e78}
+@media(max-width:700px){
+ .settings-advanced>.inner{padding:5px}
+ .settings-advanced>.inner>.card{padding:12px;margin:8px 0}
+ .settings-advanced .details>.inner{padding:5px}
+ .settings-advanced .details .card{padding:12px;margin:8px 0}
+ [data-distance-address-settings]>.inner{padding:5px}
+ [data-distance-address-settings]>.inner>[data-gps-settings]>.inner,
+ [data-distance-address-settings]>.inner>[data-address-settings]>.inner{padding:5px}
+ .settings-advanced .details{margin-top:8px}
+}
+.settings-advanced .control{max-width:100%}
+.ui-choice{margin:10px 0 16px}.ui-choice>.chip{flex:1;min-width:0}
+.ui-preview{border:2px solid #9eb9d8;background:#f1f8ff;border-radius:16px;padding:16px;margin-top:22px}
+.ui-preview strong{font-size:calc(17px * var(--ui-font));display:block;margin-bottom:5px}
+.passenger-control{margin:5px 0 12px}
+.passenger-control .selector{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px}
+.passenger-control .chip{min-width:0}
+html[data-ui-contrast="high"]{--line:#95a8bd;--muted:#405771;--blue:#0654a3;--dark:#13263b;--teal:#00635d}
+html[data-ui-contrast="high"] .card,html[data-ui-contrast="high"] .metric{border-width:2px}
+html[data-ui-contrast="high"] .control,html[data-ui-contrast="high"] .chip{border:2px solid #6c849e}
+html[data-ui-contrast="high"] .chip.active{background:#d7edff;border:3px solid #094d96;color:#063b7b}
+html[data-ui-contrast="high"] .btn:focus-visible,html[data-ui-contrast="high"] button:focus-visible{outline:4px solid #e8a421;outline-offset:2px}
+html[data-ui-theme="night"]{color-scheme:dark;--sheet:#182a3f;--line:#3b5772;--muted:#b0c3da;--blue:#71b8ff;--dark:#e9f5ff;--teal:#52d5ca;color:#edf5ff;background:#101c2a}
+html[data-ui-theme="night"] body{background:#101c2a;color:#edf5ff}
+html[data-ui-theme="night"] .card,html[data-ui-theme="night"] .metric,html[data-ui-theme="night"] .sheet-page,html[data-ui-theme="night"] .details,html[data-ui-theme="night"] .sidebar{background:#182a3f;color:#edf5ff;border-color:#3b5772}
+html[data-ui-theme="night"] .hero,html[data-ui-theme="night"] .ui-preview,html[data-ui-theme="night"] .details summary{background:#243a54;color:#edf5ff;border-color:#5882a7}
+html[data-ui-theme="night"] .control,html[data-ui-theme="night"] .chip,html[data-ui-theme="night"] .btn:not(.primary):not(.teal):not(.dark){background:#263d56;color:#eff7ff;border-color:#6588a9}
+html[data-ui-theme="night"] .chip.active{background:#194b70;color:#fff;border-color:#73c2ff}
+html[data-ui-theme="night"] .btn.primary{background:#1775c9;color:#fff;border-color:#1775c9}
+html[data-ui-theme="night"] .btn.teal{background:#076961;color:#fff;border-color:#48b7a9}
+html[data-ui-theme="night"] .btn.dark{background:#294766;color:#fff}
+html[data-ui-theme="night"] .helper,html[data-ui-theme="night"] .caption-note,html[data-ui-theme="night"] .tag,html[data-ui-theme="night"] .footnote,html[data-ui-theme="night"] .meta,html[data-ui-theme="night"] .field-label,html[data-ui-theme="night"] .field .field-label,html[data-ui-theme="night"] .brand-tag,html[data-ui-theme="night"] .metric .label,html[data-ui-theme="night"] .metric small{color:#bed0e3}
+html[data-ui-theme="night"] .panel-strip,html[data-ui-theme="night"] .warn,html[data-ui-theme="night"] .danger-note,html[data-ui-theme="night"] .local-warning,html[data-ui-theme="night"] .wait-summary{background:#243f56;color:#f4f8ff;border-color:#63829e}
+html[data-ui-theme="night"] .nav button{color:#daeaff}html[data-ui-theme="night"] .nav button.selected{background:#214a72;color:#fff}
+html[data-ui-theme="night"] .data-table th{background:#263d56;color:#d8edff}html[data-ui-theme="night"] .data-table td{border-color:#3b5772}
+html[data-ui-theme="night"] .status-pill{background:#24473f;color:#d5fff4}html[data-ui-theme="night"] .status-pill.stop{background:#314459;color:#eaf1ff}
+html[data-ui-theme="night"] .pill{background:#194b70;color:#deedff;border-color:#639ac7}
+html[data-ui-theme="night"] .eyebrow{color:#b3ddff}
+@media(max-width:700px){
+  .layout{padding:12px 10px calc(var(--ui-touch) * 1.7 + 45px)}
+  .sidebar .nav button{min-height:calc(var(--ui-button-touch) + 8px);padding:7px 1px}
+  .sidebar .nav .nav-ico{font-size:calc(19px * var(--ui-font));line-height:1}
+  .sidebar .nav .nav-label{font-size:clamp(10px,calc(11px * var(--ui-font)),17px);line-height:1.2}
+  .card{padding:16px}
+  .action-grid{gap:10px}
+  .form-grid,.form-grid.three,.details .form-grid{gap:14px}
+  .ui-preview .action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ui-preview .btn.big{overflow-wrap:anywhere}
+}
+@media(max-width:360px){.ui-choice>.chip{padding-left:4px;padding-right:4px}}
+
+
+/* v0.1.5: unobtrusive interface; warnings, GPS status and actual financial values stay visible. */
+html[data-ui-help="hide"] .helper,
+html[data-ui-help="hide"] .field-sub,
+html[data-ui-help="hide"] .caption-note:not([role="status"]),
+html[data-ui-help="hide"] .footnote,
+html[data-ui-help="hide"] .sidebar-note,
+html[data-ui-help="hide"] .wait-history,
+html[data-ui-help="hide"] .explainer,
+html[data-ui-help="hide"] .eyebrow {display:none!important;}
+html[data-ui-help="hide"] .hero-heading {margin-bottom:12px;}
+html[data-ui-help="hide"] .section-heading {margin-bottom:13px;}
+.cash-checkout{margin-top:18px;padding:16px;border:2px solid #7296bb;border-radius:17px;background:#f4f9ff;display:grid;gap:13px;}
+.cash-due,.cash-change{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:calc(16px * var(--ui-font));font-weight:750;}
+.cash-due strong{font-size:calc(23px * var(--ui-font));font-variant-numeric:tabular-nums;color:#154f91;}
+.cash-change{background:#dff6ee;color:#135d42;border:2px solid #82c6ad;border-radius:12px;padding:11px 14px;}
+.cash-change strong{font-size:calc(31px * var(--ui-font));font-variant-numeric:tabular-nums;letter-spacing:-1px;}
+.cash-shortfall:not(:empty){width:100%;font-size:calc(15px * var(--ui-font));color:#a12e2e;}
+.cash-deposit{font-size:calc(24px * var(--ui-font));text-align:right;font-weight:800;}
+.deposit-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;}
+.deposit-buttons .btn{font-size:calc(13px * var(--ui-font));padding:6px 4px;min-width:0;white-space:nowrap;}
+html[data-ui-theme="night"] .cash-checkout{background:#233b54;border-color:#5f95c3;}
+html[data-ui-theme="night"] .cash-due strong{color:#a9d8ff;}
+html[data-ui-theme="night"] .cash-change{background:#123c34;color:#d6ffeb;border-color:#4a9c84;}
+html[data-ui-theme="night"] .cash-shortfall:not(:empty){color:#ffc6bb;}
+@media(max-width:510px){.deposit-buttons{grid-template-columns:repeat(3,minmax(0,1fr));}.cash-checkout{padding:14px 12px;}}
+
+/* v0.3.1: high-visibility waiting clock and single-tap standby notes */
+.compact-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+.gps-trip-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:13px 0}
+.gps-trip-stats>div{padding:10px;border:1px solid var(--line);border-radius:10px}
+.gps-trip-stats span{display:block;color:var(--muted);font-size:12px}
+.gps-trip-stats strong{display:block;margin-top:4px;font-size:22px;font-variant-numeric:tabular-nums}
+.gps-trip-status{padding:10px;border:1px solid #b8cee1;background:#eef6ff;border-radius:8px;font-weight:700}
+.gps-trip-correction{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin-top:12px}
+.gps-trip-correction .field{flex:1;min-width:170px;max-width:350px}
+html[data-ui-theme="night"] .gps-trip-status{color:#edf5ff;background:#243a54}
+.metric.meter-check{grid-column:1/-1;background:var(--sheet,#f5f8fc);border-style:dashed;min-width:0}
+.metric.meter-check strong{color:var(--ink,#172d47)}
+.metric.meter-check small{line-height:1.6;overflow-wrap:anywhere}
+html[data-ui-theme="night"] .metric.meter-check{background:#263c55;color:#edf5ff}
+html[data-ui-theme="night"] .metric.meter-check strong{color:#edf5ff}
+.wait-display{background:#f6fbff;border:2px solid #b5d5eb;border-radius:16px;padding:11px;margin-top:7px;}
+.wait-clock{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.wait-clock>div{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.wait-title{font-size:calc(13px * var(--ui-font));font-weight:750;color:#506782;}
+.wait-clock strong{font-size:clamp(25px,calc(30px * var(--ui-font)),56px);line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-.03em;white-space:nowrap;}
+.wait-inputs{display:grid;grid-template-columns:1.3fr 1fr;gap:9px;align-items:start;}
+.wait-inputs .control{font-size:calc(17px * var(--ui-font));font-weight:650;}
+.wait-odometer-row{display:flex;align-items:stretch;gap:6px;min-width:0;}
+.wait-odometer-row .control{flex:1 1 0;width:0;min-width:0;}
+.wait-odometer-row .km-step{flex:0 0 43px;margin:0!important;min-width:43px;min-height:46px;}
+.wait-quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}.wait-quick .chip{max-width:100%;min-width:0;overflow-wrap:anywhere;text-align:left;}
+.wait-gps{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;}
+.wait-gps .wait-register-fold{flex:0 0 100%;width:100%;min-width:0;margin:0;}
+.wait-gps .wait-register-fold .inner{padding:8px;display:grid;gap:7px;}
+.wait-gps .wait-register-fold .inner>.field{width:100%;}
+.wait-gps .wait-register-fold .inner>.field .control{width:100%;box-sizing:border-box;}
+.wait-gps .wait-register-fold summary{min-height:44px;}
+.wait-gps .wait-register-fold .actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+.wait-gps .wait-register-fields{flex:0 0 100%;width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,140px);gap:8px;align-items:end;}
+.wait-gps .wait-register-fields .field{min-width:0;overflow-wrap:normal;word-break:normal;}
+.wait-gps .wait-register-fields .control{min-width:0;box-sizing:border-box;}
+@media(max-width:420px){.wait-gps .wait-register-fields{grid-template-columns:minmax(0,1fr);}.wait-gps .wait-register-fields .field{width:100%;}}
+.wait-gps [role="status"]{font-size:calc(12px * var(--ui-font));color:#47637d;}
+html[data-ui-theme="night"] .wait-display{background:#233b54;border-color:#5f95c3;}
+html[data-ui-theme="night"] .wait-title,html[data-ui-theme="night"] .wait-gps [role="status"]{color:#c3d7eb;}
+@media(max-width:600px){.wait-inputs{grid-template-columns:1fr;gap:9px;}.wait-clock{gap:9px;margin-bottom:9px;}.wait-display{padding:10px 9px;}.wait-clock strong{font-size:clamp(24px,6vw,42px);}.hero:has(.wait-display){padding:13px 10px;}.hero:has(.wait-display) .action-grid{margin-top:10px!important;}}
+
+.highway-fold{margin:22px 0;border-color:#99bed8}.highway-fold summary{font-size:calc(19px * var(--ui-font));font-weight:850;min-height:var(--ui-touch);display:flex;align-items:center}.settlement-section{border-top:2px solid #d2e1ee;margin-top:22px;padding-top:22px}.settlement-section .stepper{margin-bottom:9px}
+
+/* v0.3.0: Pickup data is always visible and editable at top of the ride screen. */
+.pickup-visible{margin-top:14px}
+.pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pickup-address-line{margin-top:13px}
+.pickup-received-time{margin-top:4px}
+.inline-location-field,.inline-time-field,.inline-distance-field{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:end;min-width:0}
+.inline-location-field>.field,.inline-time-field>.control,.inline-distance-field>.control{min-width:0;width:100%}
+.inline-location-field>.field .control{min-width:0;width:100%}
+.btn.inline-field-icon{width:48px;min-width:48px;min-height:48px;height:var(--ui-touch);padding:0;display:grid;place-items:center;font-size:24px;font-weight:800;line-height:1;border-radius:10px}
+.inline-time-field .btn.inline-field-icon{height:var(--ui-touch)}
+@media(max-width:500px){.pickup-main-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-location-field,.inline-time-field,.inline-distance-field{grid-template-columns:minmax(0,1fr) 48px}}
+
+/* v0.3.0: switchable payment methods, in either order, with an auto remainder */
+.payment-split{margin-top:16px;border:2px solid #96b0c8;border-radius:16px;padding:15px;background:#fff;}
+.payment-split h3{margin:0 0 10px;font-size:calc(17px * var(--ui-font));}
+.pay-row{display:grid;grid-template-columns:minmax(90px,0.7fr) minmax(100px,1.2fr);gap:10px;align-items:end;margin:10px 0;}
+.pay-code{font-size:calc(22px * var(--ui-font));font-weight:850;text-align:center;text-align-last:center;}
+.pay-sum{font-size:calc(23px * var(--ui-font));font-weight:820;text-align:right;}
+.pay-sum[readonly]{background:#e6edf4!important;color:#425872!important;border-style:dashed!important;cursor:pointer;}
+.pay-sum[readonly]:focus{outline:3px solid #2976b8;outline-offset:2px;}
+.pay-total{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #d5e3ee;margin-top:8px;font-weight:800;font-size:calc(17px * var(--ui-font));}
+.pay-total strong{font-size:calc(22px * var(--ui-font));}
+.pay-alert{color:#ae3131;font-size:calc(13px * var(--ui-font));font-weight:750;margin:5px 0;}
+.payment-split .field-label{font-size:calc(14px * var(--ui-font));}
+html[data-ui-theme="night"] .payment-split{background:#203950;border-color:#6c97bd;}
+html[data-ui-theme="night"] .pay-sum[readonly]{background:#31485d!important;color:#d4e6f5!important;}
+@media(max-width:375px){.payment-split{padding:10px}.pay-row{grid-template-columns:minmax(80px,.6fr) minmax(100px,1fr);gap:7px}}
+
+/* v0.3.0: enter arrival odometer beside the dispatch pickup address, before boarding. */
+.dispatch-received{margin-top:15px;max-width:490px;}
+.dispatch-arrival{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:12px;margin-top:14px;align-items:end;}
+.dispatch-arrival .control{min-height:var(--ui-touch);}
+.dispatch-address-action{min-width:0;align-self:stretch;}
+.dispatch-address-action .actions{justify-content:flex-start;}
+.dispatch-address-action .btn{min-height:var(--ui-button-touch);}
+@media(max-width:520px){.dispatch-arrival{grid-template-columns:1fr;}}
+
+/* v0.3.0: Uber app visible amount; two independent payment streams. */
+.uber-settlement{margin-top:15px;padding:17px;border:1px solid #aac8e2;border-radius:14px;background:linear-gradient(110deg,#edf7ff,#fff);}
+.uber-settlement>.field{max-width:440px}.uber-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px;}
+.uber-summary>div{min-width:0;padding:11px;border:1px solid #cfdfeb;background:#fff;border-radius:11px;font-weight:750;font-size:13px;}
+.uber-summary strong{display:block;font-size:22px;color:#125c91;white-space:nowrap;margin-top:6px;}
+@media(max-width:700px){.uber-summary{grid-template-columns:repeat(2,minmax(0,1fr));}.uber-summary>div:last-child{grid-column:1/-1;}}
+
+/* v0.3.0: the grey amount is still tappable; driver may start with either tender. */
+.pay-sum[readonly]{background:#e8edf4;border-style:dashed;color:#475e79;cursor:text;}
+.pay-sum:not([readonly]){background:#fff;border:3px solid #2e7fca;}
+.pay-row{min-width:0}
+@media print{.sidebar,.topbar{display:none}.layout{padding:0}main{width:100%}.card{box-shadow:none}}
+
+/* 追加料金欄は金額入力後に順次表示。再描画せずに入力フォーカスを維持。 */
+.empty-toll-progress{margin-top:20px;border:1px solid var(--line);border-radius:15px;padding:15px;background:var(--surface,#fff)}
+.empty-toll-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.empty-progress-item[hidden]{display:none!important}
+.empty-toll-calculated{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:14px;padding:16px;border-radius:12px;background:#eaf5f1;color:#164f49;font-weight:800}
+.empty-toll-calculated strong{font-size:calc(25px * var(--ui-font));font-variant-numeric:tabular-nums}
+@media(max-width:700px){.empty-toll-fields{grid-template-columns:1fr}}
+html[data-ui-theme="night"] .empty-toll-progress{background:#20364e}
+html[data-ui-theme="night"] .empty-toll-calculated{background:#163b3c;color:#e0fff5}
+.highway-section-row{padding:13px;margin:12px 0;border:1px solid var(--line);border-radius:12px;background:var(--sheet)}
+.highway-section-header{display:flex;justify-content:space-between;align-items:center;gap:7px;margin-bottom:11px}
+.highway-section-header strong{font-size:calc(16px * var(--ui-font))}
+.highway-section-row .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:550px){.highway-section-row .form-grid{grid-template-columns:1fr}}
+/* v0.3.1: highway tolls are always attached to the selected ride. */
+.highway-choices{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 15px}
+.highway-choice{flex:1;min-width:125px;min-height:var(--ui-touch);font-size:calc(18px * var(--ui-font));font-weight:850}
+.highway-choice[aria-pressed="true"]{background:#d3eaff;color:#07457d;border:3px solid #1268ac}
+.highway-mode-fields{border-top:1px solid var(--line);padding-top:14px;margin-top:16px}
+.highway-mode-fields h3{margin:0 0 10px;font-size:calc(17px * var(--ui-font))}
+html[data-ui-theme="night"] .highway-choice[aria-pressed="true"]{background:#173f62;color:#f5fcff;border-color:#8cceff}
+/* v0.3.3: time-now controls and preset waiting places */
+.time-with-now{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:stretch}
+.time-with-now .control{min-width:0}
+.time-now{min-height:var(--ui-touch);min-width:98px;white-space:nowrap;padding:10px 14px;background:#eaf4ff;border-color:#8dbce3;color:#134f82}
+.wait-place-settings{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:13px}
+.wait-place-settings .control{flex:1;min-width:180px;max-width:460px}
+.wait-place-list{display:flex;flex-direction:column;gap:9px;margin-top:14px;max-width:750px}
+.wait-place-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:stretch;border:1px solid #b7d0e4;border-radius:12px;overflow:hidden;background:#f2f8ff;max-width:100%;min-height:var(--ui-touch)}
+.wait-place-name{padding:12px;font-weight:750;overflow-wrap:anywhere;align-self:center;min-width:0}
+.wait-place-move,.wait-place-remove{border:0;border-left:1px solid #b7d0e4;background:#fff;min-width:54px;min-height:var(--ui-touch);font-size:calc(21px * var(--ui-font));font-weight:800;color:#125b93;cursor:pointer}
+.wait-place-remove{color:#9d3440}
+.wait-place-move:disabled{opacity:.28;cursor:default;background:#edf2f7}
+.wait-place-move:not(:disabled):active{background:#d5eaff}
+.wait-selection .control{font-size:calc(19px * var(--ui-font));font-weight:800}
+.wait-place-combo{display:flex;align-items:stretch;position:relative;min-width:0;gap:5px}
+.wait-place-combo>.control{flex:1 1 auto;width:0;min-width:0}
+.wait-place-menu{flex:0 0 46px;position:relative;min-width:0}
+.wait-place-menu>summary{display:flex;align-items:center;justify-content:center;cursor:pointer;list-style:none;border:1px solid #8caac7;border-radius:10px;background:#152f48;color:#fff;min-height:48px;height:100%;font-size:15px}
+.wait-place-menu>summary::-webkit-details-marker{display:none}
+.wait-place-menu-items{position:absolute;z-index:105;right:0;top:100%;width:min(310px,calc(100vw - 45px));max-height:50vh;overflow-y:auto;background:#122c45;border:1px solid #88a9c8;border-radius:10px;box-shadow:0 8px 22px #0006;padding:7px}
+.wait-place-menu-heading{font-size:12px;font-weight:800;color:#a8d9ff;padding:9px 7px 4px}
+.wait-place-menu-empty{padding:11px 9px;min-height:44px;line-height:1.5;color:#f1f8ff;font-size:14px;font-weight:650;white-space:normal}
+.wait-place-menu-items button{display:block;width:100%;text-align:left;border:0;border-radius:7px;padding:12px 10px;background:transparent;color:#f1f8ff;font-size:15px;min-height:44px}
+.wait-place-menu-items button:active,.wait-place-menu-items button:focus{background:#275779}
+.wait-gps .btn.wait-cancel-button{background:#b42332;color:#fff;border:1px solid #d45060;font-weight:800}
+.wait-gps .btn.wait-cancel-button:active{background:#901b28}
+html[data-ui-theme="night"] .time-now{background:#1b4769;color:#e9f7ff;border-color:#6c9cba}
+html[data-ui-theme="night"] .wait-place-item{background:#22415a;color:#fff}
+html[data-ui-theme="night"] .wait-place-move,html[data-ui-theme="night"] .wait-place-remove{background:#1a334c;border-color:#52708b;color:#f1f7fe}
+html[data-ui-theme="night"] .wait-place-move:disabled{background:#20364e}
+@media(max-width:700px){.pickup-main-fields,.alight-main-fields{grid-template-columns:minmax(0,1fr)!important}}
+@media(max-width:450px){.time-now{min-width:80px;padding:9px 10px}}
+
+/* v0.3.5: prevent large native time inputs being squeezed by the now button. */
+.time-field{min-width:0;max-width:100%;}
+.time-field-header{margin-bottom:7px;min-width:0}
+.time-field-header .field-label{margin:0;overflow-wrap:anywhere;line-height:1.35}
+.time-field .inline-time-field{width:100%}
+.time-field .time-input{display:block;width:100%;min-width:0;max-width:100%;padding-inline:9px;font-variant-numeric:tabular-nums}
+.time-field .time-now{min-width:48px;width:48px;padding:0;font-size:24px}
+
+.km-step-control{display:flex;align-items:stretch;gap:5px;min-width:0;width:100%}.km-step-control .control{min-width:0;flex:1 1 0;width:0}
+.km-step{flex:0 0 43px;min-width:43px;min-height:48px;padding:0 6px;font-size:25px;font-weight:850;border-radius:11px}
+.inline-distance-field .km-step-control{flex:1 1 0;min-width:0}.inline-distance-field .gps-fill-button{flex:none;white-space:nowrap;overflow:hidden;font-size:20px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.gps-fill-text{font-size:10px;font-weight:750;line-height:1;letter-spacing:0}
+.field>input[data-number-kind="distance"]+.km-step{margin-left:6px}.field>.km-step+.km-step{margin-left:4px}
+@media(max-width:370px){.km-step{flex-basis:39px;min-width:39px}}
+.discount-fold{margin:10px 0;border-color:var(--line)}.discount-fold summary{font-weight:750;min-height:44px}
+/* v0.3.59 narrow-pane distance layout: prevent 0.1km controls hiding odometer digits.
+   Container width, not device viewport: a mirrored phone/half-screen can still have a sidebar. */
+.form-grid{container-type:inline-size;container-name:distance-fields}
+@container distance-fields (max-width:650px){
+ .form-grid>.field:has(.km-step-control){grid-column:1 / -1;min-width:0}
+}
+.km-step-control{max-width:100%}
+.km-step-control .control{font-variant-numeric:tabular-nums;text-overflow:clip}
+.inline-distance-field{width:100%}
+.inline-distance-field>.km-step-control{min-width:0;width:100%}
+/* v0.3.7: compact precision keypad (one decimal only for km); close on scroll. */
+.calc-detail{background:#f6faff;border:1px solid #cbddea;border-radius:12px;padding:12px 13px;margin:15px 0 5px}
+.calc-detail-title{font-weight:850;font-size:calc(14px * var(--ui-font));margin:0 0 8px}
+.calc-detail .statline{padding:7px 0;font-size:calc(13px * var(--ui-font));}
+.calc-detail .statline b{font-size:calc(15px * var(--ui-font));}
+.calc-detail .statline.total{border-top:2px solid #bdd2e5;border-bottom:0;margin-top:5px;font-weight:850}
+.calc-detail .statline.total b{font-size:calc(19px * var(--ui-font));}
+.gps-control{margin:18px 0}.gps-control .gps-status{font-weight:750;margin:10px 0;overflow-wrap:anywhere;}
+.gps-help{font-size:calc(12px * var(--ui-font));line-height:1.7;margin:10px 0 0;color:var(--muted)}
+.keypad-overlay{position:fixed;z-index:110;inset:0;pointer-events:auto;touch-action:manipulation;background:#081d3122;display:flex;align-items:flex-end;justify-content:center;padding:8px 8px max(8px,env(safe-area-inset-bottom))}
+.keypad-panel{pointer-events:auto;width:min(100%,400px);background:var(--sheet);color:var(--dark);border-radius:16px 16px 12px 12px;padding:10px 12px 12px;box-shadow:0 9px 45px #0005}
+.keypad-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.keypad-top strong{font-size:calc(14px * var(--ui-font))}.keypad-close{min-height:40px}
+.keypad-value{font-variant-numeric:tabular-nums;text-align:right;font-size:calc(25px * var(--ui-font));font-weight:850;background:#eff5fb;border:1px solid #a3c1d8;border-radius:10px;padding:6px 12px;margin:7px 0 9px;min-height:48px;overflow-wrap:anywhere}
+.keypad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.keypad-grid button{border:1px solid #b6cadc;color:#173e64;border-radius:10px;background:#fff;min-height:50px;font-size:calc(23px * var(--ui-font));font-weight:800}
+.keypad-grid button:active{background:#d6eaff}.keypad-grid .key-del{font-size:calc(20px * var(--ui-font))}
+.keypad-footer{display:flex;gap:7px;margin-top:8px}.keypad-footer .btn{flex:1;min-height:49px;font-size:calc(15px * var(--ui-font))}
+input[data-number-kind]{font-variant-numeric:tabular-nums}
+html[data-ui-theme="night"] .calc-detail{background:#24394e;border-color:#5b829f}
+html[data-ui-theme="night"] .keypad-panel{background:#20364e;color:#fff}
+html[data-ui-theme="night"] .keypad-value{background:#162c41;color:#fff}
+@media(max-width:360px){.keypad-grid button{min-height:48px}}
+
+/* v0.3.7: six compact mobile navigation items; independent keyboard preferences. */
+@media(max-width:700px){
+ .sidebar .nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+ .sidebar .nav button{min-width:0;padding:7px 0;gap:3px;}
+ .sidebar .nav .nav-ico{font-size:clamp(16px,4vw,21px);}
+ .sidebar .nav .nav-label{font-size:clamp(9px,2.35vw,12px);word-break:keep-all;letter-spacing:-.05em;}
+}
+@media(max-width:350px){.sidebar .nav .nav-label{font-size:9px;}}
+
+/* The mobile navigation stays a single row of six fixed items. */
+.duty-management-item{border:1px solid var(--line);border-radius:13px;background:var(--sheet);padding:15px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:13px;}
+.duty-management-info{flex:1;min-width:200px;display:grid;gap:6px;font-size:13px;}
+.duty-management-info strong{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:17px;}
+.duty-delete-button{max-width:230px;}
+@media(max-width:700px){.duty-management-item{display:block}.duty-management-info{min-width:0}.duty-delete-button{max-width:none;margin-top:14px}}
+
+/* Combined operations dashboard: always ordered business status then summary. */
+.operations-fold{margin:0 0 14px;border-color:#b7cfe4}
+.operations-fold>summary{background:#eaf4ff;color:#174e80;font-size:calc(17px * var(--ui-font));padding:16px 18px;}
+.operations-fold>.inner{padding:14px 14px 0;}
+.operations-fold>.inner>.card{margin-bottom:14px;}
+.operations-fold>.inner>.metrics{margin:8px 0 14px;}
+html[data-ui-theme="night"] .operations-fold>summary{background:#243a54;color:#edf5ff;}
+
+
+/* Compact operations dashboard: day/night legible, main metrics 2x2 on phones. */
+.operations-overview{margin:6px 0 12px}
+.operations-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.operations-kpi{min-width:0;border:1px solid #a7c2dc;border-radius:12px;background:#edf5fd;
+ padding:11px 10px;display:flex;flex-direction:column;justify-content:space-between;gap:3px}
+.operations-kpi small{color:#315779;font-weight:700;font-size:calc(12px * var(--ui-font))}
+.operations-kpi strong{color:#142f49;font-size:clamp(17px,3.3vw,23px);line-height:1.2;overflow-wrap:anywhere;
+ font-variant-numeric:tabular-nums}
+.operations-fold{margin-bottom:8px}
+.operations-fold>summary{padding:12px 13px;font-size:calc(15px * var(--ui-font))}
+.operations-fold>.inner{padding:8px}
+.operations-fold>.inner>.card{padding:12px;margin-bottom:8px}
+.operations-section>.statline{padding:7px 0;gap:8px}
+.operations-section .statline>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.operations-section .statline>b{flex:0 1 auto;text-align:right;overflow-wrap:anywhere}
+.operations-section h2{margin-bottom:8px}
+.operations-history-list{display:grid;gap:6px;margin-top:8px}
+.operations-history-item{border:1px solid #c0d3e6;border-radius:9px;padding:9px;background:#f6faff;min-width:0}
+.operations-history-heading{display:flex;justify-content:space-between;align-items:baseline;gap:9px;flex-wrap:wrap}
+.operations-history-heading>b{font-variant-numeric:tabular-nums}
+html[data-ui-theme="night"] .operations-kpi{background:#263d56;border-color:#6886a2}
+html[data-ui-theme="night"] .operations-kpi small{color:#c3d7eb}
+html[data-ui-theme="night"] .operations-kpi strong{color:#f5faff;-webkit-text-fill-color:#f5faff}
+html[data-ui-theme="night"] .operations-history-item{background:#23394f;border-color:#6886a2;color:#f5faff}
+@media screen and (max-width:700px){
+ .operations-kpis{gap:6px}
+ .operations-kpi{padding:9px 8px;min-height:70px}
+ .operations-fold>summary{padding:11px 11px}
+ .operations-fold>.inner{padding:7px}
+ .operations-fold>.inner>.card{padding:10px;margin-bottom:7px}
+ .operations-history-item{padding:8px}
+}
+
+/* v0.3.10 add-on screens, keeping the existing one-meter input layout. */
+.last-payment-clock{border-color:#b9d6ec;background:#f3f9ff;padding:14px 18px;}
+.last-payment-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.last-payment-value{font-variant-numeric:tabular-nums;font-weight:850;font-size:clamp(23px,3.2vw,34px);margin-top:6px;color:#155b91;letter-spacing:.2px;}
+.live-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;}
+.live-stat{border:1px solid #d8e3ee;border-radius:12px;padding:13px;min-width:0;background:var(--sheet);}
+.live-stat span{display:block;font-size:13px;color:var(--muted);font-weight:700;}
+.live-stat strong{display:block;font-size:clamp(18px,2.3vw,27px);font-variant-numeric:tabular-nums;margin-top:6px;overflow-wrap:anywhere;}
+.live-stat strong span{font-size:inherit;color:inherit;}
+.live-stat small{display:block;font-size:11px;color:var(--muted);margin-top:6px;}
+.history-filter{display:flex;align-items:end;gap:12px;flex-wrap:wrap;}
+.history-filter .field{min-width:200px;flex:1;max-width:390px;}
+.print-only{display:none;}
+@media(max-width:700px){.live-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.history-filter .field{min-width:100%;}.last-payment-value{font-size:25px}}
+@page{size:A4 landscape;margin:8mm;}
+@media print{
+ body{background:#fff!important;color:#000!important;margin:0!important;font-size:9px!important;}
+ body>*:not(#app){display:none!important;}
+ .layout{display:block!important;max-width:none!important;margin:0!important;padding:0!important;}
+ .topbar,.sidebar,.content-layout main>*:not(#taxi-print-report){display:none!important;}
+ .content-layout{display:block!important;}
+ #main-content{display:block!important;}
+ .print-only{display:block!important;}
+ .trial-print-page{display:block;width:100%;max-width:none;break-after:page;page-break-after:always;padding:0;}
+ .trial-print-page:last-child{break-after:auto;page-break-after:auto;}
+ .trial-print-page h2{font-size:17px;margin:0 0 5px;text-align:center;}
+ .trial-print-page h2 small{font-size:10px;font-weight:normal;}
+ .trial-print-meta{display:flex;justify-content:space-around;border:1px solid #444;padding:4px;gap:10px;margin:6px 0;}
+ .trial-print-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start;}
+ .trial-print-table{border-collapse:collapse;width:100%;font-size:8px;table-layout:fixed;}
+ .trial-print-table th,.trial-print-table td{border:1px solid #666;padding:3px 2px;height:20px;overflow:hidden;word-break:break-all;}
+ .trial-print-table th:nth-child(5),.trial-print-table th:nth-child(6){width:25%;}
+ .trial-print-summary{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:10px;}
+ .trial-print-summary>div{border:1px solid #777;padding:5px;}
+ .trial-print-footer{font-size:9px;text-align:center;margin-top:6px;}
+}
+
+/* Expressway usage overview: readable individual entries on narrow phones. */
+.highway-report-list{display:grid;gap:13px;margin-top:16px}
+.highway-report-entry{border:1px solid var(--line);border-radius:13px;padding:14px;background:var(--sheet)}
+.highway-report-entry-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.highway-report-entry-head strong{font-size:calc(17px * var(--ui-font))}
+.highway-report-entry-head span{font-size:calc(13px * var(--ui-font));font-weight:700}
+.highway-report-route{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
+.highway-report-route>div{min-width:0;overflow-wrap:anywhere}
+.highway-report-route strong,.highway-report-entry-data strong{display:block;font-size:calc(16px * var(--ui-font))}
+.highway-report-route small,.highway-report-entry-data small{display:block;color:var(--muted);font-size:calc(12px * var(--ui-font))}
+.highway-report-entry-data{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.highway-report-subtotals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.highway-report-entry .warn{margin:10px 0 0}
+@media(max-width:760px){.highway-report-subtotals{grid-template-columns:1fr}.highway-report-entry-data{grid-template-columns:repeat(2,minmax(0,1fr))}.highway-report-route{gap:7px}}
+
+.account-top{max-width:1332px;margin:8px auto 0;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:var(--sheet);border-radius:10px;min-height:48px}
+.account-top span{font-size:.88rem;overflow-wrap:anywhere}
+.account-top button{font-size:.88rem;background:var(--blue);border:0;border-radius:8px;padding:8px 11px;color:white;min-height:34px;white-space:nowrap}
+.account-top button[hidden]{display:none}
+.account-top{flex-wrap:wrap}
+.account-top .account-state{flex:1;min-width:190px;display:flex;flex-direction:column;gap:2px}
+#deviceSessionStatus{font-weight:700}
+#accountTakeOver{background:#095c7e}
+.taxi-viewer .account-top{border:2px solid #a26100}
+.viewer-header-right{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px;min-width:0}
+.viewer-sync-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.viewer-sync-controls .btn{min-height:44px;padding:8px 14px}
+.viewer-sync-time{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+@media(max-width:650px){.topbar{flex-wrap:wrap}.viewer-header-right{justify-content:flex-start}}
+
+/* Opt-in compact drive display. Raw business and payment logic remain untouched. */
+.drive-layout-choice{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--line);background:var(--sheet);border-radius:12px;margin-bottom:9px}
+.drive-layout-choice strong{font-size:13px;margin-right:auto}
+.drive-layout-choice .btn{padding:6px 11px;min-height:40px;font-size:14px}
+.drive-layout-choice .btn.active{background:#1566ab;color:#fff;border-color:#1566ab}
+.drive-compact #main-content{min-width:0}
+.drive-compact .hero{padding:12px}
+.drive-compact .hero .hero-heading{font-size:clamp(21px,4.5vw,28px);margin:4px 0 6px}
+.drive-compact .hero .action-grid{gap:8px;margin-top:8px!important}
+.drive-compact .hero .action-grid button{min-width:0;overflow-wrap:anywhere}
+.drive-compact .wait-display{padding:10px;margin-top:7px}
+.drive-compact .wait-clock{gap:8px;margin-bottom:8px}
+.drive-compact .wait-clock strong{font-size:clamp(22px,5vw,35px)}
+.drive-compact .wait-inputs{gap:7px}
+.drive-compact .wait-gps{gap:8px;margin-top:9px}
+.drive-compact .compact-secondary{margin:10px 0}
+.drive-compact .compact-secondary>summary{font-size:15px;min-height:46px;padding:9px 12px}
+.drive-compact .compact-secondary>.inner{padding:9px}
+.drive-compact .compact-secondary .metrics{margin:5px 0}
+.drive-compact .compact-secondary .card{margin:7px 0}
+html[data-ui-theme="night"] .drive-layout-choice{background:#182a3f}
+@media(max-width:700px){
+ .drive-compact .topbar{margin-bottom:7px}
+ .drive-compact .hero{padding:11px;margin-bottom:8px}
+ .drive-compact .hero .hero-heading{font-size:22px}
+ .drive-compact .hero .action-grid{grid-template-columns:minmax(0,1fr)}
+ .drive-compact .hero .action-grid .btn.big{min-height:60px;padding:8px;font-size:18px}
+ .drive-compact .hero .action-grid .btn:not(.big){min-height:44px}
+ .drive-compact .wait-inputs,.drive-compact .form-grid,.drive-compact .form-grid.three,.drive-compact .pickup-main-fields,.drive-compact .alight-main-fields{grid-template-columns:minmax(0,1fr)}
+ .drive-compact .wait-clock{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .drive-compact .wait-clock strong{font-size:clamp(19px,5vw,31px)}
+ .drive-compact .wait-gps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .drive-compact .wait-gps [role="status"]{grid-column:1/-1}
+ .drive-compact .hero .footnote{display:none}
+ .drive-compact .pay-row{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:380px){.drive-compact .drive-layout-choice .btn{font-size:12px;padding:5px 7px}.drive-compact .wait-clock strong{font-size:21px}}
+
+/* Manually selected device layout; never infer an input mode from orientation. */
+html[data-ui-screen-mode="half"] .form-grid,html[data-ui-screen-mode="half"] .action-grid,html[data-ui-screen-mode="half"] .pickup-main-fields,html[data-ui-screen-mode="half"] .highway-input-grid{grid-template-columns:minmax(0,1fr)!important}
+html[data-ui-screen-mode="half"] .main,html[data-ui-screen-mode="half"] main{max-width:340px;margin-inline:auto}
+html[data-ui-screen-mode="phone"] .form-grid,html[data-ui-screen-mode="phone"] .highway-input-grid{grid-template-columns:minmax(0,1fr)}
+html[data-ui-screen-mode="tablet"] main{max-width:960px;margin-inline:auto}
+html[data-ui-screen-mode="pc"] main{max-width:1400px;margin-inline:auto}
+.duty-status-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:12px 15px;margin:8px 0 14px;border:2px solid var(--line);border-radius:13px;background:var(--panel,#eef4fa);color:var(--text,#243850)}
+.duty-status-strip strong{font-size:1.15em}.duty-status-strip span{font-size:.92em}
+/* ui-preview.html inspired business view: retain original storage and action handlers */
+html:not([data-ui-drive-layout="legacy"]) #main-content:has(.preview-duty-summary){width:100%;max-width:none}
+.drive-layout-choice{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:6px 8px;margin-bottom:10px;border:1px solid var(--line);border-radius:14px}
+.drive-layout-choice .btn{min-height:42px;padding:7px 12px}
+.preview-duty-summary{border:1px solid #41627c;background:#14283d;padding:12px;border-radius:17px;margin:0 0 10px;color:#f4faff}
+.preview-duty-stats{display:grid;grid-template-columns:1.15fr .9fr .9fr;gap:8px;margin-bottom:10px}
+.preview-duty-stat{min-width:0;border:1px solid #476680;border-radius:13px;background:#223b53;padding:10px 13px}
+.preview-duty-stat small,.preview-duty-route small{display:block;color:#c6d9e9;font-size:11px}
+.preview-duty-stat strong{display:block;color:#fff;font-size:clamp(19px,2.7vw,32px);font-weight:850;overflow-wrap:anywhere}
+.preview-duty-stat .preview-duty-state{color:#7de5b7}.preview-duty-stat .preview-duty-time{color:#8bd8ff}
+.preview-duty-route{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #476680;background:#203951;padding:11px 13px;border-radius:13px}
+.preview-duty-route div{min-width:0;flex:1}.preview-duty-route div:last-child{text-align:right}.preview-duty-route strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preview-duty-route>span{font-size:24px;color:#8bd8ff}
+.preview-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:9px 0 13px}.preview-steps>div{background:#21374a;border:1px solid #41627c;color:white;border-radius:10px;text-align:center;padding:9px 3px;font-size:13px;font-weight:800}.preview-steps>div.active{background:#115e96}.preview-steps>div.done{background:#174c42}.preview-steps small{display:block;font-size:11px}
+html[data-ui-drive-layout="compact"] .hero .action-grid button:first-child{background:#1684cd;color:white;min-height:77px;font-size:clamp(18px,2.5vw,27px)}
+html[data-ui-drive-layout="compact"] .hero .action-grid button:nth-child(2){min-height:77px}
+html[data-ui-drive-layout="compact"] .hero{padding:13px}
+html[data-ui-drive-layout="detail"] .hero{padding:22px}
+@media(max-width:650px){.preview-duty-stats{gap:5px}.preview-duty-stat{padding:8px 7px}.preview-duty-stat strong{font-size:clamp(17px,5vw,24px)}.drive-layout-choice{justify-content:stretch;gap:3px}.drive-layout-choice>strong{display:none}.drive-layout-choice .btn{flex:1;min-width:0;padding:5px 2px;font-size:12px}}
+
+/* UI LAB design baseline; only presentation changes, no data/store rewrites. */
+html[data-ui-theme="night"]{--sheet:#132436;--line:#36516a;--muted:#b6c7d8;--blue:#66c4ff;--dark:#f5faff;color:#f5faff;background:#07121e}
+html[data-ui-theme="night"] body{background:#07121e;color:#f5faff}
+html[data-ui-theme="night"] .card,html[data-ui-theme="night"] .details,html[data-ui-theme="night"] .sidebar{background:#132436;border-color:#36516a;border-radius:17px}
+html[data-ui-theme="night"] .hero{background:#193048;border-color:#3e5a75}
+html[data-ui-theme="night"] .topbar{background:linear-gradient(110deg,#142c44,#122135);border:1px solid #36516a;border-radius:17px;padding:9px 14px}
+html[data-ui-theme="night"] .control{background:#091b2c;color:#f5faff;border:1.5px solid #62809b;border-radius:12px;min-height:52px}
+html[data-ui-theme="night"] .control::placeholder{color:#a1b6ca}
+html[data-ui-theme="night"] .btn.primary{background:#1482d5;border-color:#1482d5;color:white}
+html[data-ui-theme="night"] .btn.teal{background:#087b5e;border-color:#087b5e;color:white}
+html[data-ui-theme="night"] .field-label{color:#c3d3e4}
+html[data-ui-theme="night"] .preview-duty-summary{background:#132436}
+html[data-ui-theme="night"] .preview-duty-stat{background:#203850;border-color:#45647e}
+html[data-ui-theme="night"] .preview-duty-route{background:#203750;border-color:#47657d}
+html[data-ui-theme="night"] .drive-layout-choice{background:#13263a;border-color:#36516a}
+html[data-ui-theme="night"] .drive-layout-choice .btn{background:transparent;border-color:transparent}
+html[data-ui-theme="night"] .drive-layout-choice .btn.active{background:#1680c7;border-color:#1680c7;color:#fff}
+html[data-ui-theme="night"] .hero .btn.big{border-radius:14px}
+html[data-ui-theme="night"] .card{box-shadow:0 10px 32px #020b182b}
+@media(min-width:1051px){html[data-ui-screen-mode="full"] .content-layout,html[data-ui-screen-mode="pc"] .content-layout{grid-template-columns:235px minmax(0,1fr)}}
+/* Match UI LAB desktop canvas: original navigation stays usable, but the diary fills the page. */
+@media(min-width:1051px){
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .content-layout{display:block}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar{position:static;margin:0 0 10px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar .nav{display:flex;gap:6px;padding:5px;background:#132436;border-radius:15px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar .nav button{width:auto;flex:1;justify-content:center;min-height:42px;padding:8px;gap:5px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar .nav .nav-label{font-size:12px}
+ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .sidebar-note{display:none}
+}
+html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .layout{max-width:1450px}
+html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .preview-compact{box-shadow:0 15px 50px #020b1845}
+html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .preview-duty-summary{box-shadow:0 8px 25px #020b1829}
+/* Compact UI LAB screen matches the reference's information hierarchy. */
+.preview-compact{background:#132436;border:1px solid #36516a;border-radius:18px;padding:12px;color:#f5faff}
+.preview-quick-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:11px}
+.preview-quick-inputs .field-label{color:#c3d3e4;font-size:12px;font-weight:800}
+.preview-quick-inputs .control{background:#091b2c;color:white;min-height:52px;border:1.7px solid #62809b;border-radius:12px}
+.preview-main-buttons{display:grid;grid-template-columns:1.6fr .8fr;gap:8px;margin:10px 0 8px}
+.preview-main-buttons .btn{min-height:77px;border-radius:14px;background:#0b273e;border:1px solid #55718a;color:#f5faff}
+.preview-main-buttons .btn.primary{background:#1482d5;color:#fff;font-size:clamp(19px,2.5vw,32px)}
+.preview-main-buttons .btn.teal{background:#087b5e;color:#fff;font-size:clamp(19px,2.5vw,32px)}
+.preview-sub-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.preview-sub-buttons .btn{min-height:53px;font-size:13px;border-radius:12px;background:#304a64;color:#fff}
+.preview-hidden-detail{margin-top:10px;border:1px solid #36516a;border-radius:12px;padding:10px}
+.preview-hidden-detail summary{cursor:pointer;font-weight:750;padding:7px}
+.preview-hidden-detail .hero{margin-top:12px}
+@media(max-width:650px){.preview-quick-inputs{grid-template-columns:1fr}.preview-main-buttons{grid-template-columns:1fr}.preview-sub-buttons{grid-template-columns:1fr}}
+.preview-screen-head .drive-field-shortcut{font-size:13px;min-height:36px;padding:6px 10px;border:1px solid #78b6e5;background:#1b5681;color:#f5faff;white-space:nowrap}
+.preview-screen-head .drive-field-shortcut:hover{background:#226b9f}
+@media (max-width:380px){.preview-screen-head .drive-field-shortcut{white-space:normal;max-width:132px;line-height:1.2}}
+
+.preview-screen-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:0 0 8px}
+.preview-screen-head h1{font-size:clamp(21px,2.2vw,30px);line-height:1.15;margin:0;color:#f5faff}
+.preview-screen-head small{display:block;font-size:12px;color:#b6c7d8;margin-top:4px}
+.preview-screen-head .drive-layout-choice{margin:0;padding:5px;border:1px solid #36516a;border-radius:14px;background:#13263a;flex-wrap:wrap}
+.preview-screen-head .drive-layout-choice .btn{font-size:13px;min-height:42px;padding:7px 11px;border-radius:9px;background:transparent;color:#f5faff;border:0}
+.preview-screen-head .drive-layout-choice .btn.active{background:#1680c7;color:#fff}
+@media(max-width:650px){.preview-screen-head{flex-direction:column;align-items:stretch}.preview-screen-head .drive-layout-choice{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.preview-screen-head .drive-layout-choice .btn{padding:5px 2px;font-size:11px}}
+
+/* Visible manual device layout selector; independent of the ride input mode. */
+.device-layout-switch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 9px;margin:0 0 10px;border:1px solid #36516a;border-radius:12px;background:#13263a}
+.device-layout-switch strong{font-size:12px;color:#c7dceb;margin:0 8px 0 3px}
+.device-layout-switch .btn{min-height:40px;padding:6px 10px;font-size:13px;border-radius:9px;border:1px solid #4c6984;background:#1c344a;color:#f5faff}
+.device-layout-switch .btn.active{background:#1680c7;border-color:#1680c7;color:#fff;font-weight:800}
+@media(max-width:650px){
+ .device-layout-switch{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+ .device-layout-switch strong{grid-column:1/-1;margin:0 0 2px;font-size:12px}
+ .device-layout-switch .btn{min-width:0;min-height:42px;padding:5px 2px;font-size:clamp(10px,3vw,12px);overflow-wrap:anywhere}
+}
+/* The newer full-width dashboard must honor explicit phone/tablet/half mode. */
+html[data-ui-screen-mode="half"] #main-content{width:100%;max-width:340px!important;margin-inline:auto}
+html[data-ui-screen-mode="phone"] #main-content{width:100%;max-width:430px!important;margin-inline:auto}
+html[data-ui-screen-mode="tablet"] #main-content{width:100%;max-width:960px!important;margin-inline:auto}
+html[data-ui-screen-mode="pc"] #main-content{width:100%;max-width:1400px!important;margin-inline:auto}
+/* Keep important ride status visible, with a per-user ON/OFF setting. */
+html[data-ui-sticky-duty-summary="on"] .preview-duty-summary{
+ position:sticky;top:0;z-index:20;
+ box-shadow:0 10px 26px #020b1866;
+}
+html[data-ui-sticky-duty-summary="off"] .preview-duty-summary{position:static}
+.device-orientation-switch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:5px 9px;margin:-4px 0 10px;border:1px solid #36516a;border-radius:12px;background:#13263a}
+.device-orientation-switch strong{font-size:12px;color:#c7dceb;margin:0 7px 0 3px}
+.device-orientation-switch .btn{min-height:36px;padding:5px 12px;font-size:13px;border:1px solid #4c6984;border-radius:9px;background:#1c344a;color:#f5faff}
+.device-orientation-switch .btn.active{background:#1680c7;border-color:#1680c7;color:#fff;font-weight:800}
+.device-orientation-switch span{font-size:11px;color:#c0cddb}
+html[data-ui-screen-mode="pc"] .device-orientation-settings,html[data-ui-screen-mode="pc"] .device-orientation-switch{display:none}
+html[data-ui-orientation-mode="portrait"][data-ui-screen-mode="full"] #main-content{max-width:650px!important;margin-inline:auto}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] #main-content{max-width:600px!important}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="phone"] #main-content{max-width:820px!important}
+html[data-ui-orientation-mode="portrait"][data-ui-screen-mode="tablet"] #main-content{max-width:760px!important}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="tablet"] #main-content{max-width:1120px!important}
+html[data-ui-orientation-mode="portrait"] .preview-quick-inputs{grid-template-columns:minmax(0,1fr)}
+html[data-ui-orientation-mode="landscape"] .preview-quick-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="phone"] .form-grid,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="tablet"] .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .form-grid,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .action-grid,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .pickup-main-fields,
+html[data-ui-orientation-mode="landscape"][data-ui-screen-mode="half"] .highway-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+@media(max-width:700px){
+ html[data-ui-orientation-mode="portrait"] .form-grid,html[data-ui-orientation-mode="portrait"] .action-grid{grid-template-columns:minmax(0,1fr)}
+ html[data-ui-orientation-mode="landscape"] .form-grid,html[data-ui-orientation-mode="landscape"] .action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ html[data-ui-sticky-duty-summary="on"] .preview-duty-summary{padding:8px;margin-bottom:7px;border-radius:12px}
+ html[data-ui-sticky-duty-summary="on"] .preview-duty-stats{gap:5px;margin-bottom:6px}
+ html[data-ui-sticky-duty-summary="on"] .preview-duty-stat{padding:7px 6px}
+ html[data-ui-sticky-duty-summary="on"] .preview-duty-stat strong{font-size:clamp(16px,4.4vw,22px)}
+ html[data-ui-sticky-duty-summary="on"] .preview-duty-route{padding:7px 8px}
+ .device-orientation-switch span{flex-basis:100%}
+}
+@media print{
+ .preview-duty-summary{position:static!important;box-shadow:none!important}
+}
+
+/* Reliable pinned duty summary in legacy and the other three input modes.
+   It mirrors only when the original summary has left the visible viewport. */
+#floating-duty-summary{position:fixed!important;top:0!important;z-index:75!important;
+ margin:0!important;box-shadow:0 12px 30px #020b1899!important;max-height:42vh;overflow:hidden;
+ pointer-events:none;box-sizing:border-box}
+#floating-duty-summary[hidden]{display:none!important}
+@media(max-width:700px){#floating-duty-summary{padding:7px!important;border-radius:0 0 12px 12px!important}
+ #floating-duty-summary .preview-duty-stats{margin-bottom:5px}
+ #floating-duty-summary .preview-duty-stat{padding:5px 7px}
+ #floating-duty-summary .preview-duty-stat strong{font-size:clamp(15px,4vw,21px)}
+ #floating-duty-summary .preview-duty-route{padding:6px 8px}}
+@media print{#floating-duty-summary{display:none!important}}
+
+/* Contextual ride-only header: no daily totals or start-of-shift duration. */
+.preview-duty-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.preview-duty-stats:has(> :nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+.preview-duty-stats:has(> :nth-child(4):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){.preview-duty-stats:has(> :nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
+.preview-duty-stats:has(> :only-child){grid-template-columns:minmax(0,1fr)}
+.preview-duty-stat strong[data-duty-field="state"]{color:#7de5b7}
+.preview-duty-route{min-height:0}
+/* The live duty summary doubles as an accessible jump menu. */
+.preview-duty-summary [data-duty-jump]{cursor:pointer}
+.preview-duty-summary [data-duty-jump]:focus-visible{outline:2px solid #8dd7ff;outline-offset:2px}
+.preview-duty-summary [data-duty-jump]:active{filter:brightness(1.18)}
+.preview-duty-stats:has(> :nth-child(5):last-child){grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:700px){.preview-duty-stats:has(> :nth-child(5):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
+#floating-duty-summary{pointer-events:auto!important}
+/* Uber settlement: readable text both in day and night themes. */
+html[data-ui-theme="night"] .uber-settlement{background:#1b3248!important;border-color:#597b99!important;color:#edf6ff!important}
+html[data-ui-theme="night"] .uber-settlement .field-label,
+html[data-ui-theme="night"] .uber-settlement .caption-note{color:#c7e0f5!important}
+html[data-ui-theme="night"] .uber-summary>div{background:#243e56!important;border-color:#6686a2!important;color:#f3f8ff!important}
+html[data-ui-theme="night"] .uber-summary strong{color:#8edaff!important}
+html[data-ui-theme="day"] .uber-settlement .field-label,
+html[data-ui-theme="day"] .uber-settlement .caption-note{color:#28435d}
+html[data-ui-theme="day"] .uber-summary>div{color:#23394f}
+/* Keep the primary save action above payment breakdown, and a second save action above supplementary fields. */
+.settlement-save-first{margin:16px 0 10px}
+.settlement-save-bottom{margin:18px 0 12px}
+/* Duty-plan status is scrolled normally during empty cruising. */
+.preview-duty-stats:has(> :nth-child(4):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){.preview-duty-stats:has(> :nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Table row hover/selection must remain readable in the night theme. */
+html[data-ui-theme="night"] .data-table tbody tr:hover,
+html[data-ui-theme="night"] .data-table tbody tr:focus-within,
+html[data-ui-theme="night"] .data-table tbody tr:active{
+ background:#294a68!important;color:#f5fbff!important;
+}
+html[data-ui-theme="night"] .data-table tbody tr:hover > td,
+html[data-ui-theme="night"] .data-table tbody tr:focus-within > td,
+html[data-ui-theme="night"] .data-table tbody tr:active > td{
+ background:transparent!important;color:#f5fbff!important;
+}
+html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active) a,
+html[data-ui-theme="night"] .data-table tbody tr:is(:hover,:focus-within,:active) button{
+ color:#c9eaff!important;
+}
+.cruising-summary-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:12px 0}
+.cruising-summary-setting{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--sheet);cursor:pointer;font-weight:750}
+.cruising-summary-setting input{width:22px;height:22px;accent-color:#238bd4;flex-shrink:0}
+.preview-duty-summary:has(>.preview-duty-route:first-child){padding-top:10px}
+
+.break-page{padding:15px!important}.break-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}.break-dashboard>div{background:#edf3fa;border-radius:11px;padding:10px;min-width:0}.break-dashboard small{display:block;color:#60778b;font-size:12px}.break-dashboard strong{display:block;font-size:clamp(20px,5vw,27px);white-space:nowrap}.break-place-line{display:flex;gap:7px}.break-place-line input{min-width:0;flex:1}.break-actions{margin:16px 0}.break-actions .btn{min-height:55px}.break-list-title{display:flex;justify-content:space-between;align-items:center;gap:6px;border-top:1px solid #adc3d9;padding-top:13px}.break-table-scroll{overflow-x:auto}.break-table{width:100%;border-collapse:collapse;font-size:13px}.break-table td,.break-table th{padding:9px 5px;text-align:left;border-bottom:1px solid #a8bacc}.break-duration{text-align:right!important}
+
+/* v0.3.91: vertical-density refinement; button height is user-selectable. */
+html[data-ui-buttons="ultra"] .btn{padding:5px 9px;line-height:1.2}
+html[data-ui-buttons="ultra"] .btn.big{padding:6px 10px;font-size:calc(15px * var(--ui-font));min-height:42px}
+html[data-ui-buttons="ultra"] .chip{padding:4px 8px;min-height:36px}
+html[data-ui-buttons="compact"] .btn.big{padding-block:7px;min-height:49px;font-size:calc(16px * var(--ui-font))}
+.preview-duty-stat small{white-space:nowrap;font-size:clamp(9px,2.6vw,12px);line-height:1.25}
+.preview-duty-stat{min-width:0}
+.preview-duty-stat strong{overflow-wrap:normal;word-break:normal}
+.break-page{padding:12px!important}
+.break-page .break-dashboard{gap:7px;margin:9px 0}
+.break-page .break-dashboard>div{padding:8px}
+.break-page .break-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:10px 0}
+.break-page .break-actions .btn{min-height:var(--ui-button-touch);padding-block:7px;font-size:calc(14px * var(--ui-font))}
+.break-page .break-list-title{padding-top:8px;margin-top:7px}
+.break-page .break-table td,.break-page .break-table th{padding:6px 4px}
+@media(max-width:600px){.break-page .break-dashboard strong{font-size:clamp(19px,5vw,24px)}.break-page .hero-heading{margin-bottom:4px}}
+
+html .cruising-action-grid.cruising-action-compact,html[data-ui-screen-mode] .cruising-action-grid.cruising-action-compact{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px}
+.cruising-action-grid.cruising-action-compact .cruising-history-btn{grid-column:1/-1}
+.cruising-action-grid.cruising-action-compact .btn.big{min-height:var(--ui-button-primary);font-size:calc(16px * var(--ui-font));padding:8px 6px}
+
+.preview-duty-stat.duty-time-overdue strong{color:#ff7d81!important;overflow-wrap:normal;word-break:normal;font-size:clamp(14px,2.5vw,26px)}
+
+/* v0.3.94: Consistent screen-space density without changing saved UI sizing choices. */
+@media screen {
+  .layout{padding:14px 16px 90px}
+  .content-layout{gap:15px}
+  .topbar{margin-bottom:12px}
+  .card{padding:16px;margin-bottom:11px}
+  .hero{padding:16px}
+  .section-heading{margin-bottom:10px}
+  .hero-heading{margin-bottom:4px}
+  .subsection{margin:12px 0 8px}
+  .details>summary{padding:12px 14px}
+  .details>.inner{padding:13px}
+  .form-grid,.form-grid.three{gap:10px}
+  .field .field-label{margin-bottom:4px}
+  .control{padding:8px 10px}
+  .actions{gap:7px;margin-top:10px}
+  .action-grid{gap:7px}
+  .selector{gap:6px}
+  .btn{padding:7px 10px}
+  .btn.big{padding:9px 12px}
+  .chip{padding:7px 9px}
+  .metrics{gap:8px;margin:10px 0}
+  .metric{padding:12px}
+  .statline{padding:8px 0}
+  .panel-strip,.warn,.danger-note{padding:10px 12px;margin:10px 0}
+  .settings-advanced>summary{padding:12px 13px}
+  .settings-advanced>.inner>.card,.settings-advanced .details .card{margin-bottom:9px}
+  /* This grid must not inherit the one-column phone, half-screen, portrait,
+     or compact-driving override used for other action grids. */
+  html[data-ui-screen-mode][data-ui-orientation-mode] .break-page .break-actions,
+  html[data-ui-screen-mode] .break-page .break-actions,
+  html .break-page .break-actions{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px;
+  }
+  .break-page .break-actions .btn{
+    min-width:0;
+    min-height:var(--ui-button-touch)!important;
+    padding:7px 5px;
+    font-size:calc(14px * var(--ui-font))!important;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    line-height:1.3;
+  }
+  .break-page .break-dashboard strong{font-variant-numeric:tabular-nums}
+  /* Explicit color pairs: both daytime and nighttime time cards are legible. */
+  html[data-ui-theme="day"] .break-page .break-dashboard>div,
+  html:not([data-ui-theme="night"]) .break-page .break-dashboard>div{
+    background:#e8f0fa;color:#18324c;border:1px solid #b7cce0;
+  }
+  html[data-ui-theme="day"] .break-page .break-dashboard small,
+  html:not([data-ui-theme="night"]) .break-page .break-dashboard small{color:#3d5872}
+  html[data-ui-theme="day"] .break-page .break-dashboard strong,
+  html:not([data-ui-theme="night"]) .break-page .break-dashboard strong{
+    color:#18324c;-webkit-text-fill-color:#18324c;
+  }
+  html[data-ui-theme="night"] .break-page .break-dashboard>div{
+    background:#263d56;color:#f5faff;border:1px solid #6886a2;
+  }
+  html[data-ui-theme="night"] .break-page .break-dashboard small{color:#c3d7eb}
+  html[data-ui-theme="night"] .break-page .break-dashboard strong{
+    color:#f5faff;-webkit-text-fill-color:#f5faff;
+  }
+  html[data-ui-theme="night"] .break-page .break-table td,
+  html[data-ui-theme="night"] .break-page .break-table th{color:#f5faff;border-color:#6886a2}
+  html[data-ui-theme="night"] .break-page .break-list-title{border-color:#6886a2}
+}
+@media screen and (max-width:700px){
+  .layout{padding:9px 8px calc(var(--ui-touch) * 1.7 + 45px)}
+  .topbar{margin-bottom:9px}
+  .card{padding:12px;margin-bottom:9px}
+  .hero{padding:13px}
+  .content-layout{gap:9px}
+  .details>.inner{padding:10px}
+  .settings-advanced>.inner{padding:5px}
+  .settings-advanced>summary{padding:10px 11px}
+  .settings-advanced>.inner>.card,.settings-advanced .details .card{padding:10px;margin:7px 0}
+  .settings-advanced .details>.inner{padding:5px}
+  .metrics{margin:8px 0}
+  .metric{padding:9px}
+  .form-grid,.form-grid.three,.details .form-grid{gap:9px}
+  .btn.big{padding-inline:9px}
+  .break-page .break-dashboard>div{padding:8px 7px}
+}
+
+/* One-line login/session strip: keep main app visible on mobile. */
+.account-top{min-height:32px;padding:3px 8px;gap:6px;flex-wrap:nowrap}
+.account-top .account-state{flex:1;min-width:0;flex-direction:row;gap:7px;align-items:center;overflow:hidden}
+.account-top .account-state span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.account-top button{font-size:11px;padding:4px 8px;min-height:27px;border-radius:6px}
+@media(max-width:650px){.account-top{margin:2px 4px 0;padding:2px 6px;min-height:29px;gap:5px}.account-top #accountStatus{display:none}.account-top .account-state span{font-size:10px}.account-top button{font-size:10px;padding:3px 6px;min-height:25px}}
+
+/* Mobile header: brand + duty pill on row one; compact sync on row two. */
+@media(max-width:650px){
+ .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;padding:9px 11px;margin-bottom:10px}
+ .topbar .brand{grid-column:1;grid-row:1;min-width:0;gap:7px}
+ .topbar .brand-icon{width:32px;height:32px;min-width:32px;border-radius:9px;font-size:18px}
+ .topbar .brand-name{font-size:17px;letter-spacing:0}
+ .topbar .brand-tag{font-size:10px;letter-spacing:0}
+ .topbar .viewer-header-right{display:contents}
+ .topbar .status-pill{grid-column:2;grid-row:1;justify-self:end;padding:4px 7px;font-size:10px;white-space:nowrap}
+ .topbar .viewer-sync-controls{grid-column:1/-1;grid-row:2;min-width:0;display:flex;align-items:center;flex-wrap:nowrap;gap:6px}
+ .topbar .viewer-sync-controls .btn{flex:none;min-height:28px!important;padding:4px 8px!important;font-size:11px!important;border-radius:7px}
+ .topbar .viewer-sync-time{flex:1;min-width:0;max-height:2.5em;overflow:hidden;font-size:10px;line-height:1.25}
+}
+
+/* Day theme: duty summary was hard-coded to the night palette. */
+html:not([data-ui-theme="night"]) .preview-duty-summary{
+ background:#f5faff;color:#173650;border-color:#b5cee3;
+ box-shadow:0 5px 14px #24466b16;
+}
+html:not([data-ui-theme="night"]) .preview-duty-stat{
+ background:#ffffff;color:#173650;border-color:#bed3e5;
+}
+html:not([data-ui-theme="night"]) .preview-duty-stat small,
+html:not([data-ui-theme="night"]) .preview-duty-route small{color:#47637d}
+html:not([data-ui-theme="night"]) .preview-duty-stat strong,
+html:not([data-ui-theme="night"]) .preview-duty-route strong{color:#173650}
+html:not([data-ui-theme="night"]) .preview-duty-stat strong[data-duty-field="state"]{color:#08735c}
+html:not([data-ui-theme="night"]) .preview-duty-route{
+ background:#e8f2fc;color:#173650;border-color:#bfd4e6;
+}
+html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
+
+/* 2026-10-23: Galaxy下部メニューの余分な上下余白のみを圧縮する。 */
+@media(max-width:700px){
+ .sidebar{padding:0 2px env(safe-area-inset-bottom,0px)}
+ .sidebar .nav{padding:0}
+ .sidebar .nav button{min-height:44px;padding:1px 0;gap:0}
+ .sidebar .nav .nav-ico{line-height:1}
+ .sidebar .nav .nav-label{line-height:1.1}
+}
+
+/* Optional compact meter controls: state changes, not a large physical meter imitation. */
+.meter-console{padding:10px!important}
+.meter-state{display:flex;align-items:center;flex-wrap:wrap;gap:3px 9px;background:transparent;color:var(--dark);border-bottom:1px solid var(--line);border-radius:0;padding:0 0 7px;text-align:left}
+.meter-state small{display:inline;color:var(--muted);font-size:11px;font-weight:650}
+.meter-state strong{display:inline;font-size:15px;font-weight:800;line-height:1.25}
+.meter-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
+.meter-actions .meter-action{min-width:0;width:100%;min-height:44px;padding:6px 5px;border-radius:9px;font-size:13px;line-height:1.2;font-weight:750;white-space:normal;overflow-wrap:anywhere}
+.meter-actions .meter-sub{background:#edf3f8;color:#243d55;border-color:#bdd1e1}
+.meter-actions .meter-finish:not(:disabled){background:#c52229;color:white;border:1px solid #991d23}
+.meter-actions .meter-finish:disabled{background:#cbd0d6;color:#52606e;border-color:#aeb7c2;opacity:1}
+.meter-quick-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:end;margin-top:7px}
+.meter-details{margin-top:7px}
+.meter-details>summary{padding:11px 12px;font-size:13px}
+.meter-details>.inner{padding:9px}
+.meter-details>.inner>.hero{box-shadow:none;margin-bottom:0}
+.preview-duty-route>.duty-quick-save{flex:0 0 auto;min-width:90px}
+.duty-quick-save{min-height:48px;border-radius:10px;border:1px solid #991d23;background:#c52229;color:white;font-size:16px;font-weight:850;padding:9px 13px;white-space:nowrap;pointer-events:auto}
+.duty-quick-save:disabled{background:#cbd0d6;color:#4b5563;border-color:#9ca3af;opacity:1;cursor:not-allowed}
+#floating-duty-summary .duty-quick-save{pointer-events:auto}
+@media(max-width:390px){.meter-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:340px){.meter-quick-inputs{grid-template-columns:1fr}}
+@media(max-width:500px){.preview-duty-route{gap:5px;padding:7px!important}.preview-duty-route>.duty-quick-save{min-width:72px;min-height:42px;padding:7px;font-size:14px}.preview-duty-route>span{font-size:16px}}
+
+/* Meter-only controls: accessible labels/icons as well as distinct colors. */
+.meter-actions .meter-wait:not(:disabled){background:#225db0;border-color:#225db0;color:#fff}
+.meter-actions .meter-dispatch:not(:disabled){background:#a35a13;border-color:#a35a13;color:#fff}
+.meter-actions .meter-ride:not(:disabled){background:#087566;border-color:#087566;color:#fff}
+.meter-actions .meter-highway:not(:disabled){background:#624b91;border-color:#624b91;color:#fff}
+.meter-actions .meter-break:not(:disabled){background:#704a70;border-color:#704a70;color:#fff}
+.meter-actions .meter-settle:not(:disabled){background:#1764a0;border-color:#1764a0;color:#fff}
+.meter-actions .meter-discount:not(:disabled){background:#7d5c27;border-color:#7d5c27;color:#fff}
+.meter-actions .meter-action:disabled{background:#d7dde4!important;color:#586473!important;border-color:#a9b3bd!important;opacity:1}
+.meter-status-summary{padding:6px 8px!important;margin-bottom:5px!important;border-radius:11px!important}
+.meter-status-summary>.preview-duty-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;margin-bottom:5px!important}
+.meter-status-summary .preview-duty-stat{padding:6px 8px!important;border-radius:9px}
+.meter-status-summary .preview-duty-stat small{font-size:10px;line-height:1.2}
+.meter-status-summary .preview-duty-stat strong{font-size:clamp(14px,3.6vw,18px)!important;line-height:1.2;overflow-wrap:anywhere}
+.meter-status-summary .preview-duty-route{padding:5px 7px!important;gap:6px}
+.meter-status-summary .preview-duty-route small{font-size:10px}
+.meter-status-summary .preview-duty-route strong{font-size:13px;line-height:1.2}
+.meter-status-summary .preview-duty-route>span{font-size:15px}
+.meter-status-summary .meter-summary-more{margin:5px 0 0;border:1px solid #476680;border-radius:8px;background:#1b344a}
+.meter-status-summary .meter-summary-more>summary{cursor:pointer;padding:5px 9px;font-weight:700;font-size:12px;color:#e7f2fb}
+.meter-status-summary .meter-summary-more>.preview-duty-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:5px}
+#floating-duty-summary .meter-summary-more{pointer-events:auto}
+@media(max-width:390px){.meter-status-summary .preview-duty-route strong{font-size:12px}}
+
+/* Meter mode: the existing alight/dispatch clock is a selected status card. */
+.meter-status-summary .meter-elapsed-card{min-width:0}
+.meter-status-summary .meter-elapsed-card strong{font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere}
+#floating-duty-summary.meter-status-summary:has(.meter-summary-more[open]){max-height:70vh;overflow-y:auto;pointer-events:auto}
+#floating-meter-actions{position:fixed!important;z-index:74!important;box-sizing:border-box;background:var(--sheet);border:1px solid #bed0e2;border-radius:0 0 11px 11px;box-shadow:0 10px 21px #020b1830;padding:6px}
+#floating-meter-actions[hidden]{display:none!important}
+#floating-meter-actions .meter-actions{margin:0}
+@media(max-width:650px){#floating-meter-actions{padding:5px;border-radius:0 0 8px 8px}}
+@media print{#floating-meter-actions{display:none!important}}
+
+/* Readable operation buttons in both normal and floating meter rows.
+   Override dark theme's generic .btn rule without touching detailed/legacy entry. */
+.meter-console .meter-actions .meter-action,
+#floating-meter-actions .meter-actions .meter-action{
+ font-size:clamp(16px,calc(15px * var(--ui-font)),21px)!important;
+ font-weight:850!important;
+ line-height:1.23!important;
+ letter-spacing:.025em;
+ min-height:45px!important;
+ padding:7px 5px!important;
+ text-align:center;
+}
+.meter-actions .meter-wait:not(:disabled){background:#225db0!important;border-color:#225db0!important;color:#fff!important}
+.meter-actions .meter-dispatch:not(:disabled){background:#a35a13!important;border-color:#a35a13!important;color:#fff!important}
+.meter-actions .meter-ride:not(:disabled){background:#087566!important;border-color:#087566!important;color:#fff!important}
+.meter-actions .meter-highway:not(:disabled){background:#624b91!important;border-color:#624b91!important;color:#fff!important}
+.meter-actions .meter-break:not(:disabled){background:#704a70!important;border-color:#704a70!important;color:#fff!important}
+.meter-actions .meter-settle:not(:disabled){background:#1764a0!important;border-color:#1764a0!important;color:#fff!important}
+.meter-actions .meter-discount:not(:disabled){background:#7d5c27!important;border-color:#7d5c27!important;color:#fff!important}
+.meter-actions .meter-finish:not(:disabled){background:#c52229!important;border-color:#991d23!important;color:#fff!important}
+.meter-actions .meter-sub:not(:disabled){background:#dce9f3!important;border-color:#8daec9!important;color:#203b52!important}
+.meter-actions .meter-action:disabled{background:#d7dde4!important;border-color:#a9b3bd!important;color:#586473!important;opacity:1}
+.meter-passenger-fields{margin:7px 0 9px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--sheet)}
+.meter-passenger-fields .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.meter-passenger-fields .passenger-control{min-width:0;margin:0}
+.meter-passenger-fields .field-label{font-size:13px;font-weight:800;margin-bottom:5px}
+.meter-passenger-fields .selector{gap:3px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.meter-passenger-fields .chip{min-width:0;min-height:42px;padding:6px 1px;font-size:16px}
+.meter-passenger-fields .caption-note{display:none}
+@media(max-width:400px){.meter-passenger-fields .form-grid{gap:6px}.meter-passenger-fields{padding:6px}}
+/* The passenger selector stays compact until the user opens it. */
+.meter-console .meter-passenger-fields{padding:0;margin:6px 0 8px;overflow:hidden}
+.meter-console .meter-passenger-fields>summary{cursor:pointer;min-height:43px;padding:8px 10px;font-size:15px;font-weight:800;color:var(--dark);list-style:revert}
+.meter-console .meter-passenger-fields>.form-grid{padding:8px}
+html[data-ui-theme="night"] .meter-console .meter-passenger-fields>summary{color:#eff7ff}
+
+.demo-banner{background:#16324d;color:white;padding:14px 20px;font-size:14px}.demo-banner b{color:#9ef1d3}.demo-banner small{display:block;color:#d3e2ed}.demo-content{max-width:1000px;margin:auto;padding:24px 16px 80px}.demo-nav{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.demo-nav button[aria-current=true]{background:#1768b8;color:white}.demo-status{font-size:24px;font-weight:800}.demo-error{color:#a32828;background:#fff1f1;padding:12px;border-radius:8px}.demo-note{color:#536780;font-size:13px}summary{cursor:pointer}.demo-detail{margin-top:12px}input,select{max-width:100%}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:600px){.metrics{grid-template-columns:1fr 1fr}.demo-content{padding:16px 12px}.demo-nav .btn{flex:1;padding:10px}.form-grid.three{grid-template-columns:1fr 1fr}}@media print{.demo-nav,.no-print,button{display:none!important}.demo-content{max-width:none}.card{break-inside:avoid}.demo-banner{color:black;background:white}}
+</style></head><body>
+<header class="demo-banner"><b>● 完全オフライン・独立デモ</b>　TAXIAPP v0.3.157<small>合成データのみ／メモリ保存／再読み込みで初期化／クラウド・認証・GPS・外部通信なし</small></header>
+<main class="demo-content"><div class="brand"><div class="brand-icon">🚕</div><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">LOCAL DEMO · 8ae6c4c</div></div></div>
+<nav class="demo-nav" id="nav" aria-label="メニュー"></nav><div id="notice" role="alert"></div><div id="app"></div>
+<footer class="demo-note">このHTMLだけで起動できます。本番データの読込・移行機能はありません。入力内容はこの画面を閉じると失われます。</footer></main>
+<script>'use strict';
+const RAW_COLUMNS = [
+ ['A','日報番号','基本'],['B','キャンセル','基本'],['C','データ受信時間または待機開始時間','基本'],['D','乗車地','乗降'],
+ ['E','データの種類','基本'],['F','実車距離','乗降'],['G','実車時間','乗降'],['H','降車地','乗降'],
+ ['I','男性人数','乗降'],['J','女性人数','乗降'],['K','メーター金額','精算'],['L','降車距離','乗降'],
+ ['M','降車時間','乗降'],['N','金種','精算'],['O','割引','精算'],['P','高速利用','高速共通'],
+ ['Q','(実)乗インター','実車高速'],['R','(実)乗時間','実車高速'],['S','(実)乗距離','実車高速'],
+ ['T','(実)降インター','実車高速'],['U','(実)降時間','実車高速'],['V','(実)降距離','実車高速'],
+ ['W','(実)金額','実車高速'],['X','(実)区間距離','実車高速'],['Y','(実)免除距離','実車高速'],
+ ['Z','(空)乗インター','空車高速'],['AA','(空)乗時間','空車高速'],['AB','(空)乗距離','空車高速'],
+ ['AC','(空)降インター','空車高速'],['AD','(空)降時間','空車高速'],['AE','(空)降距離','空車高速'],
+ ['AF','(空)金額1','空車高速'],['AG','(空)金額2','空車高速'],['AH','(空)金額3','空車高速'],
+ ['AI','(空)合計金額','空車高速'],['AJ','(空)区間距離','空車高速'],['AK','(空)免除距離','空車高速'],
+ ['AL','乗住所','乗降'],['AM','降住所','乗降'],['AN','料金','精算'],['AO','預金','精算'],
+ ['AP','おつり','精算'],['AQ','GO手','精算'],['AR','割引(金)','精算']
+];
+const TYPES=['G','D','乗','U'];
+const DISPATCH_TYPES=[['G','GO'],['D','DiDi'],['U','Uber'],['乗','その他・無線']];
+const PAYMENTS=[['現','現金'],['G','GOペイ'],['D','DiDiアプリ'],['U','Uber'],['Q','QR決済'],['ク','クレジット'],['交','交通系IC'],['チ','チケット'],['乗','乗込GOペイ'],['キ','キャンセル']];
+const LABELS=Object.fromEntries(PAYMENTS);
+const MAX_RECORDS=60, PAGE_SIZE=36, DEFAULT_GO_FEE=200, DEFAULT_CANCEL_FEE=0, DEFAULT_UBER_RATE=0, DEFAULT_UBER_SURCHARGE=100, DEFAULT_UBER_CREW_SHARE=50;
+// The vehicle meter may include the dispatch charge shown for a cancelled call.
+// Keep this number strictly separate from taxable sales and all settlement totals.
+const CANCEL_METER_CHECK_AMOUNT=700;
+function cancelMeterConfig(){
+ const p=model?.prefs||{},v=number(p.cancelMeterAmount);
+ return {mode:p.cancelMeterMode==='reset'?'reset':'retain',amount:v!==null&&v>=0&&v<=100000?Math.round(v):CANCEL_METER_CHECK_AMOUNT};
+}
+function meterCheckValues(t,shift){
+ const items=(shift?.records||[]).filter(row=>row.kind==='cancel'&&row.status==='complete');
+ const reference=items.reduce((sum,row)=>{
+  const saved=number(row.meta?.cancelMeterAdjustment);
+  return sum+(saved!==null&&saved>=0?saved:CANCEL_METER_CHECK_AMOUNT);
+ },0);
+ return {cancelCount:t.cancels||0,reference,total:t.meter+reference};
+}
+function stamp(now=new Date()){const pad=n=>String(n).padStart(2,'0');return `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;}
+function dateStamp(now=new Date()){const p=n=>String(n).padStart(2,'0');return `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}`;}
+function number(v){if(v===null||v===undefined||String(v).trim()==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+const amount = v=>number(v)??0;
+const money = v=>'¥'+Math.round(amount(v)).toLocaleString('ja-JP');
+const feeSettings=(s={})=>({goFee:number(s.goFee)??DEFAULT_GO_FEE,cancelFee:number(s.cancelFee)??DEFAULT_CANCEL_FEE,uberRate:number(s.uberRate)??DEFAULT_UBER_RATE,uberSurcharge:number(s.uberSurcharge)??DEFAULT_UBER_SURCHARGE,uberCrewShare:number(s.uberCrewShare)??DEFAULT_UBER_CREW_SHARE});
+function localDateTime(t){const x=t instanceof Date?t:new Date(t);return `${dateStamp(x)}T${stamp(x).slice(0,5)}`;}
+function revisedShiftTime(shift,newTime){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(newTime))throw Error('正しい時刻を指定してください');const old=shift.startedAt;shift.startedAt=newTime+':00';shift.startedIso=new Date(`${shift.date}T${shift.startedAt}`).toISOString();if(shift.draft?.raw?.C===old)shift.draft.raw.C=shift.startedAt;if(!shift.waitSegments?.length&&shift.waiting?.startedAt===old){shift.waiting.startedAt=shift.startedAt;shift.waiting.startedIso=shift.startedIso;}return shift.startedAt;}
+function blankRaw(){return Object.fromEntries(RAW_COLUMNS.map(([key])=>[key,'']));}
+function newShift(now=new Date(),meta={}){return {id:`shift-${now.getTime()}`,date:dateStamp(now),startedAt:stamp(now),startedIso:now.toISOString(),endedAt:'',company:meta.company||'',driver:meta.driver||'',driverNo:meta.driverNo||'',vehicle:meta.vehicle||'',startingOdo:meta.startingOdo??'',distanceMode:'trip',settings:feeSettings(),records:[],draft:null,waiting:null,waitTrackingVersion:2,waitSegments:[],breakActive:null,breakSessions:[],createdAt:new Date().toISOString()};}
+function pauseWaiting(shift,now=new Date(),reason='dispatch'){
+ const previous=shift.waiting||null;
+ if(previous){(shift.waitSegments??=[]).push({...previous,endedAt:stamp(now),endedIso:now.toISOString(),reason});}
+ shift.waiting=null;return previous;
+}
+function beginWaiting(shift,now=new Date()){
+ if(shift.waiting||shift.draft)throw new Error('待機開始できません');
+ shift.waiting={id:`wait-${now.getTime()}-${Math.floor(Math.random()*10000)}`,startedAt:stamp(now),startedIso:now.toISOString(),place:'',odometer:'',geo:null,gpsStatus:'GPSを取得中…'};
+ return shift.waiting;
+}
+function breakSeconds(item,now=new Date()){const a=Date.parse(item?.startedIso||''),b=item?.endedIso?Date.parse(item.endedIso):now.getTime();return Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,Math.floor((b-a)/1000)):0;}
+function breakElapsedText(item,now=new Date()){const n=breakSeconds(item,now);return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':');}
+function breakDurationMinutes(item,now=new Date()){return Math.floor(breakSeconds(item,now)/60);}
+function totalBreakMinutes(shift,now=new Date()){return (shift?.breakSessions||[]).reduce((sum,item)=>sum+breakDurationMinutes(item,now),0)+(shift?.breakActive?breakDurationMinutes(shift.breakActive,now):0);}
+function breakClockText(mins){return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');}
+function endBreak(shift,when=new Date()){if(!shift?.breakActive)return;const item={...shift.breakActive,endedAt:stamp(when),endedIso:when.toISOString()};(shift.breakSessions??=[]).push(item);shift.breakActive=null;}
+function elapsedWaitingText(waiting,now=new Date()){
+ if(!waiting?.startedIso)return '00:00';
+ const elapsed=Math.max(0,Math.floor((now.getTime()-Date.parse(waiting.startedIso))/1000));
+ const hours=String(Math.floor(elapsed/3600)).padStart(2,'0');
+ const minutes=String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+ return `${hours}:${minutes}`;
+}
+function makeDispatch(shift,now=new Date(),type='G'){
+ if(shift.records.length>=MAX_RECORDS)throw new Error('1乗務60件を超えて登録できません');
+ const previous=shift.waiting||null;
+ const d=makeDraft(shift,'dispatch',now,type);
+ pauseWaiting(shift,now,'dispatch');
+ d.raw.C=stamp(now);d.raw.E=type;d.status='dispatching';
+ d.meta.dispatchAt=stamp(now);d.meta.dispatchIso=now.toISOString();d.meta.dispatchNote='';d.meta.waitStartBeforeDispatch=previous?.startedAt||'';d.meta.waitPlace=previous?.place||'';d.meta.waitOdometer=previous?.odometer??'';
+ return d;
+}
+function boardDispatch(shift,now=new Date()){
+ const d=shift.draft;if(!d||d.kind!=='dispatch')throw new Error('迎車中の記録がありません');
+ d.kind='ride';d.status='draft';d.raw.G=stamp(now);d.meta.boardedFromDispatch=true;d.meta.boardedIso=now.toISOString();return d;
+}
+function cancelDispatch(shift,now=new Date()){
+ const d=shift.draft;if(!d||d.kind!=='dispatch')throw new Error('迎車中の記録がありません');
+ d.kind='cancel';d.status='draft';d.raw.B='キャンセル';d.raw.N='キ';d.raw.K=0;d.meta.cancelAt=stamp(now);d.meta.cancelIso=now.toISOString();const meterCfg=cancelMeterConfig();d.meta.cancelMeterAdjustment=meterCfg.mode==='retain'?meterCfg.amount:0;
+ const prev=[...shift.records].reverse().find(x=>x.kind==='ride'&&x.raw?.M);
+ // 旧記録と同様、キャンセル欄の距離・時刻は前回の降車から継承する。
+ if(prev){d.raw.G=prev.raw.M;d.raw.M=prev.raw.M;d.raw.F=prev.raw.L;d.raw.L=prev.raw.L;}
+ return d;
+}
+function makeDraft(shift,kind='ride',now=new Date(),type='乗'){
+ if(shift.records.length>=MAX_RECORDS)throw new Error('1乗務60件を超えて登録できません');
+ const raw=blankRaw();raw.A=shift.records.length+1;
+ const previous=[...shift.records].reverse().find(x=>x.raw?.M || x.meta?.cancelAt);
+ raw.C=previous?.raw?.M||previous?.meta?.cancelAt||shift.startedAt;
+ raw.E=kind==='empty'?'':type;
+ if(kind==='ride'){raw.G=stamp(now);raw.P='';}
+ if(kind==='cancel'){raw.B='キャンセル';raw.N='キ';raw.K=0;}
+ if(kind==='empty'){raw.P='空';}
+ return {id:`record-${now.getTime()}-${Math.floor(Math.random()*10000)}`,kind,raw,meta:{createdAt:now.toISOString(),serviceDate:shift.date,cancelAt:kind==='cancel'?stamp(now):'',pickupGeo:null,dropGeo:null,uberReservation:'',uberTip:'',uberAppDisplayed:''},status:'draft'};
+}
+
+/* 乗務員回収とアプリ運営会社回収を区別する。
+   GOの200円は営業完了後だけ計上し、メーター売上には一切混ぜない。 */
+function driverCollects(type){return Boolean(type)&&!['G','D','U','乗','キ'].includes(type);}
+function goCollectionFee(row,settings={},completedOnly=false){
+ if(!row||row.kind!=='ride'||row.raw?.E!=='G'||(completedOnly&&row.status!=='complete'))return 0;
+ const first=row.raw.N,second=row.meta?.splitPayment?.second;
+ return driverCollects(first)||driverCollects(second)?feeSettings(settings).goFee:0;
+}
+function hasRealHighway(raw){return String(raw?.P||'').includes('実');}
+function hasEmptyHighway(raw){return String(raw?.P||'').includes('空');}
+function calculatedDiscount(raw){
+ const meter=number(raw?.K);
+ return (raw?.O==='シ'||raw?.O==='高')&&meter!==null?Math.ceil(Math.max(0,meter)/100)*10:0;
+}
+function updateDiscountForDraft(d,changed=''){
+ if(!d?.raw||d.kind!=='ride')return;
+ const raw=d.raw;
+ if(changed==='AR'){
+  d.meta??={};d.meta.discountManual=number(raw.AR)!==null&&number(raw.AR)>0;
+  return;
+ }
+ if(changed==='O'){
+  d.meta??={};d.meta.discountManual=false;
+ }
+ if(raw.O!=='シ'&&raw.O!=='高'){
+  if(changed==='O')raw.AR='';
+  return;
+ }
+ if(d.meta?.discountManual&&number(raw.AR)>0)return;
+ raw.AR=number(raw.K)===null?'':calculatedDiscount(raw);
+}
+function deriveRaw(row,settings={}){
+ const raw={...row.raw}; const cfg=feeSettings(settings);
+ const parts=['AF','AG','AH'].map(k=>number(raw[k]));
+ if(hasEmptyHighway(raw))raw.AI=parts.reduce((s,x)=>s+(x??0),0);
+ const distance=(a,b)=>number(raw[a])!==null&&number(raw[b])!==null?Math.max(0,Math.round((Number(raw[b])-Number(raw[a]))*10)/10):null;
+ // 区間距離は運転手が入力しない。乗距離・降距離から自動算出し、
+ // 既存44列CSVのX/AJに互換出力する。旧版の手入力値より実距離を優先する。
+ // 高速距離の75％を免除距離として計算する。端数は1走行ごとに
+ // 大きく丸めず、集計時に再計算できるよう最大0.001kmで保持する。
+ const exemption=d=>Math.round(d*0.75*1000)/1000;
+ if(hasRealHighway(raw)){const d=distance('S','V');if(d!==null){raw.X=d;raw.Y=exemption(d);}}
+ if(hasEmptyHighway(raw)){const d=distance('AB','AE');if(d!==null){raw.AJ=d;raw.AK=exemption(d);}}
+ if(Array.isArray(row.meta?.highwaySections)&&window.TAXIAPP_HIGHWAY_SECTIONS){Object.assign(raw,window.TAXIAPP_HIGHWAY_SECTIONS.project(raw,row.meta.highwaySections));}
+ if((raw.O==='シ'||raw.O==='高')&&(number(raw.AR)===null||number(raw.AR)===0)&&!row.meta?.discountManual&&number(raw.K)!==null)raw.AR=calculatedDiscount(raw);
+ const hasAlighted=Boolean(raw.M);
+ raw.AQ=hasAlighted?goCollectionFee(row,cfg,true):0;
+ if(row.kind==='cancel'){raw.N='キ';raw.K=0;raw.AQ=0;}
+ return raw;
+}
+/* Estimate the cash payment amount using the same basis as the v0.1.4 reference amount.
+   When the operator explicitly enters AN (料金), treat that value as authoritative
+   for change; otherwise this stays a provisional estimate until account reconciliation. */
+function uberHasInCabPayment(row){
+ const a=row?.raw?.N||'',b=row?.meta?.splitPayment?.second||'';
+ return row?.raw?.E==='U' && [a,b].some(x=>x&&x!=='U'&&x!=='キ');
+}
+/* Uber input is the *customer-facing* amount displayed by Uber.
+   Example A: meter 2000 -> displayed 1800: app pays 200, in-cab 1800.
+   Example B: meter 2000 -> displayed 2100: in-cab pays 2100,
+              extra 100 is a dispatch charge, NOT meter sales and NOT remitted.
+   Do not infer a discount from either case. Never double-count the 100 fee. */
+// Fill the initial Uber displayed amount only while the driver has not overridden it.
+// The actual Uber amount always remains editable, including an intentionally blank value.
+function applyUberDisplayedDefault(d,settings={}){
+ if(d?.kind!=='ride'||d.raw?.E!=='U'||!d.meta)return false;
+ if(d.meta.uberAppDisplayedManual===true)return false;
+ const meter=number(d.raw.K);
+ if(meter===null)return false;
+ // Historic entries with an actual recorded value are never replaced.
+ if(d.meta.uberAppDisplayedDefaulted!==true&&String(d.meta.uberAppDisplayed??'').trim()!=='')return false;
+ const fee=feeSettings(settings).uberSurcharge;
+ const discount=(d.raw.O==='シ'||d.raw.O==='高')?amountDiscount(d.raw):0;
+ const proposed=d.raw.N==='U'?'0':String(Math.max(0,Math.round(meter-discount+fee)));
+ if(d.meta.uberAppDisplayed===proposed)return false;
+ d.meta.uberAppDisplayed=proposed;
+ d.meta.uberAppDisplayedDefaulted=true;
+ return true;
+}
+function uberAppAmounts(row,settings={}){
+ if(row?.kind!=='ride'||row?.raw?.E!=='U')return null;
+ const displayed=number(row?.meta?.uberAppDisplayed),meter=number(row?.raw?.K);
+ if(displayed===null||meter===null)return null;
+ const cfg=feeSettings(settings);
+ const discount=(row.raw.O==='シ'||row.raw.O==='高')?amountDiscount(row.raw):0;
+ const discountedMeter=Math.max(0,Math.round(meter-discount));
+ const positiveDifference=Math.round(displayed-discountedMeter);
+ const surcharge=positiveDifference>0?positiveDifference:0;
+ const appPaid=Math.max(0,Math.round(discountedMeter-displayed));
+ return {displayed,appPaid,surcharge,meter,valid:displayed>=0&&(surcharge===0||surcharge===cfg.uberSurcharge)};
+}
+function uberDispatchFeeApplies(row,serviceDate='',settings={}){
+ const app=uberAppAmounts(row,settings);
+ // Determine the fee only from an observed Uber app amount, never from a guess.
+ return Boolean(app?.valid && app.surcharge>0 && (uberHasInCabPayment(row)||row?.raw?.N==='U'));
+}
+function estimatedCashDue(row,settings={},shiftDate=''){
+ if(!row||row.kind!=='ride')return null;
+ const raw=row.raw||{};
+ const authoritative=number(raw.AN);
+ if(authoritative!==null)return Math.max(0,Math.round(authoritative));
+ const meter=number(raw.K);if(meter===null)return null;
+ const cfg=feeSettings(settings),isUber=raw.E==='U';
+ const discount=(raw.O==='シ'||raw.O==='高')&&!row.meta?.discountManual&&(number(raw.AR)===null||number(raw.AR)===0)?calculatedDiscount(raw):amount(raw.AR);
+ const uberReservation=isUber?amount(row.meta?.uberReservation):0;
+ // When the Uber app displays meter + 100 yen, the additional fee is collected
+ // from the passenger but is excluded from company cash remittance.
+ const app=uberAppAmounts(row,settings);
+ const uberSurcharge=app?.valid&&uberDispatchFeeApplies(row,shiftDate,settings)?app.surcharge:0;
+ const goFee=goCollectionFee(row,cfg,false);
+ return Math.max(0,Math.round(meter+amount(Array.isArray(row.meta?.highwaySections)?window.TAXIAPP_HIGHWAY_SECTIONS.project(raw,row.meta.highwaySections).W:raw.W)+uberReservation+uberSurcharge+goFee-discount));
+}
+function cashChange(row,settings={},shiftDate=''){
+ const split=paymentBreakdown(row,settings,shiftDate);
+ // Cash deposits must be reconciled against CASH due, not card/ticket/app-paid amounts.
+ const due=split.due===null?null:Math.max(0,Math.round(split.items.filter(x=>x.type==='現').reduce((sum,x)=>sum+x.amount,0)));
+ const deposit=number(row?.raw?.AO);
+ return {due,deposit,change:due===null||deposit===null?null:Math.max(0,Math.round(deposit-due)),
+         shortage:due===null||deposit===null?null:Math.max(0,Math.round(due-deposit))};
+}
+function syncCashChange(row,settings={},shiftDate=''){
+ if(!row?.raw)return null;
+ const result=cashChange(row,settings,shiftDate);
+ row.raw.AP=result.change===null?'':result.change;
+ return result;
+}
+function pricing(row,settings={},shiftDate=''){
+ const cfg=feeSettings(settings),raw=deriveRaw(row,cfg),done=row.status==='complete';
+ const meter=row.kind==='ride'&&done?amount(raw.K):0;
+ const realToll=row.kind==='ride'&&done?amount(raw.W):0;
+ const emptyToll=done&&hasEmptyHighway(raw)&&(row.kind==='ride'||row.kind==='empty')?amount(raw.AI):0;
+ // A cancelled dispatch is an operational record, never a fare or paid cancellation.
+ const cancellation=0;
+ const goFee=done?amount(raw.AQ):0;
+ const discount=row.kind==='ride'&&done?amount(raw.AR):0;
+ const uberRide=done&&raw.E==='U'&&row.kind==='ride';
+ const reservation=uberRide?amount(row.meta?.uberReservation):0;
+ const tip=uberRide?amount(row.meta?.uberTip):0;
+ // Uber basic commission covers trip sales, cancellation and reservation; never toll or tip.
+ const uberFee=0; // 事業者契約の料率は乗務員向けの日報では推測・計上しない。
+ // Additional dispatch fee began 2026-09-28; Uber app-paid transactions are excluded.
+ const serviceDate=shiftDate||row.meta?.serviceDate||dateStamp(new Date());
+ const uberSurcharge=(done&&row.kind==='ride'&&uberDispatchFeeApplies(row,serviceDate,settings))?cfg.uberSurcharge:0;
+ const uberCrewShare=0; // Legacy field; unsupported 50-yen sharing assumption is removed.
+ return {meter,realToll,emptyToll,cancellation,goFee,uberFee,uberSurcharge,uberCrewShare,reservation,tip,discount,customerBill:meter+realToll+cancellation+reservation+goFee+uberSurcharge-discount,printedDetail:meter+realToll+cancellation,uberCommissionBase:meter+cancellation+reservation};
+}
+/* 売上（メーター）と受取額（手数料を含む）を別々に保持する。
+   GO回収手数料は会社への納金対象。Uber配車手数料だけ納金対象外。 */
+function settledTenderAmounts(row,settings={},shiftDate=''){
+ const split=paymentBreakdown(row,settings,shiftDate);
+ const raw=split.items.filter(x=>x.type&&x.amount!==null).map(x=>({type:x.type,received:Math.max(0,Math.round(x.amount)),company:Math.max(0,Math.round(x.amount))}));
+ const fees=pricing(row,settings,shiftDate);
+ // GOの車内回収手数料は会社への納金対象。受取額から控除しない。
+ // Uberの配車手数料だけを納金対象から除く（現金優先）。
+ let uberLeft=fees.uberSurcharge;
+ const driver=raw.filter(x=>driverCollects(x.type)).sort((a,b)=>(a.type==='現'?0:1)-(b.type==='現'?0:1));
+ for(const item of driver){const fee=Math.min(item.company,uberLeft);item.company-=fee;uberLeft-=fee;}
+ return {items:raw,fees,unallocatedFees:uberLeft,split};
+}
+function totals(records=[],settings={},shiftDate=''){
+ const t={records:records.length,rides:0,cancels:0,emptyHighways:0,cashReceived:0,cashDeposit:0,uberCashNoDeposit:0,meter:0,realToll:0,emptyToll:0,cancellation:0,goFee:0,uberFee:0,uberSurcharge:0,uberCrewShare:0,reservation:0,tip:0,discount:0,customerBill:0,printedDetail:0,paymentTotals:{},unallocatedFees:0};
+ for(const row of records){
+  if(row.status!=='complete')continue;
+  const p=pricing(row,settings,shiftDate);
+  if(row.kind==='ride')t.rides++;
+  if(row.kind==='cancel')t.cancels++;
+  if((row.kind==='ride'||row.kind==='empty')&&hasEmptyHighway(row.raw))t.emptyHighways++;
+  for(const key of ['meter','realToll','emptyToll','cancellation','goFee','uberFee','uberSurcharge','uberCrewShare','reservation','tip','discount','customerBill','printedDetail'])t[key]+=p[key];
+  if(row.kind==='ride'){
+   const settlement=settledTenderAmounts(row,settings,shiftDate);
+   t.unallocatedFees+=settlement.unallocatedFees;
+   for(const item of settlement.items){t.paymentTotals[item.type]=(t.paymentTotals[item.type]||0)+item.company;
+    if(item.type==='現'){t.cashReceived+=item.received;t.cashDeposit+=item.company;t.uberCashNoDeposit+=Math.min(p.uberSurcharge,item.received-item.company);}}
+  }
+  // Cancelled dispatches are counted but do not create sales or payment totals.
+ }
+ t.paymentAllocated=Object.entries(t.paymentTotals).reduce((sum,[code,value])=>sum+(code==='キ'?0:value),0);
+ // GO手数料は決済の会社納金対象額に含まれる。メーター売上とは別に照合する。
+ t.reconciliationDifference=Math.round(t.meter+t.realToll+t.goFee-t.discount-t.paymentAllocated);
+ // GO手数料は納金対象（現金・QRなど実際の支払金種に含む）。
+ // Uber配車手数料だけ納金対象から控除する。
+ t.cashRemittance=t.meter+t.goFee-t.discount-Object.entries(t.paymentTotals).reduce((sum,[code,value])=>sum+(code!=='現'&&code!=='キ'?value:0),0)-t.emptyToll;
+ // 実車・空車のETCは別の納金欄。GOは現金納金額に含むため二重加算しない。
+ t.etcRemittance=t.realToll+t.emptyToll;
+ t.totalRemittance=t.cashRemittance+t.etcRemittance;
+ return t;
+}
+
+/* The old A:AR schema can store only one main payment code. Split amounts are stored in meta
+   and exported separately; never silently attribute the full price to the first method. */
+function splitPaymentMeta(row){return row.meta?.splitPayment||{second:'',manualSlot:null,manualAmount:''};}
+function paymentBreakdown(row,settings={},shiftDate=''){
+ const charge=estimatedCashDue(row,settings,shiftDate);
+ const uber=uberAppAmounts(row,settings);
+ const first=row.raw?.N||'',cfg=splitPaymentMeta(row),second=cfg.second&&cfg.second!==first?cfg.second:'';
+ const slot=cfg.manualSlot===0||cfg.manualSlot===1?cfg.manualSlot:null;
+ const amt=number(cfg.manualAmount);
+ const hasManual=Boolean(second)&&slot!==null&&amt!==null&&String(cfg.manualAmount)!=='';
+ const due=charge===null?null:Math.round(charge);
+ let firstAmount=due,secondAmount=0;
+ if(second&&due!==null&&hasManual){firstAmount=slot===0?amt:due-amt;secondAmount=slot===1?amt:due-amt;}
+ if(!second&&slot===0&&amt!==null&&due!==null)firstAmount=amt;
+ if(due===null){firstAmount=null;secondAmount=null;}
+ let incomplete=(Boolean(second)&&!hasManual)||(!second&&slot===0&&amt!==null&&due!==null&&amt!==due);
+ let invalidUber=Boolean(uber&&!uber.valid);
+ let autoUber=false;
+ // If the driver enters the amount shown on the Uber app, the difference from
+ // the meter is app-paid, NOT a fare discount. Remaining fare is settled in-car.
+ // Additional customer dispatch fee (if applicable) is separately accounted for.
+ if(uber&&uber.valid&&due!==null){
+  autoUber=true;
+  const cabinDue=Math.round(due-uber.appPaid);
+  if(first==='U'){
+   firstAmount=uber.appPaid;
+   secondAmount=second?cabinDue:0;
+   incomplete=cabinDue>0&&!second;
+  }else if(second==='U'){
+   firstAmount=cabinDue;secondAmount=uber.appPaid;incomplete=false;
+  }else if(second){
+   if(hasManual){firstAmount=slot===0?amt:cabinDue-amt;secondAmount=slot===1?amt:cabinDue-amt;}
+   else{firstAmount=cabinDue;secondAmount=0;}
+   incomplete=!hasManual;
+  }else{firstAmount=cabinDue;secondAmount=0;incomplete=!first&&cabinDue>0;}
+ }
+ const invalid=hasManual&&due!==null&&!(autoUber&&(first==='U'||second==='U'))&&(amt<0||amt>(autoUber?due-uber.appPaid:due)) || (!second&&slot===0&&amt!==null&&due!==null&&(amt<0||amt>due));
+ let items=due===null?[]:[{type:first,amount:firstAmount},...(second?[{type:second,amount:secondAmount}]:[])];
+ if(autoUber&&first!=='U'&&second!=='U')items.push({type:'U',amount:uber.appPaid});
+ return {due,first,second,firstAmount,secondAmount,slot,hasManual,invalid,invalidUber,incomplete,items,uber,autoUber};
+}
+function validatePaymentBreakdown(row,settings={},shiftDate=''){
+ if(row.kind!=='ride')return [];
+ const p=paymentBreakdown(row,settings,shiftDate),errors=[];
+ if(p.invalidUber)errors.push('Uberアプリ表示額がメーターを超える場合、差額は配車手数料100円か確認してください');
+ if(p.invalid)errors.push('支払金額が請求額を超えています');
+ if(p.incomplete)errors.push(p.autoUber?'車内決済の金種・割り振りを確認してください':p.second?'どちらか一方の金額を入力してください':'残額がある場合は追加金種を選択してください');
+ if(p.second&&p.first===p.second)errors.push('同じ金種を重複して選べません');
+ return errors;
+}
+function splitPaymentRows(shift){const rows=[];
+ for(const record of shift.records){if(record.kind!=='ride'||record.status!=='complete')continue;
+  const p=settledTenderAmounts(record,shift.settings,shift.date),split=p.split;
+  for(const item of p.items){
+   rows.push([record.raw.A,record.raw.E,item.type,item.received,item.company,split.due,record.raw.K||0,record.raw.W||0,item.type===record.raw.N?'最初の金種':item.type==='U'&&uberAppAmounts(record,shift.settings)?'Uberアプリ自動計算':'追加金種',record.meta?.uberAppDisplayed??'',item.received-item.company,item.type==='現'?item.company:'']);
+  }
+ }
+ return rows;
+}
+function exportPaymentsCsv(shift){const heading=['日報番号','配車区分','金種','乗務員・アプリ受取額','会社精算に算入する額','精算請求額','メーター金額','実車高速','金種内訳','Uberアプリ表示額','納金対象外のUber配車手数料','うち現金納金対象額'];return '\ufeff'+[heading,...splitPaymentRows(shift)].map(r=>r.map(csvQuote).join(',')).join('\r\n')+'\r\n';}
+
+
+// Public GitHub Pages build: real historical sales test fixtures omitted.
+function pageGroups(records=[],size=PAGE_SIZE){let groups=[];for(let i=0;i<records.length;i+=size)groups.push(records.slice(i,i+size));return groups.length?groups:[[]];}
+function exportRows(shift){return shift.records.filter(r=>r.kind!=='dispatch').map(r=>RAW_COLUMNS.map(([k])=>deriveRaw(r,shift.settings)[k]??''));}
+function csvQuote(value){const s=String(value??'');return /[\r\n",]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function exportCsv(shift){return '\ufeff'+[RAW_COLUMNS.map(x=>x[1]),...exportRows(shift)].map(r=>r.map(csvQuote).join(',')).join('\r\n')+'\r\n';}
+function exportFeesCsv(shift){const headings=['日報番号','配車区分','金種','メーター金額','キャンセル料','予約手数料','チップ','実車高速（対象外）','GO手数料','Uber基本手数料（未計算）','Uber配車手数料（納金対象外）','営業日','Uberアプリ表示額','Uberアプリ決済額'];const rows=shift.records.map(r=>{const p=pricing(r,shift.settings,shift.date);return [r.raw.A,r.raw.E,r.raw.N,p.meter,p.cancellation,p.reservation,p.tip,p.realToll,p.goFee,p.uberFee,p.uberSurcharge,shift.date,r.meta?.uberAppDisplayed??'',uberAppAmounts(r)?.valid?uberAppAmounts(r).appPaid:'']});return '\ufeff'+[headings,...rows].map(r=>r.map(csvQuote).join(',')).join('\r\n')+'\r\n';}
+function validateDraft(draft){let errs=[];if(!draft)errs.push('入力データがありません');else if(draft.kind==='ride'){
+ if(!draft.raw.G)errs.push('乗車時刻');if(!String(draft.raw.AL||'').trim())errs.push('乗車地');if(distanceEnabled('F')&&number(draft.raw.F)===null)errs.push('乗車時の走行距離');if(!draft.raw.M)errs.push('降車時刻');if(number(draft.raw.K)===null)errs.push('メーター金額');if(!draft.raw.N)errs.push('金種');if(distanceEnabled('F')&&number(draft.raw.F)!==null&&number(draft.raw.L)!==null&&number(draft.raw.L)<number(draft.raw.F))errs.push('降車距離は乗車距離以上');
+ }else if(draft.kind==='empty') {if(number(draft.raw.AI)===null&&!['AF','AG','AH'].some(k=>number(draft.raw[k])!==null))errs.push('空車高速金額');}
+ if(!Array.isArray(draft?.meta?.highwaySections)&&distanceEnabled('S')&&hasRealHighway(draft?.raw)&&number(draft.raw.S)!==null&&number(draft.raw.V)!==null&&number(draft.raw.V)<number(draft.raw.S))errs.push('実車高速の降距離は乗距離以上');
+ if(!Array.isArray(draft?.meta?.highwaySections)&&distanceEnabled('AB')&&hasEmptyHighway(draft?.raw)&&number(draft.raw.AB)!==null&&number(draft.raw.AE)!==null&&number(draft.raw.AE)<number(draft.raw.AB))errs.push('空車高速の降距離は乗距離以上');
+ if(Array.isArray(draft?.meta?.highwaySections)){
+  // When highway-distance management is OFF, hidden partial kilometre entries
+  // must never block settlement. Validate mode/fees on copies without km;
+  // the original (including any historical kilometres) is never modified.
+  const sections=distanceEnabled('S')?draft.meta.highwaySections:
+   draft.meta.highwaySections.map(seg=>({...seg,entryKm:'',exitKm:''}));
+  errs.push(...window.TAXIAPP_HIGHWAY_SECTIONS.validate(sections));
+ }
+ return errs;
+}
+function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
+
+
+
+function amountDiscount(r){return (r.O==='シ'||r.O==='高')&&(number(r.AR)===null||number(r.AR)===0)?calculatedDiscount(r):amount(r.AR);}
+
+// All state belongs to this document's JS memory. No browser storage is used.
+let model={prefs:{pickupDropDistance:'on',highwayDistance:'on'},shifts:[],activeId:null};
+const distanceEnabled=()=>true;
+let view='drive',selectedId=null;
+const app=document.getElementById('app'),notice=document.getElementById('notice');
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const active=()=>model.shifts.find(s=>s.id===model.activeId);
+const button=(action,label,cls='')=>`<button type="button" class="btn ${cls}" data-action="${action}">${label}</button>`;
+function field(name,label,value='',type='text',extra=''){
+ return `<label class="field"><span class="field-label">${label}</span><input class="control" name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
+}
+function select(name,label,choices,value){return `<label class="field"><span class="field-label">${label}</span><select class="control" name="${name}">${choices.map(([v,t])=>`<option value="${esc(v)}" ${v===value?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;}
+function metrics(s){const t=totals(s.records,s.settings,s.date);return `<div class="metrics">${[['メーター売上',money(t.meter)],['営業件数',t.rides+' 件'],['現金納金',money(t.cashRemittance)],['GO手数料',money(t.goFee)],['Uber配車手数料',money(t.uberSurcharge)],['総納金',money(t.totalRemittance)]].map(([a,b])=>`<div class="metric"><span class="label">${a}</span><strong>${b}</strong></div>`).join('')}</div>`;}
+function render(){notice.textContent='';document.getElementById('nav').innerHTML=[['drive','乗務入力'],['shift','出庫・入庫'],['history','日報閲覧'],['about','デモについて']].map(([id,t])=>`<button class="btn" type="button" data-view="${id}" aria-current="${view===id}">${t}</button>`).join('');
+ const s=active();
+ if(view==='about'){app.innerHTML=`<section class="card"><h1 class="h1">独立デモの範囲</h1><p>最新mainの画面スタイルと既存の計算・記録作成関数を組み込んだ、操作確認用の簡易画面です。</p><p>出庫 → 迎車／乗車 → 降車・精算 → 入庫 → 日報閲覧を試せます。GO・DiDi・Uber・その他、割引、複合決済、実車高速料金に対応します。</p><p>データはメモリ内のみ。初期日報は架空の地名・金額で作成しています。</p><h2 class="h2">未対応</h2><p>本番UIの完全再現、GPS・地図・住所変換、自動距離、複数高速区間・空車高速入力、日報編集・削除・復元、バックアップ入出力、Google補助簿2ページ印刷、クラウド・認証・端末間引継ぎ、管理者機能。</p><p>料金や手数料の新しい計算エンジンは作成していません。pricing / settledTenderAmounts / totals / paymentBreakdown 等はmainから流用しています。</p><p class="small">元コード: elpapityo/TAXIAPP · main 8ae6c4cf534544e728d45f2e0a0d26c237be4cf9 · 確認日 2026-10-24</p></section>`;return;}
+ if(view==='history'){const chosen=model.shifts.find(x=>x.id===selectedId)||model.shifts.find(x=>x.endedAt);app.innerHTML=`<section class="card"><h1 class="h1">日報閲覧</h1><p class="helper">合成日報と、この画面で登録した乗務のみ表示します。</p>${model.shifts.map(x=>`<button class="btn" data-report="${esc(x.id)}">${esc(x.date)} · ${x.endedAt?'入庫済み':'乗務中'} · ${x.records.length}件</button>`).join(' ')}${chosen?report(chosen):'<p>日報はありません。</p>'}</section>`;return;}
+ if(!s){app.innerHTML=`<section class="card hero"><h1 class="h1">出庫前</h1><p class="helper">架空の乗務員・車両で試せます。日報閲覧にはサンプルを用意しています。</p><form id="departure"><div class="form-grid">${field('driver','乗務員名','デモ乗務員')}${field('vehicle','車両番号','DEMO-001')}${field('odo','出庫距離（km）','0','number','min="0" step="0.1" required')}${field('date','営業日',dateStamp(),'date','required')}</div><div class="actions"><button class="btn primary big" type="submit">出庫する</button></div></form></section>`;return;}
+ if(view==='shift'){app.innerHTML=`<section class="card"><h1 class="h1">出庫・入庫</h1><p>${esc(s.date)}　${esc(s.driver)}　${esc(s.vehicle)}</p><p>出庫 ${esc(s.startedAt)} ／ 出庫距離 ${esc(s.startingOdo)} km</p>${metrics(s)}${s.draft?'<p class="warn">営業を精算または迎車をキャンセルしてから入庫してください。</p>':`<form id="return"><div class="form-grid">${field('odo','入庫距離（km）',s.startingOdo,'number',`min="${esc(s.startingOdo)}" step="0.1" required`)}</div><div class="actions"><button class="btn dark big" type="submit">入庫して日報を確定</button></div></form>`}</section>`;return;}
+ const d=s.draft;
+ app.innerHTML=`<section class="card"><div class="section-heading"><div><p class="eyebrow">${esc(s.date)} · ${esc(s.vehicle)}</p><h1 class="h1">乗務入力</h1></div><span class="pill mint">${d?.kind==='dispatch'?'迎車中':d?'実車中':s.breakActive?'休憩中':s.waiting?'待機中':'空車'}</span></div>${metrics(s)}${d?draftForm(s,d):`<div class="actions">${button('ride','乗車する','primary big')}${button('dispatch','迎車する','teal big')}${button('wait',s.waiting?'待機終了':'待機する')}${button('break',s.breakActive?'休憩終了':'休憩する')}</div><p class="helper">場所・距離は手入力です。GPSは起動しません。</p>`}</section><section class="card"><h2 class="h2">今回の営業記録</h2>${recordTable(s)}</section>`;
+ if(d&&d.kind==='ride')refreshPreview();
+}
+function draftForm(s,d){if(d.kind==='dispatch')return `<form id="dispatch-form">${select('E','配車区分',DISPATCH_TYPES,d.raw.E)}<div class="actions"><button type="submit" class="btn primary big">乗車する</button>${button('cancel-dispatch','迎車キャンセル','red')}</div></form>`;
+ return `<form id="settle"><div class="form-grid three">${select('E','配車区分',[['乗','その他・無線'],['G','GO'],['D','DiDi'],['U','Uber']],d.raw.E)}${field('AL','乗車地',d.raw.AL,'text','required')}${field('AM','降車地',d.raw.AM)}${field('G','乗車時刻',d.raw.G,'time','step="1" required')}${field('M','降車時刻',d.raw.M||stamp(),'time','step="1" required')}${field('F','乗車距離（km）',d.raw.F,'number','min="0" step="0.1" required')}${field('L','降車距離（km）',d.raw.L,'number','min="0" step="0.1" required')}${field('K','メーター金額（円）',d.raw.K,'number','min="0" step="1" required')}${select('N','金種',PAYMENTS.filter(x=>x[0]!=='キ'),d.raw.N||'現')}</div><details class="details"><summary>乗車人数・割引・高速・複合決済</summary><div class="inner form-grid three">${field('I','男性人数',d.raw.I,'number','min="0" step="1"')}${field('J','女性人数',d.raw.J,'number','min="0" step="1"')}${select('O','割引',[['','なし'],['シ','障害者'],['高','高齢者']],d.raw.O)}${field('W','実車高速料金（円）',d.raw.W,'number','min="0" step="1"')}${field('AO','現金預り（円）',d.raw.AO,'number','min="0" step="1"')}${select('second','追加金種',[['','なし'],...PAYMENTS.filter(x=>x[0]!=='キ')],d.meta.splitPayment?.second||'')}${field('manualAmount','追加金種の金額（円）',d.meta.splitPayment?.manualAmount||'','number','min="0" step="1"')}</div></details><div class="panel-strip"><label class="field"><span class="field-label">Uberアプリ表示額（Uber時のみ使用）</span><input class="control" name="uberAppDisplayed" type="number" min="0" step="1" value="${esc(d.meta.uberAppDisplayed)}"></label><p class="small">空欄の初期値は既存処理で設定します。直接入力すると手入力値を保持します。</p></div><div id="preview" aria-live="polite"></div><div class="actions"><button type="submit" class="btn primary big">降車・支払確定</button>${button('discard','入力を取り消す')}</div></form>`;
+}
+function readDraft(){const s=active(),d=s?.draft,f=document.getElementById('settle');if(!d||!f)return;const data=new FormData(f);for(const key of ['E','AL','AM','G','M','F','L','K','N','I','J','O','W','AO'])d.raw[key]=data.get(key);d.raw.P=amount(d.raw.W)>0?'実':'';d.meta.splitPayment={second:data.get('second'),manualSlot:1,manualAmount:data.get('manualAmount')};if(data.get('second')===d.raw.N)d.meta.splitPayment.second='';d.meta.uberAppDisplayed=data.get('uberAppDisplayed');updateDiscountForDraft(d,'O');applyUberDisplayedDefault(d,s.settings);const input=f.elements.uberAppDisplayed;if(input.value!==d.meta.uberAppDisplayed)input.value=d.meta.uberAppDisplayed;syncCashChange(d,s.settings,s.date);}
+function refreshPreview(){readDraft();const s=active(),d=s.draft,p=paymentBreakdown(d,s.settings,s.date),cash=cashChange(d,s.settings,s.date);document.getElementById('preview').innerHTML=`<div class="panel-strip">精算請求額 <strong>${p.due===null?'未入力':money(p.due)}</strong>　おつり <strong>${cash.change===null?'未入力':money(cash.change)}</strong><br>${p.items.map(x=>`${esc(LABELS[x.type]||x.type)} ${money(x.amount)}`).join(' ／ ')}<br><small>完了前のGO手数料集計: ${money(pricing(d,s.settings,s.date).goFee)}（支払確定後に計上）</small></div>`;}
+function recordTable(s){return s.records.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>No.</th><th>区分</th><th>乗車 → 降車</th><th>金種</th><th>メーター</th><th>請求額</th></tr></thead><tbody>${s.records.map(r=>`<tr><td>${r.raw.A}</td><td>${r.kind==='cancel'?'キャンセル':esc(r.raw.E)}</td><td>${esc(r.raw.AL)} → ${esc(r.raw.AM)}</td><td>${esc(LABELS[r.raw.N])}</td><td>${money(pricing(r,s.settings,s.date).meter)}</td><td>${money(pricing(r,s.settings,s.date).customerBill)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="helper">営業記録はまだありません。</p>';}
+function report(s){const t=totals(s.records,s.settings,s.date);return `<div class="demo-detail"><h2 class="h2">${esc(s.date)} 日報 ${s.synthetic?'（合成サンプル）':''}</h2><p>${esc(s.driver)} ／ ${esc(s.vehicle)}<br>出庫 ${esc(s.startedAt)} → 入庫 ${esc(s.endedAt||'未入庫')}<br>距離 ${esc(s.startingOdo)} → ${esc(s.endingOdo??'未入力')} km</p>${metrics(s)}${recordTable(s)}<details class="details"><summary>精算・決済内訳</summary><div class="inner">${[['割引',t.discount],['実車高速',t.realToll],['ETC納金',t.etcRemittance],['現金受取',t.cashReceived],['照合差額',t.reconciliationDifference],...Object.entries(t.paymentTotals).map(([k,v])=>[LABELS[k]+'（会社精算）',v])].map(([k,v])=>`<div class="statline"><span>${esc(k)}</span><b>${money(v)}</b></div>`).join('')}</div></details><p class="footnote">本番Google補助簿の印刷様式とは異なる簡易日報です。</p></div>`;}
+function fail(e){notice.innerHTML=`<p class="demo-error">${esc(e.message||e)}</p>`;}
+document.addEventListener('click',event=>{const el=event.target.closest('button');if(!el)return;try{if(el.dataset.view){readDraft();view=el.dataset.view;render();return;}if(el.dataset.report){selectedId=el.dataset.report;render();return;}const s=active();switch(el.dataset.action){case 'ride':if(s.breakActive)endBreak(s);pauseWaiting(s);s.draft=makeDraft(s);break;case 'dispatch':if(s.breakActive)endBreak(s);s.draft=makeDispatch(s);break;case 'cancel-dispatch':s.draft=cancelDispatch(s);s.draft.status='complete';s.records.push(s.draft);s.draft=null;break;case 'wait':if(s.breakActive)endBreak(s);if(s.waiting)pauseWaiting(s,new Date(),'cruising');else beginWaiting(s);break;case 'break':pauseWaiting(s,new Date(),'break');if(s.breakActive)endBreak(s);else s.breakActive={startedIso:new Date().toISOString(),startedAt:stamp()};break;case 'discard':s.draft=null;break;default:return;}render();}catch(e){fail(e);}});
+document.addEventListener('input',e=>{if(e.target.closest('#settle')){if(e.target.name==='uberAppDisplayed')active().draft.meta.uberAppDisplayedManual=true;refreshPreview();}});
+document.addEventListener('change',e=>{if(e.target.closest('#settle'))refreshPreview();});
+document.addEventListener('submit',e=>{e.preventDefault();try{const f=e.target,data=new FormData(f),s=active();if(f.id==='departure'){const n=newShift(new Date(),{driver:data.get('driver'),vehicle:data.get('vehicle'),startingOdo:data.get('odo')});n.date=data.get('date');n.startedIso=new Date(`${n.date}T${n.startedAt}`).toISOString();model.shifts.push(n);model.activeId=n.id;view='drive';}
+ if(f.id==='dispatch-form'){s.draft.raw.E=data.get('E');boardDispatch(s);}
+ if(f.id==='settle'){readDraft();const d=s.draft;const errors=[...validateDraft(d),...validatePaymentBreakdown(d,s.settings,s.date)];if(number(d.raw.L)<number(d.raw.F))errors.push('降車距離は乗車距離以上');if(errors.length)throw Error(errors.join(' ／ '));d.status='complete';d.raw=deriveRaw(d,s.settings);s.records.push(d);s.draft=null;}
+ if(f.id==='return'){if(s.draft)throw Error('営業を精算してください');if(Number(data.get('odo'))<Math.max(Number(s.startingOdo),...s.records.map(r=>amount(r.raw.L))))throw Error('入庫距離は出庫・最終降車距離以上にしてください');endBreak(s);pauseWaiting(s,new Date(),'return');s.endingOdo=data.get('odo');s.endedAt=stamp();s.endedIso=new Date().toISOString();selectedId=s.id;model.activeId=null;view='history';}render();}catch(error){fail(error);}});
+function seed(){const s=newShift(new Date('2026-10-23T08:00:00+09:00'),{driver:'サンプル乗務員',vehicle:'DEMO-000',startingOdo:0});s.synthetic=true;s.date='2026-10-23';s.startedAt='08:00:00';s.endedAt='17:00:00';s.endingOdo=80;for(const [i,type,pay,meter,from,to] of [[1,'乗','現',1500,'デモ駅','デモ公園'],[2,'G','現',2200,'サンプル広場','架空ホテル'],[3,'U','現',2000,'デモ空港','サンプル商店街']]){const r=makeDraft(s,'ride',new Date(`2026-10-23T${String(8+i).padStart(2,'0')}:00:00+09:00`),type);Object.assign(r.raw,{AL:from,AM:to,F:i*10,L:i*10+5,G:`${8+i}:00:00`,M:`${8+i}:20:00`,K:meter,N:pay});if(type==='U')r.meta.uberAppDisplayed='2100';r.status='complete';r.raw=deriveRaw(r,s.settings);s.records.push(r);}model.shifts.push(s);selectedId=s.id;}
+seed();render();
+
+
+</script></body></html>
