@@ -28,8 +28,8 @@ function selectedIsValid(){
 }
 function buttons(){
  const ok=!!selected&&!busy&&selectedIsValid();
- $('markTest').disabled=!ok||selected.testOnly||selected.status==='deleted'||selected.status==='deleting';
- $('preview').disabled=!ok||!selected.testOnly||selected.status==='deleted';
+ $('markTest').disabled=!ok||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
+ $('preview').disabled=!ok||selected.status==='deleted';
  $('deleteAccount').disabled=!ok||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
  for(const id of ['reload','search','signIn','signOut'])$(id).disabled=busy;
 }
@@ -123,24 +123,29 @@ $('search').addEventListener('input',renderList);
 $('confirmUid').addEventListener('input',buttons);
 $('ack').addEventListener('change',buttons);
 $('markTest').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid()||selected.testOnly)return;
- if(!window.confirm('選択したUIDをテスト用に指定します。実営業アカウントには実行しないでください。'))return;
- const target=selected;
+ if(!selectedIsValid()||selected.testOnly||!preview||preview.uid!==selected.uid)return;
+ const target=selected,checked=preview;
+ if(!window.confirm('日報 '+checked.shiftCount+' 件を含むアカウントをテスト用として指定します。実営業アカウントには実行しないでください。'))return;
  await recentAdminLogin();
- const res=await api.mark({uid:target.uid,confirmationUid:target.uid,openChatName:target.openChatName||''});
+ const res=await api.mark({
+  uid:target.uid,confirmationUid:target.uid,openChatName:target.openChatName||'',
+  expectedShiftCount:checked.shiftCount,confirmedTestOnly:true
+ });
  notice('テスト用に指定しました。'+String(res.data?.message||''));
  await loadList();
 }));
 $('preview').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid()||!selected.testOnly)return;
+ if(!selectedIsValid())return;
  const target=selected;
  const response=await api.preview({uid:target.uid});
  preview=response.data;
  if(!preview||preview.uid!==target.uid)throw Error('UIDの照合に失敗しました');
  $('previewDetails').textContent=
   'サーバー確認：UID '+preview.uid+'／オプチャネーム '+preview.openChatName+
-  '／日報 '+preview.shiftCount+' 件／操作端末・個人設定・認証情報も削除対象。'+
-  '削除対象以外のデータは操作しません。';
+  '／日報 '+preview.shiftCount+' 件／設定 '+(preview.hasSettings?'あり':'なし')+
+  '／操作端末 '+(preview.hasSession?'あり':'なし')+
+  '／テスト指定 '+(preview.testOnly?'あり':'なし')+'。'+
+  'テスト用として指定した場合だけ完全削除が可能です。';
  $('previewDetails').hidden=false;
  notice('削除対象を確認しました。実行する場合はもう一度UIDを確認してください。');
 }));
