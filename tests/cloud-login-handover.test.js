@@ -69,7 +69,9 @@ const shift={id:'shift-111-xyz',date:'2026-10-20',startedIso:'2026-10-20T06:00:0
  assert.match(index,/\['loadCloudHistory','firestorePrintToGoogle','firestorePrintProbe','historyIndexLoad','historyIndexOpen','cloudIndexOpen','cloudTrashList'\]\.includes\(action\)/);
   assert.doesNotMatch(index,/\['loadCloudHistory','firestorePrintToGoogle'[^\n]*'cloudTrash'[^\n]*\]\.includes\(action\)/,'印刷専用の閲覧端末に削除操作は許可しない');
  assert.match(index,/const verifiedOctoberTransfer=action==='migrateOctober16GoogleDuty'/);
- assert.match(index,/if\(!canEditNow\(\)&&action!=='bidirectionalSyncNow'&&!printReadAction&&!verifiedOctoberTransfer\)/);
+ assert.match(index,/const monthlyReadAction=action==='loadMonthlySales'&&deviceMode==='viewer'&&/);
+ assert.match(index,/memberDiary\(\)&&accountDiary\.ready\(\)&&currentLoginScope\?\.uid===accountScope\.uid/);
+ assert.match(index,/if\(!canEditNow\(\)&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer\)/);
  assert.match(session,/claimedOnce=Boolean\(oldId\)\|\|!claimOnLogin/);
  console.log('Cloud login handover race and offline retry tests passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
