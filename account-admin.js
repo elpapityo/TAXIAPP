@@ -1,5 +1,5 @@
 /* TAXIAPP PC administrator console.
- * Reads registered users, but never downloads or modifies private duty originals.
+ * Lists registered users and fetches selected duties via administrator-only Callables.
  * Permanent deletion is performed only by an independently authorised server function.
  */
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
@@ -11,10 +11,15 @@ const $=id=>document.getElementById(id);
 const app=getApps().length?getApp():initializeApp(window.TAXIAPP_FIREBASE_CONFIG);
 const auth=getAuth(app),db=getFirestore(app),functions=getFunctions(app,'asia-northeast1');
 let adminUid='',users=[],selected=null,preview=null,busy=false,epoch=0;
+let selectedDuty=null,dutyCursor=null,dutyRows=[],dutyUid='';
 const api={
  mark: httpsCallable(functions,'markTestAccount'),
  preview: httpsCallable(functions,'previewTestAccountDeletion'),
- remove: httpsCallable(functions,'deleteTestAccount')
+ remove: httpsCallable(functions,'deleteTestAccount'),
+ listDuties: httpsCallable(functions,'listAdminAccountDuties'),
+ duty: httpsCallable(functions,'getAdminDutyDetail'),
+ settings: httpsCallable(functions,'getAdminAccountSettings'),
+ trash: httpsCallable(functions,'adminTrashAccountDuty')
 };
 const notice=(message,error=false)=>{
  $('message').textContent=message;
@@ -26,14 +31,35 @@ function shortDate(v){
 function selectedIsValid(){
  return !!selected&&$('confirmUid').value.trim()===selected.uid&&$('ack').checked;
 }
+function validSelectedDuty(){
+ return !busy&&!!selected&&!!selectedDuty&&
+  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&
+  $('trashConfirmId').value.trim()===selectedDuty.shiftId&&
+  $('trashConfirmAck').checked&&selectedDuty.trashed!==true&&
+  (selectedDuty.shift?.endedAt||selectedDuty.shift?.endedIso);
+}
 function buttons(){
  const ok=!!selected&&!busy&&selectedIsValid();
+ $('loadDuties').disabled=!selected||busy;
+ $('loadSettings').disabled=!selected||busy;
+ $('moreDuties').disabled=!selected||busy||!dutyCursor;
+ $('trashDuty').disabled=!validSelectedDuty();
  $('markTest').disabled=!ok||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
  $('preview').disabled=!ok||selected.status==='deleted';
  $('deleteAccount').disabled=!ok||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
  for(const id of ['reload','search','signIn','signOut'])$(id).disabled=busy;
 }
+function clearDutyPanel(){
+ selectedDuty=null;dutyCursor=null;dutyRows=[];dutyUid='';
+ $('dutyRows').textContent='';
+ $('dutySelected').hidden=true;
+ $('settingsDetail').hidden=true;
+ $('moreDuties').hidden=true;
+ $('trashConfirmId').value='';
+ $('trashConfirmAck').checked=false;
+}
 function selectUser(user){
+ clearDutyPanel();
  selected=user;preview=null;
  $('selectedPanel').hidden=false;
  $('confirmUid').value='';$('ack').checked=false;
@@ -87,7 +113,7 @@ async function loadList(){
   };
  })
   .sort((a,b)=>String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
- selected=null;preview=null;$('selectedPanel').hidden=true;
+ selected=null;preview=null;clearDutyPanel();$('selectedPanel').hidden=true;
  renderList();
  notice('登録一覧を更新しました。');
 }
@@ -108,6 +134,7 @@ async function recentAdminLogin(){
 }
 onAuthStateChanged(auth,async user=>{
  const myEpoch=++epoch;adminUid='';users=[];selected=null;preview=null;
+ clearDutyPanel();
  $('workspace').hidden=true;$('selectedPanel').hidden=true;
  $('signIn').hidden=!!user;$('signOut').hidden=!user;
  $('loginState').textContent=user?'管理者権限を確認しています…':'未ログイン';
@@ -133,6 +160,93 @@ $('reload').addEventListener('click',()=>execute(loadList));
 $('search').addEventListener('input',renderList);
 $('confirmUid').addEventListener('input',buttons);
 $('ack').addEventListener('change',buttons);
+$('trashConfirmId').addEventListener('input',buttons);
+$('trashConfirmAck').addEventListener('change',buttons);
+
+function displayDutyRows(){
+ const container=$('dutyRows');container.textContent='';
+ for(const item of dutyRows){
+  const tr=document.createElement('tr');
+  const row=[
+   item.date||'日付未登録',item.id,
+   String(item.recordCount??'―'),
+   item.trashed?'ゴミ箱':item.ended?'入庫済み':'進行中',
+   String(item.revision)
+  ];
+  for(const text of row){
+   const td=document.createElement('td');td.textContent=text;tr.append(td);
+  }
+  const cell=document.createElement('td'),btn=document.createElement('button');
+  btn.type='button';btn.textContent='原本を表示';
+  btn.addEventListener('click',()=>execute(()=>readDuty(item.id)));
+  cell.append(btn);tr.append(cell);container.append(tr);
+ }
+ $('moreDuties').hidden=!dutyCursor;
+}
+async function loadDuties(reset=true){
+ if(!selected)return;
+ const uid=selected.uid,version=epoch;
+ if(reset)clearDutyPanel();
+ const start=reset?'':dutyCursor;
+ const result=await api.listDuties({uid,afterId:start||''});
+ if(version!==epoch||selected?.uid!==uid)return;
+ if(result.data?.uid!==uid||!Array.isArray(result.data?.shifts))
+  throw Error('日報一覧のUIDが一致しません');
+ dutyUid=uid;
+ dutyRows=[...dutyRows,...result.data.shifts];
+ dutyCursor=result.data.nextAfterId||null;
+ displayDutyRows();
+ notice('日報 '+dutyRows.length+' 件を表示しています。');
+}
+async function readDuty(shiftId){
+ if(!selected)return;
+ const uid=selected.uid,version=epoch;
+ const result=await api.duty({uid,shiftId});
+ if(version!==epoch||selected?.uid!==uid)return;
+ const duty=result.data;
+ if(!duty||duty.uid!==uid||duty.shiftId!==shiftId||
+    duty.shift?.id!==shiftId||!Number.isSafeInteger(duty.revision))
+  throw Error('日報原本のUID・ID・更新番号が一致しません');
+ selectedDuty=duty;dutyUid=uid;
+ $('dutySelected').hidden=false;
+ $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
+  '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
+ // No HTML rendering: contents may contain passengers' addresses and GPS.
+ $('dutyDetail').textContent=JSON.stringify(duty.shift,null,2);
+ $('trashConfirmId').value='';$('trashConfirmAck').checked=false;
+ buttons();
+ notice('選択した1乗務の原本を読み取り専用で表示しました。');
+}
+$('loadDuties').addEventListener('click',()=>execute(()=>loadDuties(true)));
+$('moreDuties').addEventListener('click',()=>execute(()=>loadDuties(false)));
+$('loadSettings').addEventListener('click',()=>execute(async()=>{
+ if(!selected)return;
+ const uid=selected.uid,version=epoch;
+ const result=await api.settings({uid});
+ if(version!==epoch||selected?.uid!==uid)return;
+ if(result.data?.uid!==uid)throw Error('設定のUIDが一致しません');
+ $('settingsDetail').textContent=result.data.exists?
+  JSON.stringify(result.data.prefs,null,2):'設定は未登録です';
+ $('settingsDetail').hidden=false;
+ notice('本人の設定を閲覧用に取得しました。変更・保存は行いません。');
+}));
+$('trashDuty').addEventListener('click',()=>execute(async()=>{
+ if(!validSelectedDuty())return;
+ const target=selectedDuty,uid=selected.uid;
+ if(!window.confirm('UID '+uid+' の「'+target.shiftId+
+   '」をゴミ箱へ移します。営業記録が表示から外れます。続行しますか？'))return;
+ await recentAdminLogin();
+ const response=await api.trash({
+  uid,shiftId:target.shiftId,confirmationUid:uid,
+  confirmationShiftId:target.shiftId,
+  expectedRevision:target.revision,confirmTrash:true
+ });
+ if(response.data?.uid!==uid||response.data.shiftId!==target.shiftId||
+    response.data.trashed!==true)
+  throw Error('ゴミ箱移動のサーバー確認ができません');
+ notice('日報をゴミ箱へ移しました。原本は復元用に保持されています。');
+ await loadDuties(true);
+}));
 $('markTest').addEventListener('click',()=>execute(async()=>{
  if(!selectedIsValid()||selected.testOnly||!preview||preview.uid!==selected.uid)return;
  const target=selected,checked=preview;
