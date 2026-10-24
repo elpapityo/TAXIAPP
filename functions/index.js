@@ -401,7 +401,7 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
   fail('invalid-argument','変更後のオプチャネームを入力してください');
  const name=submitted.normalize('NFC').trim();
  if(!name||Array.from(name).length>32||
-    /[\\u0000-\\u001f\\u007f]/u.test(name))
+    Array.from(name).some(ch=>ch.codePointAt(0)<32||ch.codePointAt(0)===127))
   fail('invalid-argument','オプチャネームは改行なしの1～32文字で入力してください');
  if(typeof request.data?.expectedName!=='string')
   fail('invalid-argument','変更前の登録名を確認してください');
