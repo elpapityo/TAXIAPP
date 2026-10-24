@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.160 — 乗務日報</title>
+<title>TAXIAPP v0.3.161 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1079,6 +1079,40 @@ html[data-ui-theme="night"] .monthly-sales-table .monthly-total td{
  .monthly-sales-panel .actions .btn{width:100%}
 }
 
+
+/* 締め期間の月間表：曜日と祝日を色＋日本語ラベルで識別 */
+.monthly-sales-panel>summary{padding:14px 17px;font-size:17px;font-weight:850}
+.monthly-report-subtitle{font-size:13px;color:var(--muted);font-weight:600;margin-left:8px}
+.monthly-sales-panel>.inner{padding:12px 15px 16px}
+.monthly-sales-table{min-width:550px;font-size:14px}
+.monthly-sales-table th,.monthly-sales-table td{padding:12px 12px}
+.monthly-sales-table td:nth-child(2),.monthly-sales-table th:nth-child(2){text-align:center}
+.monthly-sales-table th:first-child{min-width:166px}
+.monthly-holiday-name{display:block;font-size:11px;font-weight:750;line-height:1.5}
+.monthly-duty-status{font-weight:800}
+.monthly-sales-table tbody tr.monthly-day-saturday td,
+.monthly-sales-table tbody tr.monthly-day-saturday th:first-child{
+ background:#e9f2ff!important;color:#204a8b}
+.monthly-sales-table tbody tr.monthly-day-sunday td,
+.monthly-sales-table tbody tr.monthly-day-sunday th:first-child,
+.monthly-sales-table tbody tr.monthly-day-holiday td,
+.monthly-sales-table tbody tr.monthly-day-holiday th:first-child{
+ background:#fff0ee!important;color:#9d3340}
+.monthly-sales-table tbody tr.monthly-day-holiday .monthly-holiday-name{color:#9d3340}
+.monthly-sales-table tbody tr.monthly-total th:first-child{background:#d8ede8!important}
+.monthly-legend{font-size:12px;color:#607483;padding:4px 0;line-height:1.65}
+html[data-ui-theme="night"] .monthly-report-subtitle{color:#b3cadd}
+html[data-ui-theme="night"] .monthly-sales-table tbody tr.monthly-day-saturday td,
+html[data-ui-theme="night"] .monthly-sales-table tbody tr.monthly-day-saturday th:first-child{
+ background:#1f3f63!important;color:#e4eeff}
+html[data-ui-theme="night"] .monthly-sales-table tbody tr.monthly-day-sunday td,
+html[data-ui-theme="night"] .monthly-sales-table tbody tr.monthly-day-sunday th:first-child,
+html[data-ui-theme="night"] .monthly-sales-table tbody tr.monthly-day-holiday td,
+html[data-ui-theme="night"] .monthly-sales-table tbody tr.monthly-day-holiday th:first-child{
+ background:#522e3b!important;color:#ffe8eb}
+html[data-ui-theme="night"] .monthly-legend{color:#c3d6e3}
+@media(max-width:480px){.monthly-sales-table{min-width:520px}}
+
 </style>
 </head>
 <body>
@@ -2127,6 +2161,8 @@ function renderNow(){
  if(keypadActive){renderAfterKeypad=true;return;}
  if(saveTouchPress){saveRenderPending=true;return;}
  const sameTab=lastRenderedTab===tab;
+ const monthlyPanel=appEl.querySelector('[data-monthly-sales-panel]');
+ if(monthlyPanel)monthlySalesOpened=monthlyPanel.open;
  const oldPanels=lastRenderedTab==='settings'
   ? [...appEl.querySelectorAll('details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-drive-status-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-driver-profile-settings],details[data-vehicle-profile-settings],details[data-cancel-settings],details[data-fee-settings],details[data-duty-plan-settings],details[data-gps-settings],details[data-address-settings]')]:[];
  if(oldPanels.length)settingsOpenState=oldPanels.map(panel=>panel.open);
@@ -2404,7 +2440,7 @@ function renderDutyStatus(shift){
   if(cruisingSummaryVisible('sales'))columns.push(stat('現在の売上',money(sold),'sales'));
   // Display-only estimate: standard domestic taxi fare consumption tax (10%).
   // Keep existing meter totals, reporting, fare and remittance calculations untouched.
-  if(cruisingSummaryVisible('netSales'))columns.push(stat('税抜売上（10%換算）',money(Math.floor(sold/1.1)),'netSales'));
+  if(cruisingSummaryVisible('netSales'))columns.push(stat('税抜売上（10%換算）',money(meterSalesTaxExcludedReference(sold)),'netSales'));
   const metrics=cruisingUnitMetrics(shift,sold);
   if(cruisingSummaryVisible('kmUnit'))columns.push(stat('キロ単価（円/km）',metrics.kmUnit===null?'計算待ち':money(metrics.kmUnit),'kmUnit'));
   if(cruisingSummaryVisible('distanceProjection'))columns.push(stat('売上予想（距離）',metrics.distanceProjection===null?'計算待ち':money(metrics.distanceProjection),'distanceProjection'));
@@ -3986,6 +4022,27 @@ function opsHighwayPanel(shift){
   +(entries?'<div class="operations-history-list">'+entries+'</div>':'<p class="subtle">利用履歴はありません。</p>')
   +'<div class="actions"><button type="button" class="btn teal" data-tab="highway">高速道路利用一覧（全詳細）</button></div>');
 }
+// 内閣府公表の2026・2027年の国民の祝日・休日。未公表年を推定しない。
+const MONTHLY_HOLIDAYS=Object.freeze({
+ '2026':Object.freeze({'01-01':'元日','01-12':'成人の日','02-11':'建国記念の日','02-23':'天皇誕生日','03-20':'春分の日','04-29':'昭和の日','05-03':'憲法記念日','05-04':'みどりの日','05-05':'こどもの日','05-06':'振替休日','07-20':'海の日','08-11':'山の日','09-21':'敬老の日','09-22':'国民の休日','09-23':'秋分の日','10-12':'スポーツの日','11-03':'文化の日','11-23':'勤労感謝の日'}),
+ '2027':Object.freeze({'01-01':'元日','01-11':'成人の日','02-11':'建国記念の日','02-23':'天皇誕生日','03-21':'春分の日','03-22':'振替休日','04-29':'昭和の日','05-03':'憲法記念日','05-04':'みどりの日','05-05':'こどもの日','07-19':'海の日','08-11':'山の日','09-20':'敬老の日','09-23':'秋分の日','10-11':'スポーツの日','11-03':'文化の日','11-23':'勤労感謝の日'})
+});
+const MONTHLY_WEEKDAYS=['日','月','火','水','木','金','土'];
+function monthlySalesDayLabel(date){
+ const day=new Date(date+'T00:00:00Z'),weekday=day.getUTCDay();
+ if(!Number.isFinite(day.getTime())||day.toISOString().slice(0,10)!==date)
+  throw Error('売上表の日付が不正です');
+ const holiday=MONTHLY_HOLIDAYS[date.slice(0,4)]?.[date.slice(5)]||'';
+ return {weekday:MONTHLY_WEEKDAYS[weekday],holiday,
+  kind:holiday?'holiday':weekday===0?'sunday':weekday===6?'saturday':'weekday'};
+}
+// 税抜額は既存の営業画面と同じ「10％割戻し・円未満切捨て」の参考換算。
+// Firestore原本や正式な売上・納金の計算は変更しない。
+function meterSalesTaxExcludedReference(gross){
+ return Math.floor(gross/1.1);
+}
+let monthlySalesOpened=false;
+
 // Monthly sales closing date is an account-specific preference.
 // The report stays outside the active duty and is fetched only on request.
 const monthlySalesToday=new Date();
@@ -4016,42 +4073,56 @@ function resetMonthlySales(){
  monthlySalesEpoch++;monthlySalesBusy=false;monthlySalesData=null;monthlySalesMessage='';
 }
 function renderMonthlySales(){
- if(typeof model==='undefined')return ''; // 認証を伴わない既存の描画試験用
+ if(typeof model==='undefined')return ''; // Existing isolated render fixture
  const day=monthlySalesClosingDay();
- const choices='<option value="end" '+(day==='end'?'selected':'')+'>末日</option>'+
-  Array.from({length:31},(_,i)=>{
-   const value=String(i+1);
-   return '<option value="'+value+'" '+(day===value?'selected':'')+'>'+value+'日</option>';
-  }).join('');
  let period;
  try{period=monthlySalesPeriod(monthlySalesMonth,day);}
  catch{return '<section class="card"><h2 class="h2">月間売上表</h2><p class="warn">締め期間を確認できません。</p></section>';}
  const data=monthlySalesData;
- const cols=['乗務','営業回数','メーター売上','割引','GO手数料','Uber配車手数料','現金納金','ETC納金','総納金'];
- const keys=['duties','rides','meter','discount','goFee','uberSurcharge','cashRemittance','etcRemittance','totalRemittance'];
- const row=(day,item,summary=false)=>'<tr'+(summary?' class="monthly-total"':'')+'><th scope="row">'+safeText(day)+'</th>'+
-  keys.map((key,i)=>'<td>'+(
-   i<2?String(item[key]||0)+(i===0?'乗務':'件'):money(item[key]||0)
-  )+'</td>').join('')+'</tr>';
+ const row=(dayValue,item,summary=false)=>{
+  const info=summary?null:monthlySalesDayLabel(dayValue);
+  const completed=item.duties||0,departed=item.departures||0,unfinished=item.unfinished||0;
+  const status=summary?'出庫 '+departed+'乗務':departed===0?'—':
+   unfinished>0?(completed?'出庫 '+departed+'乗務（入庫前あり）':'出庫（入庫前）'):
+   departed>1?'出庫 '+departed+'乗務':'出庫';
+  const label=summary?safeText(dayValue):
+   safeText(dayValue.slice(5)+'（'+info.weekday+'）')+
+   (info.holiday?'<span class="monthly-holiday-name">祝日：'+safeText(info.holiday)+'</span>':'');
+  const gross=completed?money(item.meter):departed?'集計待ち':'—';
+  const net=completed?money(meterSalesTaxExcludedReference(item.meter)):departed?'集計待ち':'—';
+  return '<tr class="'+(summary?'monthly-total':'monthly-day-'+info.kind)+'"><th scope="row">'+label+'</th>'+
+    '<td class="monthly-duty-status">'+status+'</td>'+
+    '<td>'+gross+'</td><td>'+net+'</td></tr>';
+ };
  const table=data&&data.startDate===period.startDate&&data.endDate===period.endDate?
-  '<div class="monthly-sales-scroll" role="region" aria-label="月間売上の表" tabindex="0"><table class="monthly-sales-table"><thead><tr><th scope="col">乗務日</th>'+
-  cols.map(c=>'<th scope="col">'+c+'</th>').join('')+'</tr></thead><tbody>'+
+  '<div class="monthly-sales-scroll" role="region" aria-label="月間売上表" tabindex="0">'+
+  '<table class="monthly-sales-table"><thead><tr><th scope="col">日付・曜日・祝日</th>'+
+  '<th scope="col">出庫</th><th scope="col">税込売上</th><th scope="col">税別売上（参考）</th></tr></thead><tbody>'+
   data.days.map(item=>row(item.date,item)).join('')+
   row('期間合計',data.sum,true)+'</tbody></table></div>'+
-  '<p class="caption-note">対象期間の全日付を表示。入庫済み '+data.sum.duties+'乗務、未入庫 '+data.unfinished+'乗務（集計対象外）。'+
-  '集計値は既存の料金・売上計算の結果を日別に加算しています。ゴミ箱内の日報は含みません。</p>':
-  '<p class="caption-note">対象期間の本人Firestore原本を取得すると日別の売上表が表示されます。</p>';
- return '<section class="card monthly-sales-panel" aria-label="締め日と月間売上表">'+
-  '<h2 class="h2">締め日・月間売上表</h2>'+
-  '<p class="helper">締め日は利用者ごとに保存します。月は締め月を指定してください。</p>'+
+  '<p class="caption-note">税込売上は既存のメーター売上。税別は同じ営業画面の10%割戻し参考値（1円未満切捨て）です。'+
+  '入庫済み '+data.sum.duties+'乗務を集計し、入庫前 '+data.unfinished+'乗務の売上は集計しません。ゴミ箱は対象外。</p>':
+  '<p class="caption-note">期間内の本人Firestore原本を取得すると、出庫の有無と日別売上が表示されます。</p>';
+ const unsupportedYears=[...new Set([period.startDate.slice(0,4),period.endDate.slice(0,4)])]
+   .filter(y=>!MONTHLY_HOLIDAYS[y]);
+ return '<details class="details monthly-sales-panel" data-monthly-sales-panel '+(monthlySalesOpened?'open':'')+'>'+
+  '<summary>▼ 月間売上表 <span class="monthly-report-subtitle">'+safeText(monthlySalesMonth)+'締め（'+
+   safeText(day==='end'?'末日':day+'日')+'）</span></summary>'+
+  '<div class="inner"><p class="helper">締め日の変更は「設定 → 乗務員登録」から行えます。</p>'+
   '<div class="monthly-sales-controls">'+
-   '<label class="field"><span class="field-label">締め日</span><select class="control" id="monthlySalesCloseDay" '+(!canEditNow()?'disabled':'')+'>'+choices+'</select></label>'+
-   '<label class="field"><span class="field-label">締め月</span><input class="control" type="month" id="monthlySalesMonth" value="'+safeText(monthlySalesMonth)+'"></label>'+
-  '</div><p class="monthly-sales-period">対象期間：<strong>'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</strong></p>'+
-  '<div class="actions"><button class="btn primary" type="button" data-action="loadMonthlySales" '+(monthlySalesBusy?'disabled aria-busy="true"':'')+'>月間売上をFirestoreから集計</button></div>'+
-  (monthlySalesMessage?'<p class="'+(monthlySalesData?'panel-strip':'caption-note')+'" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
-  table+'</section>';
+  '<label class="field"><span class="field-label">締め月</span>'+
+  '<input class="control" type="month" id="monthlySalesMonth" value="'+safeText(monthlySalesMonth)+'"></label></div>'+
+  '<p class="monthly-sales-period">対象期間：<strong>'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</strong></p>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="loadMonthlySales" '+
+  (monthlySalesBusy?'disabled aria-busy="true"':'')+'>月間売上をFirestoreから集計</button></div>'+
+  (monthlySalesMessage?'<p class="'+(monthlySalesData?'panel-strip':'caption-note')+
+   '" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
+  (unsupportedYears.length?'<p class="caption-note">※'+safeText(unsupportedYears.join('・'))+
+    '年の祝日は未確認です。曜日のみ表示し、祝日の色分けは行いません。</p>':'')+
+  '<p class="monthly-legend">■ 土曜日　■ 日曜・祝日　■ 平日（行の色と日付の文字で識別）</p>'+
+  table+'</div></details>';
 }
+
 async function loadMonthlySales(){
  if(monthlySalesBusy)return;
  if(!memberDiary()||!accountDiary.ready()){
@@ -4070,9 +4141,8 @@ async function loadMonthlySales(){
   if(!isCurrent())return;
   if(response?.startDate!==period.startDate||response?.endDate!==period.endDate||
      !Array.isArray(response.shifts))throw Error('指定期間の取得結果を照合できません');
-  const fields=['rides','meter','discount','goFee','uberSurcharge',
-   'cashRemittance','etcRemittance','totalRemittance'];
-  const empty=()=>Object.fromEntries(['duties',...fields].map(x=>[x,0]));
+  const fields=['meter']; // 税込メーター売上のみ。正式集計の他項目は変更しない。
+  const empty=()=>Object.fromEntries(['duties','departures','unfinished',...fields].map(x=>[x,0]));
   const sum=empty(),byDay=new Map(),seen=new Set();
   let unfinished=0;
   for(const item of response.shifts){
@@ -4081,9 +4151,12 @@ async function loadMonthlySales(){
       !Number.isSafeInteger(Number(item.revision))||Number(item.revision)<1)
     throw Error('日報の乗務ID・日付・更新番号が一致しません');
    seen.add(id);
-   if(!shift.endedAt&&!shift.endedIso){unfinished++;continue;}
-   const t=totals(shift.records,shift.settings,shift.date);
    const daily=byDay.get(date)||{date,...empty()};
+   daily.departures++;sum.departures++;
+   if(!shift.endedAt&&!shift.endedIso){
+    unfinished++;daily.unfinished++;sum.unfinished++;byDay.set(date,daily);continue;
+   }
+   const t=totals(shift.records,shift.settings,shift.date);
    daily.duties++;sum.duties++;
    for(const key of fields){
     if(!Number.isFinite(t[key]))throw Error('正式計算の数値が不正です：'+id);
@@ -4231,7 +4304,10 @@ function renderTrialPrintPages(shift,groups){const t=totals(shift.records,shift.
 
 function renderDriverDefaults(){
  const fields=(entries)=>entries.map(([key,label])=>`<label class="field"><span class="field-label">${label}</span><input class="control" data-pref="${key}" value="${safeText(model.prefs[key]??'')}"></label>`).join('');
- return `<details class="details" data-driver-profile-settings><summary>乗務員登録</summary><div class="inner"><section class="card"><h2 class="h2">乗務員の初期登録</h2><p class="helper">次回以降の出庫で使う初期値です。</p><div class="form-grid">${fields([['company','会社名'],['driver','乗務員名'],['driverNo','社員番号']])}</div></section></div></details><details class="details" data-vehicle-profile-settings><summary>車両設定</summary><div class="inner"><section class="card"><h2 class="h2">車両番号の初期登録</h2><p class="helper">次回以降の出庫で使う車両番号です。</p><div class="form-grid">${fields([['vehicle','車両番号']])}</div></section></div></details>`;
+ const closeDay=monthlySalesClosingDay();
+ const choices='<option value="end" '+(closeDay==='end'?'selected':'')+'>末日</option>'+
+  Array.from({length:31},(_,i)=>'<option value="'+(i+1)+'" '+(closeDay===String(i+1)?'selected':'')+'>'+(i+1)+'日</option>').join('');
+ return `<details class="details" data-driver-profile-settings><summary>乗務員登録</summary><div class="inner"><section class="card"><h2 class="h2">乗務員の初期登録</h2><p class="helper">次回以降の出庫で使う初期値です。</p><div class="form-grid">${fields([['company','会社名'],['driver','乗務員名'],['driverNo','社員番号']])}</div><hr class="divider"><label class="field"><span class="field-label">月間売上の締め日</span><select class="control" id="monthlySalesCloseDay" ${!canEditNow()?'disabled':''}>${choices}</select></label><p class="caption-note">月間売上表で集計する期間を設定します。日報の金額計算や原本は変更しません。</p></section></div></details><details class="details" data-vehicle-profile-settings><summary>車両設定</summary><div class="inner"><section class="card"><h2 class="h2">車両番号の初期登録</h2><p class="helper">次回以降の出庫で使う車両番号です。</p><div class="form-grid">${fields([['vehicle','車両番号']])}</div></section></div></details>`;
 }
 function renderShiftManager(lastShift){
  const active=getShift();
