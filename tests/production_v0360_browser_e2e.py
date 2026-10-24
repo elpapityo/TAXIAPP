@@ -50,33 +50,10 @@ try:
     assert js("return localStorage.getItem('taxiapp-v1')")=='PREEXISTING_FALLBACK'
     js("document.querySelector('[data-tab=settings]').click()")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'[data-settings-category-choice="gps"]')))
-    js("""window.__taxiUiErrors=[];window.__taxiClickEvents=[];
-      window.addEventListener('error',event=>window.__taxiUiErrors.push(String(event.message)));
-      document.addEventListener('click',event=>{
-       const item=event.target.closest?.('[data-settings-category-choice]');
-       if(item)window.__taxiClickEvents.push({category:item.dataset.settingsCategoryChoice,disabled:item.disabled});
-      },true);
-      const chosen=document.querySelector('[data-settings-category-choice=gps]');
-      window.__taxiBeforeClick={disabled:chosen.disabled,outer:chosen.outerHTML.slice(0,210)};
-      chosen.click()""")
-    try:
-        WebDriverWait(driver,5).until(lambda _: js(
-          "return document.querySelector('[data-settings-category-choice=gps]')?.getAttribute('aria-pressed')==='true'"))
-    except Exception:
-        pass
-    gps_found=bool(driver.find_elements(By.CSS_SELECTOR,'details[data-distance-address-settings]'))
-    if not gps_found:
-        debug=js("""return {
-          selected:[...document.querySelectorAll('[data-settings-category-choice]')].map(e=>({id:e.dataset.settingsCategoryChoice,pressed:e.getAttribute('aria-pressed')})),
-          content:document.querySelector('.settings-category-content')?.textContent.slice(0,260)||'',
-          main:document.querySelector('#main-content')?.textContent.slice(0,340)||'',
-          rawGps:!!document.querySelector('[data-distance-address-settings]'),
-          error:document.querySelector('#app .boot')?.textContent||'',
-          uiErrors:window.__taxiUiErrors||[],
-          beforeClick:window.__taxiBeforeClick||{},
-          clickEvents:window.__taxiClickEvents||[]
-        }""")
-        raise AssertionError('GPS分類を表示できません：'+repr(debug))
+    js("document.querySelector('[data-settings-category-choice=gps]').click()")
+    wait.until(lambda _: js(
+      "return document.querySelector('[data-settings-category-choice=gps]')?.getAttribute('aria-pressed')==='true'"))
+    wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-distance-address-settings]')))
     js("document.querySelector('details[data-distance-address-settings]').open=true")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-gps-settings]')))
     js("document.querySelector('details[data-gps-settings]').open=true")
