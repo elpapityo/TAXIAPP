@@ -2249,6 +2249,9 @@ async function ensureAdminFreshFirestore(scope,generation){
   throw Error('保存先切替記録を確認できません');
 }
 async function switchAccountScope(scope){
+ // 別UIDの記録確認を新しい利用者に表示しない。
+ window.TAXIAPP_METER_CONFIRM?.close();
+ meterConfirmCurrent=null;
  const generation=++accountScopeGeneration;
  resetMonthlySales(); // The previous UID's report must never be displayed after a login change.
  // Do not migrate a legacy owner's records to another user.
@@ -2431,6 +2434,9 @@ function render(){
 let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false,settingsCategoryLastRendered='';
 let historyPanelOpen={},historyPanelDutyKey='';
 function renderNow(){
+ if(tab!=='drive'&&window.TAXIAPP_METER_CONFIRM?.activeKey()){
+  window.TAXIAPP_METER_CONFIRM.close();meterConfirmCurrent=null;
+ }
  if(keypadActive){renderAfterKeypad=true;return;}
  if(saveTouchPress){saveRenderPending=true;return;}
  const sameTab=lastRenderedTab===tab;
@@ -2876,10 +2882,10 @@ function meterConfirmRecordedFields(action,shift){
   const atAlight=action==='meterSettle';
   add('営業番号',raw.A);
   if(!atAlight){
-   add('乗車時刻',raw.G);
+   add('乗車時刻',raw.G,{enabled:rideFieldShown('pickupTime')});
    add('乗車時の走行距離',kmValue(raw.F),{enabled:distanceEnabled('F'),allowMissing:true,
      prominent:true,pending:gpsProgress('pickup','F')});
-   add('乗車地・住所',raw.AL,{allowMissing:true,pending:gpsProgress('pickup','F')});
+   add('乗車地・住所',raw.AL,{enabled:rideFieldShown('pickupAddress'),allowMissing:true,pending:gpsProgress('pickup','F')});
    add('配車区分',raw.E);
    add('データ受信時刻',raw.C,{enabled:rideFieldShown('received')});
    if(rideFieldShown('passengers')){
@@ -2887,7 +2893,7 @@ function meterConfirmRecordedFields(action,shift){
    }
   }
   if(atAlight||action==='saveDraft'){
-   add('降車時刻',raw.M);
+   add('降車時刻',raw.M,{enabled:rideFieldShown('dropTime')});
    add('降車時の走行距離',kmValue(raw.L),{enabled:distanceEnabled('L'),
      allowMissing:atAlight,prominent:true,pending:gpsProgress('drop','L')});
    add('降車地・住所',raw.AM,{enabled:rideFieldShown('dropAddress'),
