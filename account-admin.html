@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>TAXIAPP | アカウント削除管理（PC）</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Yu Gothic","Meiryo",sans-serif;color:#172433;background:#f3f6fa}
+*{box-sizing:border-box}
+body{margin:0;padding:22px 24px}
+main{max-width:1180px;margin:0 auto}
+a{color:#075f9f}h1{font-size:25px;margin:12px 0}h2{font-size:19px;margin:0 0 12px}
+.panel{background:#fff;border:1px solid #cdd7e2;border-radius:13px;padding:19px;margin:15px 0;box-shadow:0 2px 8px #102a4810}
+button,input{font:inherit}button{padding:9px 15px;min-height:42px;border:1px solid #a8b9ca;border-radius:8px;background:#ecf4fb;color:#1b3856;cursor:pointer}
+button.primary{background:#125f99;color:white;border-color:#125f99}
+button.danger{background:#a02d2d;color:#fff;border-color:#a02d2d}
+button:disabled{opacity:.5;cursor:not-allowed}
+input[type="text"],input[type="search"]{padding:10px;min-height:42px;width:100%;max-width:480px;border:1px solid #9eb1c3;border-radius:8px}
+label{display:block;margin:10px 0;font-weight:600}
+label input[type="checkbox"]{margin-right:7px}
+.muted{color:#516579}.warning{background:#fff7e8;border:1px solid #cc9e56;padding:13px;border-radius:8px}
+#message{white-space:pre-wrap;overflow-wrap:anywhere;min-height:25px;font-weight:600}
+.status{display:inline-block;padding:3px 7px;border:1px solid #aab9c6;border-radius:6px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:680px}th,td{border-bottom:1px solid #dce3ea;padding:10px;text-align:left}
+th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-all}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+#targetDetails{line-height:1.9;overflow-wrap:anywhere}
+[hidden]{display:none!important}
+@media(max-width:650px){body{padding:12px}h1{font-size:21px}.panel{padding:12px}}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="./index.html">← TAXIAPPに戻る</a></nav>
+<h1>アカウント削除管理（管理者PC）</h1>
+<p class="muted">登録一覧・テスト用判定・削除対象の確認を行います。<strong>一般利用者や管理者自身のデータは自動削除しません。</strong></p>
+<section class="panel" aria-labelledby="authTitle">
+<h2 id="authTitle">管理者ログイン</h2>
+<p id="loginState">未ログイン</p>
+<div class="actions"><button id="signIn" class="primary">Googleで管理者ログイン</button><button id="signOut" hidden>ログアウト</button></div>
+</section>
+<section id="workspace" hidden>
+<div class="warning">⚠ 完全削除は復旧できません。テスト用と確認されたアカウントだけを対象にしてください。管理者・旧Google原本は対象外です。端末がオフラインの場合、端末の未同期データを遠隔で消すことはできません。</div>
+<section class="panel">
+<h2>登録アカウント一覧</h2>
+<p class="muted">名前はオプチャネームです。一般利用者に他人の一覧は公開されません。</p>
+<label for="search">検索（オプチャネーム・UID）</label>
+<input id="search" type="search" placeholder="名前またはUID" autocomplete="off">
+<div class="actions"><button id="reload">登録一覧を更新</button></div>
+<div class="table-wrap"><table><thead><tr><th>オプチャネーム</th><th>UID</th><th>登録状態</th><th>テスト指定</th><th>操作</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+<p id="listCount" class="muted"></p>
+</section>
+<section class="panel" id="selectedPanel" hidden>
+<h2>選択アカウントの削除管理</h2>
+<div id="targetDetails"></div>
+<p class="muted">名前やUIDの表示だけではテスト用と断定できません。テスト指定前に本人・営業原本を確認してください。</p>
+<label for="confirmUid">確認：選択したUIDを正確に入力</label>
+<input id="confirmUid" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="UIDをそのまま入力">
+<label><input id="ack" type="checkbox">このアカウントがテスト用であり、削除すると取り消せないことを確認しました</label>
+<div class="actions">
+<button id="markTest">テスト用として指定</button>
+<button id="preview">削除対象をサーバーで照合</button>
+</div>
+<div id="previewDetails" class="warning" hidden></div>
+<div class="actions"><button id="deleteAccount" class="danger" disabled>認証と全データを完全削除</button></div>
+</section>
+</section>
+<p id="message" role="status" aria-live="polite"></p>
+</main>
+<script type="module" src="./account-admin.js?v=20261024-1"></script>
+</body>
+</html>
