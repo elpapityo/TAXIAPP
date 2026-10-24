@@ -29,6 +29,9 @@ const context={
  render(){renderCount++;}
 };
 vm.createContext(context);
+const taxStart=source.indexOf('function meterSalesTaxExcludedReference('),taxEnd=source.indexOf('let monthlySalesOpened=',taxStart);
+assert.ok(taxStart>0&&taxEnd>taxStart,'実働版の税別参考換算関数を使用');
+vm.runInContext(source.slice(taxStart,taxEnd),context);
 vm.runInContext(js,context);
 const keys=Array.from(vm.runInContext('DRIVE_STATUS_FIELDS.map(x=>x[0])',context));
 assert.deepEqual(keys,['state','dispatchSource','waiting','dispatchType','payment','meter','highway','from','to','elapsed']);
