@@ -45,7 +45,7 @@ assert.match(src,/data-driver-profile-settings>[\s\S]*?renderDriverDefaults\(\)/
 assert.match(src,/月間売上の締め日/);
 assert.match(src,/html\[data-ui-theme="night"\] \.monthly-sales-table tbody tr\.monthly-day-holiday/);
 assert.match(src,/月間売上表 <span class="monthly-report-subtitle">/);
-assert.match(src,/<title>TAXIAPP v0\.3\.163 — 乗務日報<\/title>/);
+assert.match(src,/<title>TAXIAPP v0\.3\.164 — 乗務日報<\/title>/);
 assert.match(src,/#main-content \.section-heading \.h1\{/);
 assert.match(src,/\.monthly-sales-panel \.monthly-sales-table col\.monthly-date-col\{width:36%\}/);
 console.log('月間表：締め期間・既存税別表示・曜日/祝日色分け・出庫/入庫前・折りたたみ・設定分離を確認');
