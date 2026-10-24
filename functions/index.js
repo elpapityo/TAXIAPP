@@ -410,9 +410,10 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
  await db.runTransaction(async tx=>{
   const userRef=db.doc('users/'+uid),adminRef=db.doc('admins/'+uid);
   const [user,admin]=await Promise.all([tx.get(userRef),tx.get(adminRef)]);
-  if(user.exists){
-   if(!['active','suspended'].includes(user.get('status')))
-    fail('failed-precondition','削除済み・削除中の利用者名は変更できません');
+  // 管理者の users プロフィールが古い停止・保留形式でも、
+  // admins の有効な本人登録があれば正規の管理者名を設定できる。
+  // active/suspended のユーザープロフィールがあればそちらを優先する。
+  if(user.exists&&['active','suspended'].includes(user.get('status'))){
    source='users';
    const existing=user.get('openChatName')||'';
    if(existing!==expectedName)
@@ -424,11 +425,9 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
     openChatNameUpdatedAt:FieldValue.serverTimestamp(),
     openChatNameUpdatedBy:actor
    });
-  }else{
-   // Firestore users未登録の管理者も管理画面で名前を設定できる。
-   // 管理者フラグ enabled は変更しない。
-   if(!admin.exists||admin.get('enabled')!==true)
-    fail('not-found','登録された利用者が存在しません');
+  }else if(admin.exists&&admin.get('enabled')===true){
+   // users 未登録または古い保留プロフィールでも、管理者権限は別保存。
+   // enabled・他の管理者設定は変更せず、名前だけ更新する。
    source='admins';
    const existing=admin.get('openChatName')||'';
    if(existing!==expectedName)
@@ -440,6 +439,8 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
     openChatNameUpdatedAt:FieldValue.serverTimestamp(),
     openChatNameUpdatedBy:actor
    });
+  }else{
+   fail('failed-precondition','このアカウントの名前変更は許可されていません');
   }
   tx.create(db.collection('adminAccessAudit').doc(),{
    actorUid:actor,targetUid:uid,action:'update_open_chat_name',
