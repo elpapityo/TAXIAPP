@@ -4039,7 +4039,7 @@ function monthlySalesDayLabel(date){
 // 税抜額は既存の営業画面と同じ「10％割戻し・円未満切捨て」の参考換算。
 // Firestore原本や正式な売上・納金の計算は変更しない。
 function meterSalesTaxExcludedReference(gross){
- return Math.floor(gross/1.1);
+ return Math.floor((gross*10)/11);
 }
 let monthlySalesOpened=false;
 
@@ -4106,7 +4106,7 @@ function renderMonthlySales(){
  const unsupportedYears=[...new Set([period.startDate.slice(0,4),period.endDate.slice(0,4)])]
    .filter(y=>!MONTHLY_HOLIDAYS[y]);
  return '<details class="details monthly-sales-panel" data-monthly-sales-panel '+(monthlySalesOpened?'open':'')+'>'+
-  '<summary>▼ 月間売上表 <span class="monthly-report-subtitle">'+safeText(monthlySalesMonth)+'締め（'+
+  '<summary>月間売上表 <span class="monthly-report-subtitle">'+safeText(monthlySalesMonth)+'締め（'+
    safeText(day==='end'?'末日':day+'日')+'）</span></summary>'+
   '<div class="inner"><p class="helper">締め日の変更は「設定 → 乗務員登録」から行えます。</p>'+
   '<div class="monthly-sales-controls">'+
@@ -5849,7 +5849,9 @@ function handleAction(action,id){
    deviceMode==='writer'&&legacyDiary()&&!TAXIAPP_PRINT_VIEWER_MODE&&
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
    currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid;
-  if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!verifiedOctoberTransfer){
+  const monthlyReadAction=action==='loadMonthlySales'&&deviceMode==='viewer'&&
+   memberDiary()&&accountDiary.ready()&&currentLoginScope?.uid===accountScope.uid;
+  if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
   const shift=getShift(),latest=selectedShift();
