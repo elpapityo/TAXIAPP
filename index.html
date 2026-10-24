@@ -1269,7 +1269,7 @@ html[data-ui-theme="night"] .settings-group-text small{color:#c5d8e0}
 </style>
 </head>
 <body>
-<div class="account-top" id="accountBar" aria-label="Googleアカウントと操作端末"><div class="account-state"><span id="deviceSessionStatus" role="status" aria-live="polite">操作端末の確認中</span><span id="accountStatus" role="status" aria-live="polite">設定同期の準備中</span></div><button id="accountSignIn" type="button">操作用ログイン</button><button id="accountTakeOver" type="button" hidden>この端末で操作する</button><button id="accountSignOut" type="button" hidden>ログアウト</button></div>
+<div class="account-top" id="accountBar" aria-label="Googleアカウントと操作端末"><div class="account-state"><span id="deviceSessionStatus" role="status" aria-live="polite">操作端末の確認中</span><span id="accountStatus" role="status" aria-live="polite">設定同期の準備中</span></div><button id="accountSignIn" type="button">Googleでログイン（初回は自動登録）</button><button id="accountTakeOver" type="button" hidden>この端末で操作する</button><button id="accountSignOut" type="button" hidden>ログアウト</button></div>
 <div id="app"><div class="boot">TAXIAPP を起動しています…</div></div>
 <div id="notice" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -1299,10 +1299,10 @@ html[data-ui-theme="night"] .settings-group-text small{color:#c5d8e0}
 <script src="./cloud-sync-ui.js?v=20261023-differences"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
-<script src="./login-core.js?v=20261017-2"></script>
+<script src="./login-core.js?v=20261024-auto-register-1"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
-<script src="./account-auto-sync.js?v=20261020-1"></script>
+<script src="./account-auto-sync.js?v=20261024-auto-register-1"></script>
 <script src="./account-diary-store.js?v=20261022-9"></script>
 <script>
 (async function () {
