@@ -47,7 +47,7 @@ assert.match(html,/const child=parent\?\.querySelector\('\[data-ride-field-setti
 
 
 const appearanceStart=settings.indexOf('<details class="details settings-advanced" data-appearance-settings>');
-const appearanceEnd=settings.indexOf('<details class="details settings-advanced"><summary>入力・キーボード設定</summary>',appearanceStart);
+const appearanceEnd=settings.indexOf('<details class="details settings-advanced" data-settings-keyboard><summary>入力・キーボード設定</summary>',appearanceStart);
 assert.ok(appearanceStart>=0&&appearanceEnd>appearanceStart,'appearance menu encloses exactly the requested categories');
 const appearance=settings.slice(appearanceStart,appearanceEnd);
 assert.match(appearance,/<summary>画面表示のカスタマイズ<\/summary>/);
