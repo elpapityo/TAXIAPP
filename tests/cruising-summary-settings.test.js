@@ -9,7 +9,12 @@ const model={prefs:{}},ctx={model,displayPrefs:()=>({driveStatusDisplay:'on'}),n
  totals:()=>({meter:3200}),
  currentDutySummary:()=>({state:'空車・流し',from:'未記録',to:'未記録',dispatch:false,waiting:false}),
  dutyUiState:()=> '空車・流し'};
-vm.createContext(ctx);vm.runInContext(src.slice(start,end),ctx);
+vm.createContext(ctx);
+// 税別表示は実働コードの同一換算関数を使用する。
+const taxStart=src.indexOf('function meterSalesTaxExcludedReference('),taxEnd=src.indexOf('let monthlySalesOpened=',taxStart);
+assert.ok(taxStart>0&&taxEnd>taxStart);
+vm.runInContext(src.slice(taxStart,taxEnd),ctx);
+vm.runInContext(src.slice(start,end),ctx);
 const shift={records:[],settings:{},date:'2026-10-19',draft:null,waiting:null};
 ctx.shift=shift;
 const render=()=>vm.runInContext('renderDutyStatus(shift)',ctx);
