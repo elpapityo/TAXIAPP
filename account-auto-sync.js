@@ -27,6 +27,39 @@ root.TAXIAPP_ACCOUNT_AUTO={
   function status(message){
    const label=$('accountStatus');
    if(label)label.textContent=message;
+   if(document.documentElement.classList.contains('taxi-auth-locked')){
+    const gateStatus=$('accountGateStatus');
+    if(gateStatus)gateStatus.textContent=message;
+   }
+  }
+  // 初期HTMLから営業画面を閉じ、本人UIDと登録状態の確認が完了した後だけ表示。
+  function gate(stage,message=''){
+   const ready=stage==='ready';
+   document.documentElement.classList.toggle('taxi-auth-locked',!ready);
+   const panel=$('accountGate');
+   if(panel)panel.dataset.stage=stage;
+   const guide=$('accountGateGuide');
+   const explanations={
+    checking:'Googleアカウントと利用登録を確認しています。',
+    signedOut:'TAXIAPPを利用するには、Googleアカウントでログインしてください。初めての方は「新規登録」を選んでください。',
+    registering:'オプチャネームを入力して「登録を完了」を押してください。登録が確認されるまで営業画面は表示しません。',
+    blocked:'利用登録を確認できません。営業データは表示しません。再確認または別のGoogleアカウントを選択してください。',
+    error:'ログイン機能の準備・確認に問題があります。営業画面を開かず、既存の端末データを保持します。'
+   };
+   if(guide)guide.textContent=explanations[stage]||'';
+   const canChoose=stage==='signedOut'&&!!auth&&!!fb;
+   for(const id of ['accountGateRegister','accountGateSignIn']){
+    const button=$(id);
+    if(button){button.hidden=stage!=='signedOut';button.disabled=!canChoose||accountSwitchBusy;}
+   }
+   const switchButton=$('accountGateSwitch');
+   if(switchButton)switchButton.hidden=!auth?.currentUser||!['registering','blocked'].includes(stage);
+   const retry=$('accountGateRetry');
+   if(retry)retry.hidden=stage!=='blocked'||!auth?.currentUser;
+   if(message){
+    const gateStatus=$('accountGateStatus');
+    if(gateStatus)gateStatus.textContent=message;
+   }
   }
   function controls(){
    const accountBar=$('accountBar');
@@ -281,6 +314,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    }
   }
   async function authChanged(next){
+   gate('checking','認証と本人の登録状態を確認しています…');
    clearTimeout(timer);
    authGeneration++;
    adminAuthorized=false;
@@ -293,7 +327,11 @@ root.TAXIAPP_ACCOUNT_AUTO={
    await deps.onUserScope?.(null);
    if(!next)deps.onDeviceMode?.('viewer','','ログインすると操作できます');
    controls();
-   if(!next){status('Googleログインで設定を端末間共有');return;}
+   if(!next){
+    gate('signedOut','新規登録、またはGoogleでログインしてください。');
+    status('Googleでログインすると本人の日報を表示します');
+    return;
+   }
    status('Googleアカウントを確認しています…');
    const accountUid=uid,generation=authGeneration;
    const stillSignedIn=()=>authGeneration===generation&&uid===accountUid&&auth.currentUser?.uid===accountUid;
@@ -321,6 +359,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       // This is not verification against the LINE service.
       pendingRegistration={uid:accountUid,user:next,generation:authGeneration};
       displayRegistration(true);
+      gate('registering','本人の登録名を入力してください。');
       status('初回登録：オプチャネームを入力して「登録を完了」を押してください');
       deps.onDeviceMode?.('viewer','','オプチャネーム登録待ち（入力停止）');
       return;
@@ -331,6 +370,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       'この利用者は停止中です。自動では利用再開しません':
       profile?'利用者登録が保留中です。自動では既存登録を変更しません':
       '利用登録がありません。認証済みGoogleアカウントでログインしてください';
+     gate('blocked',reason);
      status(reason);deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;
     }
     // 管理者本人が users 未登録の場合も admins の登録名を正しく表示する。
@@ -352,14 +392,23 @@ root.TAXIAPP_ACCOUNT_AUTO={
      viewer:printViewerMode,claimOnLogin:!printViewerMode&&explicitWriterLogin
     });
     viewerLogin=false;explicitWriterLogin=false;
+    if(stillSignedIn())gate('ready');
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
-   }catch(e){if(!stillSignedIn())return;await deps.onUserScope?.(null);status('アカウントの確認に失敗：'+String(e.code||e.message||e));deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');}
+   }catch(e){
+    if(!stillSignedIn())return;
+    enabled=false;
+    await deps.onUserScope?.(null);
+    gate('blocked','利用登録の確認に失敗：'+String(e.code||e.message||e));
+    status('アカウントの確認に失敗：'+String(e.code||e.message||e));
+    deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');
+   }
   }
   async function start(){
    if(booted)return;booted=true;
    if(!root.TAXIAPP_LOGIN_UTILS?.firebaseConfigReady(conf)){
-    status('Googleログイン準備中（従来版は利用可能）');return;
+    gate('error','Firebaseのログイン設定を読み込めません。営業原本はそのまま保持しています。');
+    status('Googleログインの設定を読み込めません');return;
    }
    async function selectGoogleAccount(intent){
     if(!auth||!fb){status('ログイン機能を読み込み中です…');return;}
@@ -393,11 +442,19 @@ root.TAXIAPP_ACCOUNT_AUTO={
      if(!printViewerMode&&deviceSession?.state()==='viewer'&&enabled)
       await deviceSession.claim();
     }catch(error){
+     if(!auth.currentUser)gate('signedOut');
      status('アカウント選択を完了できません：'+String(error.code||error.message||error));
     }finally{
      accountSwitchBusy=false;controls();
+     if(!auth.currentUser)gate('signedOut');
     }
    }
+   $('accountGateSignIn')?.addEventListener('click',()=>{void selectGoogleAccount('login');});
+   $('accountGateRegister')?.addEventListener('click',()=>{void selectGoogleAccount('register');});
+   $('accountGateSwitch')?.addEventListener('click',()=>{void selectGoogleAccount('login');});
+   $('accountGateRetry')?.addEventListener('click',()=>{
+    if(auth?.currentUser)void authChanged(auth.currentUser);
+   });
    $('accountSignIn')?.addEventListener('click',()=>{void selectGoogleAccount('login');});
    $('accountInitialRegister')?.addEventListener('click',()=>{
     void selectGoogleAccount('register');
@@ -459,9 +516,14 @@ root.TAXIAPP_ACCOUNT_AUTO={
     a.onAuthStateChanged(auth,next=>{
      if(next)deps.onDeviceMode?.('pending','','操作権を確認しています…');
      return authChanged(next);
-    },
-     e=>status('Google認証エラー：'+String(e.code||e.message||e)));
-   }catch(e){status('Googleログインの準備ができません：'+String(e.message||e));}
+    },e=>{
+     gate('error','Google認証の状態を取得できません：'+String(e.code||e.message||e));
+     status('Google認証エラー：'+String(e.code||e.message||e));
+    });
+   }catch(e){
+    gate('error','Googleログインの準備ができません：'+String(e.message||e));
+    status('Googleログインの準備ができません：'+String(e.message||e));
+   }
    window.addEventListener('online',()=>schedule(0));
    // No visibility/focus polling: reload settings when login obtains an
    // editing session, and on actual preference changes only.
