@@ -350,7 +350,7 @@ function chooseLocationRecord(){
  preserveLocationEdit();
 }
 function startLocationEdit(){
- if(busy||!selectedDuty||selectedDuty.trashed||!selectedDuty.shift?.endedAt&&!selectedDuty.shift?.endedIso)return;
+ if(!selectedDuty||selectedDuty.trashed||!selectedDuty.shift?.endedAt&&!selectedDuty.shift?.endedIso)return;
  if(selected?.isAdmin&&selected.uid!==adminUid)return;
  const uid=selected.uid,shiftId=selectedDuty.shiftId,revision=selectedDuty.revision;
  const saved=localStorage.getItem(locationEditKey(uid,shiftId));
