@@ -8,7 +8,7 @@ const vm=require('node:vm');
 // This guards against regressions where a saved choice closes sections
 // or jumps the user back to the beginning of the settings screen.
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const start=html.indexOf('let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false;');
+const start=html.indexOf('let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false,settingsCategoryLastRendered=\'\';');
 const end=html.indexOf('function titleBlock(',start);
 assert.ok(start>0&&end>start,'settings rerender preservation code missing');
 const code=html.slice(start,end);
@@ -36,7 +36,7 @@ const appEl={
  }
 };
 const context={
- tab:'settings',keypadActive:null,saveTouchPress:null,
+ tab:'settings',settingsCategoryActive:'driver',keypadActive:null,saveTouchPress:null,
  pendingRender:false,renderAfterKeypad:false,saveRenderPending:false,
  window:windowMock,appEl,storageStatus:'IndexedDB',
  operationPanelOpen:{live:true,summary:false},
@@ -70,6 +70,11 @@ assert.equal(windowMock.scrollY,0,'switching to a different menu should start at
 context.tab='settings';render();
 assert.deepEqual(panels.map(p=>p.open),expected(),
  'returning to settings should remember which independent categories were expanded');
+// Category changes must not copy a different category's accordion state.
+context.settingsCategoryActive='display';
+render();
+assert.deepEqual(panels.map(p=>p.open),Array(panelCount).fill(false),
+ 'switching to a different settings category must not carry old open panels');
 console.log('Settings view preservation passed: edits, background refresh, deliberate collapse and tab navigation.');
 
 // Settings controls update their buttons and CSS without rebuilding the page.
