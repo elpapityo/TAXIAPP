@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.158 — 公開版UI・独立デモ</title>
+<title>TAXIAPP UIデザイン提案 — v0.3.158を参考にした独立デモ</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -974,6 +974,344 @@ html:not([data-ui-theme="night"]) .preview-duty-route>span{color:#196a9f}
 .meter-console .meter-passenger-fields>.form-grid{padding:8px}
 html[data-ui-theme="night"] .meter-console .meter-passenger-fields>summary{color:#eff7ff}
 [data-demo-disabled]{opacity:.55;cursor:not-allowed}.demo-mode-note{margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+
+
+/* ==============================================
+   TAXIAPP UI concept / 乗務中の視認性とタップ操作
+   独立デモ限定。正式版・計算・保存には適用しない。
+   ============================================== */
+:root{
+ --blue:#146985;--dark:#153349;--teal:#087b70;
+ --line:#dce6ec;--muted:#5c7182;--sheet:#fff;--sky:#eff8fb;
+ --concept-navy:#102d41;--concept-deep:#0b2436;
+ --concept-bg:#f2f7f8;--concept-soft:#eef8f6;
+ --concept-focus:#f4ba45;
+}
+html{scroll-behavior:smooth}
+body{background:var(--concept-bg);color:#16364a}
+button,select,input,textarea{font-variant-numeric:tabular-nums}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
+ outline:3px solid var(--concept-focus)!important;outline-offset:3px!important}
+.account-top{
+ max-width:1420px;margin:12px auto 0;min-height:42px;
+ padding:9px 16px;border:1px solid #cce4e2;border-radius:13px;
+ background:#eaf7f3;color:#235a54;box-shadow:none}
+.account-top .account-state{display:flex;flex-wrap:wrap;gap:4px 15px}
+.account-top #deviceSessionStatus{font-weight:850}
+.account-top #accountStatus{font-size:12px}
+.layout{max-width:1420px;padding:16px 22px 110px}
+.topbar{
+ background:var(--concept-navy);border:1px solid #24485a;
+ border-radius:21px;padding:18px 22px;margin-bottom:18px;
+ box-shadow:0 12px 32px rgba(13,48,65,.13);color:#fff;
+ min-height:88px;gap:15px}
+.brand-icon{
+ width:54px;height:54px;border-radius:17px;font-size:24px;
+ background:linear-gradient(160deg,#188f9d,#087e76);
+ box-shadow:0 6px 18px #06272b50}
+.brand-name{color:#fff;font-size:26px;font-weight:900;letter-spacing:.02em}
+.brand-tag{color:#bad9e0;font-size:12px;letter-spacing:.03em}
+.viewer-header-right{gap:10px}
+.topbar .status-pill{
+ border-radius:12px;border:1px solid #75bfb5;background:#dcfaf3;
+ color:#195c51;font-weight:850;letter-spacing:.01em;
+ font-size:13px;min-height:38px;display:inline-flex;align-items:center}
+.topbar .status-pill.stop{background:#e3ebf2;border-color:#b6c8d5;color:#3c596d}
+.content-layout{grid-template-columns:248px minmax(0,1fr);gap:19px}
+#main-content{min-width:0}
+.sidebar{position:sticky;top:18px;align-self:start;z-index:11}
+.nav-intro{
+ border-radius:19px 19px 0 0;background:#174255;color:#fff;
+ padding:22px 18px 20px;display:flex;flex-direction:column;gap:8px;
+ border:1px solid #234e5e;border-bottom:0}
+.nav-intro-kicker{
+ color:#93d7cd;letter-spacing:.11em;font-size:10px;font-weight:850}
+.nav-intro strong{font-size:18px;line-height:1.45;letter-spacing:.01em}
+.nav-intro>span:last-child{font-size:12px;line-height:1.6;color:#d0e2e7}
+.nav-desktop{
+ display:flex;flex-direction:column;gap:4px;
+ background:var(--concept-navy);border:1px solid #234e5e;border-top:0;
+ border-radius:0 0 19px 19px;padding:8px 10px 14px}
+.nav-group-heading{
+ font-size:11px;color:#9bbac5;font-weight:850;letter-spacing:.11em;
+ padding:13px 10px 4px}
+.nav-group-heading.secondary{padding-top:20px;margin-top:4px;border-top:1px solid #365264}
+.nav-desktop .nav-link{
+ display:flex;align-items:center;gap:12px;border:1px solid transparent;
+ background:transparent;color:#cadddf;border-radius:12px;
+ text-align:left;padding:14px 12px;min-height:52px;font-weight:750;
+ transition:background .15s ease,border-color .15s ease}
+.nav-desktop .nav-link:hover{background:#264b5b;color:#fff}
+.nav-desktop .nav-link.selected{
+ background:#e8faf5;color:#123c43;border-color:#7dbfb4;
+ box-shadow:inset 4px 0 #13a590}
+.nav-desktop .nav-ico{font-size:20px;min-width:26px;text-align:center}
+.nav-desktop .nav-label{font-size:14px;flex:1}
+.nav-desktop .nav-current{font-size:10px;color:#168b7d}
+.nav-desktop .nav-link:not(.selected) .nav-current{display:none}
+.nav-insight{
+ display:flex;gap:11px;margin-top:13px;padding:14px;
+ border:1px solid #cee7e1;border-radius:14px;background:#effaf7}
+.nav-insight-icon{color:#16867c;font-size:20px;line-height:1.1}
+.nav-insight div{display:flex;flex-direction:column;gap:3px}
+.nav-insight strong{color:#24534e;font-size:12px}
+.nav-insight div span{font-size:11px;line-height:1.5;color:#607b76}
+.mobile-nav-wrap{display:none}
+#main-content .section-heading{margin-bottom:16px;align-items:center}
+#main-content .section-heading .h1{font-weight:900;letter-spacing:-.025em;color:#183b4e}
+#main-content .section-heading .eyebrow{color:#0b8278;font-size:10px;font-weight:900}
+#main-content .section-heading .subtle{color:#6a8090}
+#main-content .preview-screen-head{
+ background:#e6f3f1;border:1px solid #cde5e0;
+ padding:15px 17px;border-radius:16px;margin-bottom:15px;gap:12px}
+#main-content .preview-screen-head h1{
+ color:#153a49;font-weight:900;font-size:clamp(21px,2.2vw,26px)}
+#main-content .preview-screen-head small{color:#526d78;font-size:11px;line-height:1.55}
+#main-content .preview-screen-head .btn{
+ border:1px solid #b9d8d3;background:#fff;color:#1e625e;
+ border-radius:11px;min-height:44px}
+#main-content .card{
+ border-radius:18px;border:1px solid #d9e5e9;
+ box-shadow:0 5px 19px rgba(15,54,71,.045);
+ margin-bottom:15px;background:#fff}
+#main-content .card.hero:not(.meter-console){
+ background:linear-gradient(133deg,#eaf9f3 0,#fff 78%);
+ border-color:#bbded3}
+#main-content .hero-heading{color:#173c4a;font-weight:850;letter-spacing:-.02em}
+#main-content .btn{
+ border-radius:12px;min-height:48px;font-weight:780;
+ transition:filter .12s ease,transform .12s ease;
+ touch-action:manipulation}
+#main-content .btn:active{transform:translateY(1px)}
+#main-content .btn.primary{
+ background:#116e84;border-color:#116e84;color:#fff}
+#main-content .btn.teal{background:#147866;border-color:#147866;color:#fff}
+#main-content .btn.red{border-color:#d28d8e;color:#a02d3b}
+#main-content .btn.big{min-height:62px;font-weight:850;font-size:18px}
+#main-content .chip{
+ background:#fff;border:1.5px solid #b9cfd8;
+ color:#294b5d;border-radius:11px;min-height:45px}
+#main-content .chip.active{
+ background:#daf6ed;color:#165e53;border:2px solid #158878;
+ box-shadow:inset 0 -3px #158878;font-weight:850}
+#main-content .control{
+ background:#fff;border:1.5px solid #b9cbd5;border-radius:11px;
+ min-height:49px;color:#173c52;font-size:16px}
+#main-content .field-label{color:#3b5b69;font-weight:850}
+#main-content .details{
+ border-radius:15px;border:1px solid #d1e1e7;overflow:hidden;
+ box-shadow:0 3px 10px #172d4710}
+#main-content .details>summary{
+ background:#eff5f8;color:#214758;line-height:1.5;
+ font-weight:850;min-height:49px}
+#main-content .details[open]>summary{background:#e1f2ee;color:#185f56}
+#main-content .settings-advanced>summary{
+ border-radius:0;background:#edf7f5;padding:17px 18px;color:#204e59}
+#main-content .metrics{gap:10px}
+#main-content .metric{
+ border:1px solid #d3e3e7;border-radius:14px;
+ background:#fff;padding:15px}
+#main-content .metric strong{font-weight:900;font-size:clamp(19px,2.7vw,26px)}
+#main-content .metric.highlight{
+ background:#17485b;color:white;border-color:#17485b}
+#main-content .metric.highlight .label,#main-content .metric.highlight small{color:#d5e8ec}
+#main-content .operations-kpi{
+ background:#ebf6f7;border:1px solid #cee3e4;border-radius:14px;padding:15px}
+#main-content .operations-kpi strong{color:#174153;font-weight:900}
+#main-content .preview-duty-summary{
+ background:linear-gradient(140deg,#123447,#0c2638);
+ color:#f7fcff;border:1px solid #31576a;border-radius:18px;
+ padding:15px!important;box-shadow:0 7px 18px rgba(13,45,65,.10)}
+#main-content .preview-duty-stat{
+ background:#21495b;border:1px solid #406879;border-radius:12px}
+#main-content .preview-duty-stat strong{font-weight:900;color:#fff}
+#main-content .preview-duty-stat small{color:#b8d8e1}
+#main-content .meter-status-summary{padding:12px!important;margin-bottom:11px!important}
+#main-content .meter-status-summary>.preview-duty-stats{gap:9px!important;margin-bottom:9px!important}
+#main-content .meter-status-summary .preview-duty-stat{
+ padding:10px 12px!important;border-radius:11px}
+#main-content .meter-console{
+ background:#fff!important;border:1px solid #b8d9d5!important;
+ padding:17px 17px 14px!important;border-radius:20px!important;
+ box-shadow:0 8px 24px rgba(14,80,77,.08)!important}
+#main-content .meter-state{
+ display:flex;align-items:center;gap:7px 12px;padding:12px 16px!important;
+ margin:0 0 15px;background:#e8f7f2;border:1px solid #b7e2d4;
+ border-radius:13px;color:#174c44;text-align:left;flex-wrap:wrap}
+#main-content .meter-state small{color:#326c64;font-size:12px}
+#main-content .meter-state strong{font-size:25px;font-weight:900;line-height:1}
+#main-content .meter-actions{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:11px;margin:0 0 13px}
+#main-content .meter-actions .meter-action{
+ min-height:77px;padding:14px 8px;border:2px solid #c8d8df;
+ font-size:clamp(17px,2.2vw,22px);font-weight:900;
+ letter-spacing:.015em;border-radius:15px;line-height:1.22;
+ box-shadow:0 3px 0 rgba(25,53,63,.10)}
+#main-content .meter-actions .meter-action:disabled{opacity:.48;box-shadow:none}
+#main-content .meter-actions .meter-wait{
+ background:#fff2cf;border-color:#ecbe58;color:#674714}
+#main-content .meter-actions .meter-dispatch{
+ background:#e2efff;border-color:#8bb3e9;color:#174f84}
+#main-content .meter-actions .meter-ride,
+#main-content .meter-actions .meter-settle{
+ background:#d6f4e8;border-color:#54ae8f;color:#145b47}
+#main-content .meter-actions .meter-highway{
+ background:#ecf0fc;border-color:#abb8de;color:#334b81}
+#main-content .meter-actions .meter-break{
+ background:#fff0e4;border-color:#efb588;color:#85501d}
+#main-content .meter-actions .meter-sub{
+ background:#edf2f4;border-color:#bdccd4;color:#304e5b}
+#main-content .meter-actions .meter-finish{
+ background:#b9273e!important;color:#fff!important;border-color:#8c1830!important}
+#main-content .meter-actions .meter-discount{
+ background:#fff2eb;border-color:#eaba99;color:#7c4525}
+#main-content .meter-quick-inputs{
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+#main-content .meter-passenger-fields{
+ margin-top:11px;border:1px solid #cbdfe0;border-radius:14px;overflow:hidden}
+#main-content .meter-passenger-fields>summary{
+ background:#f3f9fa;color:#2c5860;padding:15px;font-size:14px;font-weight:850}
+#main-content .meter-passenger-fields[open]>summary{background:#e4f5ee}
+#main-content .meter-passenger-fields .form-grid{padding:13px}
+#main-content .meter-details{margin-top:11px}
+#main-content .meter-details>summary{
+ padding:16px 17px;min-height:55px;font-size:15px;
+ background:#eaf4f7;color:#284c5e}
+#main-content .warn{border-radius:12px}
+#main-content .panel-strip{border-radius:12px}
+#main-content .statline{padding:13px 4px}
+#main-content .statline b{color:#214c5e}
+#main-content .operation-panel>summary{background:#f0f6f7}
+#main-content .data-table th{background:#ecf6f7;color:#2b5361}
+#main-content .data-table tr:hover{background:#f1f8fa}
+#main-content .nav-mobile{display:none}
+@media(min-width:761px) and (max-width:1040px){
+ .content-layout{grid-template-columns:205px minmax(0,1fr);gap:14px}
+ .layout{padding:14px 12px 96px}
+ .nav-intro{padding:18px 14px}
+ .nav-desktop{padding:8px}
+ .nav-desktop .nav-link{padding:12px 9px;gap:8px}
+ .nav-desktop .nav-label{font-size:13px}
+}
+@media(max-width:760px){
+ body{background:#f4f8f8}
+ .account-top{
+  margin:7px 8px 0;padding:7px 11px;min-height:36px;
+  border-radius:10px;gap:2px}
+ .account-top .account-state{gap:1px 8px}
+ .account-top span{font-size:10px!important}
+ .layout{padding:9px 10px calc(110px + env(safe-area-inset-bottom))}
+ .topbar{
+  min-height:67px;padding:12px 14px;margin:0 0 12px;
+  border-radius:15px;gap:10px;flex-wrap:wrap}
+ .brand{gap:9px}
+ .brand-icon{width:42px;height:42px;border-radius:13px;font-size:20px}
+ .brand-name{font-size:21px}
+ .brand-tag{font-size:10px}
+ .topbar .status-pill{min-height:30px;font-size:11px;padding:5px 8px}
+ .content-layout{display:block}
+ .sidebar{
+  position:fixed;bottom:0;left:0;right:0;top:auto;z-index:99;
+  padding:0;background:transparent;box-shadow:none}
+ .nav-intro,.nav-desktop,.nav-insight{display:none}
+ .mobile-nav-wrap{
+  display:block;position:relative;background:#0e3042;
+  border-top:1px solid #416776;
+  box-shadow:0 -8px 24px #133a5038;
+  padding:7px 5px calc(7px + env(safe-area-inset-bottom))}
+ .mobile-nav{display:flex;align-items:stretch;gap:2px}
+ .mobile-nav>.nav-link,.mobile-more>summary{
+  flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;min-height:65px;padding:6px 2px;
+  border:1px solid transparent;border-radius:10px;background:transparent;
+  color:#ccdee4;text-align:center;font-weight:850;cursor:pointer}
+ .mobile-nav>.nav-link.selected{
+  background:#d9f4ea;color:#14564e;border-color:#74bdad;
+  box-shadow:inset 0 -3px #15907f}
+ .mobile-nav .nav-ico{font-size:23px;line-height:1.15}
+ .mobile-nav .nav-label{
+  font-size:clamp(10px,2.65vw,13px);white-space:nowrap;line-height:1.2}
+ .mobile-nav>.nav-link .nav-current{display:none}
+ .mobile-more{display:block;position:relative;flex:1 1 0;min-width:0}
+ .mobile-more>summary{list-style:none;width:100%}
+ .mobile-more>summary::-webkit-details-marker{display:none}
+ .mobile-more[open]>summary,.mobile-more[data-current="true"]>summary{
+  color:#103c45;background:#d9f4ea;border-color:#78c6b5}
+ .mobile-more-panel{
+  position:fixed;right:8px;bottom:calc(85px + env(safe-area-inset-bottom));
+  width:min(310px,calc(100vw - 16px));
+  background:#fff;color:#14384b;border:1px solid #b8d8dd;
+  box-shadow:0 14px 45px rgba(9,36,52,.25);
+  border-radius:18px;padding:13px;z-index:120}
+ .mobile-more-panel .more-heading{
+  font-size:12px;font-weight:900;color:#416979;padding:0 7px 8px;margin:0}
+ .mobile-more-panel .nav-link{
+  display:flex;align-items:center;gap:10px;width:100%;min-height:51px;
+  border:1px solid #d6e4e8;border-radius:11px;background:#f5faf9;
+  text-align:left;padding:10px 13px;margin-bottom:7px;color:#174356;font-weight:800}
+ .mobile-more-panel .nav-link.selected{background:#d7f2ea;border-color:#58b19e}
+ .mobile-more-panel .nav-ico{font-size:20px;min-width:24px}
+ .mobile-more-panel .nav-label{font-size:14px;flex:1;text-align:left}
+ .mobile-more-panel .nav-current{font-size:10px}
+ .mobile-more-panel .more-hint{font-size:11px;color:#667f87;margin:6px 5px 2px}
+ #main-content .preview-screen-head{padding:11px 12px;flex-wrap:wrap;gap:8px}
+ #main-content .preview-screen-head h1{font-size:21px}
+ #main-content .preview-screen-head small{font-size:10px}
+ #main-content .preview-screen-head .btn{min-height:40px;font-size:12px}
+ #main-content .section-heading .h1{font-size:23px}
+ #main-content .card{padding:15px 13px;margin-bottom:12px;border-radius:15px}
+ #main-content .preview-duty-summary{padding:12px!important}
+ #main-content .meter-status-summary .preview-duty-stat{padding:9px!important}
+ #main-content .meter-console{padding:13px!important}
+ #main-content .meter-state{padding:11px!important;margin-bottom:11px}
+ #main-content .meter-state strong{font-size:22px}
+ #main-content .meter-actions{gap:8px;margin-bottom:11px}
+ #main-content .meter-actions .meter-action{
+  min-height:72px;padding:9px 5px;font-size:clamp(14px,4.15vw,18px);border-radius:13px}
+ #main-content .metric{padding:12px}
+ #main-content .metric strong{font-size:clamp(18px,4.4vw,24px)}
+ #main-content .meter-quick-inputs{gap:10px}
+ #main-content .details>summary{padding:13px 14px}
+ #main-content .form-grid,#main-content .details .form-grid{gap:10px}
+ #main-content .operations-kpi{padding:12px 10px}
+ #floating-meter-actions{
+  bottom:calc(79px + env(safe-area-inset-bottom))!important}
+}
+@media(max-width:370px){
+ .layout{padding-left:7px;padding-right:7px}
+ #main-content .meter-actions{gap:6px}
+ #main-content .meter-actions .meter-action{font-size:14px;min-height:67px}
+ #main-content .meter-quick-inputs{grid-template-columns:1fr}
+ .mobile-nav .nav-ico{font-size:20px}
+ .mobile-nav .nav-label{font-size:10px}
+}
+html[data-ui-theme="night"] body{background:#091e2d;color:#e9f5f6}
+html[data-ui-theme="night"] .account-top{background:#193b43;color:#e5fbf8;border-color:#3c7774}
+html[data-ui-theme="night"] #main-content .preview-screen-head{background:#1b3e46;border-color:#3e7778}
+html[data-ui-theme="night"] #main-content .preview-screen-head h1{color:#eafff8}
+html[data-ui-theme="night"] #main-content .preview-screen-head small{color:#c2d9df}
+html[data-ui-theme="night"] #main-content .section-heading .h1{color:#f1ffff}
+html[data-ui-theme="night"] #main-content .card:not(.meter-console),
+html[data-ui-theme="night"] #main-content .details{background:#182d40;border-color:#3c6276;color:#e9f5ff}
+html[data-ui-theme="night"] #main-content .meter-console{background:#183847!important;border-color:#48847e!important}
+html[data-ui-theme="night"] #main-content .meter-state{background:#214c4b;border-color:#4a877e;color:#eaffef}
+html[data-ui-theme="night"] #main-content .meter-state strong{color:#fff}
+html[data-ui-theme="night"] #main-content .meter-state small{color:#bfe9df}
+html[data-ui-theme="night"] #main-content .meter-console .meter-action:not(.meter-finish){filter:brightness(.90)}
+html[data-ui-theme="night"] #main-content .details>summary{background:#294456;color:#e7faff}
+html[data-ui-theme="night"] #main-content .details[open]>summary{background:#22534f;color:#eaffef}
+html[data-ui-theme="night"] #main-content .statline b{color:#def8fb}
+html[data-ui-theme="night"] #main-content .operations-kpi{background:#23465c;border-color:#487184}
+html[data-ui-theme="night"] #main-content .operations-kpi strong{color:#ecffff}
+html[data-ui-theme="night"] #main-content .metric{background:#1b394b;border-color:#4e7382}
+html[data-ui-theme="night"] #main-content .metric.highlight{background:#1c5661}
+html[data-ui-theme="night"] #main-content .chip.active{background:#1f5d54;color:#fff;border-color:#61d0b7}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ #main-content .btn,.nav-desktop .nav-link{transition:none}
+}
+
 </style>
 </head>
 <body>
@@ -2261,7 +2599,39 @@ function saveLater(){
  clearTimeout(persistTimer);
  persistTimer=setTimeout(()=>{persistTimer=0;void save();},350);
 }
-function renderNav(){return `<div class="sidebar"><nav class="card nav" aria-label="メインメニュー">${Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary()).map(([id,[icon,title]])=>`<button data-tab="${id}" class="${tab===id||(id==='manage'&&['cloud','files'].includes(tab))?'selected':''}" ${tab===id||(id==='manage'&&['cloud','files'].includes(tab))?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')}</nav><div class="sidebar-note">独立デモ・メモリ保存<br>再読込で初期化します。</div></div>`;}
+function renderNav(){
+ const selected=id=>tab===id||(id==='manage'&&['cloud','files'].includes(tab));
+ const item=(id,emoji,title)=>`<button type="button" data-tab="${id}" class="nav-link ${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico" aria-hidden="true">${emoji}</span><span class="nav-label">${title}</span>${selected(id)?'<span class="nav-current" aria-hidden="true">●</span>':''}</button>`;
+ return `<aside class="sidebar" aria-label="画面メニュー">
+  <div class="nav-intro"><span class="nav-intro-kicker">TAXIAPP / UI CONCEPT</span><strong>今日の営業を、もっとシンプルに。</strong><span>必要な操作を、迷わず押せる配置。</span></div>
+  <nav class="nav-desktop" aria-label="メインメニュー">
+   <div class="nav-group-heading">営業</div>
+   ${item('drive','🚕','乗務入力')}
+   ${item('live','▥','営業・集計')}
+   ${item('history','▤','営業履歴')}
+   ${item('shift','◷','出庫・入庫')}
+   <div class="nav-group-heading secondary">設定・管理</div>
+   ${item('manage','▦','データ管理')}
+   ${item('settings','⚙','表示・設定')}
+  </nav>
+  <div class="nav-insight"><span class="nav-insight-icon" aria-hidden="true">◉</span><div><strong>画面の試作です</strong><span>Firestore送信なし・記録は再読み込みで初期化</span></div></div>
+  <div class="mobile-nav-wrap"><nav class="mobile-nav" aria-label="下部メニュー">
+   ${item('drive','🚕','乗務')}
+   ${item('live','▥','集計')}
+   ${item('history','▤','履歴')}
+   ${item('shift','◷','出庫入庫')}
+   <details class="mobile-more" ${['settings','manage','cloud','files','highway'].includes(tab)?'data-current="true"':''}>
+    <summary><span class="nav-ico" aria-hidden="true">☷</span><span class="nav-label">その他</span></summary>
+    <div class="mobile-more-panel" aria-label="その他の画面">
+     <p class="more-heading">その他の画面</p>
+     ${item('settings','⚙','表示・設定')}
+     ${item('manage','▦','データ管理')}
+     <p class="more-hint">クラウド・印刷への実送信は行いません</p>
+    </div>
+   </details>
+  </nav></div>
+ </aside>`;
+}
 function renderDutySaveStatus(){return `<section class="card" aria-label="日報の保存状態"><strong>日報の保存状態</strong><p class="caption-note" data-local-save-status>デモ専用メモリに保持（再読込で初期化）</p><p class="caption-note">クラウド接続・本番データの読込なし</p></section>`;}
 function header(){
  const shift=getShift(),displayVersion=(document.title.match(/v\d+\.\d+\.\d+(?:-dev\.\d+)?/)||['v?'])[0];
@@ -6679,6 +7049,7 @@ window.addEventListener('beforeunload',event=>{
 model=emptyAccountModel();
 model.prefs.driver='デモ乗務員';model.prefs.driverNo='DEMO';model.prefs.vehicle='デモ車両';
 model.prefs.gpsTripAtStart='off';model.prefs.reverseAddress='off';
+model.prefs.ui={...UI_DEFAULTS,driveLayout:'meter',screenMode:'full',theme:'day',contrast:'high',help:'hide'};
 accountScope={kind:'member',uid:'offline-demo',adminFirestore:true,adminFirestorePreview:false};accountScopeLoaded=true;
 deviceMode='writer';writerLoadGate=false;writerLoadError='';
 storageStatus='デモ専用メモリ（再読込で初期化）';
@@ -6690,6 +7061,10 @@ for(const [index,type,payment,meter,from,to] of [[1,'乗','現',1500,'デモ駅'
  const r=makeDraft(demoSample,'ride',demoDay,type);Object.assign(r.raw,{G:'09:00:00',M:'09:20:00',F:index*10,L:index*10+5,AL:from,AM:to,K:meter,N:payment});if(type==='U')r.meta.uberAppDisplayed='2100';r.status='complete';r.raw=deriveRaw(r,demoSample.settings);demoSample.records.push(r);
 }
 model.shifts.push(demoSample);
+// 画面確認用：実働データとは無関係な、本日出庫中の合成サンプルを表示。
+const demoCurrent=newShift(new Date(),{driver:'デモ乗務員',vehicle:'DEMO-000',startingOdo:0});
+demoCurrent.synthetic=true;
+model.shifts.unshift(demoCurrent);model.activeId=demoCurrent.id;
 const observer=new MutationObserver(()=>demoMarkDisabled());observer.observe(appEl,{childList:true,subtree:true});
 window.__TAXIAPP_DEMO__=Object.freeze({snapshot:()=>deepCopy(model),pricing,totals,settledTenderAmounts});
 applyUi();render();
