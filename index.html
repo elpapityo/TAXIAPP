@@ -5460,7 +5460,7 @@ function renderSettingsCategorized(shift){
  const children=[...template.content.children];
  const details=children.filter(el=>el.matches('details.settings-advanced'));
  const chosen=SETTINGS_CATEGORY_GROUPS.find(x=>x.id===settingsCategoryActive)||SETTINGS_CATEGORY_GROUPS[0];
- const selected=details.filter(el=>chosen.sections.some(attr=>el.hasAttribute(attr)));
+ const selected=chosen.sections.map(attr=>template.content.querySelector('details['+attr+']')).filter(Boolean);
  // Preserve all existing settings exactly once; show an explicit error if
  // someone later adds a category and forgets to assign its markup.
  const accounted=new Set(SETTINGS_CATEGORY_GROUPS.flatMap(group=>group.sections));
