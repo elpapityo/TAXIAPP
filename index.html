@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.159 — 乗務日報</title>
+<title>TAXIAPP v0.3.160 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1033,6 +1033,52 @@ html[data-ui-theme="night"] .meter-console .meter-passenger-fields>summary{color
   background:#245e57;color:#fff;border-color:#75c7b5}
 }
 
+
+/* 締め日で区切る月間売上表（既存の日報計算結果のみ使用） */
+.monthly-sales-panel{margin-top:16px}
+.monthly-sales-controls{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.monthly-sales-controls .control{min-height:46px}
+.monthly-sales-period{
+ background:#edf5f7;border:1px solid #d4e4e9;border-radius:10px;
+ padding:10px 12px;font-size:14px;color:#26485c;line-height:1.5}
+.monthly-sales-period strong{font-variant-numeric:tabular-nums}
+.monthly-sales-scroll{
+ width:100%;overflow-x:auto;max-width:100%;border:1px solid #d4e3e9;
+ border-radius:12px;margin-top:15px;scrollbar-width:thin}
+.monthly-sales-table{
+ border-collapse:separate;border-spacing:0;width:100%;min-width:1000px;
+ white-space:nowrap;font-size:13px;font-variant-numeric:tabular-nums}
+.monthly-sales-table th,.monthly-sales-table td{
+ padding:11px 10px;text-align:right;border-bottom:1px solid #dfe9ee}
+.monthly-sales-table th:first-child{
+ text-align:left;position:sticky;left:0;background:#f4fafb;z-index:2;
+ border-right:1px solid #d4e3e9}
+.monthly-sales-table thead th{
+ background:#eaf3f7;color:#284f62;font-size:12px;position:sticky;top:0}
+.monthly-sales-table thead th:first-child{z-index:3;background:#eaf3f7}
+.monthly-sales-table tbody tr:nth-child(even) td{background:#f7fafb}
+.monthly-sales-table .monthly-total th,
+.monthly-sales-table .monthly-total td{
+ background:#d8ede8!important;font-weight:850;color:#144e47;
+ border-top:2px solid #73b9aa;border-bottom:0}
+html[data-ui-theme="night"] .monthly-sales-period{
+ background:#274255;color:#e6f4fa;border-color:#486b81}
+html[data-ui-theme="night"] .monthly-sales-table th,
+html[data-ui-theme="night"] .monthly-sales-table td{border-color:#3e5a70}
+html[data-ui-theme="night"] .monthly-sales-table thead th,
+html[data-ui-theme="night"] .monthly-sales-table th:first-child{
+ background:#243e55;color:#e5f7ff}
+html[data-ui-theme="night"] .monthly-sales-table tbody tr:nth-child(even) td{
+ background:#20364c}
+html[data-ui-theme="night"] .monthly-sales-table .monthly-total th,
+html[data-ui-theme="night"] .monthly-sales-table .monthly-total td{
+ background:#20564e!important;color:#e3fff6}
+@media(max-width:480px){
+ .monthly-sales-controls{grid-template-columns:1fr;gap:9px}
+ .monthly-sales-panel .actions .btn{width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -1897,6 +1943,7 @@ async function ensureAdminFreshFirestore(scope,generation){
 }
 async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
+ resetMonthlySales(); // The previous UID's report must never be displayed after a login change.
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;accountScopeLoaded=false;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
@@ -3939,9 +3986,124 @@ function opsHighwayPanel(shift){
   +(entries?'<div class="operations-history-list">'+entries+'</div>':'<p class="subtle">利用履歴はありません。</p>')
   +'<div class="actions"><button type="button" class="btn teal" data-tab="highway">高速道路利用一覧（全詳細）</button></div>');
 }
+// Monthly sales closing date is an account-specific preference.
+// The report stays outside the active duty and is fetched only on request.
+let monthlySalesMonth=dateStamp().slice(0,7),monthlySalesEpoch=0;
+let monthlySalesData=null,monthlySalesBusy=false,monthlySalesMessage='';
+function monthlySalesClosingDay(){
+ const value=String(model.prefs?.monthlySalesCloseDay||'end');
+ return value==='end'||/^(?:[1-9]|[12]\\d|3[01])$/.test(value)?value:'end';
+}
+function monthlySalesPeriod(month,closingDay){
+ if(!/^\\d{4}-(?:0[1-9]|1[0-2])$/.test(month))
+  throw Error('締め月が正しくありません');
+ const [y,m]=month.split('-').map(Number);
+ if(y<2000||y>2100)throw Error('締め月の年が対象外です');
+ const endOf=(year,index)=>{
+  const last=new Date(Date.UTC(year,index,0)).getUTCDate();
+  const day=closingDay==='end'?last:Math.min(Number(closingDay),last);
+  if(!Number.isInteger(day)||day<1)return null;
+  return new Date(Date.UTC(year,index-1,day));
+ };
+ const end=endOf(y,m),previous=endOf(m===1?y-1:y,m===1?12:m-1);
+ if(!end||!previous)throw Error('締め日が正しくありません');
+ const start=new Date(previous.getTime()+86400000);
+ return {startDate:start.toISOString().slice(0,10),
+  endDate:end.toISOString().slice(0,10)};
+}
+function resetMonthlySales(){
+ monthlySalesEpoch++;monthlySalesBusy=false;monthlySalesData=null;monthlySalesMessage='';
+}
+function renderMonthlySales(){
+ const day=monthlySalesClosingDay();
+ const choices='<option value="end" '+(day==='end'?'selected':'')+'>末日</option>'+
+  Array.from({length:31},(_,i)=>{
+   const value=String(i+1);
+   return '<option value="'+value+'" '+(day===value?'selected':'')+'>'+value+'日</option>';
+  }).join('');
+ let period;
+ try{period=monthlySalesPeriod(monthlySalesMonth,day);}
+ catch{return '<section class="card"><h2 class="h2">月間売上表</h2><p class="warn">締め期間を確認できません。</p></section>';}
+ const data=monthlySalesData;
+ const cols=['乗務','営業回数','メーター売上','割引','GO手数料','Uber配車手数料','現金納金','ETC納金','総納金'];
+ const keys=['duties','rides','meter','discount','goFee','uberSurcharge','cashRemittance','etcRemittance','totalRemittance'];
+ const row=(day,item,summary=false)=>'<tr'+(summary?' class="monthly-total"':'')+'><th scope="row">'+safeText(day)+'</th>'+
+  keys.map((key,i)=>'<td>'+(
+   i<2?String(item[key]||0)+(i===0?'乗務':'件'):money(item[key]||0)
+  )+'</td>').join('')+'</tr>';
+ const table=data&&data.startDate===period.startDate&&data.endDate===period.endDate?
+  '<div class="monthly-sales-scroll" role="region" aria-label="月間売上の表" tabindex="0"><table class="monthly-sales-table"><thead><tr><th scope="col">乗務日</th>'+
+  cols.map(c=>'<th scope="col">'+c+'</th>').join('')+'</tr></thead><tbody>'+
+  data.days.map(item=>row(item.date,item)).join('')+
+  row('期間合計',data.sum,true)+'</tbody></table></div>'+
+  '<p class="caption-note">対象：入庫済み '+data.sum.duties+'乗務、未入庫 '+data.unfinished+'乗務（集計対象外）。'+
+  '集計値は既存の料金・売上計算の結果を日別に加算しています。ゴミ箱内の日報は含みません。</p>':
+  '<p class="caption-note">対象期間の本人Firestore原本を取得すると日別の売上表が表示されます。</p>';
+ return '<section class="card monthly-sales-panel" aria-label="締め日と月間売上表">'+
+  '<h2 class="h2">締め日・月間売上表</h2>'+
+  '<p class="helper">締め日は利用者ごとに保存します。月は締め月を指定してください。</p>'+
+  '<div class="monthly-sales-controls">'+
+   '<label class="field"><span class="field-label">締め日</span><select class="control" id="monthlySalesCloseDay" '+(!canEditNow()?'disabled':'')+'>'+choices+'</select></label>'+
+   '<label class="field"><span class="field-label">締め月</span><input class="control" type="month" id="monthlySalesMonth" value="'+safeText(monthlySalesMonth)+'"></label>'+
+  '</div><p class="monthly-sales-period">対象期間：<strong>'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</strong></p>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="loadMonthlySales" '+(monthlySalesBusy?'disabled aria-busy="true"':'')+'>月間売上をFirestoreから集計</button></div>'+
+  (monthlySalesMessage?'<p class="'+(monthlySalesData?'panel-strip':'caption-note')+'" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
+  table+'</section>';
+}
+async function loadMonthlySales(){
+ if(monthlySalesBusy)return;
+ if(!memberDiary()||!accountDiary.ready()){
+  monthlySalesMessage='本人Firestoreのログインを確認してください。';render();return;
+ }
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ let period;
+ try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
+ catch(error){monthlySalesMessage=String(error.message||error);render();return;}
+ const epoch=++monthlySalesEpoch;
+ const isCurrent=()=>epoch===monthlySalesEpoch&&generation===accountScopeGeneration&&
+  accountScope.uid===uid&&memberDiary();
+ monthlySalesBusy=true;monthlySalesData=null;monthlySalesMessage='本人Firestoreから指定期間だけ取得しています…';render();
+ try{
+  const response=await accountDiary.request('syncHistoryRange',period);
+  if(!isCurrent())return;
+  if(response?.startDate!==period.startDate||response?.endDate!==period.endDate||
+     !Array.isArray(response.shifts))throw Error('指定期間の取得結果を照合できません');
+  const fields=['rides','meter','discount','goFee','uberSurcharge',
+   'cashRemittance','etcRemittance','totalRemittance'];
+  const empty=()=>Object.fromEntries(['duties',...fields].map(x=>[x,0]));
+  const sum=empty(),byDay=new Map(),seen=new Set();
+  let unfinished=0;
+  for(const item of response.shifts){
+   const shift=item.shift,id=item.id,date=String(shift?.date||'');
+   if(seen.has(id)||shift?.id!==id||date<period.startDate||date>period.endDate||
+      !Number.isSafeInteger(Number(item.revision))||Number(item.revision)<1)
+    throw Error('日報の乗務ID・日付・更新番号が一致しません');
+   seen.add(id);
+   if(!shift.endedAt&&!shift.endedIso){unfinished++;continue;}
+   const t=totals(shift.records,shift.settings,shift.date);
+   const daily=byDay.get(date)||{date,...empty()};
+   daily.duties++;sum.duties++;
+   for(const key of fields){
+    if(!Number.isFinite(t[key]))throw Error('正式計算の数値が不正です：'+id);
+    daily[key]+=t[key];sum[key]+=t[key];
+   }
+   byDay.set(date,daily);
+  }
+  if(!isCurrent())return;
+  monthlySalesData={...period,days:[...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date)),
+   sum,unfinished};
+  monthlySalesMessage='取得完了：'+sum.duties+'乗務を集計しました。';
+ }catch(error){
+  if(isCurrent()){monthlySalesData=null;
+   monthlySalesMessage='月間売上を取得できません：'+String(error?.message||error);}
+ }finally{
+  if(isCurrent()){monthlySalesBusy=false;render();}
+ }
+}
+
 function renderOperations(shift){
  const head=titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。');
- if(!shift)return head+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
+ if(!shift)return head+renderMonthlySales()+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
  const now=new Date(),v=liveBusinessNumbers(shift,now),t=v.t;
  const tile=(label,value,attr='')=>'<div class="operations-kpi"><small>'+label+'</small><strong '+attr+'>'+value+'</strong></div>';
  const overview='<section class="operations-overview" aria-label="主要な営業情報"><div class="operations-kpis">'
@@ -3962,7 +4124,7 @@ function renderOperations(shift){
  const panels=sections.map(([key,title,body])=>
   '<details name="operations-dashboard" class="details operations-fold" data-operation-panel="'+key+'" '
   +(key===selected?'open':'')+'><summary>'+title+'</summary><div class="inner">'+body+'</div></details>').join('');
- return head+overview+warn+panels;
+ return head+overview+renderMonthlySales()+warn+panels;
 }
 function renderLiveStatus(shift,embedded=false){if(!shift)return `${embedded?'':titleBlock('営業状況','LIVE DASHBOARD','出庫後に現在の営業状況を表示します。')}<div class="card">現在の乗務がありません。過去の乗務は営業履歴から確認してください。</div>`;
  const v=liveBusinessNumbers(shift),elapsed=v.elapsed,avg=v.t.rides?v.t.meter/v.t.rides:0,check=meterCheckValues(v.t);
@@ -5569,6 +5731,7 @@ function discardInvalidAutoDropDistance(draft){
 }
 let gpsAlightPending=false;
 function handleAction(action,id){
+ if(action==='loadMonthlySales'){void loadMonthlySales();return;}
  if(action==='highwayAdd'){
   const shift=getShift(),draft=shift?.draft;
   if(!draft||draft.kind!=='ride'||draft.editId||!['実','空'].includes(id))return;
@@ -6845,7 +7008,20 @@ appEl.addEventListener('click',event=>{
  }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;if(event.target.matches?.('.meter-summary-more')){for(const el of appEl.querySelectorAll('.meter-summary-more'))if(el!==event.target&&el.open!==event.target.open)el.open=event.target.open;}},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
-appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
+appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{
+ if(event.target.id==='monthlySalesCloseDay'){
+  if(!canEditNow())return;
+  const value=String(event.target.value||'end');
+  if(value!=='end'&&!/^(?:[1-9]|[12]\\d|3[01])$/.test(value))return;
+  model.prefs??={};model.prefs.monthlySalesCloseDay=value;
+  resetMonthlySales();saveLater();render();return;
+ }
+ if(event.target.id==='monthlySalesMonth'){
+  const value=String(event.target.value||'');
+  if(!/^\\d{4}-(?:0[1-9]|1[0-2])$/.test(value))return;
+  monthlySalesMonth=value;resetMonthlySales();render();return;
+ }
+ if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
  if(event.target.matches('[data-ride-field]')){const key=event.target.dataset.rideField;if(!RIDE_FIELD_PREFS.some(([name])=>name===key))return;model.prefs.rideFieldVisibility??={};model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;}
  if(event.target.matches('[data-cancel-meter-mode]')){model.prefs.cancelMeterMode=event.target.value==='reset'?'reset':'retain';saveLater();render();return;}
