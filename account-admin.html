@@ -50,8 +50,8 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <section id="workspace" hidden>
 <div class="warning">⚠ 完全削除は復旧できません。テスト用と確認されたアカウントだけを対象にしてください。管理者・旧Google原本は対象外です。端末がオフラインの場合、端末の未同期データを遠隔で消すことはできません。</div>
 <section class="panel">
-<h2>登録アカウント一覧</h2>
-<p class="muted">名前はオプチャネームです。一般利用者に他人の一覧は公開されません。</p>
+<h2>登録アカウント一覧（管理者を含む）</h2>
+<p class="muted">一般利用者はオプチャネーム、管理者は「管理者」と表示します。Firestoreの登録ユーザーと管理者登録を統合表示します。</p>
 <label for="search">検索（オプチャネーム・UID）</label>
 <input id="search" type="search" placeholder="名前またはUID" autocomplete="off">
 <div class="actions"><button id="reload">登録一覧を更新</button></div>
@@ -59,8 +59,10 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="listCount" class="muted"></p>
 </section>
 <section class="panel" id="selectedPanel" hidden>
-<h2>選択アカウントの削除管理</h2>
+<h2>選択アカウントのデータ管理</h2>
 <div id="targetDetails"></div>
+<div id="adminSourceNotice" class="warning" hidden>管理者自身のFirestore原本と設定は、既存の本人認証で直接閲覧できます。<strong>以前のGoogleスプレッドシートに保存された日報はこの画面に含まれません。</strong>旧日報・印刷データは <a href="./index.html">TAXIAPP本体</a> または従来のGoogle帳票から確認してください。管理者自身の削除操作はここでは無効です。</div>
+<div id="accountDeletionSection">
 <p class="muted">名前やUIDだけではテスト用と断定できません。先にサーバー照合で日報件数を確認し、本人の試験用データだけを「テスト用」に指定してください。</p>
 <label for="confirmUid">確認：選択したUIDを正確に入力</label>
 <input id="confirmUid" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="UIDをそのまま入力">
@@ -71,6 +73,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </div>
 <div id="previewDetails" class="warning" hidden></div>
 <div class="actions"><button id="deleteAccount" class="danger" disabled>認証と全データを完全削除</button></div>
+</div>
 <section id="adminDataPanel" class="panel">
 <h2>利用者別データ閲覧・個別日報削除</h2>
 <p class="helper">登録・日報・設定を管理者として読み取り専用で確認します。日報は50件ずつ取得し、本人の計算済み金額を再計算しません。閲覧操作はサーバーに記録されます。</p>
@@ -87,7 +90,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <h2>選択した日報原本（閲覧専用）</h2>
 <p id="dutyHeader" class="helper"></p>
 <pre id="dutyDetail"></pre>
-<div class="warning">
+<div class="warning" id="dutyTrashSection">
 <strong>個別削除（ゴミ箱へ移動）</strong>
 <p>入庫済みの1乗務だけ、更新番号を確認してゴミ箱へ移します。料金・売上の記録を再計算せず、復旧可能な原本を保持します。実営業記録の完全消去は行いません。</p>
 <label for="trashConfirmId">削除する乗務IDを正確に入力</label>
@@ -101,6 +104,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
-<script type="module" src="./account-admin.js?v=20261024-duties-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-admin-self-2"></script>
 </body>
 </html>

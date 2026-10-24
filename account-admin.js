@@ -4,7 +4,7 @@
  */
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
 import {getAuth,onAuthStateChanged,GoogleAuthProvider,signInWithPopup,signOut,reauthenticateWithPopup} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
-import {getFirestore,doc,getDocFromServer,collection,query,limit,getDocsFromServer} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
+import {getFirestore,doc,getDocFromServer,collection,query,limit,getDocsFromServer,orderBy,documentId,startAfter} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js';
 import './firebase-config.js';
 const $=id=>document.getElementById(id);
@@ -33,7 +33,7 @@ function selectedIsValid(){
 }
 function validSelectedDuty(allowBusy=false){
  return (allowBusy||!busy)&&!!selected&&!!selectedDuty&&
-  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&
+  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&!selected.isAdmin&&
   $('trashConfirmId').value.trim()===selectedDuty.shiftId&&
   $('trashConfirmAck').checked&&selectedDuty.trashed!==true&&
   (selectedDuty.shift?.endedAt||selectedDuty.shift?.endedIso);
@@ -44,9 +44,9 @@ function buttons(){
  $('loadSettings').disabled=!selected||busy;
  $('moreDuties').disabled=!selected||busy||!dutyCursor;
  $('trashDuty').disabled=!validSelectedDuty();
- $('markTest').disabled=!ok||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
- $('preview').disabled=!ok||selected.status==='deleted';
- $('deleteAccount').disabled=!ok||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
+ $('markTest').disabled=!ok||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
+ $('preview').disabled=!ok||selected.isAdmin||selected.status==='deleted';
+ $('deleteAccount').disabled=!ok||selected.isAdmin||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
  for(const id of ['reload','search','signIn','signOut'])$(id).disabled=busy;
 }
 function clearDutyPanel(){
@@ -62,12 +62,15 @@ function selectUser(user){
  clearDutyPanel();
  selected=user;preview=null;
  $('selectedPanel').hidden=false;
+ $('accountDeletionSection').hidden=!!user.isAdmin;
+ $('adminSourceNotice').hidden=!user.isAdmin;
+ $('dutyTrashSection').hidden=!!user.isAdmin;
  $('confirmUid').value='';$('ack').checked=false;
  $('previewDetails').hidden=true;
  $('targetDetails').textContent='';
  for(const [key,value] of [
   ['オプチャネーム',user.openChatName||'（未登録）'],
-  ['UID',user.uid],['状態',user.status||'未設定'],
+  ['UID',user.uid],['区分',user.isAdmin?'管理者':'一般利用者'],['状態',user.status||'未設定'],
   ['テスト用指定',user.testOnly?'あり':'なし'],
   ['登録日時',shortDate(user.registeredAt)]
  ]){
@@ -86,7 +89,7 @@ function renderList(){
   const tr=document.createElement('tr');
   for(const [txt,cls] of [
    [person.openChatName||'（未設定）',''],[person.uid,'code'],
-   [person.status||'未設定',''],[person.testOnly?'テスト用':'未指定','']
+   [person.isAdmin?(person.adminEnabled?'管理者':'管理者登録履歴'):(person.status||'未設定'),''],[person.isAdmin?'削除対象外':person.testOnly?'テスト用':'未指定','']
   ]){
    const td=document.createElement('td');td.textContent=txt;if(cls)td.className=cls;tr.append(td);
   }
@@ -94,28 +97,58 @@ function renderList(){
   btn.textContent='選択';btn.addEventListener('click',()=>selectUser(person));
   td.append(btn);tr.append(td);tbody.append(tr);
  }
- $('listCount').textContent='表示 '+shown.length+' 件（最大150件を取得）';
+ $('listCount').textContent='表示 '+shown.length+' 件（一般利用者は最大150件、管理者も含む）';
 }
 async function loadList(){
- const myEpoch=epoch;
- const snap=await getDocsFromServer(query(collection(db,'users'),limit(150)));
- if(myEpoch!==epoch||!adminUid)return;
- users=snap.docs.map(s=>{
-  const value=s.data()||{};
-  // The authoritative UID is ALWAYS the Firestore document ID, never
-  // a field from remote data (which might be stale or malformed).
-  return {
-   uid:s.id,
-   openChatName:typeof value.openChatName==='string'?value.openChatName:'',
-   status:typeof value.status==='string'?value.status:'',
-   testOnly:value.testOnly===true,
-   registeredAt:value.registeredAt
+ const myEpoch=epoch,ownUid=adminUid;
+ // users と admins を別々に読み、重複するUIDは一件に統合する。
+ // 管理者は users ドキュメントを持たない場合も必ず表示する。
+ const [members,administrators]=await Promise.all([
+  getDocsFromServer(query(collection(db,'users'),limit(150))),
+  getDocsFromServer(query(collection(db,'admins'),limit(150)))
+ ]);
+ if(myEpoch!==epoch||adminUid!==ownUid||!adminUid)return;
+ const records=new Map();
+ for(const snap of members.docs){
+  const data=snap.data()||{};
+  records.set(snap.id,{
+   uid:snap.id,
+   openChatName:typeof data.openChatName==='string'?data.openChatName:'',
+   status:typeof data.status==='string'?data.status:'',
+   testOnly:data.testOnly===true,
+   registeredAt:data.registeredAt,
+   isAdmin:false,adminEnabled:false
+  });
+ }
+ for(const snap of administrators.docs){
+  const prior=records.get(snap.id)||{
+   uid:snap.id,openChatName:'',status:'管理者登録',
+   testOnly:false,registeredAt:null
   };
- })
-  .sort((a,b)=>String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
+  records.set(snap.id,{
+   ...prior,isAdmin:true,adminEnabled:snap.data()?.enabled===true,
+   testOnly:false
+  });
+ }
+ // 管理者本人の権限は、ログイン時に admins/{uid} を直接読んで確定済み。
+ // 管理者一覧の150件制限で漏れても、usersに同じUIDがあっても必ず管理者と扱う。
+ const ownProfile=records.get(ownUid)||{
+  uid:ownUid,openChatName:'',status:'管理者登録',
+  testOnly:false,registeredAt:null
+ };
+ records.set(ownUid,{
+  ...ownProfile,isAdmin:true,adminEnabled:true,testOnly:false
+ });
+ users=[...records.values()].map(u=>({
+  ...u,
+  openChatName:u.openChatName||(u.isAdmin?
+   (u.uid===ownUid?'管理者（自分）':'管理者'):'')
+ })).sort((a,b)=>
+  (a.uid===ownUid?-1:b.uid===ownUid?1:0)||
+  String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
  selected=null;preview=null;clearDutyPanel();$('selectedPanel').hidden=true;
  renderList();
- notice('登録一覧を更新しました。');
+ notice('管理者を含む登録一覧を更新しました。');
 }
 async function execute(fn,requireAdmin=true){
  if(busy||(requireAdmin&&!adminUid))return;
@@ -163,6 +196,51 @@ $('ack').addEventListener('change',buttons);
 $('trashConfirmId').addEventListener('input',buttons);
 $('trashConfirmAck').addEventListener('change',buttons);
 
+// 自分のFirestore原本と個人設定は既存の本人UID読み取りルールで直接参照する。
+ // Cloud Functionsが未配信でも管理者自身のデータだけは確認可能。
+ // 他人のUIDへの直接参照はせず、管理者認証済みCallableだけを利用する。
+function viewingOwnAdmin(uid){
+ return !!adminUid&&uid===adminUid&&auth.currentUser?.uid===uid&&
+  selected?.uid===uid&&selected.isAdmin&&selected.adminEnabled;
+}
+async function getDutyList(uid,after){
+ if(!viewingOwnAdmin(uid))return (await api.listDuties({uid,afterId:after||''})).data;
+ const items=collection(db,'privateDuties',uid,'shifts');
+ const parameters=[orderBy(documentId()),limit(50)];
+ if(after)parameters.splice(1,0,startAfter(after));
+ const snapshots=await getDocsFromServer(query(items,...parameters));
+ const list=snapshots.docs.map(entry=>{
+  const record=entry.data()||{},shift=record.shift||{};
+  return {
+   id:entry.id,
+   date:String(shift.date||''),
+   startedIso:String(shift.startedIso||''),
+   ended:Boolean(shift.endedAt||shift.endedIso),
+   recordCount:Array.isArray(shift.records)?shift.records.length:0,
+   revision:record.revision,
+   trashed:record.trashed===true
+  };
+ });
+ return {uid,shifts:list,
+  nextAfterId:list.length===50?list[list.length-1].id:null};
+}
+async function getDutyRecord(uid,shiftId){
+ if(!viewingOwnAdmin(uid))return (await api.duty({uid,shiftId})).data;
+ const snap=await getDocFromServer(doc(db,'privateDuties',uid,'shifts',shiftId));
+ if(!snap.exists())throw Error('指定したFirestore原本は見つかりません');
+ const record=snap.data();
+ if(record?.shift?.id!==shiftId||record?.format!=='TAXIAPP_PRIVATE_SHIFT_V1')
+  throw Error('乗務IDまたは原本形式が一致しません');
+ return {uid,shiftId,revision:record.revision,
+  trashed:record.trashed===true,shift:record.shift};
+}
+async function getAccountPrefs(uid){
+ if(!viewingOwnAdmin(uid))return (await api.settings({uid})).data;
+ const snap=await getDocFromServer(doc(db,'accountSettings',uid));
+ return snap.exists()?
+  {uid,exists:true,prefs:snap.data()?.prefs||{}}:
+  {uid,exists:false};
+}
 function displayDutyRows(){
  const container=$('dutyRows');container.textContent='';
  for(const item of dutyRows){
@@ -188,27 +266,27 @@ async function loadDuties(reset=true){
  const uid=selected.uid,version=epoch;
  if(reset)clearDutyPanel();
  const start=reset?'':dutyCursor;
- const result=await api.listDuties({uid,afterId:start||''});
+ const result=await getDutyList(uid,start||'');
  if(version!==epoch||selected?.uid!==uid)return;
- if(result.data?.uid!==uid||!Array.isArray(result.data?.shifts))
+ if(result?.uid!==uid||!Array.isArray(result?.shifts))
   throw Error('日報一覧のUIDが一致しません');
  dutyUid=uid;
- dutyRows=[...dutyRows,...result.data.shifts];
- dutyCursor=result.data.nextAfterId||null;
+ dutyRows=[...dutyRows,...result.shifts];
+ dutyCursor=result.nextAfterId||null;
  displayDutyRows();
- notice('日報 '+dutyRows.length+' 件を表示しています。');
+ notice('Firestore日報 '+dutyRows.length+' 件を表示しています。'+(selected.isAdmin?' 旧Google原本はTAXIAPP本体で確認してください。':''));
 }
 async function readDuty(shiftId){
  if(!selected)return;
  const uid=selected.uid,version=epoch;
- const result=await api.duty({uid,shiftId});
+ const duty=await getDutyRecord(uid,shiftId);
  if(version!==epoch||selected?.uid!==uid)return;
- const duty=result.data;
  if(!duty||duty.uid!==uid||duty.shiftId!==shiftId||
     duty.shift?.id!==shiftId||!Number.isSafeInteger(duty.revision))
   throw Error('日報原本のUID・ID・更新番号が一致しません');
  selectedDuty=duty;dutyUid=uid;
  $('dutySelected').hidden=false;
+ $('dutyTrashSection').hidden=!!selected.isAdmin;
  $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
   '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
  // No HTML rendering: contents may contain passengers' addresses and GPS.
@@ -222,11 +300,11 @@ $('moreDuties').addEventListener('click',()=>execute(()=>loadDuties(false)));
 $('loadSettings').addEventListener('click',()=>execute(async()=>{
  if(!selected)return;
  const uid=selected.uid,version=epoch;
- const result=await api.settings({uid});
+ const result=await getAccountPrefs(uid);
  if(version!==epoch||selected?.uid!==uid)return;
- if(result.data?.uid!==uid)throw Error('設定のUIDが一致しません');
- $('settingsDetail').textContent=result.data.exists?
-  JSON.stringify(result.data.prefs,null,2):'設定は未登録です';
+ if(result?.uid!==uid)throw Error('設定のUIDが一致しません');
+ $('settingsDetail').textContent=result.exists?
+  JSON.stringify(result.prefs,null,2):'設定は未登録です';
  $('settingsDetail').hidden=false;
  notice('本人の設定を閲覧用に取得しました。変更・保存は行いません。');
 }));
@@ -250,7 +328,7 @@ $('trashDuty').addEventListener('click',()=>execute(async()=>{
  await loadDuties(true);
 }));
 $('markTest').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid()||selected.testOnly||!preview||preview.uid!==selected.uid)return;
+ if(!selectedIsValid()||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid)return;
  const target=selected,checked=preview;
  if(!window.confirm('日報 '+checked.shiftCount+' 件を含むアカウントをテスト用として指定します。実営業アカウントには実行しないでください。'))return;
  await recentAdminLogin();
@@ -262,7 +340,7 @@ $('markTest').addEventListener('click',()=>execute(async()=>{
  await loadList();
 }));
 $('preview').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid())return;
+ if(!selectedIsValid()||selected.isAdmin)return;
  const target=selected;
  const response=await api.preview({uid:target.uid});
  preview=response.data;
@@ -277,7 +355,7 @@ $('preview').addEventListener('click',()=>execute(async()=>{
  notice('削除対象を確認しました。実行する場合はもう一度UIDを確認してください。');
 }));
 $('deleteAccount').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid()||!preview||preview.uid!==selected.uid||!selected.testOnly)return;
+ if(!selectedIsValid()||selected.isAdmin||!preview||preview.uid!==selected.uid||!selected.testOnly)return;
  const target=selected,expected=preview;
  const exact='完全削除';
  if(window.prompt('取り消せません。実行する場合は「'+exact+'」と入力してください。')!==exact)return;
