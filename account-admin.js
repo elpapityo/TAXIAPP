@@ -154,9 +154,13 @@ async function loadList(){
  for(const snap of administrators.docs){
   const adminName=typeof snap.data()?.openChatName==='string'?
    snap.data().openChatName:'';
-  const prior=records.get(snap.id)||{
-   uid:snap.id,openChatName:adminName,storedOpenChatName:adminName,
-   status:'管理者登録',testOnly:false,registeredAt:null
+  const existing=records.get(snap.id);
+  const useProfileName=existing&&['active','suspended'].includes(existing.status);
+  const prior=useProfileName?existing:{
+   ...(existing||{
+    uid:snap.id,status:'管理者登録',testOnly:false,registeredAt:null
+   }),
+   openChatName:adminName,storedOpenChatName:adminName
   };
   records.set(snap.id,{
    ...prior,isAdmin:true,adminEnabled:snap.data()?.enabled===true,
@@ -167,10 +171,14 @@ async function loadList(){
  // 管理者一覧の150件制限で漏れても、usersに同じUIDがあっても必ず管理者と扱う。
  const ownName=typeof ownAdmin.data()?.openChatName==='string'?
   ownAdmin.data().openChatName:'';
- const ownProfile=records.get(ownUid)||{
-  uid:ownUid,openChatName:ownName,storedOpenChatName:ownName,
-  status:'管理者登録',testOnly:false,registeredAt:null
- };
+ const ownStored=records.get(ownUid);
+ const ownProfile=ownStored&&['active','suspended'].includes(ownStored.status)?
+  ownStored:{
+   ...(ownStored||{
+    uid:ownUid,status:'管理者登録',testOnly:false,registeredAt:null
+   }),
+   openChatName:ownName,storedOpenChatName:ownName
+  };
  records.set(ownUid,{
   ...ownProfile,isAdmin:true,adminEnabled:true,testOnly:false
  });
@@ -185,11 +193,33 @@ async function loadList(){
  renderList();
  notice('管理者を含む登録一覧を更新しました。');
 }
+function adminActionError(error){
+ const code=String(error?.code||'');
+ if(code.includes('not-found')||code.includes('unavailable')&&
+    String(error?.message||'').includes('404')){
+  return 'Firebaseの管理機能が本番に配信されていない可能性があります。'+
+   'この画面だけでは名前を保存できません。'+
+   'Firebase Functionsの配信状況を確認してください。'+
+   '（エラー：'+code+'）';
+ }
+ if(code.includes('unauthenticated'))
+  return '管理者の再ログイン・再認証が必要です。'+String(error?.message||'');
+ if(code.includes('permission-denied'))
+  return 'サーバーで管理者権限を確認できません。'+String(error?.message||'');
+ if(code.includes('aborted'))
+  return '変更前の名前が別の端末で更新されました。一覧を更新して再確認してください。';
+ return String(error?.message||error);
+}
 async function execute(fn,requireAdmin=true){
  if(busy||(requireAdmin&&!adminUid))return;
  busy=true;buttons();const myEpoch=epoch;
  try{await fn();}catch(e){
-  if(epoch===myEpoch)notice('操作できません：'+String(e?.message||e),true);
+  if(epoch===myEpoch){
+   const message=adminActionError(e);
+   notice('操作できません：'+message,true);
+   if(!$('adminNicknameSection').hidden)
+    $('adminNameStatus').textContent='保存できません：'+message;
+  }
  }finally{busy=false;buttons();}
 }
 async function recentAdminLogin(){
@@ -536,12 +566,30 @@ $('cancelAdminName').addEventListener('click',()=>{
  $('adminNicknameSection').hidden=true;
  $('adminNameStatus').textContent='';
 });
+async function currentNameSource(uid){
+ const [user,admin]=await Promise.all([
+  getDocFromServer(doc(db,'users',uid)),
+  getDocFromServer(doc(db,'admins',uid))
+ ]);
+ if(user.exists()&&['active','suspended'].includes(user.data()?.status))
+  return {source:'users',name:String(user.data()?.openChatName||'')};
+ if(admin.exists()&&admin.data()?.enabled===true)
+  return {source:'admins',name:String(admin.data()?.openChatName||'')};
+ throw Error('登録アカウントの状態が変わりました。更新して確認してください');
+}
 $('saveAdminName').addEventListener('click',()=>execute(async()=>{
  if(!selected||$('adminNicknameSection').hidden)return;
  const target=selected,uid=target.uid;
  const current=target.storedOpenChatName||'';
  const next=normalizedAdminName($('adminNewName').value);
  if(next===current)throw Error('オプチャネームが変更されていません');
+ // 表示の代替名「管理者（自分）」を旧名として書き込まない。
+ // 特に users が未登録の管理者は admins の名前を正規原本として読む。
+ const before=await currentNameSource(uid);
+ if(selected!==target||auth.currentUser?.uid!==adminUid)
+  throw Error('確認中に対象アカウントが変わりました');
+ if(before.name!==current)
+  throw Error('登録名が変更されています。登録一覧を更新してください');
  if(!window.confirm('UID '+uid+' の登録名を「'+current+
   '」から「'+next+'」に変更しますか？'))return;
  await recentAdminLogin();
@@ -550,6 +598,8 @@ $('saveAdminName').addEventListener('click',()=>execute(async()=>{
  const result=await api.updateOpenChatName({
   uid,confirmationUid:uid,expectedName:current,newName:next
  });
+ if(result.data?.source!==before.source)
+  throw Error('更新された保存先が想定と異なります。サーバーを確認してください');
  if(result.data?.uid!==uid||result.data.newName!==next||
     !['users','admins'].includes(result.data.source))
   throw Error('オプチャネーム変更結果を照合できません');
@@ -557,7 +607,9 @@ $('saveAdminName').addEventListener('click',()=>execute(async()=>{
  // ローカル表示だけ書き換えることはしない。
  await loadList();
  const verified=users.find(u=>u.uid===uid);
- if(!verified||verified.storedOpenChatName!==next)
+ const serverName=await currentNameSource(uid);
+ if(!verified||serverName.source!==before.source||
+    serverName.name!==next||verified.storedOpenChatName!==next)
   throw Error('更新後の登録名を確認できません。再読み込みしてください');
  selectUser(verified);
  notice('オプチャネームを更新し、サーバーから読み戻し確認しました。');
