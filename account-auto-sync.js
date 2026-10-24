@@ -330,7 +330,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
       '利用登録がありません。認証済みGoogleアカウントでログインしてください';
      status(reason);deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;
     }
-    displayOpenChatName(typeof profile?.openChatName==='string'?profile.openChatName:'');
+    // 管理者本人が users 未登録の場合も admins の登録名を正しく表示する。
+    const accountName=admin&&(!profile||!['active','suspended'].includes(profile.status))?
+     adminDoc?.openChatName:profile?.openChatName;
+    displayOpenChatName(typeof accountName==='string'?accountName:'');
     // The account's duty namespace MUST be selected before either settings
     // reconciliation or editor-session confirmation can access local records.
     await deps.onUserScope?.({
