@@ -27,6 +27,16 @@ table{width:100%;border-collapse:collapse;min-width:680px}th,td{border-bottom:1p
 th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-all}
 .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
 #targetDetails{line-height:1.9;overflow-wrap:anywhere}
+.admin-account-actions{background:#f1f6fc;border:1px solid #cbd9e6;border-radius:10px;padding:13px;margin:12px 0}
+.admin-account-actions strong{display:block;margin:0 0 6px}
+.admin-account-actions .actions{margin-top:8px}
+.admin-account-actions button{font-weight:700}
+.admin-action-form{background:#fff;border:1px solid #cad7e5;border-radius:10px;padding:13px;margin:10px 0}
+.admin-action-form h3{font-size:17px;margin:2px 0 7px}
+.admin-action-form .close-action{min-height:38px}
+.admin-duty-top-actions{position:relative;display:flex;gap:9px;flex-wrap:wrap;padding:11px 0 16px;border-bottom:1px solid #dbe3ec;margin-bottom:14px}
+.admin-duty-top-actions button{font-weight:700}
+#adminNameStatus{white-space:pre-wrap;overflow-wrap:anywhere}
 #settingsDetail{max-height:430px;overflow:auto;white-space:pre-wrap;
  background:#f5f8fb;border:1px solid #cdd7e2;padding:12px;border-radius:8px;
  font:12px/1.55 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere}
@@ -77,8 +87,26 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <section class="panel" id="selectedPanel" hidden>
 <h2>選択アカウントのデータ管理</h2>
 <div id="targetDetails"></div>
+<div class="admin-account-actions">
+<strong>このアカウントの操作</strong>
+<div class="actions">
+<button id="openNameEdit" class="primary" type="button">オプチャネームを変更</button>
+<button id="openAccountDelete" class="danger" type="button">アカウント完全削除（テスト用のみ）</button>
+</div>
+<p class="muted">利用者本人は初回登録後の名前を変更できません。変更できるのは管理者だけです。完全削除は確認されたテスト用一般ユーザーだけに限定します。</p>
+</div>
+<div id="adminNicknameSection" class="admin-action-form" hidden>
+<h3>オプチャネーム変更（管理者専用）</h3>
+<p class="muted">登録されたGoogleアカウントやUIDは変更しません。利用者本人からは変更できません。</p>
+<label for="adminNewName">変更後のオプチャネーム（1～32文字）</label>
+<input id="adminNewName" type="text" maxlength="64" autocomplete="off" spellcheck="false">
+<div class="actions"><button id="saveAdminName" class="primary" type="button">管理者として変更を保存</button><button id="cancelAdminName" type="button">閉じる</button></div>
+<p id="adminNameStatus" role="status" aria-live="polite"></p>
+</div>
 <div id="adminSourceNotice" class="warning" hidden>管理者自身のFirestore原本と設定は、既存の本人認証で直接閲覧できます。<strong>以前のGoogleスプレッドシートに保存された日報はこの画面に含まれません。</strong>旧日報・印刷データは <a href="./index.html">TAXIAPP本体</a> または従来のGoogle帳票から確認してください。管理者自身の削除操作はここでは無効です。</div>
-<div id="accountDeletionSection">
+<div id="accountDeletionSection" class="admin-action-form" hidden>
+<h3>テストアカウントの完全削除</h3>
+<div class="actions"><button id="closeAccountDelete" class="close-action" type="button">削除確認を閉じる</button></div>
 <p class="muted">名前やUIDだけではテスト用と断定できません。先にサーバー照合で日報件数を確認し、本人の試験用データだけを「テスト用」に指定してください。</p>
 <label for="confirmUid">確認：選択したUIDを正確に入力</label>
 <input id="confirmUid" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="UIDをそのまま入力">
@@ -105,8 +133,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <section id="dutySelected" hidden>
 <h2>選択した日報（閲覧・編集・ゴミ箱移動）</h2>
 <p id="dutyHeader" class="helper"></p>
-<div id="dutyDetail" aria-label="日本語で整理した日報明細"></div>
-<div class="actions">
+<div class="admin-duty-top-actions" aria-label="選択した日報の操作">
 <button id="editDuty" class="primary" disabled>この日報を編集（乗降地）</button>
 <button id="trashDutyShortcut" class="danger" disabled>この日報を削除（ゴミ箱へ）</button>
 <button id="restoreDuty" disabled hidden>この日報をゴミ箱から復元</button>
@@ -123,7 +150,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="adminEditStatus" role="status" aria-live="polite"></p>
 <div class="actions"><button id="adminEditSave" class="primary">変更を保存して確認</button><button id="adminEditCancel">編集を閉じる</button></div>
 </div>
-<div class="warning" id="dutyTrashSection">
+<div class="warning" id="dutyTrashSection" hidden>
 <strong>個別削除（ゴミ箱へ移動）</strong>
 <p>入庫済みの1乗務だけ、更新番号を確認してゴミ箱へ移します。<strong>管理者自身のFirestore日報も対象です。</strong>料金・売上は再計算せず、元の原本を保持します。旧Google原本には影響しません。他端末に未同期の記録がある場合は先に同期・照合してください。</p>
 <label for="trashConfirmId">削除する乗務IDを正確に入力</label>
@@ -131,6 +158,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <label><input id="trashConfirmAck" type="checkbox">表示中の本人UID・乗務ID・更新番号・入庫済み状態を確認しました</label>
 <button id="trashDuty" class="danger" disabled>この1乗務をゴミ箱へ移す</button>
 </div>
+<div id="dutyDetail" aria-label="日本語で整理した日報明細"></div>
 </section>
 </section>
 </section>
@@ -138,6 +166,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
-<script type="module" src="./account-admin.js?v=20261025-admin-edit-2"></script>
+<script type="module" src="./account-admin.js?v=20261025-actions-1"></script>
 </body>
 </html>
