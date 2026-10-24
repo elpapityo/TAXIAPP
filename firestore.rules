@@ -17,8 +17,17 @@ service cloud.firestore {
   match /users/{uid} {
    allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
    allow list: if isAdmin();
-   // Future invitations and suspension must run on a trusted backend.
-   allow create, update, delete: if false;
+   // Google OAuth + verified email: self-registration of a NEW ordinary
+   // member only. Any Google account can enroll after this rule is deployed.
+   // No account can self-update, self-unsuspend or grant administrator roles.
+   allow create: if signedIn() && request.auth.uid == uid &&
+     request.auth.token.firebase.sign_in_provider == 'google.com' &&
+     request.auth.token.email_verified == true &&
+     request.resource.data.keys().hasOnly(['status','registeredAt']) &&
+     request.resource.data.keys().hasAll(['status','registeredAt']) &&
+     request.resource.data.status == 'active' &&
+     request.resource.data.registeredAt == request.time;
+   allow update, delete: if false;
   }
   // Only an active account can read/write its OWN settings document.
   // Admin privileges cannot be granted here and other accounts stay private.
