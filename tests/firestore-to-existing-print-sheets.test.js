@@ -251,8 +251,10 @@ assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/本人UID・乗務ID
 returnedUid=uid;
 assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_('shift-999-legacy'),/同じ乗務/,
  'same-ID legacy original must not be automatically converted');
-assert.match(load('index.html'),/ADMIN_FIRESTORE_CUTOVER_ENABLED=false/,
- 'real production cutover stays OFF until separate authorization');
+assert.match(load('index.html'),/ADMIN_FIRESTORE_CUTOVER_ENABLED=true/,
+ '承認された新規日報は最初から本人Firestoreへ保存する');
+assert.match(load('index.html'),/ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false/,
+ '旧Google原本の自動移行は許可されていない');
 assert.match(load('index.html'),/__taxiPrintSummary=deepCopy\(packet.summary\)/);
 assert.doesNotMatch(load('google-apps-script/FirestorePrintPullDraft.gs'),/function doPost\(/);
 console.log('Firestore owner print pull PASS: exact UID, same source recheck, four print sources only, no original/selector/formula writes.');
