@@ -9,6 +9,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
   let deviceSession=null,viewerLogin=false,explicitWriterLogin=false;
+  let pendingRegistration=null,registrationBusy=false,authGeneration=0;
   // A dedicated print session may READ its own duties but never take over
   // the Galaxy's last-login-wins writerSessionId.
   const printViewerMode=(()=>{
@@ -33,6 +34,19 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(signOut)signOut.disabled=!user;
    const takeOver=$('accountTakeOver');
    if(takeOver)takeOver.hidden=printViewerMode||!user||!enabled||deviceSession?.state()!=='viewer';
+  }
+  function displayRegistration(open){
+   const panel=$('accountRegistration');
+   if(panel)panel.hidden=!open;
+   const button=$('accountRegister');
+   if(button)button.disabled=!open||registrationBusy;
+   if(!open){const input=$('accountOpenChatName');if(input)input.value='';}
+  }
+  function displayOpenChatName(name){
+   const label=$('accountOpenChatNameLabel');
+   if(!label)return;
+   label.hidden=!name;
+   label.textContent=name?'オプチャネーム：'+name:'';
   }
   function currentPrefs(){return api.extract(deps.getModel()).prefs;}
   function readBase(){
@@ -185,8 +199,74 @@ root.TAXIAPP_ACCOUNT_AUTO={
     if(again){again=false;schedule(300);}
    }
   }
+  async function completeRegistration(){
+   const pending=pendingRegistration;
+   if(!pending||registrationBusy||!auth||!fire)return;
+   let name;
+   try{name=root.TAXIAPP_LOGIN_UTILS.normalizeOpenChatName(
+    $('accountOpenChatName')?.value);}
+   catch(error){
+    status(String(error.message||error));
+    $('accountOpenChatName')?.focus?.();
+    return;
+   }
+   registrationBusy=true;displayRegistration(true);
+   const valid=()=>pendingRegistration===pending&&
+    authGeneration===pending.generation&&auth.currentUser?.uid===pending.uid;
+   const profileRef=fire.doc(db,'users',pending.uid);
+   try{
+    const credentials=await pending.user.getIdTokenResult();
+    if(!valid())return;
+    if(root.TAXIAPP_LOGIN_UTILS.autoRegistrationDecision(
+      pending.user,null,null,credentials)!=='create')
+     throw Error('Googleアカウントの本人確認ができません');
+    // No users/{uid} document is created until the name is supplied.
+    // Existing documents may NEVER be changed through self-registration.
+    const current=await fire.getDocFromServer(profileRef);
+    if(!valid())return;
+    if(current.exists()){
+     if(current.data()?.status!=='active')
+      throw Error('この利用登録は停止または保留中です');
+    }else{
+     status('オプチャネームと利用登録を保存しています…');
+     try{
+      await fire.setDoc(profileRef,{
+       status:'active',openChatName:name,registeredAt:fire.serverTimestamp()
+      });
+     }catch(error){
+      if(!valid())return;
+      // A concurrent login might have created the profile. Read back the
+      // result rather than overwriting an existing or suspended account.
+      const simultaneous=await fire.getDocFromServer(profileRef);
+      if(!valid())return;
+      if(!simultaneous.exists()||simultaneous.data()?.status!=='active')
+       throw Error('自動登録に失敗しました。Firestoreの登録ルールを確認してください（'+
+        String(error.code||error.message||error)+'）');
+     }
+    }
+    const verified=await fire.getDocFromServer(profileRef);
+    if(!valid())return;
+    const profile=verified.exists()?verified.data():null;
+    if(profile?.status!=='active')
+     throw Error('本人の利用登録をサーバーで確認できません');
+    if(!profile.openChatName)
+     throw Error('オプチャネームの保存を確認できません');
+    pendingRegistration=null;displayRegistration(false);
+    explicitWriterLogin=!printViewerMode;
+    status('オプチャネームを登録しました');
+    await authChanged(pending.user);
+   }catch(error){
+    if(valid())status('登録できません：'+String(error.code||error.message||error));
+   }finally{
+    registrationBusy=false;
+    if(pendingRegistration===pending)displayRegistration(true);
+   }
+  }
   async function authChanged(next){
    clearTimeout(timer);
+   authGeneration++;
+   pendingRegistration=null;registrationBusy=false;
+   displayRegistration(false);displayOpenChatName('');
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
    deferredWhileEditing=false;localSignature=null;
    deviceSession?.clear();
@@ -215,31 +295,13 @@ root.TAXIAPP_ACCOUNT_AUTO={
      const decision=root.TAXIAPP_LOGIN_UTILS.autoRegistrationDecision(
       next,adminDoc,profile,tokenInfo);
      if(decision==='create'){
-      status('初回ログイン：本人の利用登録を自動で作成しています…');
-      // This document has only an active ordinary-user status and a server
-      // timestamp. The matching Firestore rule forbids admin grants, updates,
-      // deletion, and any other UID. It is NOT a client-side permission grant.
-      try{
-       await fire.setDoc(profileRef,{
-        status:'active',registeredAt:fire.serverTimestamp()
-       });
-      }catch(error){
-       if(!stillSignedIn())return;
-       // A second device may have created the same document first. Accept
-       // that race only after a fresh server read; never revive suspension.
-       const existing=await fire.getDocFromServer(profileRef);
-       if(!stillSignedIn())return;
-       if(!existing.exists()||existing.data()?.status!=='active')
-        throw Error('利用者の自動登録ができません。本番Firestoreの登録ルールを確認してください（'+
-         String(error.code||error.message||error)+'）');
-      }
-      if(!stillSignedIn())return;
-      const verified=await fire.getDocFromServer(profileRef);
-      if(!stillSignedIn())return;
-      profile=verified.exists()?verified.data():null;
-      active=profile?.status==='active';
-      if(!active)throw Error('本人の自動登録をサーバーで確認できません');
-      status('初回の利用登録が完了しました');
+      // The user chooses their LINE Open Chat name. This is a self-reported
+      // nickname, not verification against the LINE service.
+      pendingRegistration={uid:accountUid,user:next,generation:authGeneration};
+      displayRegistration(true);
+      status('初回登録：オプチャネームを入力して「登録を完了」を押してください');
+      deps.onDeviceMode?.('viewer','','オプチャネーム登録待ち（入力停止）');
+      return;
      }
     }
     if(!admin&&!active){
@@ -249,6 +311,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       '利用登録がありません。認証済みGoogleアカウントでログインしてください';
      status(reason);deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;
     }
+    displayOpenChatName(typeof profile?.openChatName==='string'?profile.openChatName:'');
     // The account's duty namespace MUST be selected before either settings
     // reconciliation or editor-session confirmation can access local records.
     await deps.onUserScope?.({
@@ -280,6 +343,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
      await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
      if(!printViewerMode&&deviceSession?.state()==='viewer')await deviceSession.claim();
     }catch(e){status('ログイン失敗：'+String(e.code||e.message||e));}
+   });
+   $('accountRegister')?.addEventListener('click',()=>{void completeRegistration();});
+   $('accountOpenChatName')?.addEventListener('keydown',event=>{
+    if(event.key==='Enter'){event.preventDefault();void completeRegistration();}
    });
    $('accountTakeOver')?.addEventListener('click',()=>{
     if(printViewerMode)return;
