@@ -131,9 +131,11 @@ async function loadList(){
  const myEpoch=epoch,ownUid=adminUid;
  // users と admins を別々に読み、重複するUIDは一件に統合する。
  // 管理者は users ドキュメントを持たない場合も必ず表示する。
- const [members,administrators]=await Promise.all([
+ const [members,administrators,ownAdmin]=await Promise.all([
   getDocsFromServer(query(collection(db,'users'),limit(150))),
-  getDocsFromServer(query(collection(db,'admins'),limit(150)))
+  getDocsFromServer(query(collection(db,'admins'),limit(150))),
+  // 管理者登録の一覧取得上限で本人が欠けても、自分の登録名は直接確認。
+  getDocFromServer(doc(db,'admins',ownUid))
  ]);
  if(myEpoch!==epoch||adminUid!==ownUid||!adminUid)return;
  const records=new Map();
@@ -163,8 +165,10 @@ async function loadList(){
  }
  // 管理者本人の権限は、ログイン時に admins/{uid} を直接読んで確定済み。
  // 管理者一覧の150件制限で漏れても、usersに同じUIDがあっても必ず管理者と扱う。
+ const ownName=typeof ownAdmin.data()?.openChatName==='string'?
+  ownAdmin.data().openChatName:'';
  const ownProfile=records.get(ownUid)||{
-  uid:ownUid,openChatName:'',storedOpenChatName:'',
+  uid:ownUid,openChatName:ownName,storedOpenChatName:ownName,
   status:'管理者登録',testOnly:false,registeredAt:null
  };
  records.set(ownUid,{
