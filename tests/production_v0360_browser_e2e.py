@@ -49,6 +49,10 @@ try:
     assert stored()==sentinel, 'existing production data changed during app startup'
     assert js("return localStorage.getItem('taxiapp-v1')")=='PREEXISTING_FALLBACK'
     js("document.querySelector('[data-tab=settings]').click()")
+    wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'[data-settings-category-choice="gps"]')))
+    js("document.querySelector('[data-settings-category-choice=gps]').click()")
+    wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-distance-address-settings]')))
+    js("document.querySelector('details[data-distance-address-settings]').open=true")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-gps-settings]')))
     js("document.querySelector('details[data-gps-settings]').open=true")
     # Read both controls in one DOM snapshot. Account/sync status can redraw
