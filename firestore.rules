@@ -19,12 +19,17 @@ service cloud.firestore {
    allow list: if isAdmin();
    // Google OAuth + verified email: self-registration of a NEW ordinary
    // member only. Any Google account can enroll after this rule is deployed.
+   // Open Chat name is required at registration but is self-declared, not LINE verified.
    // No account can self-update, self-unsuspend or grant administrator roles.
    allow create: if signedIn() && request.auth.uid == uid &&
      request.auth.token.firebase.sign_in_provider == 'google.com' &&
      request.auth.token.email_verified == true &&
-     request.resource.data.keys().hasOnly(['status','registeredAt']) &&
-     request.resource.data.keys().hasAll(['status','registeredAt']) &&
+     request.resource.data.keys().hasOnly(['status','registeredAt','openChatName']) &&
+     request.resource.data.keys().hasAll(['status','registeredAt','openChatName']) &&
+     request.resource.data.openChatName is string &&
+     request.resource.data.openChatName.size() >= 1 &&
+     request.resource.data.openChatName.size() <= 32 &&
+     request.resource.data.openChatName.matches('.*\\\\S.*') &&
      request.resource.data.status == 'active' &&
      request.resource.data.registeredAt == request.time;
    allow update, delete: if false;
