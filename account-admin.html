@@ -55,13 +55,13 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <section class="panel" id="selectedPanel" hidden>
 <h2>選択アカウントの削除管理</h2>
 <div id="targetDetails"></div>
-<p class="muted">名前やUIDの表示だけではテスト用と断定できません。テスト指定前に本人・営業原本を確認してください。</p>
+<p class="muted">名前やUIDだけではテスト用と断定できません。先にサーバー照合で日報件数を確認し、本人の試験用データだけを「テスト用」に指定してください。</p>
 <label for="confirmUid">確認：選択したUIDを正確に入力</label>
 <input id="confirmUid" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="UIDをそのまま入力">
 <label><input id="ack" type="checkbox">このアカウントがテスト用であり、削除すると取り消せないことを確認しました</label>
 <div class="actions">
 <button id="markTest">テスト用として指定</button>
-<button id="preview">削除対象をサーバーで照合</button>
+<button id="preview">サーバー上の登録・日報件数を照合</button>
 </div>
 <div id="previewDetails" class="warning" hidden></div>
 <div class="actions"><button id="deleteAccount" class="danger" disabled>認証と全データを完全削除</button></div>
@@ -69,6 +69,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
-<script type="module" src="./account-admin.js?v=20261024-1"></script>
+<script type="module" src="./account-admin.js?v=20261024-2"></script>
 </body>
 </html>
