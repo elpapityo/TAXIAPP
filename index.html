@@ -1606,12 +1606,12 @@ function blockViewerEdit(event){
   currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
   accountDiary.ready());
  const readOnlySelection=target.matches?.(
-  '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect');
+  '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect,#monthlySalesMonth');
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
  const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"]')||
-  readOnlySelection||pcPrintControl||
+  readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
    (target.closest?.('[data-sync-compare],[data-sync-resolve]')||target.matches?.('[data-sync-backup-password]')));
@@ -4038,7 +4038,7 @@ function renderMonthlySales(){
   cols.map(c=>'<th scope="col">'+c+'</th>').join('')+'</tr></thead><tbody>'+
   data.days.map(item=>row(item.date,item)).join('')+
   row('期間合計',data.sum,true)+'</tbody></table></div>'+
-  '<p class="caption-note">対象：入庫済み '+data.sum.duties+'乗務、未入庫 '+data.unfinished+'乗務（集計対象外）。'+
+  '<p class="caption-note">対象期間の全日付を表示。入庫済み '+data.sum.duties+'乗務、未入庫 '+data.unfinished+'乗務（集計対象外）。'+
   '集計値は既存の料金・売上計算の結果を日別に加算しています。ゴミ箱内の日報は含みません。</p>':
   '<p class="caption-note">対象期間の本人Firestore原本を取得すると日別の売上表が表示されます。</p>';
  return '<section class="card monthly-sales-panel" aria-label="締め日と月間売上表">'+
@@ -4092,8 +4092,13 @@ async function loadMonthlySales(){
    byDay.set(date,daily);
   }
   if(!isCurrent())return;
-  monthlySalesData={...period,days:[...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date)),
-   sum,unfinished};
+  const days=[];
+  const last=Date.parse(period.endDate+'T00:00:00Z');
+  for(let at=Date.parse(period.startDate+'T00:00:00Z');at<=last;at+=86400000){
+   const date=new Date(at).toISOString().slice(0,10);
+   days.push(byDay.get(date)||{date,...empty()});
+  }
+  monthlySalesData={...period,days,sum,unfinished};
   monthlySalesMessage='取得完了：'+sum.duties+'乗務を集計しました。';
  }catch(error){
   if(isCurrent()){monthlySalesData=null;
