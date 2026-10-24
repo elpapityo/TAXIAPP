@@ -31,8 +31,8 @@ function shortDate(v){
 function selectedIsValid(){
  return !!selected&&$('confirmUid').value.trim()===selected.uid&&$('ack').checked;
 }
-function validSelectedDuty(){
- return !busy&&!!selected&&!!selectedDuty&&
+function validSelectedDuty(allowBusy=false){
+ return (allowBusy||!busy)&&!!selected&&!!selectedDuty&&
   dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&
   $('trashConfirmId').value.trim()===selectedDuty.shiftId&&
   $('trashConfirmAck').checked&&selectedDuty.trashed!==true&&
@@ -231,11 +231,13 @@ $('loadSettings').addEventListener('click',()=>execute(async()=>{
  notice('本人の設定を閲覧用に取得しました。変更・保存は行いません。');
 }));
 $('trashDuty').addEventListener('click',()=>execute(async()=>{
- if(!validSelectedDuty())return;
+ if(!validSelectedDuty(true))return;
  const target=selectedDuty,uid=selected.uid;
  if(!window.confirm('UID '+uid+' の「'+target.shiftId+
    '」をゴミ箱へ移します。営業記録が表示から外れます。続行しますか？'))return;
  await recentAdminLogin();
+ if(selected?.uid!==uid||selectedDuty!==target||!validSelectedDuty(true))
+  throw Error('選択した日報が変更されました。操作を停止しました');
  const response=await api.trash({
   uid,shiftId:target.shiftId,confirmationUid:uid,
   confirmationShiftId:target.shiftId,
