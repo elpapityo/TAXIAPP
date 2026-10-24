@@ -1312,6 +1312,57 @@ html[data-ui-theme="night"] #main-content .chip.active{background:#1f5d54;color:
  #main-content .btn,.nav-desktop .nav-link{transition:none}
 }
 
+
+/* Override the legacy high-specificity meter palette in this design only. */
+#main-content .meter-actions .meter-action:not(:disabled),
+#floating-meter-actions .meter-actions .meter-action:not(:disabled){
+ min-height:72px!important;padding:12px 8px!important;
+ font-size:clamp(16px,2vw,20px)!important;font-weight:900!important;
+ border-radius:14px!important;line-height:1.2!important;
+ box-shadow:0 4px 0 #12313c20!important}
+#main-content .meter-actions .meter-wait:not(:disabled),
+#floating-meter-actions .meter-actions .meter-wait:not(:disabled){
+ background:#f9e5ae!important;border-color:#dbad43!important;color:#624512!important}
+#main-content .meter-actions .meter-dispatch:not(:disabled),
+#floating-meter-actions .meter-actions .meter-dispatch:not(:disabled){
+ background:#d9eafa!important;border-color:#80aee5!important;color:#174e81!important}
+#main-content .meter-actions .meter-ride:not(:disabled),
+#floating-meter-actions .meter-actions .meter-ride:not(:disabled){
+ background:#c6ecda!important;border-color:#55ad8b!important;color:#105842!important}
+#main-content .meter-actions .meter-highway:not(:disabled),
+#floating-meter-actions .meter-actions .meter-highway:not(:disabled){
+ background:#e4e8f8!important;border-color:#a4b1da!important;color:#344f86!important}
+#main-content .meter-actions .meter-break:not(:disabled),
+#floating-meter-actions .meter-actions .meter-break:not(:disabled){
+ background:#f9e4d5!important;border-color:#dfad84!important;color:#855021!important}
+#main-content .meter-actions .meter-settle:not(:disabled),
+#floating-meter-actions .meter-actions .meter-settle:not(:disabled){
+ background:#c6ecda!important;border-color:#55ad8b!important;color:#105842!important}
+#main-content .meter-actions .meter-discount:not(:disabled),
+#floating-meter-actions .meter-actions .meter-discount:not(:disabled){
+ background:#f9e6cb!important;border-color:#d6b07c!important;color:#77501f!important}
+#main-content .meter-actions .meter-finish:not(:disabled),
+#floating-meter-actions .meter-actions .meter-finish:not(:disabled){
+ background:#b42a40!important;border-color:#861a2c!important;color:#fff!important}
+#main-content .meter-actions .meter-sub:not(:disabled),
+#floating-meter-actions .meter-actions .meter-sub:not(:disabled){
+ background:#e4edf1!important;border-color:#a5bcc8!important;color:#315160!important}
+#floating-meter-actions{
+ background:#f4faf9!important;border:1px solid #9fcac0!important;
+ border-radius:14px!important;padding:8px!important;
+ box-shadow:0 10px 26px #0e304432!important}
+#floating-meter-actions .meter-actions{gap:8px!important}
+@media(max-width:760px){
+ #main-content .meter-actions .meter-action:not(:disabled),
+ #floating-meter-actions .meter-actions .meter-action:not(:disabled){
+  min-height:68px!important;padding:9px 5px!important;
+  font-size:clamp(14px,4vw,18px)!important}
+ #floating-meter-actions{
+  padding:6px!important;bottom:calc(81px + env(safe-area-inset-bottom))!important}
+}
+html[data-ui-theme="night"] #floating-meter-actions{
+ background:#193a46!important;border-color:#568178!important}
+
 </style>
 </head>
 <body>
