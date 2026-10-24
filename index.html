@@ -3988,7 +3988,8 @@ function opsHighwayPanel(shift){
 }
 // Monthly sales closing date is an account-specific preference.
 // The report stays outside the active duty and is fetched only on request.
-let monthlySalesMonth=dateStamp().slice(0,7),monthlySalesEpoch=0;
+const monthlySalesToday=new Date();
+let monthlySalesMonth=monthlySalesToday.getFullYear()+'-'+String(monthlySalesToday.getMonth()+1).padStart(2,'0'),monthlySalesEpoch=0;
 let monthlySalesData=null,monthlySalesBusy=false,monthlySalesMessage='';
 function monthlySalesClosingDay(){
  const value=String(model.prefs?.monthlySalesCloseDay||'end');
@@ -4015,6 +4016,7 @@ function resetMonthlySales(){
  monthlySalesEpoch++;monthlySalesBusy=false;monthlySalesData=null;monthlySalesMessage='';
 }
 function renderMonthlySales(){
+ if(typeof model==='undefined')return ''; // 認証を伴わない既存の描画試験用
  const day=monthlySalesClosingDay();
  const choices='<option value="end" '+(day==='end'?'selected':'')+'>末日</option>'+
   Array.from({length:31},(_,i)=>{
@@ -7012,13 +7014,13 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.id==='monthlySalesCloseDay'){
   if(!canEditNow())return;
   const value=String(event.target.value||'end');
-  if(value!=='end'&&!/^(?:[1-9]|[12]\\d|3[01])$/.test(value))return;
+  if(value!=='end'&&!/^(?:[1-9]|[12]\d|3[01])$/.test(value))return;
   model.prefs??={};model.prefs.monthlySalesCloseDay=value;
   resetMonthlySales();saveLater();render();return;
  }
  if(event.target.id==='monthlySalesMonth'){
   const value=String(event.target.value||'');
-  if(!/^\\d{4}-(?:0[1-9]|1[0-2])$/.test(value))return;
+  if(!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(value))return;
   monthlySalesMonth=value;resetMonthlySales();render();return;
  }
  if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
