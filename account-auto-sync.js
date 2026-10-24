@@ -30,7 +30,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
   }
   function controls(){
    const signIn=$('accountSignIn'),signOut=$('accountSignOut');
-   if(signIn)signIn.hidden=!!user;
+   if(signIn)signIn.hidden=!!user; 
+   const initialRegister=$('accountInitialRegister');
+   if(initialRegister){initialRegister.hidden=!!user;initialRegister.disabled=accountSwitchBusy;}
    if(signOut)signOut.hidden=!user;
    if(signOut)signOut.disabled=!user||accountSwitchBusy;
    for(const id of ['accountSwitchLogin','accountSwitchRegister']){
@@ -370,6 +372,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
       if(auth.currentUser?.uid!==previous.uid)
        throw Error('アカウントを確認中に認証が変わりました。切替を中止しました');
       await fb.signOut(auth);
+      // 端末保存・同期を待つとブラウザのポップアップ許可が失われるため、
+      // 安全なログアウト後は利用者の次のクリックでGoogle選択を開く。
+      status('前のアカウントから安全にログアウトしました。上部の「ログイン」または「新規登録」を押してください。');
+      return;
      }
      viewerLogin=printViewerMode;explicitWriterLogin=!printViewerMode;
      const provider=new fb.GoogleAuthProvider();
@@ -387,6 +393,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
     }
    }
    $('accountSignIn')?.addEventListener('click',()=>{void selectGoogleAccount('login');});
+   $('accountInitialRegister')?.addEventListener('click',()=>{
+    void selectGoogleAccount('register');
+   });
    $('accountSwitchLogin')?.addEventListener('click',()=>{
     void selectGoogleAccount('login');
    });
