@@ -325,7 +325,7 @@ function create(){
    // originals or place returned shifts into the phone's working model.
    const start=String(fields.startDate||''),end=String(fields.endDate||'');
    const validDate=text=>{
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(text))return NaN;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(text))return NaN;
     const n=Date.parse(text+'T00:00:00Z');
     return Number.isFinite(n)&&new Date(n).toISOString().slice(0,10)===text?n:NaN;
    };
