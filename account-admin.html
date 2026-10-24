@@ -60,9 +60,9 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </section>
 <section class="panel" id="selectedPanel" hidden>
 <h2>選択アカウントのデータ管理</h2>
-<div id="adminSourceNotice" class="warning" hidden>管理者のFirestore原本・設定は下のボタンから閲覧できます。<strong>以前のGoogleスプレッドシートに保存された日報はこの画面に含まれません。</strong>旧日報・印刷データは <a href="./index.html">TAXIAPP本体</a> または従来のGoogle帳票から確認してください。管理者自身の削除操作はここでは無効です。</div>
-<div id="accountDeletionSection">
 <div id="targetDetails"></div>
+<div id="adminSourceNotice" class="warning" hidden>管理者自身のFirestore原本と設定は、既存の本人認証で直接閲覧できます。<strong>以前のGoogleスプレッドシートに保存された日報はこの画面に含まれません。</strong>旧日報・印刷データは <a href="./index.html">TAXIAPP本体</a> または従来のGoogle帳票から確認してください。管理者自身の削除操作はここでは無効です。</div>
+<div id="accountDeletionSection">
 <p class="muted">名前やUIDだけではテスト用と断定できません。先にサーバー照合で日報件数を確認し、本人の試験用データだけを「テスト用」に指定してください。</p>
 <label for="confirmUid">確認：選択したUIDを正確に入力</label>
 <input id="confirmUid" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="UIDをそのまま入力">
@@ -104,6 +104,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
-<script type="module" src="./account-admin.js?v=20261025-admin-self-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-admin-self-2"></script>
 </body>
 </html>
