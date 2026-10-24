@@ -14,8 +14,10 @@ const dutySource=cut('function renderDutyPlanSettings(){','function currentDutyS
 const settings=cut('function renderSettings(shift){','function download(');
 const ctx={model:{prefs:{company:'テスト会社',driver:'テスト運転者',driverNo:'123',vehicle:'44',
  dutyPlan:{type:'フレックス',hours:'13',distanceKm:'275'}}},
- safeText:String,driverDutyPlan:()=>({type:'フレックス',hours:13,distanceKm:275})};
+ safeText:String,driverDutyPlan:()=>({type:'フレックス',hours:13,distanceKm:275}),canEditNow:()=>true};
 vm.createContext(ctx);
+const daySource=cut('function monthlySalesClosingDay(){','function monthlySalesPeriod(');
+vm.runInContext(daySource,ctx);
 vm.runInContext(defaultsSource+dutySource,ctx);
 const defaults=vm.runInContext('renderDriverDefaults()',ctx);
 const duty=vm.runInContext('renderDutyPlanSettings()',ctx);
