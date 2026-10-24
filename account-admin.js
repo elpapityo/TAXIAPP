@@ -33,7 +33,7 @@ function selectedIsValid(){
 }
 function validSelectedDuty(allowBusy=false){
  return (allowBusy||!busy)&&!!selected&&!!selectedDuty&&
-  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&
+  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&!selected.isAdmin&&
   $('trashConfirmId').value.trim()===selectedDuty.shiftId&&
   $('trashConfirmAck').checked&&selectedDuty.trashed!==true&&
   (selectedDuty.shift?.endedAt||selectedDuty.shift?.endedIso);
@@ -44,9 +44,9 @@ function buttons(){
  $('loadSettings').disabled=!selected||busy;
  $('moreDuties').disabled=!selected||busy||!dutyCursor;
  $('trashDuty').disabled=!validSelectedDuty();
- $('markTest').disabled=!ok||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
- $('preview').disabled=!ok||selected.status==='deleted';
- $('deleteAccount').disabled=!ok||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
+ $('markTest').disabled=!ok||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
+ $('preview').disabled=!ok||selected.isAdmin||selected.status==='deleted';
+ $('deleteAccount').disabled=!ok||selected.isAdmin||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
  for(const id of ['reload','search','signIn','signOut'])$(id).disabled=busy;
 }
 function clearDutyPanel(){
@@ -62,12 +62,15 @@ function selectUser(user){
  clearDutyPanel();
  selected=user;preview=null;
  $('selectedPanel').hidden=false;
+ $('accountDeletionSection').hidden=!!user.isAdmin;
+ $('adminSourceNotice').hidden=!user.isAdmin;
+ $('dutyTrashSection').hidden=!!user.isAdmin;
  $('confirmUid').value='';$('ack').checked=false;
  $('previewDetails').hidden=true;
  $('targetDetails').textContent='';
  for(const [key,value] of [
   ['オプチャネーム',user.openChatName||'（未登録）'],
-  ['UID',user.uid],['状態',user.status||'未設定'],
+  ['UID',user.uid],['区分',user.isAdmin?'管理者':'一般利用者'],['状態',user.status||'未設定'],
   ['テスト用指定',user.testOnly?'あり':'なし'],
   ['登録日時',shortDate(user.registeredAt)]
  ]){
@@ -86,7 +89,7 @@ function renderList(){
   const tr=document.createElement('tr');
   for(const [txt,cls] of [
    [person.openChatName||'（未設定）',''],[person.uid,'code'],
-   [person.status||'未設定',''],[person.testOnly?'テスト用':'未指定','']
+   [person.isAdmin?(person.adminEnabled?'管理者':'管理者登録履歴'):(person.status||'未設定'),''],[person.isAdmin?'削除対象外':person.testOnly?'テスト用':'未指定','']
   ]){
    const td=document.createElement('td');td.textContent=txt;if(cls)td.className=cls;tr.append(td);
   }
@@ -94,28 +97,55 @@ function renderList(){
   btn.textContent='選択';btn.addEventListener('click',()=>selectUser(person));
   td.append(btn);tr.append(td);tbody.append(tr);
  }
- $('listCount').textContent='表示 '+shown.length+' 件（最大150件を取得）';
+ $('listCount').textContent='表示 '+shown.length+' 件（一般利用者は最大150件、管理者も含む）';
 }
 async function loadList(){
- const myEpoch=epoch;
- const snap=await getDocsFromServer(query(collection(db,'users'),limit(150)));
- if(myEpoch!==epoch||!adminUid)return;
- users=snap.docs.map(s=>{
-  const value=s.data()||{};
-  // The authoritative UID is ALWAYS the Firestore document ID, never
-  // a field from remote data (which might be stale or malformed).
-  return {
-   uid:s.id,
-   openChatName:typeof value.openChatName==='string'?value.openChatName:'',
-   status:typeof value.status==='string'?value.status:'',
-   testOnly:value.testOnly===true,
-   registeredAt:value.registeredAt
+ const myEpoch=epoch,ownUid=adminUid;
+ // users と admins を別々に読み、重複するUIDは一件に統合する。
+ // 管理者は users ドキュメントを持たない場合も必ず表示する。
+ const [members,administrators]=await Promise.all([
+  getDocsFromServer(query(collection(db,'users'),limit(150))),
+  getDocsFromServer(query(collection(db,'admins'),limit(150)))
+ ]);
+ if(myEpoch!==epoch||adminUid!==ownUid||!adminUid)return;
+ const records=new Map();
+ for(const snap of members.docs){
+  const data=snap.data()||{};
+  records.set(snap.id,{
+   uid:snap.id,
+   openChatName:typeof data.openChatName==='string'?data.openChatName:'',
+   status:typeof data.status==='string'?data.status:'',
+   testOnly:data.testOnly===true,
+   registeredAt:data.registeredAt,
+   isAdmin:false,adminEnabled:false
+  });
+ }
+ for(const snap of administrators.docs){
+  const prior=records.get(snap.id)||{
+   uid:snap.id,openChatName:'',status:'管理者登録',
+   testOnly:false,registeredAt:null
   };
- })
-  .sort((a,b)=>String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
+  records.set(snap.id,{
+   ...prior,isAdmin:true,adminEnabled:snap.data()?.enabled===true,
+   testOnly:false
+  });
+ }
+ // 管理者ログインは直前に admins/{uid}.enabled をサーバーで確認済み。
+ // admins の取得件数上限で自分の行が欠けても一覧から消さない。
+ if(!records.has(ownUid))records.set(ownUid,{
+  uid:ownUid,openChatName:'',status:'管理者登録',
+  testOnly:false,registeredAt:null,isAdmin:true,adminEnabled:true
+ });
+ users=[...records.values()].map(u=>({
+  ...u,
+  openChatName:u.openChatName||(u.isAdmin?
+   (u.uid===ownUid?'管理者（自分）':'管理者'):'')
+ })).sort((a,b)=>
+  (a.uid===ownUid?-1:b.uid===ownUid?1:0)||
+  String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
  selected=null;preview=null;clearDutyPanel();$('selectedPanel').hidden=true;
  renderList();
- notice('登録一覧を更新しました。');
+ notice('管理者を含む登録一覧を更新しました。');
 }
 async function execute(fn,requireAdmin=true){
  if(busy||(requireAdmin&&!adminUid))return;
@@ -196,7 +226,7 @@ async function loadDuties(reset=true){
  dutyRows=[...dutyRows,...result.data.shifts];
  dutyCursor=result.data.nextAfterId||null;
  displayDutyRows();
- notice('日報 '+dutyRows.length+' 件を表示しています。');
+ notice('Firestore日報 '+dutyRows.length+' 件を表示しています。'+(selected.isAdmin?' 旧Google原本はTAXIAPP本体で確認してください。':''));
 }
 async function readDuty(shiftId){
  if(!selected)return;
@@ -209,6 +239,7 @@ async function readDuty(shiftId){
   throw Error('日報原本のUID・ID・更新番号が一致しません');
  selectedDuty=duty;dutyUid=uid;
  $('dutySelected').hidden=false;
+ $('dutyTrashSection').hidden=!!selected.isAdmin;
  $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
   '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
  // No HTML rendering: contents may contain passengers' addresses and GPS.
@@ -250,7 +281,7 @@ $('trashDuty').addEventListener('click',()=>execute(async()=>{
  await loadDuties(true);
 }));
 $('markTest').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid()||selected.testOnly||!preview||preview.uid!==selected.uid)return;
+ if(!selectedIsValid()||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid)return;
  const target=selected,checked=preview;
  if(!window.confirm('日報 '+checked.shiftCount+' 件を含むアカウントをテスト用として指定します。実営業アカウントには実行しないでください。'))return;
  await recentAdminLogin();
@@ -262,7 +293,7 @@ $('markTest').addEventListener('click',()=>execute(async()=>{
  await loadList();
 }));
 $('preview').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid())return;
+ if(!selectedIsValid()||selected.isAdmin)return;
  const target=selected;
  const response=await api.preview({uid:target.uid});
  preview=response.data;
@@ -277,7 +308,7 @@ $('preview').addEventListener('click',()=>execute(async()=>{
  notice('削除対象を確認しました。実行する場合はもう一度UIDを確認してください。');
 }));
 $('deleteAccount').addEventListener('click',()=>execute(async()=>{
- if(!selectedIsValid()||!preview||preview.uid!==selected.uid||!selected.testOnly)return;
+ if(!selectedIsValid()||selected.isAdmin||!preview||preview.uid!==selected.uid||!selected.testOnly)return;
  const target=selected,expected=preview;
  const exact='完全削除';
  if(window.prompt('取り消せません。実行する場合は「'+exact+'」と入力してください。')!==exact)return;
