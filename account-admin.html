@@ -12,7 +12,10 @@ body{margin:0;padding:22px 24px}
 main{max-width:1180px;margin:0 auto}
 a{color:#075f9f}h1{font-size:25px;margin:12px 0}h2{font-size:19px;margin:0 0 12px}
 .panel{background:#fff;border:1px solid #cdd7e2;border-radius:13px;padding:19px;margin:15px 0;box-shadow:0 2px 8px #102a4810}
-button,input,select{font:inherit}button{padding:9px 15px;min-height:42px;border:1px solid #a8b9ca;border-radius:8px;background:#ecf4fb;color:#1b3856;cursor:pointer}
+button,input,select{font:inherit}
+a.action-link{display:inline-flex;align-items:center;justify-content:center;padding:9px 15px;min-height:42px;border-radius:8px;background:#125f99;color:#fff;font-weight:700;text-decoration:none}
+a.action-link:hover{background:#0d4c78}
+a.action-link:focus-visible{outline:3px solid #c68c20;outline-offset:3px}button{padding:9px 15px;min-height:42px;border:1px solid #a8b9ca;border-radius:8px;background:#ecf4fb;color:#1b3856;cursor:pointer}
 button.primary{background:#125f99;color:white;border-color:#125f99}
 button.danger{background:#a02d2d;color:#fff;border-color:#a02d2d}
 button:disabled{opacity:.5;cursor:not-allowed}
@@ -85,14 +88,14 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <main>
 <nav><a href="./index.html">← TAXIAPPに戻る</a></nav>
 <h1>アカウント・日報管理（管理者PC）</h1>
-<p class="muted">登録一覧、本人別データの閲覧、個別日報のゴミ箱移動、テストアカウント削除を行います。<strong>一般利用者や管理者自身のデータは自動削除しません。</strong></p>
+<p class="muted">登録アカウントの確認と、管理者本人のFirestore日報・設定の閲覧を行います。オプチャネームの編集はFirebase管理画面に移動して行います。<strong>一般利用者や管理者自身のデータは自動削除しません。</strong></p>
 <section class="panel" aria-labelledby="authTitle">
 <h2 id="authTitle">管理者ログイン</h2>
 <p id="loginState">未ログイン</p>
 <div class="actions"><button id="signIn" class="primary">Googleで管理者ログイン</button><button id="signOut" hidden>ログアウト</button></div>
 </section>
 <section id="workspace" hidden>
-<div class="warning">⚠ 完全削除は復旧できません。テスト用と確認されたアカウントだけを対象にしてください。管理者・旧Google原本は対象外です。端末がオフラインの場合、端末の未同期データを遠隔で消すことはできません。</div>
+<div class="warning">現在はSpark（無料）プランです。オプチャネームはFirebase管理画面で編集できます。Cloud Functions未配信のため、管理者PCからの完全削除や他人の日報変更は行えません。<strong>Firestoreの営業原本やGoogle原本を直接削除しないでください。</strong></div>
 <section class="panel">
 <h2>登録アカウント一覧（管理者を含む）</h2>
 <p class="muted">一般利用者はオプチャネーム、管理者は「管理者」と表示します。Firestoreの登録ユーザーと管理者登録を統合表示します。</p>
@@ -116,8 +119,21 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </div>
 </details>
 <details id="accountActionsFold" class="admin-fold">
-<summary>アカウントの操作 <span class="admin-fold-hint">オプチャネーム変更・テスト用の削除</span></summary>
+<summary>アカウントの操作 <span class="admin-fold-hint">無料プランでの名前変更</span></summary>
 <div class="admin-fold-body">
+<div class="admin-account-actions">
+<strong>オプチャネームの編集</strong>
+<p class="muted">現在のSpark（無料）プランでは、この画面から直接保存できません。Firebase管理者アカウントで管理画面を開き、選択した登録名だけを変更します。</p>
+<div class="actions">
+<a id="openNameConsole" class="action-link" href="https://console.firebase.google.com/project/taxiapp-2b6bd/firestore/data" target="_blank" rel="noopener noreferrer">Firebase管理画面で名前を変更</a>
+</div>
+<p id="adminNameTarget" class="muted" aria-live="polite"></p>
+<p class="muted">編集フィールド：<code>openChatName</code>／タイプ：<code>string</code>／値：変更後の名前。保存後はこの画面で「登録一覧を更新」を押してください。<strong>UID・enabled・statusなど他の項目は変更しないでください。</strong></p>
+<p class="muted">名前を変更できるのはFirebaseプロジェクトの管理権限を持つ担当者だけです。一般利用者本人は初回登録後に変更できません。</p>
+</div>
+<p class="admin-info-note">Cloud Functionsは未配信です。アカウント完全削除や、管理者PCからの日報編集・ゴミ箱移動・復元は現在利用できません。営業原本をFirebase管理画面から直接削除しないでください。</p>
+<!-- 未配信のCallable操作は誤操作を避けるため画面から隠す。将来の正式配信までAPI実装と確認条件は保持する。 -->
+<div id="cloudNicknameControls" hidden>
 <div class="admin-account-actions">
 <strong>このアカウントの操作</strong>
 <div class="actions">
@@ -142,7 +158,10 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p><a href="https://console.firebase.google.com/project/taxiapp-2b6bd/firestore/data" target="_blank" rel="noopener noreferrer">Firebaseのデータ画面を開く</a></p>
 </div>
 </div>
-<div id="adminSourceNotice" class="admin-info-note" hidden>管理者自身のFirestore日報・設定は本人認証で閲覧できます。旧Google日報は対象外です。<a href="./index.html">TAXIAPP本体</a> か従来のGoogle帳票で確認してください。<strong>管理者アカウントの完全削除は禁止</strong>です。日報のゴミ箱移動は別操作です。</div>
+
+</div>
+<div id="adminSourceNotice" class="admin-info-note" hidden>管理者自身のFirestore日報・設定は本人認証で閲覧できます。旧Google日報は対象外です。<a href="./index.html">TAXIAPP本体</a> か従来のGoogle帳票で確認してください。管理者PCからの削除・復元は現在利用できません。</div>
+<div id="cloudDeleteControls" hidden>
 <div id="accountDeletionSection" class="admin-action-form" hidden>
 <h3>テストアカウントの完全削除</h3>
 <div class="actions"><button id="closeAccountDelete" class="close-action" type="button">削除確認を閉じる</button></div>
@@ -158,13 +177,15 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="actions"><button id="deleteAccount" class="danger" disabled>認証と全データを完全削除</button></div>
 </div>
 </div>
+</div>
 </details>
 <details id="dutyManagementFold" class="admin-fold" open>
-<summary>日報・設定の管理 <span class="admin-fold-hint">日報一覧・詳細・個別ゴミ箱移動</span></summary>
+<summary>日報・設定の閲覧 <span class="admin-fold-hint">本人Firestoreの確認</span></summary>
 <div class="admin-fold-body">
 <section id="adminDataPanel">
-<h3>利用者別データ閲覧・個別日報削除</h3>
-<p class="helper">日報は50件ずつ取得し、保存済みの計算値を表示します。管理者本人の閲覧はFirebase Functions不要ですが、編集保存・ゴミ箱移動・他の利用者の詳細閲覧には管理者用Cloud Functionsの本番配信が必要です。旧Google原本には作用しません。</p>
+<p id="otherAccountReadNotice" class="muted" hidden>このアカウントの詳細は現在表示できません。利用者本人のTAXIAPPから確認してください。</p>
+<h3>Firestore日報・設定の確認</h3>
+<p class="helper">管理者ご自身の日報・設定は無料プランで閲覧できます。他の利用者の原本閲覧や日報の編集・ゴミ箱移動は、管理サーバー未配信のため利用できません。旧Google原本はこの画面に含まれません。</p>
 <div class="actions">
 <button id="loadDuties">この利用者の日報を表示</button>
 <button id="loadSettings">この利用者の設定を表示</button>
@@ -175,10 +196,10 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </tr></thead><tbody id="dutyRows"></tbody></table></div>
 <div class="actions"><button id="moreDuties" hidden>さらに50件表示</button></div>
 <details id="dutySelected" class="admin-fold admin-duty-fold" hidden>
-<summary>選択した日報の詳細・編集 <span class="admin-fold-hint">乗務内容・ゴミ箱移動・復元</span></summary>
+<summary>選択した日報の詳細 <span class="admin-fold-hint">乗務内容の閲覧</span></summary>
 <div class="admin-fold-body">
 <p id="dutyHeader" class="helper"></p>
-<div class="admin-duty-top-actions" aria-label="選択した日報の操作">
+<div class="admin-duty-top-actions" aria-label="選択した日報の操作" hidden>
 <button id="editDuty" class="primary" disabled>この日報を編集（乗降地）</button>
 <button id="trashDutyShortcut" class="danger" disabled>この日報を削除（ゴミ箱へ）</button>
 <button id="restoreDuty" disabled hidden>この日報をゴミ箱から復元</button>
@@ -214,6 +235,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
-<script type="module" src="./account-admin.js?v=20261025-foldable-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-spark-console-1"></script>
 </body>
 </html>

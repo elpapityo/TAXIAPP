@@ -77,6 +77,16 @@
 - 管理者自身の登録名・管理者権限・日報閲覧、一般利用者の名前変更・テスト用完全削除、個別日報の編集／ゴミ箱移動／復元の権限・確認条件は従来どおり。
 - 本対応は `account-admin.html` と `account-admin.js` の**表示と開閉状態のみ**。Functions配信、Firestore Rules、保存方式・営業原本、GO/Uber等の計算、旧Google帳票は変更しない。
 
+## 2026年10月25日 Spark無料運用時の管理画面導線（現在の正式版）
+
+- 利用者から「使えないオプチャネーム変更ボタンは整理し、管理ページへ飛ぶように」と指示。**Cloud Functions未配信／Spark無料プラン**を現行状態とする。
+- 「アカウントの操作」は **「Firebase管理画面で名前を変更」** という有効なリンクへ置換。選択UIDをもとに `users/{uid}` または `admins/{uid}` のFirestore Console文書画面を別タブで開く。変更対象のUID、コレクション、現在の登録名、編集フィールド `openChatName`（string）を表示する。
+- 名前の正本は `users/{uid}` が `active` / `suspended` の場合は `users`、それ以外の有効な管理者登録のみの場合は `admins`。Firebaseの管理権限でコンソールへログインして操作し、TAXIAPP側の「登録一覧を更新」で読み直す。一般利用者自身の初回登録後の変更禁止は維持。
+- Cloud Functions未配信で動かない **オプチャネーム保存・接続診断・アカウント完全削除・管理者PCからの日報編集／ゴミ箱移動／復元** の各ボタンは通常画面で表示・利用させない。管理用Callableの既存実装・元の確認条件は無断削除せず保護し、配信・利用可能と検証できるまで閉じる。利用者本人が見られるFirestore日報・設定は引き続き直接閲覧できる。
+- 別UIDのFirestore日報・設定閲覧は、FunctionsなしでFirestoreの本人専用権限を迂回しないため操作不可と明示。無料プランだからといってFirestore Rulesを緩めたり、管理者による他人の原本直接読取を許可しない。
+- 保存先切替、Firestore Rules、管理者権限、既存営業原本、料金計算、Google帳票、ゴミ箱内原本、Firebase課金契約は変更しない。
+- Firebase Consoleでの日報やアカウントの手動完全削除を誘導せず、安全上の注意を表示する。今後Cloud Functionsを正式配信・利用可能と検証した場合にのみ、UIの管理サーバー機能を再有効化する。
+
 ## 使い方
 
 - 管理者がPCの `account-admin.html` を開き、Googleでログインする。サーバーの `admins/{uid}.enabled === true` が確認できなければ管理画面は利用不可。
