@@ -12,11 +12,11 @@ body{margin:0;padding:22px 24px}
 main{max-width:1180px;margin:0 auto}
 a{color:#075f9f}h1{font-size:25px;margin:12px 0}h2{font-size:19px;margin:0 0 12px}
 .panel{background:#fff;border:1px solid #cdd7e2;border-radius:13px;padding:19px;margin:15px 0;box-shadow:0 2px 8px #102a4810}
-button,input{font:inherit}button{padding:9px 15px;min-height:42px;border:1px solid #a8b9ca;border-radius:8px;background:#ecf4fb;color:#1b3856;cursor:pointer}
+button,input,select{font:inherit}button{padding:9px 15px;min-height:42px;border:1px solid #a8b9ca;border-radius:8px;background:#ecf4fb;color:#1b3856;cursor:pointer}
 button.primary{background:#125f99;color:white;border-color:#125f99}
 button.danger{background:#a02d2d;color:#fff;border-color:#a02d2d}
 button:disabled{opacity:.5;cursor:not-allowed}
-input[type="text"],input[type="search"]{padding:10px;min-height:42px;width:100%;max-width:480px;border:1px solid #9eb1c3;border-radius:8px}
+input[type="text"],input[type="search"],select{padding:10px;min-height:42px;width:100%;max-width:480px;border:1px solid #9eb1c3;border-radius:8px}
 label{display:block;margin:10px 0;font-weight:600}
 label input[type="checkbox"]{margin-right:7px}
 .muted{color:#516579}.warning{background:#fff7e8;border:1px solid #cc9e56;padding:13px;border-radius:8px}
@@ -92,7 +92,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </div>
 <section id="adminDataPanel" class="panel">
 <h2>利用者別データ閲覧・個別日報削除</h2>
-<p class="helper">登録・日報・設定を管理者として読み取り専用で確認します。日報は50件ずつ取得し、本人の計算済み金額を再計算しません。閲覧操作はサーバーに記録されます。</p>
+<p class="helper">日報は50件ずつ取得し、保存済みの計算値を表示します。管理者本人の閲覧はFirebase Functions不要ですが、編集保存・ゴミ箱移動・他の利用者の詳細閲覧には管理者用Cloud Functionsの本番配信が必要です。旧Google原本には作用しません。</p>
 <div class="actions">
 <button id="loadDuties">この利用者の日報を表示</button>
 <button id="loadSettings">この利用者の設定を表示</button>
@@ -103,12 +103,29 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </tr></thead><tbody id="dutyRows"></tbody></table></div>
 <div class="actions"><button id="moreDuties" hidden>さらに50件表示</button></div>
 <section id="dutySelected" hidden>
-<h2>選択した日報（閲覧専用）</h2>
+<h2>選択した日報（閲覧・編集・ゴミ箱移動）</h2>
 <p id="dutyHeader" class="helper"></p>
 <div id="dutyDetail" aria-label="日本語で整理した日報明細"></div>
+<div class="actions">
+<button id="editDuty" class="primary" disabled>この日報を編集（乗降地）</button>
+<button id="trashDutyShortcut" class="danger" disabled>この日報を削除（ゴミ箱へ）</button>
+<button id="restoreDuty" disabled hidden>この日報をゴミ箱から復元</button>
+</div>
+<div id="adminLocationEdit" class="panel" hidden>
+<h3>営業記録の乗降地を訂正</h3>
+<p class="muted">料金・手数料・走行距離は変更しません。金額を含む詳細編集には既存の日報編集画面が必要です。保存前に日報IDと更新番号を確認し、他端末の変更があれば保存を停止します。</p>
+<label for="adminEditRecord">修正する営業記録</label>
+<select id="adminEditRecord"></select>
+<label for="adminEditPickup">乗車地</label>
+<input id="adminEditPickup" type="text" maxlength="160" autocomplete="off">
+<label for="adminEditDropoff">降車地</label>
+<input id="adminEditDropoff" type="text" maxlength="160" autocomplete="off">
+<p id="adminEditStatus" role="status" aria-live="polite"></p>
+<div class="actions"><button id="adminEditSave" class="primary">変更を保存して確認</button><button id="adminEditCancel">編集を閉じる</button></div>
+</div>
 <div class="warning" id="dutyTrashSection">
 <strong>個別削除（ゴミ箱へ移動）</strong>
-<p>入庫済みの1乗務だけ、更新番号を確認してゴミ箱へ移します。料金・売上の記録を再計算せず、復旧可能な原本を保持します。実営業記録の完全消去は行いません。</p>
+<p>入庫済みの1乗務だけ、更新番号を確認してゴミ箱へ移します。<strong>管理者自身のFirestore日報も対象です。</strong>料金・売上は再計算せず、元の原本を保持します。旧Google原本には影響しません。他端末に未同期の記録がある場合は先に同期・照合してください。</p>
 <label for="trashConfirmId">削除する乗務IDを正確に入力</label>
 <input id="trashConfirmId" type="text" autocomplete="off" spellcheck="false">
 <label><input id="trashConfirmAck" type="checkbox">表示中の本人UID・乗務ID・更新番号・入庫済み状態を確認しました</label>
@@ -121,6 +138,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
-<script type="module" src="./account-admin.js?v=20261025-readable-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-admin-edit-2"></script>
 </body>
 </html>

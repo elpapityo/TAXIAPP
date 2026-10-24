@@ -12,6 +12,7 @@ const app=getApps().length?getApp():initializeApp(window.TAXIAPP_FIREBASE_CONFIG
 const auth=getAuth(app),db=getFirestore(app),functions=getFunctions(app,'asia-northeast1');
 let adminUid='',users=[],selected=null,preview=null,busy=false,epoch=0;
 let selectedDuty=null,dutyCursor=null,dutyRows=[],dutyUid='';
+let editDraft=null;
 const api={
  mark: httpsCallable(functions,'markTestAccount'),
  preview: httpsCallable(functions,'previewTestAccountDeletion'),
@@ -19,7 +20,9 @@ const api={
  listDuties: httpsCallable(functions,'listAdminAccountDuties'),
  duty: httpsCallable(functions,'getAdminDutyDetail'),
  settings: httpsCallable(functions,'getAdminAccountSettings'),
- trash: httpsCallable(functions,'adminTrashAccountDuty')
+ trash: httpsCallable(functions,'adminTrashAccountDuty'),
+ updateLocations: httpsCallable(functions,'adminUpdateDutyLocations'),
+ restore: httpsCallable(functions,'adminRestoreAccountDuty')
 };
 const notice=(message,error=false)=>{
  $('message').textContent=message;
@@ -33,7 +36,8 @@ function selectedIsValid(){
 }
 function validSelectedDuty(allowBusy=false){
  return (allowBusy||!busy)&&!!selected&&!!selectedDuty&&
-  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&!selected.isAdmin&&
+  dutyUid===selected.uid&&selectedDuty.uid===selected.uid&&
+  (!selected.isAdmin||selected.uid===adminUid)&&
   $('trashConfirmId').value.trim()===selectedDuty.shiftId&&
   $('trashConfirmAck').checked&&selectedDuty.trashed!==true&&
   (selectedDuty.shift?.endedAt||selectedDuty.shift?.endedIso);
@@ -44,13 +48,26 @@ function buttons(){
  $('loadSettings').disabled=!selected||busy;
  $('moreDuties').disabled=!selected||busy||!dutyCursor;
  $('trashDuty').disabled=!validSelectedDuty();
+ $('restoreDuty').hidden=!selectedDuty||selectedDuty.trashed!==true;
+ $('restoreDuty').disabled=!selectedDuty||busy||selectedDuty.trashed!==true||
+  selected?.isAdmin&&selected.uid!==adminUid;
+ $('trashDutyShortcut').hidden=!!selectedDuty&&selectedDuty.trashed===true;
+ $('trashDutyShortcut').disabled=!selectedDuty||busy||
+  selectedDuty.trashed===true||!selectedDuty.shift?.endedAt&&!selectedDuty?.shift?.endedIso||
+  selected?.isAdmin&&selected.uid!==adminUid;
+ $('editDuty').disabled=!selectedDuty||busy||selectedDuty.trashed===true||
+  !selectedDuty.shift?.endedAt&&!selectedDuty?.shift?.endedIso||
+  !selectedDuty.shift?.records?.some(row=>row?.id&&['ride','cancel'].includes(row.kind))||
+  selected?.isAdmin&&selected.uid!==adminUid;
+ $('adminEditSave').disabled=busy||!editDraft;
  $('markTest').disabled=!ok||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid||selected.status==='deleted'||selected.status==='deleting';
  $('preview').disabled=!ok||selected.isAdmin||selected.status==='deleted';
  $('deleteAccount').disabled=!ok||selected.isAdmin||!selected.testOnly||!preview||preview.uid!==selected.uid||preview.openChatName!==(selected.openChatName||'');
  for(const id of ['reload','search','signIn','signOut'])$(id).disabled=busy;
 }
 function clearDutyPanel(){
- selectedDuty=null;dutyCursor=null;dutyRows=[];dutyUid='';
+ selectedDuty=null;dutyCursor=null;dutyRows=[];dutyUid='';editDraft=null;
+ $('adminLocationEdit').hidden=true;
  $('dutyRows').textContent='';
  $('dutySelected').hidden=true;
  $('settingsDetail').hidden=true;
@@ -64,7 +81,7 @@ function selectUser(user){
  $('selectedPanel').hidden=false;
  $('accountDeletionSection').hidden=!!user.isAdmin;
  $('adminSourceNotice').hidden=!user.isAdmin;
- $('dutyTrashSection').hidden=!!user.isAdmin;
+ $('dutyTrashSection').hidden=!!user.isAdmin&&user.uid!==adminUid;
  $('confirmUid').value='';$('ack').checked=false;
  $('previewDetails').hidden=true;
  $('targetDetails').textContent='';
@@ -285,8 +302,9 @@ async function readDuty(shiftId){
     duty.shift?.id!==shiftId||!Number.isSafeInteger(duty.revision))
   throw Error('日報原本のUID・ID・更新番号が一致しません');
  selectedDuty=duty;dutyUid=uid;
+ editDraft=null;$('adminLocationEdit').hidden=true;
  $('dutySelected').hidden=false;
- $('dutyTrashSection').hidden=!!selected.isAdmin;
+ $('dutyTrashSection').hidden=!!selected.isAdmin&&uid!==adminUid;
  $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
   '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
  // 日報は元の保存データに基づく日本語閲覧専用UIで表示する。
@@ -298,7 +316,7 @@ async function readDuty(shiftId){
  });
  $('trashConfirmId').value='';$('trashConfirmAck').checked=false;
  buttons();
- notice('選択した1乗務の原本を読み取り専用で表示しました。');
+ notice('選択した1乗務の原本を表示しました。入庫済みなら編集・ゴミ箱移動が選べます。');
 }
 $('loadDuties').addEventListener('click',()=>execute(()=>loadDuties(true)));
 $('moreDuties').addEventListener('click',()=>execute(()=>loadDuties(false)));
@@ -313,6 +331,151 @@ $('loadSettings').addEventListener('click',()=>execute(async()=>{
  $('settingsDetail').hidden=false;
  notice('本人の設定を閲覧用に取得しました。変更・保存は行いません。');
 }));
+function locationEditKey(uid,shiftId){
+ return 'taxiapp-admin-location-edit-v1-'+encodeURIComponent(uid)+'-'+encodeURIComponent(shiftId);
+}
+function preserveLocationEdit(){
+ if(!editDraft)return;
+ editDraft.pickup=$('adminEditPickup').value;
+ editDraft.dropoff=$('adminEditDropoff').value;
+ // 再ログインや通信失敗後も、修正控えをUID別に残して復旧する。
+ localStorage.setItem(locationEditKey(editDraft.uid,editDraft.shiftId),JSON.stringify(editDraft));
+ $('adminEditStatus').textContent='修正控えをこのPC内に保護しました（サーバー未保存）';
+}
+function chooseLocationRecord(){
+ if(!editDraft||!selectedDuty)return;
+ const id=$('adminEditRecord').value;
+ const record=selectedDuty.shift.records.find(row=>row?.id===id);
+ if(!record)return;
+ editDraft.recordId=id;
+ editDraft.pickup=String(record.raw?.AL||'');
+ editDraft.dropoff=String(record.raw?.AM||'');
+ $('adminEditPickup').value=editDraft.pickup;
+ $('adminEditDropoff').value=editDraft.dropoff;
+ preserveLocationEdit();
+}
+function startLocationEdit(){
+ if(!selectedDuty||selectedDuty.trashed||!selectedDuty.shift?.endedAt&&!selectedDuty.shift?.endedIso)return;
+ if(selected?.isAdmin&&selected.uid!==adminUid)return;
+ const uid=selected.uid,shiftId=selectedDuty.shiftId,revision=selectedDuty.revision;
+ const saved=localStorage.getItem(locationEditKey(uid,shiftId));
+ let restored=null;
+ if(saved){
+  try{restored=JSON.parse(saved);}catch{throw Error('端末の編集控えが破損しています。控えを消さずに保護します');}
+  if(restored?.uid!==uid||restored.shiftId!==shiftId||
+     !Number.isSafeInteger(restored.revision)||typeof restored.recordId!=='string')
+   throw Error('編集控えが対象乗務と一致しません。保護のため開始できません');
+  if(restored.revision!==revision)
+   throw Error('編集中にサーバーの更新番号が変わりました。修正控えを保持しています。競合を確認してください');
+ }
+ const records=selectedDuty.shift.records.filter(row=>row?.id&&['ride','cancel'].includes(row.kind));
+ if(!records.length)throw Error('この日報に乗降地を訂正できる営業記録がありません');
+ const selector=$('adminEditRecord');selector.textContent='';
+ for(const record of records){
+  const option=document.createElement('option');
+  option.value=record.id;
+  option.textContent='№'+String(record.raw?.A||'?')+'／'+
+   (record.kind==='ride'?'実車':'キャンセル')+
+   '／'+String(record.raw?.G||record.raw?.C||'時刻未記録');
+  selector.append(option);
+ }
+ editDraft=restored||{uid,shiftId,revision,recordId:records[0].id,
+  pickup:'',dropoff:''};
+ selector.value=records.some(row=>row.id===editDraft.recordId)?editDraft.recordId:records[0].id;
+ if(!restored||selector.value!==editDraft.recordId)chooseLocationRecord();
+ else{
+  $('adminEditPickup').value=editDraft.pickup;
+  $('adminEditDropoff').value=editDraft.dropoff;
+ }
+ $('adminLocationEdit').hidden=false;
+ $('adminEditStatus').textContent=restored?
+  '前回の修正控えを復元しました。保存先の更新番号を再確認してください。':
+  'この変更はまだサーバーへ送信していません。';
+ buttons();
+}
+$('editDuty').addEventListener('click',()=>execute(async()=>{startLocationEdit();}));
+$('adminEditRecord').addEventListener('change',chooseLocationRecord);
+for(const key of ['adminEditPickup','adminEditDropoff'])
+ $(key).addEventListener('input',()=>{
+  try{preserveLocationEdit();}catch(e){
+   $('adminEditStatus').textContent='修正控えを保護できません。保存を中断してください：'+String(e.message||e);
+  }
+ });
+$('adminEditCancel').addEventListener('click',()=>{
+ // 編集を閉じても修正控えを勝手に削除しない。
+ $('adminLocationEdit').hidden=true;editDraft=null;buttons();
+});
+$('adminEditSave').addEventListener('click',()=>execute(async()=>{
+ if(!editDraft||!selectedDuty||selectedDuty.uid!==editDraft.uid||
+    selectedDuty.shiftId!==editDraft.shiftId||
+    selectedDuty.revision!==editDraft.revision||
+    selected?.uid!==editDraft.uid)
+  throw Error('対象UID・乗務ID・更新番号が変わりました。保存を停止しました');
+ preserveLocationEdit();
+ const draft={...editDraft};
+ if(draft.pickup.length>160||draft.dropoff.length>160)
+  throw Error('乗降地は160文字以内にしてください');
+ const record=selectedDuty.shift.records.find(row=>row?.id===draft.recordId);
+ if(!record)throw Error('対象の営業記録が見つかりません');
+ if(String(record.raw?.AL||'')===draft.pickup&&
+    String(record.raw?.AM||'')===draft.dropoff)
+  throw Error('変更がありません。修正控えは保持しました');
+ if(!window.confirm('UID '+draft.uid+'／乗務ID '+draft.shiftId+
+    '／営業記録 '+draft.recordId+' の乗降地だけを保存しますか？'))return;
+ await recentAdminLogin();
+ if(selected?.uid!==draft.uid||selectedDuty?.shiftId!==draft.shiftId||
+    selectedDuty?.revision!==draft.revision)
+  throw Error('選択した日報が変わりました。保存を中止しました');
+ const response=await api.updateLocations({
+  uid:draft.uid,confirmationUid:draft.uid,shiftId:draft.shiftId,
+  confirmationShiftId:draft.shiftId,expectedRevision:draft.revision,
+  recordId:draft.recordId,pickup:draft.pickup,dropoff:draft.dropoff,confirmEdit:true
+ });
+ if(response.data?.uid!==draft.uid||response.data?.shiftId!==draft.shiftId||
+    response.data?.recordId!==draft.recordId||
+    response.data?.revision!==draft.revision+1||
+    response.data?.pickup!==draft.pickup||response.data?.dropoff!==draft.dropoff)
+  throw Error('サーバー保存結果を確認できません。修正控えを残しました');
+ // 再取得が失敗しても修正控えを保護する。
+ const confirmed=await getDutyRecord(draft.uid,draft.shiftId);
+ const changed=confirmed.shift.records.filter(row=>row.id===draft.recordId);
+ if(confirmed.revision!==response.data.revision||changed.length!==1||
+    changed[0].raw?.AL!==draft.pickup||changed[0].raw?.AM!==draft.dropoff)
+  throw Error('原本の再取得照合が一致しません。修正控えを保護しました');
+ try{localStorage.removeItem(locationEditKey(draft.uid,draft.shiftId));}
+ catch(e){$('adminEditStatus').textContent='保存確認済みですが修正控えの整理に失敗しました：'+String(e.message||e);}
+ editDraft=null;$('adminLocationEdit').hidden=true;
+ await readDuty(draft.shiftId);
+ notice('乗降地の訂正を保存し、更新番号と原本の内容を読み戻し確認しました。');
+}));
+$('restoreDuty').addEventListener('click',()=>execute(async()=>{
+ const target=selectedDuty,uid=selected?.uid;
+ if(!target||target.trashed!==true||target.uid!==uid||
+    selected.isAdmin&&uid!==adminUid)return;
+ if(!window.confirm('UID '+uid+'／乗務ID '+target.shiftId+
+  ' をゴミ箱から復元しますか？更新番号 '+target.revision+' を確認します。'))return;
+ await recentAdminLogin();
+ if(selected?.uid!==uid||selectedDuty!==target)
+  throw Error('選択対象が変わりました。復元を中止します');
+ const response=await api.restore({
+  uid,confirmationUid:uid,shiftId:target.shiftId,
+  confirmationShiftId:target.shiftId,expectedRevision:target.revision,
+  confirmRestore:true
+ });
+ if(response.data?.uid!==uid||response.data?.shiftId!==target.shiftId||
+    response.data?.revision!==target.revision+1||response.data?.trashed!==false)
+  throw Error('復元結果を確認できません');
+ const verified=await getDutyRecord(uid,target.shiftId);
+ if(verified.revision!==response.data.revision||verified.trashed!==false)
+  throw Error('復元後の原本が一致しません。再読み込みしてください');
+ await readDuty(target.shiftId);
+ notice('日報をゴミ箱から復元しました。入庫済みの原本なら乗降地を編集できます。');
+}));
+$('trashDutyShortcut').addEventListener('click',()=>{
+ if($('trashDutyShortcut').disabled)return;
+ $('dutyTrashSection').scrollIntoView?.({behavior:'smooth',block:'center'});
+ $('trashConfirmId').focus?.();
+});
 $('trashDuty').addEventListener('click',()=>execute(async()=>{
  if(!validSelectedDuty(true))return;
  const target=selectedDuty,uid=selected.uid;

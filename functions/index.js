@@ -226,7 +226,6 @@ exports.adminTrashAccountDuty=onCall(options,async request=>{
   fail('invalid-argument','原本の更新番号を確認してください');
  if(request.data?.confirmTrash!==true)
   fail('failed-precondition','個別日報の削除確認が必要です');
- if(uid===actor)fail('permission-denied','管理者本人の日報はこの画面で削除できません');
  await db.runTransaction(async tx=>{
   const adminRef=db.doc('admins/'+uid),
    userRef=db.doc('users/'+uid),
@@ -234,9 +233,14 @@ exports.adminTrashAccountDuty=onCall(options,async request=>{
   const [admin,member,duty]=await Promise.all([
    tx.get(adminRef),tx.get(userRef),tx.get(dutyRef)
   ]);
-  if(admin.exists||!member.exists||
-    !['active','suspended'].includes(member.get('status')))
-   fail('permission-denied','削除対象が通常の利用者ではありません');
+  // 管理者が自分のFirestore原本を操作する場合に限り例外的に許可。
+  // 他の管理者・一般利用者に対する制限は維持する。
+  const authorisedTarget=uid===actor?
+   admin.exists&&admin.get('enabled')===true:
+   !admin.exists&&member.exists&&
+   ['active','suspended'].includes(member.get('status'));
+  if(!authorisedTarget)
+   fail('permission-denied','指定したUIDの日報削除権限がありません');
   if(!duty.exists)fail('not-found','指定乗務がありません');
   const original=duty.data();
   if(original?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
@@ -262,4 +266,126 @@ exports.adminTrashAccountDuty=onCall(options,async request=>{
   fail('unavailable','ゴミ箱移動後のサーバー確認ができません。再読み込みしてください');
  return {uid,shiftId,revision:revision+1,trashed:true,
   message:'指定した1乗務をゴミ箱へ移動しました。原本内容は保持されています。'};
+});
+
+
+// 乗降地だけを安全に修正する。料金・手数料・距離は変更せず、
+// TAXIAPP本体の唯一の計算エンジンを代替する処理を作らない。
+exports.adminUpdateDutyLocations=onCall(options,async request=>{
+ const actor=await administrator(request,true),uid=requestedUid(request.data),
+  shiftId=checkedShiftId(request.data?.shiftId);
+ confirmed(request.data,uid);
+ if(request.data?.confirmationShiftId!==shiftId||
+    request.data?.confirmEdit!==true)
+  fail('failed-precondition','乗務IDと編集操作を確認してください');
+ const revision=request.data?.expectedRevision;
+ if(!Number.isSafeInteger(revision)||revision<1)
+  fail('invalid-argument','対象原本の更新番号が不正です');
+ const recordId=request.data?.recordId;
+ if(typeof recordId!=='string'||recordId.length<1||recordId.length>128)
+  fail('invalid-argument','営業記録IDが不正です');
+ const pickup=request.data?.pickup,dropoff=request.data?.dropoff;
+ if(typeof pickup!=='string'||typeof dropoff!=='string'||
+    pickup.length>160||dropoff.length>160)
+  fail('invalid-argument','乗降地の文字数を確認してください');
+ await db.runTransaction(async tx=>{
+  const adminRef=db.doc('admins/'+uid),userRef=db.doc('users/'+uid),
+   dutyRef=db.doc('privateDuties/'+uid+'/shifts/'+shiftId);
+  const [targetAdmin,targetUser,snapshot]=await Promise.all([
+   tx.get(adminRef),tx.get(userRef),tx.get(dutyRef)
+  ]);
+  const authorisedTarget=uid===actor?
+   targetAdmin.exists&&targetAdmin.get('enabled')===true:
+   !targetAdmin.exists&&targetUser.exists&&
+   ['active','suspended'].includes(targetUser.get('status'));
+  if(!authorisedTarget)fail('permission-denied','対象利用者の編集権限がありません');
+  if(!snapshot.exists)fail('not-found','対象の日報原本がありません');
+  const original=snapshot.data(),shift=original?.shift;
+  if(original?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+     shift?.id!==shiftId||!Array.isArray(shift?.records))
+   fail('failed-precondition','原本の形式または乗務IDが不正です');
+  if(original.trashed===true||(!shift.endedIso&&!shift.endedAt))
+   fail('failed-precondition','入庫済みでゴミ箱にない日報だけを修正できます');
+  if(original.revision!==revision)
+   fail('aborted','日報が他端末で更新されました。読み直して比較してください');
+  const matches=shift.records.filter(row=>row?.id===recordId);
+  if(matches.length!==1||!['ride','cancel'].includes(matches[0]?.kind))
+   fail('failed-precondition','対象の営業記録が見つかりません');
+  const previous=matches[0];
+  if(!previous.raw||typeof previous.raw!=='object')
+   fail('failed-precondition','営業原本の形式が不正です');
+  if(String(previous.raw.AL??'')===pickup&&String(previous.raw.AM??'')===dropoff)
+   fail('failed-precondition','編集内容に変更がありません');
+  // 入力箇所以外の原本、集計済み値、GPS等は一切変更しない。
+  const adjusted={...shift,records:shift.records.map(row=>
+   row.id===recordId?{...row,raw:{...row.raw,AL:pickup,AM:dropoff}}:row)};
+  tx.update(dutyRef,{
+   shift:adjusted,revision:revision+1,updatedAt:FieldValue.serverTimestamp()
+  });
+  tx.create(db.collection('adminAccessAudit').doc(),{
+   actorUid:actor,targetUid:uid,action:'edit_duty_location',shiftId,
+   recordId,beforeRevision:revision,afterRevision:revision+1,
+   at:FieldValue.serverTimestamp()
+  });
+ });
+ // サーバー読戻しで、UID・乗務ID・更新番号・編集箇所の一致を確認。
+ const saved=await db.doc('privateDuties/'+uid+'/shifts/'+shiftId).get();
+ const record=saved.data();
+ const matches=record?.shift?.records?.filter(row=>row?.id===recordId)||[];
+ if(!saved.exists||record?.shift?.id!==shiftId||
+    record?.revision!==revision+1||record?.trashed===true||
+    matches.length!==1||matches[0].raw?.AL!==pickup||
+    matches[0].raw?.AM!==dropoff)
+  fail('unavailable','保存結果の照合ができません。原本を読み直してください');
+ return {uid,shiftId,recordId,revision:revision+1,
+  pickup,dropoff,message:'乗車地・降車地を保存し、サーバー原本を読戻し確認しました。'};
+});
+
+
+// 管理者本人・一般利用者のゴミ箱日報を、CAS確認して1件だけ復元する。
+exports.adminRestoreAccountDuty=onCall(options,async request=>{
+ const actor=await administrator(request,true),uid=requestedUid(request.data),
+  shiftId=checkedShiftId(request.data?.shiftId);
+ confirmed(request.data,uid);
+ if(request.data?.confirmationShiftId!==shiftId||
+    request.data?.confirmRestore!==true)
+  fail('failed-precondition','乗務IDと復元操作を確認してください');
+ const revision=request.data?.expectedRevision;
+ if(!Number.isSafeInteger(revision)||revision<1)
+  fail('invalid-argument','原本の更新番号が不正です');
+ await db.runTransaction(async tx=>{
+  const adminRef=db.doc('admins/'+uid),userRef=db.doc('users/'+uid),
+   dutyRef=db.doc('privateDuties/'+uid+'/shifts/'+shiftId);
+  const [targetAdmin,targetUser,duty]=await Promise.all([
+   tx.get(adminRef),tx.get(userRef),tx.get(dutyRef)
+  ]);
+  const authorisedTarget=uid===actor?
+   targetAdmin.exists&&targetAdmin.get('enabled')===true:
+   !targetAdmin.exists&&targetUser.exists&&
+   ['active','suspended'].includes(targetUser.get('status'));
+  if(!authorisedTarget)fail('permission-denied','この利用者の日報は復元できません');
+  if(!duty.exists)fail('not-found','日報原本がありません');
+  const saved=duty.data();
+  if(saved?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||saved?.shift?.id!==shiftId)
+   fail('failed-precondition','乗務IDと原本が一致しません');
+  if(saved.trashed!==true)
+   fail('failed-precondition','ゴミ箱内の日報ではありません');
+  if(saved.revision!==revision)
+   fail('aborted','更新番号が変わりました。原本を読み直してください');
+  tx.update(dutyRef,{
+   trashed:false,revision:revision+1,
+   updatedAt:FieldValue.serverTimestamp()
+  });
+  tx.create(db.collection('adminAccessAudit').doc(),{
+   actorUid:actor,targetUid:uid,action:'restore_duty',shiftId,
+   beforeRevision:revision,afterRevision:revision+1,
+   at:FieldValue.serverTimestamp()
+  });
+ });
+ const check=await db.doc('privateDuties/'+uid+'/shifts/'+shiftId).get();
+ if(!check.exists||check.get('revision')!==revision+1||
+    check.get('trashed')!==false||check.get('shift')?.id!==shiftId)
+  fail('unavailable','復元後の原本を照合できません。再読み込みしてください');
+ return {uid,shiftId,revision:revision+1,trashed:false,
+  message:'対象の1乗務をゴミ箱から復元しました。'};
 });
