@@ -1761,7 +1761,7 @@ const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDist
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
 // 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
-const ADMIN_FIRESTORE_CUTOVER_ENABLED=false; // Default legacy: only an individually verified opt-in is allowed.
+const ADMIN_FIRESTORE_CUTOVER_ENABLED=true; // デモでも新規乗務は本人Firestore画面から開始（通信・保存は無効）。
 // Existing production duty migration requires independent approval beyond
 // the future approval to change where newly created duties are saved.
 const ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false;
@@ -6679,7 +6679,7 @@ window.addEventListener('beforeunload',event=>{
 model=emptyAccountModel();
 model.prefs.driver='デモ乗務員';model.prefs.driverNo='DEMO';model.prefs.vehicle='デモ車両';
 model.prefs.gpsTripAtStart='off';model.prefs.reverseAddress='off';
-accountScope={kind:'legacy',uid:'offline-demo'};accountScopeLoaded=true;
+accountScope={kind:'member',uid:'offline-demo',adminFirestore:true,adminFirestorePreview:false};accountScopeLoaded=true;
 deviceMode='writer';writerLoadGate=false;writerLoadError='';
 storageStatus='デモ専用メモリ（再読込で初期化）';
 // Synthetic fixtures only. They never represent or import an actual duty.
