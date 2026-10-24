@@ -2201,7 +2201,7 @@ function render(){
 }
 // Preserve all expanded setting categories and the current reading position.
 // The UI is rebuilt after setting changes and background cloud updates.
-let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false;
+let settingsOpenState=null,lastRenderedTab=null,rideSettingsJumpRequested=false,settingsCategoryLastRendered='';
 let historyPanelOpen={},historyPanelDutyKey='';
 function renderNow(){
  if(keypadActive){renderAfterKeypad=true;return;}
@@ -2209,7 +2209,9 @@ function renderNow(){
  const sameTab=lastRenderedTab===tab;
  const monthlyPanel=appEl.querySelector('[data-monthly-sales-panel]');
  if(monthlyPanel)monthlySalesOpened=monthlyPanel.open;
- const oldPanels=lastRenderedTab==='settings'
+ const sameSettingsGroup=settingsCategoryLastRendered===settingsCategoryActive;
+ if(!sameSettingsGroup)settingsOpenState=null;
+ const oldPanels=lastRenderedTab==='settings'&&sameSettingsGroup
   ? [...appEl.querySelectorAll('details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-drive-status-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-driver-profile-settings],details[data-vehicle-profile-settings],details[data-cancel-settings],details[data-fee-settings],details[data-duty-plan-settings],details[data-gps-settings],details[data-address-settings]')]:[];
  if(oldPanels.length)settingsOpenState=oldPanels.map(panel=>panel.open);
  const scrollPosition=sameTab&&tab==='settings'
@@ -2270,6 +2272,7 @@ function renderNow(){
  if(meterSummaryWasOpen){for(const el of appEl.querySelectorAll('.meter-summary-more'))el.open=true;}
  if(typeof syncFloatingDutySummary==='function')syncFloatingDutySummary();
  lastRenderedTab=tab;
+ if(tab==='settings')settingsCategoryLastRendered=settingsCategoryActive;
  if(highwayWasOpen){
   const highway=appEl.querySelector('[data-highway-fold]');
   if(highway)highway.open=true;
