@@ -6,7 +6,7 @@
 
 - 原因は PC 管理ページが `users` のみを一覧取得していたこと。Google認証で権限を確認できる管理者でも `admins/{uid}` にしか登録がなければ「0件」になっていた。
 - `users` と `admins` の両方をサーバーから取得し、Firebase AuthのUIDをキーに重複を除いて一つのアカウント一覧に表示。管理者本人は `users` 未登録でも「管理者（自分）」として必ず一覧に表示する。
-- 管理者は自分の `privateDuties/{uid}/shifts`（Firestore日報）と `accountSettings/{uid}` を既存管理者読み取りAPIで表示可能。**旧 Google Sheets 日報はFirestoreの一覧に含まれず**、TAXIAPP本体／従来のGoogle帳票で参照する。データがないと誤解しないよう画面で区別する。
+- 管理者本人は、自身の `privateDuties/{uid}/shifts`（Firestore日報）と `accountSettings/{uid}` を、**既存の本人UID読み取りルールによりCloud Functions未配信でも直接閲覧**できる。他の管理者・一般利用者の原本は引き続き認証済み管理者Callableを利用する。**旧 Google Sheets 日報はFirestoreの一覧に含まれず**、TAXIAPP本体／従来のGoogle帳票で参照する。データがないと誤解しないよう画面で区別する。
 - 管理者レコードについては、アカウント完全削除・テスト用指定・個別ゴミ箱移動を画面側でも無効化。サーバー側の管理者UID削除拒否は従来どおり維持する。
 - 変更は管理 PC ページの表示のみ。Firestoreアクセスルール、既存の管理者原本保存先、移行設定、計算、帳票への変更なし。
 - **公開・本番操作は別途承認が必要**。Firebase Functions未配信の場合、表示一覧の修正は使えるが、管理専用Callableによる詳細閲覧は利用できない。
