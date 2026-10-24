@@ -119,6 +119,9 @@ try:
     WebDriverWait(browser,20).until(lambda d: d.execute_script(
         "return !!document.querySelector('[data-tab=settings]')"))
     browser.execute_script("document.querySelector('[data-tab=settings]').click()")
+    WebDriverWait(browser,12).until(lambda d: bool(d.find_elements(
+        By.CSS_SELECTOR,'[data-settings-category-choice="display"]')))
+    browser.execute_script("document.querySelector('[data-settings-category-choice=display]').click()")
     topLevel=[
       'data-business-field-settings','data-appearance-settings'
     ]
@@ -180,6 +183,10 @@ try:
     assert state['themeChoices']==2,state
     assert state['rideChoices']>0 and state['cruisingChoices']>0,state
     print('PASS Chrome: cruising fixed 2x2; 3 independent display menus and 5 appearance menus')
+    # The registration fields are now under the separate "乗務員設定" category.
+    browser.execute_script("document.querySelector('[data-settings-category-choice=driver]').click()")
+    WebDriverWait(browser,12).until(lambda d: bool(d.find_elements(
+        By.CSS_SELECTOR,'details.settings-advanced[data-driver-registration]')))
     # Registration screen has one parent with independently folding driver, vehicle,
     # cancellation and duty-plan settings. Fees only appear for a selected shift.
     driver_group=browser.execute_script("""
