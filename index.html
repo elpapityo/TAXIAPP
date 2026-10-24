@@ -1404,8 +1404,9 @@ let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicl
 const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDistance!=='off':['S','V','AB','AE','X','Y','AJ','AK'].includes(field)?model.prefs.highwayDistance!=='off':true;
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
-// 本番保存先は正式移行の承認後にのみ切替える。開発ブランチでは常にOFF。
-const ADMIN_FIRESTORE_CUTOVER_ENABLED=false; // Default legacy: only an individually verified opt-in is allowed.
+// 新規日報は管理者を含め本人Firestoreへ保存する。既存Google原本・端末原本は移行も削除もしない。
+// 本人UID認証・操作端末権限・Firestore読戻し確認は従来どおり必須。
+const ADMIN_FIRESTORE_CUTOVER_ENABLED=true;
 // Existing production duty migration requires independent approval beyond
 // the future approval to change where newly created duties are saved.
 const ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false;
@@ -1852,7 +1853,7 @@ async function switchAccountScope(scope){
  }
  adminFirestorePreviewMessage='';
  currentLoginScope=scope||null;cloudManagementDate='';legacyHistoryRemote=null;legacyHistoryBusy=false;legacyHistoryMessage='';
- if(scope?.admin&&!TAXIAPP_PRINT_VIEWER_MODE&&!adminFirestoreManifest(scope.uid)){
+ if(scope?.admin&&!TAXIAPP_PRINT_VIEWER_MODE&&!ADMIN_FIRESTORE_CUTOVER_ENABLED&&!adminFirestoreManifest(scope.uid)){
   try{await ensureAdminFreshFirestore(scope,generation);}
   catch(e){console.warn('管理者のFirestore切替を安全に保留:',e);}
   if(generation!==accountScopeGeneration)return;
@@ -4315,8 +4316,9 @@ const syncUI=window.TAXIAPP_SYNC_UI({
     // only the latest duty, so comparing all sourceIds here would reject a
     // valid two-duty migration and every later historical correction.
     const manifest=adminFirestoreManifest(accountScope.uid);
-    if(!manifest||!Array.isArray(manifest.sourceIds)||
-       (manifest.excludedIds!==undefined&&!Array.isArray(manifest.excludedIds)))
+    if((!manifest&&!ADMIN_FIRESTORE_CUTOVER_ENABLED)||
+       (manifest&&(!Array.isArray(manifest.sourceIds)||
+        (manifest.excludedIds!==undefined&&!Array.isArray(manifest.excludedIds)))))
      throw Error('管理者のFirestore保存先切替記録を確認できません。旧Google原本は保持します');
    }
    const next={...previous,shifts:deepCopy(shifts).sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')))};
@@ -4438,9 +4440,11 @@ function renderAdminBackendSettings(){
   return '<section class="card"><h2 class="h2">現在の原本：本人専用Firestore</h2>'+
    '<p class="helper">保存先はログイン中の本人UID専用です。元のGoogle原本は残しています。新しい乗務の印刷にはPC側のFirestore取込が必要です。</p>'+
    '<div class="actions"><button class="btn primary" type="button" data-action="adminFirestorePreviewVerify" '+(adminCutoverBusy?'disabled':'')+'>現在の乗務をFirestore読戻し確認</button>'+
-   '<button class="btn" type="button" data-action="adminFirestoreLegacy">以前のGoogle保存先に戻る</button></div>'+
+   (ADMIN_FIRESTORE_CUTOVER_ENABLED?'':'<button class="btn" type="button" data-action="adminFirestoreLegacy">以前のGoogle保存先に戻る</button>')+'</div>'+
    (adminFirestorePreviewMessage?'<p class="caption-note" role="status">'+safeText(adminFirestorePreviewMessage)+'</p>':'')+
-   '<p class="warn">戻してもFirestore内の日報は削除されません。未転記の新しい乗務はGoogleには自動移行しません。</p></section>';
+   (ADMIN_FIRESTORE_CUTOVER_ENABLED?
+    '<p class="warn">初期保存先は本人Firestoreです。以前のGoogle原本・端末原本は移行・削除しません。Google保存への復帰には別途アプリ側の切替設定が必要です。</p>':
+    '<p class="warn">戻してもFirestore内の日報は削除されません。未転記の新しい乗務はGoogleには自動移行しません。</p>')+'</section>';
  }
  if(!legacyDiary())return '<section class="card"><h2 class="h2">本人専用Firestore</h2><p>乗務員の保存先は本人UIDに固定されています。</p></section>';
  if(ADMIN_FIRESTORE_PREVIEW_AVAILABLE){
@@ -4778,6 +4782,7 @@ async function startAdminFirestoreCutover(){
  }finally{adminCutoverBusy=false;render();}
 }
 async function returnAdminToLegacy(){
+ if(ADMIN_FIRESTORE_CUTOVER_ENABLED){toast('初期保存先はFirestoreです。Google保存先への復帰は別途切替作業が必要です',true);return;}
  if(adminCutoverBusy||!accountScope.adminFirestore||!currentLoginScope?.admin||!canEditNow())return;
  const uid=accountScope.uid,sourceGeneration=accountScopeGeneration,sourceScope=currentLoginScope;
  if(!confirm('旧Googleの保存先に戻しますか？\nFirestoreに保存した日報は消えませんが、新しく入力した乗務はGoogleには自動で移行しません。先にJSONバックアップを保存してください。'))return;
@@ -6614,9 +6619,10 @@ async function importFirestoreBackup(file){
   // This is historical import, not the phone's ordinary working duty.
   // Keep it available by day-scoped history, but never auto-resume it.
   const manifest=adminFirestoreManifest(uid);
-  if(!manifest)throw Error('正式保存先の切替記録がありません');
-  const excluded=[...new Set([...(manifest.excludedIds||[]),selected.id])];
-  const text=JSON.stringify({...manifest,excludedIds:excluded});
+  if(!manifest&&!ADMIN_FIRESTORE_CUTOVER_ENABLED)
+   throw Error('正式保存先の切替記録がありません');
+  const excluded=[...new Set([...(manifest?.excludedIds||[]),selected.id])];
+  const text=JSON.stringify({mode:'firestore',uid,sourceIds:manifest?.sourceIds||[],...manifest,excludedIds:excluded});
   const prefKey=ADMIN_FIRESTORE_PREF_PREFIX+uid;
   localStorage.setItem(prefKey,text);
   if(localStorage.getItem(prefKey)!==text)throw Error('履歴保持区分を端末へ記録できません');
