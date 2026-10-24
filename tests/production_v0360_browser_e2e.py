@@ -51,7 +51,16 @@ try:
     js("document.querySelector('[data-tab=settings]').click()")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'[data-settings-category-choice="gps"]')))
     js("document.querySelector('[data-settings-category-choice=gps]').click()")
-    wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-distance-address-settings]')))
+    gps_found=bool(driver.find_elements(By.CSS_SELECTOR,'details[data-distance-address-settings]'))
+    if not gps_found:
+        debug=js("""return {
+          selected:[...document.querySelectorAll('[data-settings-category-choice]')].map(e=>({id:e.dataset.settingsCategoryChoice,pressed:e.getAttribute('aria-pressed')})),
+          content:document.querySelector('.settings-category-content')?.textContent.slice(0,260)||'',
+          main:document.querySelector('#main-content')?.textContent.slice(0,340)||'',
+          rawGps:!!document.querySelector('[data-distance-address-settings]'),
+          error:document.querySelector('#app .boot')?.textContent||''
+        }""")
+        raise AssertionError('GPS分類を表示できません：'+repr(debug))
     js("document.querySelector('details[data-distance-address-settings]').open=true")
     wait.until(lambda _: bool(driver.find_elements(By.CSS_SELECTOR,'details[data-gps-settings]')))
     js("document.querySelector('details[data-gps-settings]').open=true")
