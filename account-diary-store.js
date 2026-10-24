@@ -320,6 +320,44 @@ function create(){
      meter:Number.isFinite(data?.shift?.__taxiPrintSummary?.meter)?data.shift.__taxiPrintSummary.meter:null};
    })};
   }
+  if(action==='syncHistoryRange'){
+   // Read only the user-selected closing period. Never list all historical
+   // originals or place returned shifts into the phone's working model.
+   const start=String(fields.startDate||''),end=String(fields.endDate||'');
+   const validDate=text=>{
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(text))return NaN;
+    const n=Date.parse(text+'T00:00:00Z');
+    return Number.isFinite(n)&&new Date(n).toISOString().slice(0,10)===text?n:NaN;
+   };
+   const from=validDate(start),to=validDate(end);
+   if(!Number.isFinite(from)||!Number.isFinite(to)||to<from||
+      to-from>35*86400000)
+    throw Error('月間売上の対象期間が不正です（最大36日）');
+   if(typeof c.f.query!=='function'||typeof c.f.where!=='function')
+    throw Error('Firestoreの期間限定取得機能を利用できません');
+   const query=c.f.query(collectionRef(c),
+    c.f.where('shift.date','>=',start),c.f.where('shift.date','<=',end));
+   const snapshot=await c.f.getDocsFromServer(query);
+   ownerCheck(c);
+   if(!Array.isArray(snapshot?.docs)||snapshot.docs.length>120)
+    throw Error('対象期間の日報件数が多すぎます。期間を確認してください');
+   const rows=[],seen=new Set();
+   for(const doc of snapshot.docs){
+    ownerCheck(c);
+    const id=String(doc.id||''),data=doc.data(),revision=Number(data?.revision);
+    if(!ID.test(id)||seen.has(id)||data?.format!=='TAXIAPP_PRIVATE_SHIFT_V1'||
+       !Number.isSafeInteger(revision)||revision<1||data.shift?.id!==id)
+     throw Error('月間売上の原本ID・更新番号・形式が不正です');
+    seen.add(id);
+    if(data.trashed===true)continue;
+    const date=String(data.shift?.date||'');
+    if(date<start||date>end||!Number.isFinite(validDate(date)))
+     throw Error('取得した日報の日付が指定期間外です');
+    rows.push({id,revision,shift:validate(data.shift,id)});
+   }
+   ownerCheck(c);
+   return {startDate:start,endDate:end,shifts:rows};
+  }
   if(action==='syncHistoryDate'){
    const date=String(fields.date||'');
    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||
