@@ -74,7 +74,18 @@ async function loadList(){
  const myEpoch=epoch;
  const snap=await getDocsFromServer(query(collection(db,'users'),limit(150)));
  if(myEpoch!==epoch||!adminUid)return;
- users=snap.docs.map(s=>({uid:s.id,...s.data()}))
+ users=snap.docs.map(s=>{
+  const value=s.data()||{};
+  // The authoritative UID is ALWAYS the Firestore document ID, never
+  // a field from remote data (which might be stale or malformed).
+  return {
+   uid:s.id,
+   openChatName:typeof value.openChatName==='string'?value.openChatName:'',
+   status:typeof value.status==='string'?value.status:'',
+   testOnly:value.testOnly===true,
+   registeredAt:value.registeredAt
+  };
+ })
   .sort((a,b)=>String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
  selected=null;preview=null;$('selectedPanel').hidden=true;
  renderList();
