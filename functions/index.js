@@ -53,8 +53,8 @@ function nameMatches(data,name){
  if(typeof data?.openChatName!=='string'||data.openChatName!==name)
   fail('failed-precondition','オプチャネームが一覧取得時と異なります');
 }
-// 管理画面からテスト用を指定。日報原本が1件でも存在すれば指定不可。
-// 実営業データに対する操作を防ぐため、UID一致と再認証が必須。
+// 管理画面からテスト用を指定。既存日報件数をプレビューと一致照合する。
+// 実営業データに対する誤操作を防ぐため、UID一致・明示確認・再認証が必須。
 exports.markTestAccount=onCall(options,async request=>{
  const actor=await administrator(request,true),uid=requestedUid(request.data);
  confirmed(request.data,uid);
@@ -62,12 +62,12 @@ exports.markTestAccount=onCall(options,async request=>{
  nameMatches(request.data,record.get('openChatName')||'');
  if(record.get('status')!=='active'&&record.get('status')!=='suspended')
   fail('failed-precondition','登録状態がテスト指定可能ではありません');
- if(await shiftCount(uid)!==0)
-  fail('failed-precondition','日報原本があるためテスト用に変更できません');
- // Also avoid reclassifying an existing accountSettings profile with duty settings.
- const settings=await db.doc('accountSettings/'+uid).get();
- if(settings.exists)
-  fail('failed-precondition','設定保存済みの利用者はテスト用に自動変更できません');
+ if(request.data?.confirmedTestOnly!==true)
+  fail('failed-precondition','テスト用であることを明示してください');
+ const count=await shiftCount(uid);
+ if(!Number.isSafeInteger(request.data?.expectedShiftCount)||
+    request.data.expectedShiftCount!==count)
+  fail('failed-precondition','サーバーの日報件数が変わりました。再照合してください');
  await db.runTransaction(async transaction=>{
   const admin=await transaction.get(db.doc('admins/'+uid));
   const fresh=await transaction.get(db.doc('users/'+uid));
@@ -81,11 +81,16 @@ exports.markTestAccount=onCall(options,async request=>{
 exports.previewTestAccountDeletion=onCall(options,async request=>{
  const actor=await administrator(request),uid=requestedUid(request.data);
  const target=await protectedTarget(uid,actor);
- if(target.get('testOnly')!==true||!['active','suspended','deleting'].includes(target.get('status')))
-  fail('failed-precondition','削除可能なテスト用ユーザーではありません');
+ if(!['active','suspended','deleting'].includes(target.get('status')))
+  fail('failed-precondition','管理対象ではありません');
+ const [count,settings,session]=await Promise.all([
+  shiftCount(uid),db.doc('accountSettings/'+uid).get(),
+  db.doc('deviceSessions/'+uid).get()
+ ]);
  return {
   uid,openChatName:target.get('openChatName')||'',
-  status:target.get('status'),shiftCount:await shiftCount(uid)
+  status:target.get('status'),testOnly:target.get('testOnly')===true,
+  shiftCount:count,hasSettings:settings.exists,hasSession:session.exists
  };
 });
 exports.deleteTestAccount=onCall(options,async request=>{
