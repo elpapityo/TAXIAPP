@@ -27,15 +27,17 @@ const SUMMARY_FIELDS=[
  ['tip','チップ','yen']
 ];
 const RAW_FIELDS=[
- ['A','日報番号','text'],['E','配車区分','dispatch'],
+ ['A','日報番号','text'],['C','受信・待機開始時刻','text'],['E','配車区分','dispatch'],
  ['G','乗車時刻','text'],['M','降車時刻','text'],
  ['AL','乗車地','text'],['AM','降車地','text'],
  ['D','乗車地（原本欄）','text'],['H','降車地（原本欄）','text'],
  ['I','男性人数','count'],['J','女性人数','count'],
  ['F','乗車時の距離','km'],['L','降車時の距離','km'],
  ['K','メーター金額','yen'],['N','支払方法','payment'],
+ ['AN','料金記録値','yen'],['AO','預り金','yen'],['AP','おつり','yen'],
+ ['AQ','GO手数料記録値','yen'],
  ['AR','割引額','yen'],['O','割引区分','text'],
- ['W','実車高速料金','yen'],['AI','空車高速料金','yen'],
+ ['W','実車高速料金','yen'],['AI','空車高速料金','yen'],['P','高速利用区分','text'],
  ['Q','実車高速入口','text'],['T','実車高速出口','text'],
  ['X','実車高速区間距離','km'],['Y','実車高速免除距離','km'],
  ['Z','空車高速入口','text'],['AC','空車高速出口','text'],
@@ -49,7 +51,7 @@ function format(value,kind='text'){
  if(kind==='yen'||kind==='km'||kind==='count'){
   const n=typeof value==='number'?value:Number(String(value).replace(/,/g,''));
   if(!Number.isFinite(n))return String(value);
-  return n.toLocaleString('ja-JP')+(kind==='yen'?' 円':kind==='km'?' km': ' 件／人');
+  return n.toLocaleString('ja-JP')+(kind==='yen'?' 円':kind==='km'?' km':'');
  }
  return String(value);
 }
@@ -114,7 +116,7 @@ function renderRecord(section,record,index){
  const values=grid(details);
  const fields=record?.kind==='cancel'?RAW_FIELDS:
   RAW_FIELDS.filter(([key])=>record?.kind==='ride'||
-   ['A','E','G','M','W','AI','Q','T','X','Y','Z','AC','AJ','AK'].includes(key));
+   ['A','C','E','G','M','W','AI','P','Q','T','X','Y','Z','AC','AJ','AK'].includes(key));
  for(const [key,label,formatKind] of fields){
   if(!present(raw[key]))continue;
   // D/H は AL/AM が存在すれば補助欄として重複表示しない。
