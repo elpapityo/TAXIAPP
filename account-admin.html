@@ -27,10 +27,26 @@ table{width:100%;border-collapse:collapse;min-width:680px}th,td{border-bottom:1p
 th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-all}
 .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
 #targetDetails{line-height:1.9;overflow-wrap:anywhere}
-#dutyDetail,#settingsDetail{max-height:430px;overflow:auto;white-space:pre-wrap;
+#settingsDetail{max-height:430px;overflow:auto;white-space:pre-wrap;
  background:#f5f8fb;border:1px solid #cdd7e2;padding:12px;border-radius:8px;
  font:12px/1.55 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere}
-#dutyDetail[hidden],#settingsDetail[hidden]{display:none}
+#settingsDetail[hidden]{display:none}
+#dutyDetail{display:grid;gap:13px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.admin-duty-panel{border:1px solid #cbd7e3;border-radius:10px;background:#fbfdff;padding:14px}
+.admin-duty-panel h3{font-size:17px;margin:0 0 12px;color:#193a57}
+.admin-duty-grid{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.admin-duty-value{border-bottom:1px solid #e1e8ef;padding:4px 2px 9px;min-width:0}
+.admin-duty-value dt{font-size:12px;color:#456179;margin:0 0 3px;font-weight:650}
+.admin-duty-value dd{margin:0;font-size:15px;font-weight:650;overflow-wrap:anywhere}
+.admin-duty-note{color:#526579;font-size:13px;margin:7px 0 12px}
+.admin-duty-record{border:1px solid #cfdae5;border-radius:8px;margin:8px 0;background:white;padding:0 11px 10px}
+.admin-duty-record summary{font-weight:700;cursor:pointer;padding:12px 4px}
+.admin-duty-record summary:hover{background:#f5f8fc}
+.admin-duty-settlement{background:#eef4fb;border-radius:7px;padding:9px;margin-top:12px}
+.admin-duty-settlement p{margin:5px 0}
+.admin-duty-source{border:1px dashed #afbdcc;border-radius:8px;padding:10px 12px}
+.admin-duty-source summary{cursor:pointer;font-weight:650}
+.admin-duty-raw{max-height:320px;overflow:auto;background:#f1f5fa;padding:12px;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all}
 #dutyRows button{min-width:72px}
 #adminDataPanel .helper{font-size:13px;color:#52657b}
 [hidden]{display:none!important}
@@ -87,9 +103,9 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </tr></thead><tbody id="dutyRows"></tbody></table></div>
 <div class="actions"><button id="moreDuties" hidden>さらに50件表示</button></div>
 <section id="dutySelected" hidden>
-<h2>選択した日報原本（閲覧専用）</h2>
+<h2>選択した日報（閲覧専用）</h2>
 <p id="dutyHeader" class="helper"></p>
-<pre id="dutyDetail"></pre>
+<div id="dutyDetail" aria-label="日本語で整理した日報明細"></div>
 <div class="warning" id="dutyTrashSection">
 <strong>個別削除（ゴミ箱へ移動）</strong>
 <p>入庫済みの1乗務だけ、更新番号を確認してゴミ箱へ移します。料金・売上の記録を再計算せず、復旧可能な原本を保持します。実営業記録の完全消去は行いません。</p>
@@ -104,6 +120,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
-<script type="module" src="./account-admin.js?v=20261025-admin-self-2"></script>
+<script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-readable-1"></script>
 </body>
 </html>
