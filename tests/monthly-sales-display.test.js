@@ -30,10 +30,12 @@ calc("monthlySalesData={startDate:'2026-11-01',endDate:'2026-11-30',unfinished:1
 const html=calc('renderMonthlySales()');
 assert.match(html,/data-monthly-sales-panel open/,'開閉状態が維持される');
 assert.match(html,/monthly-day-holiday/);
-assert.match(html,/祝日：文化の日/);
+assert.match(html,/11\/03（火・祝）/);
+assert.doesNotMatch(html,/文化の日/,'祝日の名称は表に表示しない');
 assert.match(html,/monthly-day-saturday/);
 assert.match(html,/monthly-day-sunday/);
-assert.match(html,/出庫（入庫前）/);
+assert.doesNotMatch(html,/<th scope="col">出庫<\/th>/,'出庫列は設けない');
+assert.match(html,/<th scope="col">税込売上<\/th><th scope="col">税別売上<\/th>/);
 assert.match(html,/1,100円/);
 assert.match(html,/1,000円/);
 assert.doesNotMatch(html,/id="monthlySalesCloseDay"/,'締め日を表内から除去');
@@ -41,5 +43,5 @@ assert.match(src,/data-driver-profile-settings>[\s\S]*?renderDriverDefaults\(\)/
 assert.match(src,/月間売上の締め日/);
 assert.match(src,/html\[data-ui-theme="night"\] \.monthly-sales-table tbody tr\.monthly-day-holiday/);
 assert.match(src,/月間売上表 <span class="monthly-report-subtitle">/);
-assert.match(src,/<title>TAXIAPP v0\.3\.161 — 乗務日報<\/title>/);
+assert.match(src,/<title>TAXIAPP v0\.3\.162 — 乗務日報<\/title>/);
 console.log('月間表：締め期間・既存税別表示・曜日/祝日色分け・出庫/入庫前・折りたたみ・設定分離を確認');
