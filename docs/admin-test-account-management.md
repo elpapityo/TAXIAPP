@@ -60,6 +60,15 @@
 - 本番Functions未配信でも管理者本人に限定してFirebase Consoleから直接 `openChatName` を変更できる臨時手順を画面に案内する。対象が有効な `users` 登録を持つかどうかで保存先を分け、`enabled` 等の管理者権限を誤変更させない。
 - クライアントの `users` / `admins` 更新禁止ルールは緩めない。Firebase Consoleからの手動作業は利用者自身のFirebase管理権限が必要。管理者以外に権限を配ることはしない。
 
+## 2026年10月25日：「internal」エラーの切り分けと再読戻し
+
+- 管理者本人の名前保存で `internal` と表示されたことを受け、エラー原因を「配信済み関数の未処理例外」と「非JSONのHTTP応答・関数未配信・接続障害」に切り分ける。**画面だけでは原因を確定しない**。
+- `adminUpdateOpenChatName` から `internal` が返った場合、変更対象のUIDの正規登録先（`admins` または `users`）を **必ず再読込**する。新しい名前へ変更済みなら保存確認として扱う。既存名のままなら空データで同Callableを安全に診断する。関数が存在すれば通常は `invalid-argument`、到達不能やサーバー側の異常なら `internal` などが返る。診断リクエストではUIDも新しい名前も渡さず、**データを変更しない**。
+- 読戻しに失敗、別の名前に更新、または保存先が違う場合は **結果不明** とし、新しい値で勝手に再送したり上書きしない。
+- サーバーでFirestoreのトランザクションが想定外エラーになった場合、UIDやオプチャネームを出さずエラー種別を非公開ログに記録し、`unavailable` でクライアントに明示する。保存後の読戻し失敗も結果不明として扱う。
+- Firebase CLI による管理者専用関数の選択配信だけを実施するPowerShell手順 `scripts/管理者オプチャネーム関数の個別配信.ps1` を追加（**自動配信なし**）。対象は `functions:account-admin:adminUpdateOpenChatName` のみ。Firestoreルール・Auth設定・日報原本・ほかの管理者関数を配信しない。Cloud Functionsが未導入ならBlaze課金設定が必要な可能性があるため、追加契約は利用者承認まで停止。
+- Firebase Functionsの実配信はこのチャットからできておらず、**main統合は本番Functionsの動作成功を意味しない**。
+
 ## 使い方
 
 - 管理者がPCの `account-admin.html` を開き、Googleでログインする。サーバーの `admins/{uid}.enabled === true` が確認できなければ管理画面は利用不可。
