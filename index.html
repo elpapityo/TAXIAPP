@@ -5453,6 +5453,18 @@ const SETTINGS_CATEGORY_GROUPS=[
  {id:'data',icon:'▤',title:'データ・アカウント',description:'ログイン・保存先・接続・バックアップ',
   sections:['data-login-account-settings','data-internal-settings']}
 ];
+// 設定分類のクリックは画面全体の操作ゲートとは独立した表示操作。
+// キャプチャ段階で受け取り、他の乗務・データ操作は一切変更しない。
+document.addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-settings-category-choice]');
+ if(!button)return;
+ const next=String(button.dataset.settingsCategoryChoice||'');
+ if(!SETTINGS_CATEGORY_GROUPS.some(item=>item.id===next))return;
+ event.preventDefault();event.stopPropagation();
+ if(settingsCategoryActive===next)return;
+ settingsCategoryActive=next;settingsOpenState=null;
+ closeKeypad(true,true);render();
+},true);
 function renderSettingsCategorized(shift){
  const raw=renderSettings(shift);
  const template=document.createElement('template');
@@ -7245,14 +7257,7 @@ appEl.addEventListener('click',event=>{
  }
  const archive=event.target.closest('[data-sync-archive]');if(archive){if(archive.dataset.syncArchive==='list')syncUI.loadArchives(true);else syncUI.archiveAction(archive.dataset.syncArchive,archive.dataset.id);return;}
  const compare=event.target.closest('[data-sync-compare]');if(compare){void syncUI.compare(compare.dataset.syncCompare);return;}
- const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='hold'?null:conflict.dataset.syncResolve==='local');return;}const categoryButton=event.target.closest('[data-settings-category-choice]');if(categoryButton&&tab==='settings'){
- const next=categoryButton.dataset.settingsCategoryChoice;
- if(SETTINGS_CATEGORY_GROUPS.some(item=>item.id===next)){
-  settingsCategoryActive=next;settingsOpenState=null;closeKeypad(true,true);
-  render();return;
- }
-}
-let tabButton=event.target.closest('[data-tab]');if(tabButton){
+ const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='hold'?null:conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){
  if(tab==='history'&&tabButton.dataset.tab!=='history'){
   try{protectOpenHistoryEdit();}
   catch(error){toast('修正控えを保護できないため画面移動を停止：'+String(error?.message||error),true);return;}
