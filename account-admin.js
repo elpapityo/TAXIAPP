@@ -4,7 +4,7 @@
  */
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
 import {getAuth,onAuthStateChanged,GoogleAuthProvider,signInWithPopup,signOut,reauthenticateWithPopup} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
-import {getFirestore,doc,getDocFromServer,collection,query,limit,getDocsFromServer} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
+import {getFirestore,doc,getDocFromServer,collection,query,limit,getDocsFromServer,orderBy,documentId,startAfter} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js';
 import './firebase-config.js';
 const $=id=>document.getElementById(id);
@@ -130,11 +130,14 @@ async function loadList(){
    testOnly:false
   });
  }
- // 管理者ログインは直前に admins/{uid}.enabled をサーバーで確認済み。
- // admins の取得件数上限で自分の行が欠けても一覧から消さない。
- if(!records.has(ownUid))records.set(ownUid,{
+ // 管理者本人の権限は、ログイン時に admins/{uid} を直接読んで確定済み。
+ // 管理者一覧の150件制限で漏れても、usersに同じUIDがあっても必ず管理者と扱う。
+ const ownProfile=records.get(ownUid)||{
   uid:ownUid,openChatName:'',status:'管理者登録',
-  testOnly:false,registeredAt:null,isAdmin:true,adminEnabled:true
+  testOnly:false,registeredAt:null
+ };
+ records.set(ownUid,{
+  ...ownProfile,isAdmin:true,adminEnabled:true,testOnly:false
  });
  users=[...records.values()].map(u=>({
   ...u,
@@ -193,6 +196,51 @@ $('ack').addEventListener('change',buttons);
 $('trashConfirmId').addEventListener('input',buttons);
 $('trashConfirmAck').addEventListener('change',buttons);
 
+// 自分のFirestore原本と個人設定は既存の本人UID読み取りルールで直接参照する。
+ // Cloud Functionsが未配信でも管理者自身のデータだけは確認可能。
+ // 他人のUIDへの直接参照はせず、管理者認証済みCallableだけを利用する。
+function viewingOwnAdmin(uid){
+ return !!adminUid&&uid===adminUid&&auth.currentUser?.uid===uid&&
+  selected?.uid===uid&&selected.isAdmin&&selected.adminEnabled;
+}
+async function getDutyList(uid,after){
+ if(!viewingOwnAdmin(uid))return (await api.listDuties({uid,afterId:after||''})).data;
+ const items=collection(db,'privateDuties',uid,'shifts');
+ const parameters=[orderBy(documentId()),limit(50)];
+ if(after)parameters.splice(1,0,startAfter(after));
+ const snapshots=await getDocsFromServer(query(items,...parameters));
+ const list=snapshots.docs.map(entry=>{
+  const record=entry.data()||{},shift=record.shift||{};
+  return {
+   id:entry.id,
+   date:String(shift.date||''),
+   startedIso:String(shift.startedIso||''),
+   ended:Boolean(shift.endedAt||shift.endedIso),
+   recordCount:Array.isArray(shift.records)?shift.records.length:0,
+   revision:record.revision,
+   trashed:record.trashed===true
+  };
+ });
+ return {uid,shifts:list,
+  nextAfterId:list.length===50?list[list.length-1].id:null};
+}
+async function getDutyRecord(uid,shiftId){
+ if(!viewingOwnAdmin(uid))return (await api.duty({uid,shiftId})).data;
+ const snap=await getDocFromServer(doc(db,'privateDuties',uid,'shifts',shiftId));
+ if(!snap.exists())throw Error('指定したFirestore原本は見つかりません');
+ const record=snap.data();
+ if(record?.shift?.id!==shiftId||record?.format!=='TAXIAPP_PRIVATE_SHIFT_V1')
+  throw Error('乗務IDまたは原本形式が一致しません');
+ return {uid,shiftId,revision:record.revision,
+  trashed:record.trashed===true,shift:record.shift};
+}
+async function getAccountPrefs(uid){
+ if(!viewingOwnAdmin(uid))return (await api.settings({uid})).data;
+ const snap=await getDocFromServer(doc(db,'accountSettings',uid));
+ return snap.exists()?
+  {uid,exists:true,prefs:snap.data()?.prefs||{}}:
+  {uid,exists:false};
+}
 function displayDutyRows(){
  const container=$('dutyRows');container.textContent='';
  for(const item of dutyRows){
@@ -218,22 +266,21 @@ async function loadDuties(reset=true){
  const uid=selected.uid,version=epoch;
  if(reset)clearDutyPanel();
  const start=reset?'':dutyCursor;
- const result=await api.listDuties({uid,afterId:start||''});
+ const result=await getDutyList(uid,start||'');
  if(version!==epoch||selected?.uid!==uid)return;
- if(result.data?.uid!==uid||!Array.isArray(result.data?.shifts))
+ if(result?.uid!==uid||!Array.isArray(result?.shifts))
   throw Error('日報一覧のUIDが一致しません');
  dutyUid=uid;
- dutyRows=[...dutyRows,...result.data.shifts];
- dutyCursor=result.data.nextAfterId||null;
+ dutyRows=[...dutyRows,...result.shifts];
+ dutyCursor=result.nextAfterId||null;
  displayDutyRows();
  notice('Firestore日報 '+dutyRows.length+' 件を表示しています。'+(selected.isAdmin?' 旧Google原本はTAXIAPP本体で確認してください。':''));
 }
 async function readDuty(shiftId){
  if(!selected)return;
  const uid=selected.uid,version=epoch;
- const result=await api.duty({uid,shiftId});
+ const duty=await getDutyRecord(uid,shiftId);
  if(version!==epoch||selected?.uid!==uid)return;
- const duty=result.data;
  if(!duty||duty.uid!==uid||duty.shiftId!==shiftId||
     duty.shift?.id!==shiftId||!Number.isSafeInteger(duty.revision))
   throw Error('日報原本のUID・ID・更新番号が一致しません');
@@ -253,11 +300,11 @@ $('moreDuties').addEventListener('click',()=>execute(()=>loadDuties(false)));
 $('loadSettings').addEventListener('click',()=>execute(async()=>{
  if(!selected)return;
  const uid=selected.uid,version=epoch;
- const result=await api.settings({uid});
+ const result=await getAccountPrefs(uid);
  if(version!==epoch||selected?.uid!==uid)return;
- if(result.data?.uid!==uid)throw Error('設定のUIDが一致しません');
- $('settingsDetail').textContent=result.data.exists?
-  JSON.stringify(result.data.prefs,null,2):'設定は未登録です';
+ if(result?.uid!==uid)throw Error('設定のUIDが一致しません');
+ $('settingsDetail').textContent=result.exists?
+  JSON.stringify(result.prefs,null,2):'設定は未登録です';
  $('settingsDetail').hidden=false;
  notice('本人の設定を閲覧用に取得しました。変更・保存は行いません。');
 }));
