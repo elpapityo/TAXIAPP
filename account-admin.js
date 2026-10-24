@@ -583,18 +583,19 @@ $('saveAdminName').addEventListener('click',()=>execute(async()=>{
  const current=target.storedOpenChatName||'';
  const next=normalizedAdminName($('adminNewName').value);
  if(next===current)throw Error('オプチャネームが変更されていません');
- // 表示の代替名「管理者（自分）」を旧名として書き込まない。
- // 特に users が未登録の管理者は admins の名前を正規原本として読む。
- const before=await currentNameSource(uid);
- if(selected!==target||auth.currentUser?.uid!==adminUid)
-  throw Error('確認中に対象アカウントが変わりました');
- if(before.name!==current)
-  throw Error('登録名が変更されています。登録一覧を更新してください');
  if(!window.confirm('UID '+uid+' の登録名を「'+current+
   '」から「'+next+'」に変更しますか？'))return;
+ // Googleの再認証ポップアップは操作直後に開く。
  await recentAdminLogin();
  if(selected!==target||selected.uid!==uid||adminUid!==auth.currentUser?.uid)
   throw Error('変更対象またはログインが変わりました。保存を停止しました');
+ // 表示の代替名「管理者（自分）」を旧名として書き込まない。
+ // 特に users が未登録の管理者は admins の名前を正規原本として読む。
+ const before=await currentNameSource(uid);
+ if(selected!==target||selected.uid!==uid||adminUid!==auth.currentUser?.uid)
+  throw Error('確認中に対象アカウントが変わりました。保存を停止しました');
+ if(before.name!==current)
+  throw Error('登録名が変更されています。登録一覧を更新してください');
  const result=await api.updateOpenChatName({
   uid,confirmationUid:uid,expectedName:current,newName:next
  });
