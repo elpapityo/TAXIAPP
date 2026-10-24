@@ -389,3 +389,66 @@ exports.adminRestoreAccountDuty=onCall(options,async request=>{
  return {uid,shiftId,revision:revision+1,trashed:false,
   message:'対象の1乗務をゴミ箱から復元しました。'};
 });
+
+
+// オプチャネームは本人の初回登録後は固定し、管理者だけが変更する。
+// ブラウザ側のFirestore rulesの users 更新禁止を維持する。
+exports.adminUpdateOpenChatName=onCall(options,async request=>{
+ const actor=await administrator(request,true),uid=requestedUid(request.data);
+ confirmed(request.data,uid);
+ const submitted=request.data?.newName;
+ if(typeof submitted!=='string')
+  fail('invalid-argument','変更後のオプチャネームを入力してください');
+ const name=submitted.normalize('NFC').trim();
+ if(!name||Array.from(name).length>32||
+    Array.from(name).some(ch=>ch.codePointAt(0)<32||ch.codePointAt(0)===127))
+  fail('invalid-argument','オプチャネームは改行なしの1～32文字で入力してください');
+ if(typeof request.data?.expectedName!=='string')
+  fail('invalid-argument','変更前の登録名を確認してください');
+ const expectedName=request.data.expectedName;
+ let source='';
+ await db.runTransaction(async tx=>{
+  const userRef=db.doc('users/'+uid),adminRef=db.doc('admins/'+uid);
+  const [user,admin]=await Promise.all([tx.get(userRef),tx.get(adminRef)]);
+  if(user.exists){
+   if(!['active','suspended'].includes(user.get('status')))
+    fail('failed-precondition','削除済み・削除中の利用者名は変更できません');
+   source='users';
+   const existing=user.get('openChatName')||'';
+   if(existing!==expectedName)
+    fail('aborted','登録名が変更されています。一覧を更新して確認してください');
+   if(existing===name)
+    fail('failed-precondition','変更後の名前が同じです');
+   tx.update(userRef,{
+    openChatName:name,
+    openChatNameUpdatedAt:FieldValue.serverTimestamp(),
+    openChatNameUpdatedBy:actor
+   });
+  }else{
+   // Firestore users未登録の管理者も管理画面で名前を設定できる。
+   // 管理者フラグ enabled は変更しない。
+   if(!admin.exists||admin.get('enabled')!==true)
+    fail('not-found','登録された利用者が存在しません');
+   source='admins';
+   const existing=admin.get('openChatName')||'';
+   if(existing!==expectedName)
+    fail('aborted','管理者名が変更されています。一覧を更新してください');
+   if(existing===name)
+    fail('failed-precondition','変更後の名前が同じです');
+   tx.update(adminRef,{
+    openChatName:name,
+    openChatNameUpdatedAt:FieldValue.serverTimestamp(),
+    openChatNameUpdatedBy:actor
+   });
+  }
+  tx.create(db.collection('adminAccessAudit').doc(),{
+   actorUid:actor,targetUid:uid,action:'update_open_chat_name',
+   at:FieldValue.serverTimestamp()
+  });
+ });
+ const verified=await db.doc(source+'/'+uid).get();
+ if(!verified.exists||verified.get('openChatName')!==name)
+  fail('unavailable','変更後の登録名を読み戻し確認できません');
+ return {uid,newName:name,source,
+  message:'オプチャネームの変更をサーバーで確認しました。'};
+});

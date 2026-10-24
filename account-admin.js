@@ -17,6 +17,7 @@ const api={
  mark: httpsCallable(functions,'markTestAccount'),
  preview: httpsCallable(functions,'previewTestAccountDeletion'),
  remove: httpsCallable(functions,'deleteTestAccount'),
+ updateOpenChatName: httpsCallable(functions,'adminUpdateOpenChatName'),
  listDuties: httpsCallable(functions,'listAdminAccountDuties'),
  duty: httpsCallable(functions,'getAdminDutyDetail'),
  settings: httpsCallable(functions,'getAdminAccountSettings'),
@@ -44,6 +45,13 @@ function validSelectedDuty(allowBusy=false){
 }
 function buttons(){
  const ok=!!selected&&!busy&&selectedIsValid();
+ const activeTarget=!!selected&&!['deleted','deleting'].includes(selected.status);
+ $('openNameEdit').disabled=busy||!activeTarget;
+ $('openAccountDelete').hidden=!selected||selected.isAdmin;
+ $('openAccountDelete').disabled=busy||!activeTarget||selected.isAdmin;
+ $('saveAdminName').disabled=busy||!activeTarget;
+ $('cancelAdminName').disabled=busy;
+ $('closeAccountDelete').disabled=busy;
  $('loadDuties').disabled=!selected||busy;
  $('loadSettings').disabled=!selected||busy;
  $('moreDuties').disabled=!selected||busy||!dutyCursor;
@@ -79,9 +87,12 @@ function selectUser(user){
  clearDutyPanel();
  selected=user;preview=null;
  $('selectedPanel').hidden=false;
- $('accountDeletionSection').hidden=!!user.isAdmin;
+ $('accountDeletionSection').hidden=true;
+ $('adminNicknameSection').hidden=true;
+ $('adminNameStatus').textContent='';
+ $('adminNewName').value=user.storedOpenChatName||'';
  $('adminSourceNotice').hidden=!user.isAdmin;
- $('dutyTrashSection').hidden=!!user.isAdmin&&user.uid!==adminUid;
+ $('dutyTrashSection').hidden=true;
  $('confirmUid').value='';$('ack').checked=false;
  $('previewDetails').hidden=true;
  $('targetDetails').textContent='';
@@ -120,17 +131,20 @@ async function loadList(){
  const myEpoch=epoch,ownUid=adminUid;
  // users と admins を別々に読み、重複するUIDは一件に統合する。
  // 管理者は users ドキュメントを持たない場合も必ず表示する。
- const [members,administrators]=await Promise.all([
+ const [members,administrators,ownAdmin]=await Promise.all([
   getDocsFromServer(query(collection(db,'users'),limit(150))),
-  getDocsFromServer(query(collection(db,'admins'),limit(150)))
+  getDocsFromServer(query(collection(db,'admins'),limit(150))),
+  // 管理者登録の一覧取得上限で本人が欠けても、自分の登録名は直接確認。
+  getDocFromServer(doc(db,'admins',ownUid))
  ]);
  if(myEpoch!==epoch||adminUid!==ownUid||!adminUid)return;
  const records=new Map();
  for(const snap of members.docs){
   const data=snap.data()||{};
+  const name=typeof data.openChatName==='string'?data.openChatName:'';
   records.set(snap.id,{
    uid:snap.id,
-   openChatName:typeof data.openChatName==='string'?data.openChatName:'',
+   openChatName:name,storedOpenChatName:name,
    status:typeof data.status==='string'?data.status:'',
    testOnly:data.testOnly===true,
    registeredAt:data.registeredAt,
@@ -138,9 +152,11 @@ async function loadList(){
   });
  }
  for(const snap of administrators.docs){
+  const adminName=typeof snap.data()?.openChatName==='string'?
+   snap.data().openChatName:'';
   const prior=records.get(snap.id)||{
-   uid:snap.id,openChatName:'',status:'管理者登録',
-   testOnly:false,registeredAt:null
+   uid:snap.id,openChatName:adminName,storedOpenChatName:adminName,
+   status:'管理者登録',testOnly:false,registeredAt:null
   };
   records.set(snap.id,{
    ...prior,isAdmin:true,adminEnabled:snap.data()?.enabled===true,
@@ -149,9 +165,11 @@ async function loadList(){
  }
  // 管理者本人の権限は、ログイン時に admins/{uid} を直接読んで確定済み。
  // 管理者一覧の150件制限で漏れても、usersに同じUIDがあっても必ず管理者と扱う。
+ const ownName=typeof ownAdmin.data()?.openChatName==='string'?
+  ownAdmin.data().openChatName:'';
  const ownProfile=records.get(ownUid)||{
-  uid:ownUid,openChatName:'',status:'管理者登録',
-  testOnly:false,registeredAt:null
+  uid:ownUid,openChatName:ownName,storedOpenChatName:ownName,
+  status:'管理者登録',testOnly:false,registeredAt:null
  };
  records.set(ownUid,{
   ...ownProfile,isAdmin:true,adminEnabled:true,testOnly:false
@@ -304,7 +322,7 @@ async function readDuty(shiftId){
  selectedDuty=duty;dutyUid=uid;
  editDraft=null;$('adminLocationEdit').hidden=true;
  $('dutySelected').hidden=false;
- $('dutyTrashSection').hidden=!!selected.isAdmin&&uid!==adminUid;
+ $('dutyTrashSection').hidden=true;
  $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
   '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
  // 日報は元の保存データに基づく日本語閲覧専用UIで表示する。
@@ -473,7 +491,8 @@ $('restoreDuty').addEventListener('click',()=>execute(async()=>{
 }));
 $('trashDutyShortcut').addEventListener('click',()=>{
  if($('trashDutyShortcut').disabled)return;
- $('dutyTrashSection').scrollIntoView?.({behavior:'smooth',block:'center'});
+ $('dutyTrashSection').hidden=false;
+ $('dutyTrashSection').scrollIntoView?.({behavior:'smooth',block:'nearest'});
  $('trashConfirmId').focus?.();
 });
 $('trashDuty').addEventListener('click',()=>execute(async()=>{
@@ -495,6 +514,66 @@ $('trashDuty').addEventListener('click',()=>execute(async()=>{
  notice('日報をゴミ箱へ移しました。原本は復元用に保持されています。');
  await loadDuties(true);
 }));
+function normalizedAdminName(value){
+ if(typeof value!=='string')throw Error('新しいオプチャネームを入力してください');
+ const name=value.normalize('NFC').trim();
+ if(!name||Array.from(name).length>32||
+    Array.from(name).some(ch=>ch.codePointAt(0)<32||ch.codePointAt(0)===127))
+  throw Error('オプチャネームは改行なしの1～32文字で入力してください');
+ return name;
+}
+$('openNameEdit').addEventListener('click',()=>{
+ if(!selected||$('openNameEdit').disabled)return;
+ $('adminNicknameSection').hidden=false;
+ $('accountDeletionSection').hidden=true;
+ $('adminNewName').value=selected.storedOpenChatName||'';
+ $('adminNameStatus').textContent='登録済みの名前だけを変更します。UID・権限は変更しません。';
+ $('adminNicknameSection').scrollIntoView?.({behavior:'smooth',block:'nearest'});
+ $('adminNewName').focus?.();
+});
+$('cancelAdminName').addEventListener('click',()=>{
+ if(busy)return;
+ $('adminNicknameSection').hidden=true;
+ $('adminNameStatus').textContent='';
+});
+$('saveAdminName').addEventListener('click',()=>execute(async()=>{
+ if(!selected||$('adminNicknameSection').hidden)return;
+ const target=selected,uid=target.uid;
+ const current=target.storedOpenChatName||'';
+ const next=normalizedAdminName($('adminNewName').value);
+ if(next===current)throw Error('オプチャネームが変更されていません');
+ if(!window.confirm('UID '+uid+' の登録名を「'+current+
+  '」から「'+next+'」に変更しますか？'))return;
+ await recentAdminLogin();
+ if(selected!==target||selected.uid!==uid||adminUid!==auth.currentUser?.uid)
+  throw Error('変更対象またはログインが変わりました。保存を停止しました');
+ const result=await api.updateOpenChatName({
+  uid,confirmationUid:uid,expectedName:current,newName:next
+ });
+ if(result.data?.uid!==uid||result.data.newName!==next||
+    !['users','admins'].includes(result.data.source))
+  throw Error('オプチャネーム変更結果を照合できません');
+ // サーバーの一覧を読み直して反映確認。変更済みと判断して
+ // ローカル表示だけ書き換えることはしない。
+ await loadList();
+ const verified=users.find(u=>u.uid===uid);
+ if(!verified||verified.storedOpenChatName!==next)
+  throw Error('更新後の登録名を確認できません。再読み込みしてください');
+ selectUser(verified);
+ notice('オプチャネームを更新し、サーバーから読み戻し確認しました。');
+}));
+$('openAccountDelete').addEventListener('click',()=>{
+ if(!selected||selected.isAdmin||$('openAccountDelete').disabled)return;
+ $('adminNicknameSection').hidden=true;
+ $('accountDeletionSection').hidden=false;
+ $('accountDeletionSection').scrollIntoView?.({behavior:'smooth',block:'nearest'});
+ $('confirmUid').focus?.();
+});
+$('closeAccountDelete').addEventListener('click',()=>{
+ if(busy)return;
+ $('accountDeletionSection').hidden=true;
+});
+// 完全削除ボタンはテスト用明示指定・UID・サーバー照合後にだけ使用できる。
 $('markTest').addEventListener('click',()=>execute(async()=>{
  if(!selectedIsValid()||selected.isAdmin||selected.testOnly||!preview||preview.uid!==selected.uid)return;
  const target=selected,checked=preview;
