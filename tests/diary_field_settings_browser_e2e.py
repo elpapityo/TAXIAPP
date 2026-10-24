@@ -45,8 +45,23 @@ try:
       'dispatchNote','cancelPickupAddress','emptyHighwayRoute'
     ],state
     assert state['shared']==['pickupDropDistance','highwayDistance'],state
-    assert sorted(state['switches'])==['highwayDistance','pickupDropDistance'],state
+    assert state['switches']==[],'距離・GPS設定は別カテゴリに分離している'
     assert '固定表示・入力必須' in state['labels'],state
+    # 表示分類と距離分類を別々に開き、旧入力設定の連動値を確認する。
+    browser.execute_script("document.querySelector('[data-settings-category-choice=gps]').click()")
+    wait.until(lambda d: d.find_elements(By.CSS_SELECTOR,'[data-distance-setting]'))
+    distance_state=browser.execute_script("""
+      return Object.fromEntries([...document.querySelectorAll('[data-distance-setting]')]
+        .map(el=>[el.dataset.distanceSetting,el.value]));
+    """)
+    assert sorted(distance_state)==['highwayDistance','pickupDropDistance'],distance_state
+    browser.execute_script("document.querySelector('[data-settings-category-choice=display]').click()")
+    wait.until(lambda d: d.find_elements(By.CSS_SELECTOR,'[data-ride-field-settings]'))
+    browser.execute_script("""
+      const parent=document.querySelector('[data-business-field-settings]');
+      if(parent){parent.open=true;const child=parent.querySelector('[data-ride-field-settings]');
+        if(child)child.open=true;}
+    """)
     # CI runs as an unsigned viewer. The app deliberately blocks all edit events.
     # Exercise real writer change-handler logic in the Node VM dependency test instead
     # of weakening the app's one-writer/read-only security policy.
@@ -56,12 +71,11 @@ try:
       const shared=['pickupDropDistance','highwayDistance'];
       return {parentOpen:parent.open,childOpen:menu.open,
         consistency:shared.every(k=>{
-          const select=document.querySelector('[data-distance-setting="'+k+'"]');
           const checkbox=document.querySelector('[data-ride-distance-setting="'+k+'"]');
-          return !!select && !!checkbox && checkbox.checked===(select.value==='on');
+          return !!checkbox && checkbox.checked===(arguments[0][k]==='on');
         }),readonly:document.querySelector('.status-pill')?.textContent||'',
         existing:menu.querySelectorAll('[data-ride-field]').length};
-    """)
+    """,distance_state)
     assert layout['parentOpen'] and layout['childOpen'],layout
     assert layout['consistency'] and layout['existing']==9,layout
     # No authenticated writing session is configured in CI.
