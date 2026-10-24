@@ -2805,6 +2805,166 @@ function refreshQuickRegisterButtons(){
   button.title=ready?'登録できます':'必須項目と支払い内訳を確認してください';
  }
 }
+
+/* 記録確認は既存の営業原本を読むだけ。新しい書込み・距離計算をしない。 */
+let meterConfirmCurrent=null,meterConfirmSequence=0;
+const meterMultiWriteActions=new Set([
+ 'beginRide','boardDispatch','beginDispatch','cancelDispatch','beginWait',
+ 'meterEmptyHighway','meterSettle','meterDiscount','saveDraft',
+ 'breakBoard','breakDispatch','beginBreak','endBreak'
+]);
+function meterRecordSnapshot(shift){
+ if(!shift)return null;
+ const draft=shift.draft,latest=shift.records?.[shift.records.length-1];
+ const result={
+  'record.id':draft?.id||latest?.id||'',
+  'record.kind':draft?.kind||'',
+  'record.status':draft?.status||'',
+  'record.count':shift.records?.length||0,
+  'waiting.id':shift.waiting?.id||'',
+  'waiting.start':shift.waiting?.startedAt||'',
+  'waiting.place':shift.waiting?.place||'',
+  'waiting.km':shift.waiting?.odometer||'',
+  'break.id':shift.breakActive?.id||'',
+  'break.start':shift.breakActive?.startedAt||'',
+  'break.count':shift.breakSessions?.length||0
+ };
+ const raw=draft?.raw||latest?.raw||{};
+ for(const [key,value] of Object.entries(raw)){
+  if(value!==null&&value!==undefined&&String(value)!=='')result['raw.'+key]=String(value);
+ }
+ if(draft?.meta?.alightIso)result['meta.alightIso']=draft.meta.alightIso;
+ if(draft?.meta?.cancelIso)result['meta.cancelIso']=draft.meta.cancelIso;
+ return result;
+}
+function meterConfirmBefore(action){
+ if(tab!=='drive'||displayPrefs().driveLayout!=='meter'||!meterMultiWriteActions.has(action))return null;
+ const shift=getShift();if(!shift||!canEditNow())return null;
+ return {uid:accountScope.uid,shiftId:shift.id,fields:meterRecordSnapshot(shift)};
+}
+function meterConfirmRecordedFields(action,shift){
+ const record=shift.draft||shift.records?.[shift.records.length-1];
+ const raw=record?.raw||{},meta=record?.meta||{},rows=[];
+ const has=value=>value!==undefined&&value!==null&&String(value).trim()!=='';
+ const add=(label,value,options={})=>{
+  if(options.enabled===false)return;
+  if(!has(value)&&!options.allowMissing)return;
+  rows.push({label,value:has(value)?String(value):options.pending?'取得中':'未取得',
+   prominent:!!options.prominent});
+ };
+ const kmValue=value=>has(value)?String(value)+' km':'';
+ const gpsProgress=(type,col)=>{
+  const status=String(meta[type+'GpsStatus']||'');
+  return /取得中|計測中|保存中/.test(status)||
+   (record?.id&&nativeDistancePending.has(shift.id+'/'+record.id+'/'+col));
+ };
+ const rideStart=['beginRide','boardDispatch','breakBoard'].includes(action);
+ const dispatchStart=['beginDispatch','breakDispatch'].includes(action);
+ if(action==='beginWait'){
+  const w=shift.waiting;
+  if(!w)return rows;
+  add('待機開始',w.startedAt);
+  add('待機場所',w.place,{allowMissing:true,pending:/取得中/.test(String(w.gpsStatus||''))});
+  add('待機時の走行距離',kmValue(w.odometer),{enabled:distanceEnabled('F'),allowMissing:true,pending:/取得中|計測中/.test(String(w.gpsStatus||''))});
+ }else if(['beginBreak','endBreak'].includes(action)){
+  const b=shift.breakActive||shift.breakSessions?.[shift.breakSessions.length-1];
+  if(!b)return rows;
+  add('休憩開始',b.startedAt);
+  add('休憩終了',b.endedAt,{allowMissing:action==='endBreak'});
+  add('休憩場所',b.place);
+ }else if(rideStart||action==='meterSettle'||action==='saveDraft'){
+  const atAlight=action==='meterSettle';
+  add('営業番号',raw.A);
+  if(!atAlight){
+   add('乗車時刻',raw.G);
+   add('乗車時の走行距離',kmValue(raw.F),{enabled:distanceEnabled('F'),allowMissing:true,
+     prominent:true,pending:gpsProgress('pickup','F')});
+   add('乗車地・住所',raw.AL,{allowMissing:true,pending:gpsProgress('pickup','F')});
+   add('配車区分',raw.E);
+   add('データ受信時刻',raw.C,{enabled:rideFieldShown('received')});
+   if(rideFieldShown('passengers')){
+    add('男性人数',raw.I);add('女性人数',raw.J);
+   }
+  }
+  if(atAlight||action==='saveDraft'){
+   add('降車時刻',raw.M);
+   add('降車時の走行距離',kmValue(raw.L),{enabled:distanceEnabled('L'),
+     allowMissing:atAlight,prominent:true,pending:gpsProgress('drop','L')});
+   add('降車地・住所',raw.AM,{enabled:rideFieldShown('dropAddress'),
+     allowMissing:atAlight,pending:gpsProgress('drop','L')});
+   add('メーター料金',has(raw.K)?String(raw.K)+' 円':'');
+   add('支払方法',raw.N);
+  }
+ }else if(dispatchStart){
+  add('営業番号',raw.A);
+  add('迎車受信時刻',raw.C,{enabled:rideFieldShown('received')});
+  add('配車区分',raw.E);
+  add('迎車場所',raw.AL);
+  add('迎車先の走行距離',kmValue(raw.F),{enabled:distanceEnabled('F')});
+ }else if(action==='cancelDispatch'){
+  add('配車区分',raw.E);
+  add('キャンセル記録',raw.B);
+  add('迎車受信時刻',raw.C,{enabled:rideFieldShown('received')});
+  add('精算区分',raw.N);
+ }else if(action==='meterEmptyHighway'){
+  add('営業番号',raw.A);add('走行区分',raw.P);add('開始時刻',raw.C);
+ }else if(action==='meterDiscount'){
+  add('割引種別',raw.O,{enabled:rideFieldShown('discount')});
+  add('割引額',has(raw.AR)?String(raw.AR)+' 円':'',{enabled:rideFieldShown('discount')});
+ }
+ return rows.slice(0,9);
+}
+function meterConfirmRefresh(){
+ const current=meterConfirmCurrent,viewer=window.TAXIAPP_METER_CONFIRM;
+ if(!current||!viewer?.activeKey()||viewer.activeKey()!==current.key)return;
+ if(accountScope.uid!==current.uid){viewer.close();meterConfirmCurrent=null;return;}
+ const shift=getShift();if(!shift||shift.id!==current.shiftId){
+  viewer.close();meterConfirmCurrent=null;return;
+ }
+ const record=shift.draft||shift.records?.[shift.records.length-1];
+ if(current.recordId&&record?.id!==current.recordId){
+  viewer.close();meterConfirmCurrent=null;return;
+ }
+ viewer.update(meterConfirmRecordedFields(current.action,shift),current.key);
+}
+function meterConfirmEdit(snapshot){
+ if(!snapshot||accountScope.uid!==snapshot.uid)return;
+ const shift=getShift();if(!shift||shift.id!==snapshot.shiftId||!canEditNow())return;
+ const recorded=shift.records?.find(row=>row.id===snapshot.recordId);
+ if(recorded&&!shift.draft)handleAction('editRecord',recorded.id);
+ tab='drive';render();
+ // 既存の詳細入力欄を開くのみ。GPS・保存・同期の変更は行わない。
+ setTimeout(()=>{
+  const detail=appEl.querySelector('.meter-details')||appEl.querySelector('.break-page');
+  if(detail?.tagName==='DETAILS')detail.open=true;
+  detail?.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+ },80);
+}
+function meterConfirmAfter(action,before){
+ if(!before||accountScope.uid!==before.uid)return;
+ const shift=getShift();if(!shift||shift.id!==before.shiftId)return;
+ const next=meterRecordSnapshot(shift),old=before.fields;
+ if(!next||!old)return;
+ const keys=new Set([...Object.keys(old),...Object.keys(next)]);
+ let changed=0;
+ for(const key of keys)if(old[key]!==next[key])changed++;
+ if(changed<2)return; // 複数欄が変わらない操作では表示しない。
+ const titleMap={beginRide:'乗車情報',boardDispatch:'乗車情報',breakBoard:'乗車情報',
+  beginDispatch:'迎車情報',breakDispatch:'迎車情報',beginWait:'待機情報',
+  meterSettle:'降車・支払いへ',meterDiscount:'割引記録',
+  cancelDispatch:'迎車キャンセル',meterEmptyHighway:'空車高速',
+  saveDraft:'営業記録の確定',beginBreak:'休憩開始',endBreak:'休憩終了'};
+ const record=shift.draft||shift.records?.[shift.records.length-1];
+ const captured={uid:before.uid,shiftId:shift.id,recordId:record?.id||'',action,
+  key:'meter-'+(++meterConfirmSequence)};
+ const rows=meterConfirmRecordedFields(action,shift);
+ if(!rows.length)return;
+ meterConfirmCurrent=captured;
+ window.TAXIAPP_METER_CONFIRM?.show({key:captured.key,title:titleMap[action]||'記録内容',
+  rows,edit:()=>meterConfirmEdit(captured)});
+}
+window.TAXIAPP_METER_CONFIRM?.bind();
+
 function renderMeterDrive(shift){
  if(shift.breakActive||breakPageOpen)return renderNewAction(shift);
  const d=shift.draft,waiting=shift.waiting,full=shift.records.length>=MAX_RECORDS;
@@ -5749,6 +5909,7 @@ function waitRecord(shiftId,waitId){
 function refreshWaitView(waitId){
  const shift=getShift(),wait=shift?.waiting;
  if(!wait||wait.id!==waitId||shift.draft||tab!=='drive')return;
+ meterConfirmRefresh();
  const input=appEl.querySelector('[data-wait-field="place"]');
  if(input&&document.activeElement!==input&&input.value!==(wait.place||''))input.value=wait.place||'';
  const choices=appEl.querySelector('#waitPlaceCandidates');
@@ -6063,6 +6224,7 @@ const gpsTripUI=window.TAXIAPP_GPS_UI?window.TAXIAPP_GPS_UI({
 function refreshDraftGpsFields(shiftId,recordId){
  const active=getShift(),draft=active?.draft;
  if(active?.id!==shiftId||draft?.id!==recordId||tab!=='drive')return;
+ meterConfirmRefresh();
  for(const key of ['AL','AM','F','L','S','V','AB','AE']){
   const value=String(draft.raw?.[key]??'');
   appEl.querySelectorAll('[data-col="'+key+'"]').forEach(input=>{
@@ -6100,6 +6262,7 @@ function fillNativeDistanceSilently(shift,record,col,waiting=false){
    refreshDraftGpsFields(id,recordId);
   }
   live.externalGpsSnapshot={tripKm:Number(value),rawGpsKm:data.tripKm,runId:data.runId,at:timestamp};
+  meterConfirmRefresh();
   saveLater();return true;
  }).catch(()=>false).finally(()=>nativeDistancePending.delete(token));
 }
@@ -6598,7 +6761,8 @@ function showSaveProblem(message){
  toast(text,true);
 }
 function invokeSaveDraft(){
- try{handleAction('saveDraft');}
+ const before=meterConfirmBefore('saveDraft');
+ try{handleAction('saveDraft');meterConfirmAfter('saveDraft',before);}
  catch(error){console.error('TAXIAPP save draft failed:',error);showSaveProblem('登録処理エラー：'+String(error?.message||error||'不明なエラー').slice(0,160)+'。入力データは保持しています。');}
 }
 function finishSaveTouchPress(){
@@ -7453,7 +7617,9 @@ appEl.addEventListener('click',event=>{
  tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
- }handleAction(action.dataset.action,action.dataset.id);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
+ }const meterBefore=meterConfirmBefore(action.dataset.action);
+ handleAction(action.dataset.action,action.dataset.id);
+ meterConfirmAfter(action.dataset.action,meterBefore);return;}let nowButton=event.target.closest('[data-time-now]');if(nowButton){fillCurrentTime(nowButton.dataset.timeNow);return;}let movePlace=event.target.closest('[data-wait-move]');if(movePlace){moveWaitingPlace(Number(movePlace.dataset.waitMove),movePlace.dataset.waitDirection);return;}let removePlace=event.target.closest('[data-wait-remove]');if(removePlace){removeWaitingPlace(Number(removePlace.dataset.waitRemove));return;}let ui=event.target.closest('[data-ui-key]');if(ui){setUiOption(ui.dataset.uiKey,ui.dataset.uiValue);if(ui.dataset.uiKey==='driveLayout'&&tab==='drive')render();return;}let inputOption=event.target.closest('[data-input-key]');if(inputOption){setInputOption(inputOption.dataset.inputKey,inputOption.dataset.inputValue);return;}let highway=event.target.closest('[data-highway-mode]');if(highway){toggleRideHighway(highway.dataset.highwayMode);return;}let cash=event.target.closest('[data-deposit]');if(cash){setDeposit(cash.dataset.deposit);return;}let select=event.target.closest('[data-setcol]');if(select){handleSetCol(select.dataset.setcol,select.dataset.value);return;}let waitPlace=event.target.closest('[data-wait-place]');if(waitPlace){const sh=getShift();if(sh?.waiting&&!sh.draft){sh.waiting.place=waitPlace.dataset.waitPlace;saveLater();refreshWaitView(sh.waiting.id);}return;}});
 appEl.addEventListener('toggle',event=>{if(event.target.matches?.('.discount-fold'))discountFoldOpen=event.target.open;if(event.target.matches?.('.meter-summary-more')){for(const el of appEl.querySelectorAll('.meter-summary-more'))if(el!==event.target&&el.open!==event.target.open)el.open=event.target.open;}},true);
 appEl.addEventListener('click',event=>{const target=event.target.closest('[data-pay-amount]');if(!target||!target.readOnly||target.disabled)return;activatePaymentAmount(Number(target.dataset.payAmount));});
 appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&event.key==='Enter'){event.preventDefault();addWaitingPlace(event.target.value);}});appEl.addEventListener('input',handleInput);appEl.addEventListener('change',event=>{
