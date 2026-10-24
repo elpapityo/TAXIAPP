@@ -103,6 +103,12 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="actions"><button id="saveAdminName" class="primary" type="button">管理者として変更を保存</button><button id="cancelAdminName" type="button">閉じる</button></div>
 <p class="muted">変更した名前はGoogleアカウント名ではなく、TAXIAPP内の登録名です。保存には管理者専用のFirebase Functionsが必要です。</p>
 <p id="adminNameStatus" role="status" aria-live="polite"></p>
+<div id="adminNameManualHelp" class="warning" hidden>
+<p>Cloud Functionsがまだ配信されていない場合、管理者自身の登録名はFirebase Consoleで変更できます。</p>
+<p id="adminNameManualPath"></p>
+<p>Firestore Database → データ → 上記のドキュメントに、<code>openChatName</code>（文字列）を登録・変更してください。<strong>enabledやstatus、UIDは変更しないでください。</strong> 保存したらこの画面で「登録一覧を更新」を押してください。</p>
+<p><a href="https://console.firebase.google.com/project/taxiapp-2b6bd/firestore/data" target="_blank" rel="noopener noreferrer">Firebaseのデータ画面を開く</a></p>
+</div>
 </div>
 <div id="adminSourceNotice" class="warning" hidden>管理者自身のFirestore原本と設定は、既存の本人認証で直接閲覧できます。<strong>以前のGoogleスプレッドシートに保存された日報はこの画面に含まれません。</strong>旧日報・印刷データは <a href="./index.html">TAXIAPP本体</a> または従来のGoogle帳票から確認してください。管理者自身の削除操作はここでは無効です。</div>
 <div id="accountDeletionSection" class="admin-action-form" hidden>
@@ -167,6 +173,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
-<script type="module" src="./account-admin.js?v=20261025-selfname-fix-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-selfname-fix-2"></script>
 </body>
 </html>
