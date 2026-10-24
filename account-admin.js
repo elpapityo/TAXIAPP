@@ -21,7 +21,8 @@ const api={
  duty: httpsCallable(functions,'getAdminDutyDetail'),
  settings: httpsCallable(functions,'getAdminAccountSettings'),
  trash: httpsCallable(functions,'adminTrashAccountDuty'),
- updateLocations: httpsCallable(functions,'adminUpdateDutyLocations')
+ updateLocations: httpsCallable(functions,'adminUpdateDutyLocations'),
+ restore: httpsCallable(functions,'adminRestoreAccountDuty')
 };
 const notice=(message,error=false)=>{
  $('message').textContent=message;
@@ -47,6 +48,10 @@ function buttons(){
  $('loadSettings').disabled=!selected||busy;
  $('moreDuties').disabled=!selected||busy||!dutyCursor;
  $('trashDuty').disabled=!validSelectedDuty();
+ $('restoreDuty').hidden=!selectedDuty||selectedDuty.trashed!==true;
+ $('restoreDuty').disabled=!selectedDuty||busy||selectedDuty.trashed!==true||
+  selected?.isAdmin&&selected.uid!==adminUid;
+ $('trashDutyShortcut').hidden=!!selectedDuty&&selectedDuty.trashed===true;
  $('trashDutyShortcut').disabled=!selectedDuty||busy||
   selectedDuty.trashed===true||!selectedDuty.shift?.endedAt&&!selectedDuty?.shift?.endedIso||
   selected?.isAdmin&&selected.uid!==adminUid;
@@ -442,6 +447,29 @@ $('adminEditSave').addEventListener('click',()=>execute(async()=>{
  editDraft=null;$('adminLocationEdit').hidden=true;
  await readDuty(draft.shiftId);
  notice('乗降地の訂正を保存し、更新番号と原本の内容を読み戻し確認しました。');
+}));
+$('restoreDuty').addEventListener('click',()=>execute(async()=>{
+ const target=selectedDuty,uid=selected?.uid;
+ if(!target||target.trashed!==true||target.uid!==uid||
+    selected.isAdmin&&uid!==adminUid)return;
+ if(!window.confirm('UID '+uid+'／乗務ID '+target.shiftId+
+  ' をゴミ箱から復元しますか？更新番号 '+target.revision+' を確認します。'))return;
+ await recentAdminLogin();
+ if(selected?.uid!==uid||selectedDuty!==target)
+  throw Error('選択対象が変わりました。復元を中止します');
+ const response=await api.restore({
+  uid,confirmationUid:uid,shiftId:target.shiftId,
+  confirmationShiftId:target.shiftId,expectedRevision:target.revision,
+  confirmRestore:true
+ });
+ if(response.data?.uid!==uid||response.data?.shiftId!==target.shiftId||
+    response.data?.revision!==target.revision+1||response.data?.trashed!==false)
+  throw Error('復元結果を確認できません');
+ const verified=await getDutyRecord(uid,target.shiftId);
+ if(verified.revision!==response.data.revision||verified.trashed!==false)
+  throw Error('復元後の原本が一致しません。再読み込みしてください');
+ await readDuty(target.shiftId);
+ notice('日報をゴミ箱から復元しました。入庫済みの原本なら乗降地を編集できます。');
 }));
 $('trashDutyShortcut').addEventListener('click',()=>{
  if($('trashDutyShortcut').disabled)return;
