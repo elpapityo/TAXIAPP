@@ -1756,7 +1756,7 @@ function blockViewerEdit(event){
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
- const safe=target.closest?.('[data-tab],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"]')||
+ const safe=target.closest?.('[data-tab],[data-settings-category-choice],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"]')||
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
