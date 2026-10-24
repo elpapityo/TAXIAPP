@@ -468,6 +468,15 @@ html[data-ui-theme="night"] .operations-history-item{background:#23394f;border-c
 .account-top span{font-size:.88rem;overflow-wrap:anywhere}
 .account-top button{font-size:.88rem;background:var(--blue);border:0;border-radius:8px;padding:8px 11px;color:white;min-height:34px;white-space:nowrap}
 .account-top button[hidden]{display:none}
+.account-registration{display:flex;flex:0 0 100%;align-items:center;gap:9px;flex-wrap:wrap;
+ border-top:1px solid var(--line);padding-top:10px}
+.account-registration[hidden],#accountOpenChatNameLabel[hidden]{display:none!important}
+.account-registration label{font-size:14px;font-weight:750;color:var(--dark)}
+.account-registration input{flex:1 1 170px;min-width:130px;max-width:280px;
+ min-height:42px;padding:9px 12px;border:1px solid #a8bacb;border-radius:8px;font-size:16px}
+.account-registration small{flex-basis:100%;font-size:12px;color:var(--muted)}
+#accountRegister{min-height:42px}
+#accountOpenChatNameLabel{font-size:12px;color:var(--muted)}
 .account-top{flex-wrap:wrap}
 .account-top .account-state{flex:1;min-width:190px;display:flex;flex-direction:column;gap:2px}
 #deviceSessionStatus{font-weight:700}
@@ -1269,7 +1278,7 @@ html[data-ui-theme="night"] .settings-group-text small{color:#c5d8e0}
 </style>
 </head>
 <body>
-<div class="account-top" id="accountBar" aria-label="Googleアカウントと操作端末"><div class="account-state"><span id="deviceSessionStatus" role="status" aria-live="polite">操作端末の確認中</span><span id="accountStatus" role="status" aria-live="polite">設定同期の準備中</span></div><button id="accountSignIn" type="button">操作用ログイン</button><button id="accountTakeOver" type="button" hidden>この端末で操作する</button><button id="accountSignOut" type="button" hidden>ログアウト</button></div>
+<div class="account-top" id="accountBar" aria-label="Googleアカウントと操作端末"><div class="account-state"><span id="deviceSessionStatus" role="status" aria-live="polite">操作端末の確認中</span><span id="accountStatus" role="status" aria-live="polite">設定同期の準備中</span><span id="accountOpenChatNameLabel" hidden></span></div><button id="accountSignIn" type="button">Googleでログイン</button><button id="accountTakeOver" type="button" hidden>この端末で操作する</button><button id="accountSignOut" type="button" hidden>ログアウト</button><div id="accountRegistration" class="account-registration" hidden><label for="accountOpenChatName">初回登録：オプチャネーム</label><input id="accountOpenChatName" name="openChatName" type="text" maxlength="32" autocomplete="nickname" placeholder="LINEオプチャで使っている名前" aria-required="true"><button id="accountRegister" type="button">登録を完了</button><small>Googleログイン後、オプチャネームを登録すると利用できます。入力名はLINEとの照合を行わず、本人の登録情報として保存します。</small></div></div>
 <div id="app"><div class="boot">TAXIAPP を起動しています…</div></div>
 <div id="notice" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -1299,10 +1308,10 @@ html[data-ui-theme="night"] .settings-group-text small{color:#c5d8e0}
 <script src="./cloud-sync-ui.js?v=20261023-differences"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
-<script src="./login-core.js?v=20261017-2"></script>
+<script src="./login-core.js?v=20261024-openchat-name-1"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
-<script src="./account-auto-sync.js?v=20261020-1"></script>
+<script src="./account-auto-sync.js?v=20261024-openchat-name-1"></script>
 <script src="./account-diary-store.js?v=20261022-9"></script>
 <script>
 (async function () {

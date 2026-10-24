@@ -14,9 +14,28 @@ function accessState(user,adminDoc,profile){
  if(profile?.status==='suspended')return 'suspended';
  return 'pending';
 }
+// Only a verified Google sign-in may self-create an ordinary user document.
+// An existing suspended/pending account must never be reactivated by login.
+function autoRegistrationDecision(user,adminDoc,profile,tokenInfo){
+ if(!user||typeof user.uid!=='string'||!user.uid)return 'deny';
+ if(adminDoc?.enabled===true)return 'allow';
+ if(profile!==null&&profile!==undefined)
+  return profile.status==='active'?'allow':'deny';
+ return user.emailVerified===true &&
+  tokenInfo?.signInProvider==='google.com' &&
+  tokenInfo?.claims?.email_verified===true?'create':'deny';
+}
+function normalizeOpenChatName(value){
+ if(typeof value!=='string')throw Error('オプチャネームを入力してください');
+ const name=value.normalize('NFC').trim();
+ if(!name)throw Error('オプチャネームを入力してください');
+ if(Array.from(name).length>32)throw Error('オプチャネームは32文字以内で入力してください');
+ if(/[\u0000-\u001f\u007f]/u.test(name))throw Error('オプチャネームに改行・制御文字は使えません');
+ return name;
+}
 function summarizeLegacyModel(model){
  const shifts=Array.isArray(model?.shifts)?model.shifts:[];
  return {shiftCount:shifts.length,recordCount:shifts.reduce((n,s)=>n+(Array.isArray(s?.records)?s.records.length:0),0)};
 }
-root.TAXIAPP_LOGIN_UTILS={firebaseConfigReady,accessState,summarizeLegacyModel};
+root.TAXIAPP_LOGIN_UTILS={firebaseConfigReady,accessState,autoRegistrationDecision,normalizeOpenChatName,summarizeLegacyModel};
 })(typeof window!=='undefined'?window:globalThis);
