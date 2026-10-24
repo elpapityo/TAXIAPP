@@ -407,6 +407,7 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
   fail('invalid-argument','変更前の登録名を確認してください');
  const expectedName=request.data.expectedName;
  let source='';
+ try{
  await db.runTransaction(async tx=>{
   const userRef=db.doc('users/'+uid),adminRef=db.doc('admins/'+uid);
   const [user,admin]=await Promise.all([tx.get(userRef),tx.get(adminRef)]);
@@ -447,7 +448,26 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
    at:FieldValue.serverTimestamp()
   });
  });
- const verified=await db.doc(source+'/'+uid).get();
+ }catch(error){
+  if(error instanceof HttpsError)throw error;
+  // 実名やUIDはログに書かない。実行環境の失敗種別だけ記録する。
+  console.error('adminUpdateOpenChatName transaction failed',{
+   code:String(error?.code||'unknown'),
+   type:String(error?.name||'unknown')
+  });
+  fail('unavailable','オプチャネーム保存サーバーでエラーが発生しました。'+
+   '結果が不明なため原本を確認してください。Cloud Functionsのログにも記録しました。');
+ }
+ let verified;
+ try{verified=await db.doc(source+'/'+uid).get();}
+ catch(error){
+  console.error('adminUpdateOpenChatName readback failed',{
+   code:String(error?.code||'unknown'),
+   type:String(error?.name||'unknown')
+  });
+  fail('unavailable','保存後の読戻しに失敗しました。'+
+   '保存済みの可能性があるため、再送する前に登録名を再取得してください。');
+ }
  if(!verified.exists||verified.get('openChatName')!==name)
   fail('unavailable','変更後の登録名を読み戻し確認できません');
  return {uid,newName:name,source,
