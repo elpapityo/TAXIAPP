@@ -3992,10 +3992,10 @@ let monthlySalesMonth=dateStamp().slice(0,7),monthlySalesEpoch=0;
 let monthlySalesData=null,monthlySalesBusy=false,monthlySalesMessage='';
 function monthlySalesClosingDay(){
  const value=String(model.prefs?.monthlySalesCloseDay||'end');
- return value==='end'||/^(?:[1-9]|[12]\\d|3[01])$/.test(value)?value:'end';
+ return value==='end'||/^(?:[1-9]|[12]\d|3[01])$/.test(value)?value:'end';
 }
 function monthlySalesPeriod(month,closingDay){
- if(!/^\\d{4}-(?:0[1-9]|1[0-2])$/.test(month))
+ if(!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(month))
   throw Error('締め月が正しくありません');
  const [y,m]=month.split('-').map(Number);
  if(y<2000||y>2100)throw Error('締め月の年が対象外です');
