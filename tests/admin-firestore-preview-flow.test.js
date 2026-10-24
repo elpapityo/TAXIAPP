@@ -62,7 +62,8 @@ vm.runInContext('let adminFirestorePreviewActive=false,adminFirestorePreviewOwne
  assert.equal(c.accountScope.kind,'legacy','正式なGoogle運用へ戻る');
  assert.equal(vm.runInContext('adminFirestorePreviewActive',c),false);
  assert.ok(events.filter(x=>x==='device-save').length>=2,'戻る前に検証用端末原本も保存');
- assert.match(html,/ADMIN_FIRESTORE_CUTOVER_ENABLED=false/,'正式切替は無効のまま');
+ assert.match(html,/ADMIN_FIRESTORE_CUTOVER_ENABLED=true/,'新規日報の初期保存先をFirestoreとする');
+  assert.match(html,/!ADMIN_FIRESTORE_CUTOVER_ENABLED&&!adminFirestoreManifest\(scope.uid\)/,'旧端末原本の自動移行は行わない');
  assert.match(html,/taxiapp-admin-firestore-preview-v1-/,'検証用IndexedDBキーを分離');
  assert.match(html,/accountScope.adminFirestore&&!accountScope.adminFirestorePreview/,
   '従来管理者の原本保護は正式切替時に維持');
