@@ -15,5 +15,8 @@ assert.match(html,/excludedIds=\[\.\.\.remote.keys\(\)\]/,'切替時に存在す
 assert.match(html,/resumeExcludedIds:/,'管理者本人の正式保存領域に除外IDを引き継ぐ');
 assert.match(ui,/excludeIds:d.resumeExcludedIds\?\.\(\)\|\|\[\]/,'新端末再開でも旧検証用乗務を自動選択しない');
 assert.match(store,/excluded.has\(item.id\)/,'Firestoreが再開対象から既知の旧検証乗務を除外する');
-assert.match(html,/ADMIN_FIRESTORE_CUTOVER_ENABLED=false/,'未承認の本番保存先切替は有効化しない');
+assert.match(html,/ADMIN_FIRESTORE_CUTOVER_ENABLED=true/,'承認された新規日報の初期保存先はFirestore');
+assert.match(html,/!ADMIN_FIRESTORE_CUTOVER_ENABLED&&!adminFirestoreManifest\(scope.uid\)/,'初期Firestore運用では旧Google日報を自動移行しない');
+assert.match(html,/\(!manifest&&!ADMIN_FIRESTORE_CUTOVER_ENABLED\)/,'新規Firestore開始時は旧移行記録を必須としない');
+assert.match(html,/ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false/,'既存営業データの移行は承認されていない');
 console.log('正式Firestore切替：移行前Google原本の維持、新規開始、CAS更新後の再ログイン、旧検証原本の再開除外を確認');
