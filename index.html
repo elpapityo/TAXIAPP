@@ -467,7 +467,9 @@ html[data-ui-theme="night"] .operations-history-item{background:#23394f;border-c
 .account-top{max-width:1332px;margin:8px auto 0;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:var(--sheet);border-radius:10px;min-height:48px}
 .account-top span{font-size:.88rem;overflow-wrap:anywhere}
 .account-top button{font-size:.88rem;background:var(--blue);border:0;border-radius:8px;padding:8px 11px;color:white;min-height:34px;white-space:nowrap}
-.account-top button[hidden],.account-top a[hidden]{display:none}
+.account-top button[hidden],.account-top a[hidden],.account-top .account-access-intro[hidden]{display:none!important}
+.account-access-intro{flex:0 0 100%;font-size:13px;color:var(--muted);line-height:1.6}
+#accountCurrentIdentity{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
 .account-top .account-admin-link{display:inline-flex;align-items:center;padding:8px 11px;
  min-height:34px;border:1px solid #125f99;border-radius:8px;font-size:.88rem;
  color:#125f99;background:#f5faff;text-decoration:none;font-weight:700}
@@ -1281,7 +1283,7 @@ html[data-ui-theme="night"] .settings-group-text small{color:#c5d8e0}
 </style>
 </head>
 <body>
-<div class="account-top" id="accountBar" aria-label="Googleアカウントと操作端末"><div class="account-state"><span id="deviceSessionStatus" role="status" aria-live="polite">操作端末の確認中</span><span id="accountStatus" role="status" aria-live="polite">設定同期の準備中</span><span id="accountOpenChatNameLabel" hidden></span></div><button id="accountSignIn" type="button">Googleでログイン</button><button id="accountTakeOver" type="button" hidden>この端末で操作する</button><a class="account-admin-link" id="accountAdminLink" href="./account-admin.html" hidden>PCアカウント管理</a><button id="accountSignOut" type="button" hidden>ログアウト</button><div id="accountRegistration" class="account-registration" hidden><label for="accountOpenChatName">初回登録：オプチャネーム</label><input id="accountOpenChatName" name="openChatName" type="text" maxlength="32" autocomplete="nickname" placeholder="LINEオプチャで使っている名前" aria-required="true"><button id="accountRegister" type="button">登録を完了</button><small>Googleログイン後、オプチャネームを登録すると利用できます。入力名はLINEとの照合を行わず、本人の登録情報として保存します。</small></div></div>
+<div class="account-top" id="accountBar" aria-label="Googleアカウントと操作端末"><div class="account-state"><span id="deviceSessionStatus" role="status" aria-live="polite">操作端末の確認中</span><span id="accountStatus" role="status" aria-live="polite">設定同期の準備中</span><span id="accountOpenChatNameLabel" hidden></span><span id="accountCurrentIdentity" aria-live="polite">Googleアカウント未確認</span></div><div id="accountAccessIntro" class="account-access-intro">初めての方はGoogleアカウントでログイン後、オプチャネームを登録してください。登録済みの方はそのままログインできます。</div><button id="accountSignIn" type="button">ログイン／初回登録</button><button id="accountSwitchLogin" type="button" hidden>別のGoogleアカウントでログイン</button><button id="accountSwitchRegister" type="button" hidden>別のGoogleアカウントで新規登録</button><button id="accountTakeOver" type="button" hidden>この端末で操作する</button><a class="account-admin-link" id="accountAdminLink" href="./account-admin.html" hidden>PCアカウント管理</a><button id="accountSignOut" type="button" hidden>ログアウト</button><div id="accountRegistration" class="account-registration" hidden><label for="accountOpenChatName">初回登録：オプチャネーム</label><input id="accountOpenChatName" name="openChatName" type="text" maxlength="32" autocomplete="nickname" placeholder="LINEオプチャで使っている名前" aria-required="true"><button id="accountRegister" type="button">登録を完了</button><small>Googleログイン後、オプチャネームを登録すると利用できます。入力名はLINEとの照合を行わず、本人の登録情報として保存します。</small></div></div>
 <div id="app"><div class="boot">TAXIAPP を起動しています…</div></div>
 <div id="notice" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -7406,6 +7408,15 @@ model=emptyAccountModel();render();
 accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
  getModel:()=>model,
  beforeSignOut:async()=>{
+  // アカウント切替を開始する前に、進行中の日報と未確認の原本を保護する。
+  // ログイン先で別UIDを開いても、営業中の本人日報を失わない。
+  if(accountScopeLoaded&&model.activeId){
+   const duty=model.shifts.find(x=>x.id===model.activeId);
+   if(!duty||(!duty.endedAt&&!duty.endedIso)){
+    toast('乗務中はアカウントを切り替えられません。入庫と保存確認を先に完了してください。',true);
+    return false;
+   }
+  }
   if(!canEditNow())return true; // Viewer and unclaimed devices never upload.
   if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
   const localOk=await save(true);
