@@ -90,6 +90,7 @@ function selectUser(user){
  $('accountDeletionSection').hidden=true;
  $('adminNicknameSection').hidden=true;
  $('adminNameStatus').textContent='';
+ $('adminNameManualHelp').hidden=true;
  $('adminNewName').value=user.storedOpenChatName||'';
  $('adminSourceNotice').hidden=!user.isAdmin;
  $('dutyTrashSection').hidden=true;
@@ -557,6 +558,11 @@ $('openNameEdit').addEventListener('click',()=>{
  $('adminNicknameSection').hidden=false;
  $('accountDeletionSection').hidden=true;
  $('adminNewName').value=selected.storedOpenChatName||'';
+ const ownAdmin=selected.isAdmin&&selected.uid===adminUid;
+ $('adminNameManualHelp').hidden=!ownAdmin;
+ $('adminNameManualPath').textContent=ownAdmin?
+  ('対象：'+(['active','suspended'].includes(selected.status)?
+   'users/':'admins/')+selected.uid):'';
  $('adminNameStatus').textContent='登録済みの名前だけを変更します。UID・権限は変更しません。';
  $('adminNicknameSection').scrollIntoView?.({behavior:'smooth',block:'nearest'});
  $('adminNewName').focus?.();
