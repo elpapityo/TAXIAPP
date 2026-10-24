@@ -29,7 +29,7 @@ service cloud.firestore {
      request.resource.data.openChatName is string &&
      request.resource.data.openChatName.size() >= 1 &&
      request.resource.data.openChatName.size() <= 32 &&
-     request.resource.data.openChatName.matches('.*\\\\S.*') &&
+     request.resource.data.openChatName.matches('.*\\S.*') &&
      request.resource.data.status == 'active' &&
      request.resource.data.registeredAt == request.time;
    allow update, delete: if false;
