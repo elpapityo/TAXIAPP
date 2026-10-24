@@ -196,15 +196,59 @@ root.TAXIAPP_ACCOUNT_AUTO={
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
    status('Googleアカウントを確認しています…');
+   const accountUid=uid;
+   const stillSignedIn=()=>uid===accountUid&&auth.currentUser?.uid===accountUid;
    try{
+    const profileRef=fire.doc(db,'users',accountUid);
     const [adminSnap,userSnap]=await Promise.all([
-     fire.getDocFromServer(fire.doc(db,'admins',uid)),
-     fire.getDocFromServer(fire.doc(db,'users',uid))
+     fire.getDocFromServer(fire.doc(db,'admins',accountUid)),
+     fire.getDocFromServer(profileRef)
     ]);
-    if(auth.currentUser?.uid!==uid)return;
-    const admin=adminSnap.exists()&&adminSnap.data()?.enabled===true;
-    const active=userSnap.exists()&&userSnap.data()?.status==='active';
-    if(!admin&&!active){status('利用登録が確認できません：Googleログインだけでは操作権を取得できません');deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;}
+    if(!stillSignedIn())return;
+    const adminDoc=adminSnap.exists()?adminSnap.data():null;
+    const admin=adminDoc?.enabled===true;
+    let profile=userSnap.exists()?userSnap.data():null;
+    let active=profile?.status==='active';
+    if(!admin&&!userSnap.exists()){
+     const tokenInfo=await next.getIdTokenResult();
+     if(!stillSignedIn())return;
+     const decision=root.TAXIAPP_LOGIN_UTILS.autoRegistrationDecision(
+      next,adminDoc,profile,tokenInfo);
+     if(decision==='create'){
+      status('初回ログイン：本人の利用登録を自動で作成しています…');
+      // This document has only an active ordinary-user status and a server
+      // timestamp. The matching Firestore rule forbids admin grants, updates,
+      // deletion, and any other UID. It is NOT a client-side permission grant.
+      try{
+       await fire.setDoc(profileRef,{
+        status:'active',registeredAt:fire.serverTimestamp()
+       });
+      }catch(error){
+       if(!stillSignedIn())return;
+       // A second device may have created the same document first. Accept
+       // that race only after a fresh server read; never revive suspension.
+       const existing=await fire.getDocFromServer(profileRef);
+       if(!stillSignedIn())return;
+       if(!existing.exists()||existing.data()?.status!=='active')
+        throw Error('利用者の自動登録ができません。本番Firestoreの登録ルールを確認してください（'+
+         String(error.code||error.message||error)+'）');
+      }
+      if(!stillSignedIn())return;
+      const verified=await fire.getDocFromServer(profileRef);
+      if(!stillSignedIn())return;
+      profile=verified.exists()?verified.data():null;
+      active=profile?.status==='active';
+      if(!active)throw Error('本人の自動登録をサーバーで確認できません');
+      status('初回の利用登録が完了しました');
+     }
+    }
+    if(!admin&&!active){
+     const reason=profile?.status==='suspended'?
+      'この利用者は停止中です。自動では利用再開しません':
+      profile?'利用者登録が保留中です。自動では既存登録を変更しません':
+      '利用登録がありません。認証済みGoogleアカウントでログインしてください';
+     status(reason);deps.onDeviceMode?.('viewer','','有効な利用者登録がありません');return;
+    }
     // The account's duty namespace MUST be selected before either settings
     // reconciliation or editor-session confirmation can access local records.
     await deps.onUserScope?.({
@@ -222,7 +266,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     viewerLogin=false;explicitWriterLogin=false;
     // The session transition to writer/legacy schedules the initial read.
     // Do not schedule the same login fetch a second time here.
-   }catch(e){await deps.onUserScope?.(null);status('アカウントの確認に失敗：'+String(e.code||e.message||e));deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');}
+   }catch(e){if(!stillSignedIn())return;await deps.onUserScope?.(null);status('アカウントの確認に失敗：'+String(e.code||e.message||e));deps.onDeviceMode?.('viewer','','利用者情報のサーバー確認に失敗しました');}
   }
   async function start(){
    if(booted)return;booted=true;
