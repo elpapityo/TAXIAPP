@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const html=fs.readFileSync('ui-preview.html','utf8');
+const html=fs.readFileSync('ui-layout-lab.html','utf8');
 for(const mode of ['compact','guided','detail','legacy']){
  assert.match(html,new RegExp('data-mode="'+mode+'"'));
  assert.match(html,new RegExp('data-selectmode="'+mode+'"'));
