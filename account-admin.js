@@ -50,6 +50,7 @@ function buttons(){
  $('openAccountDelete').hidden=!selected||selected.isAdmin;
  $('openAccountDelete').disabled=busy||!activeTarget||selected.isAdmin;
  $('saveAdminName').disabled=busy||!activeTarget;
+ $('probeAdminName').disabled=busy||!activeTarget;
  $('cancelAdminName').disabled=busy;
  $('closeAccountDelete').disabled=busy;
  $('loadDuties').disabled=!selected||busy;
@@ -583,6 +584,32 @@ async function currentNameSource(uid){
   return {source:'admins',name:String(admin.data()?.openChatName||'')};
  throw Error('登録アカウントの状態が変わりました。更新して確認してください');
 }
+// 空データだけを送る診断。requestedUid() で拒否されるため変更は発生しない。
+async function probeOpenChatNameFunction(){
+ try{
+  await api.updateOpenChatName({});
+  return '関数から想定外の成功応答が返りました。保存せず運用状態を確認してください。';
+ }catch(error){
+  const code=String(error?.code||'');
+  if(code.endsWith('/invalid-argument'))
+   return '管理者用Firebase Functionsへの到達を確認しました。保存がinternalならサーバー処理の例外・ログを確認してください。';
+  if(code.endsWith('/unauthenticated'))
+   return '関数には到達しましたが、認証が通っていません。管理者として再ログインしてください。';
+  if(code.endsWith('/permission-denied'))
+   return '関数には到達しましたが、管理者権限を確認できません。';
+  if(code.endsWith('/internal')||code.endsWith('/not-found')||
+     code.endsWith('/unavailable'))
+   return '管理者用Firebase Functionsに正常接続できません（'+code+'）。'+
+    '未デプロイ、実行環境、通信・呼出設定のいずれかを確認してください。';
+  return '接続診断の応答：'+(code||String(error?.message||error));
+ }
+}
+$('probeAdminName').addEventListener('click',()=>execute(async()=>{
+ if(!selected||$('adminNicknameSection').hidden)return;
+ const beforeUid=selected.uid;
+ const message=await probeOpenChatNameFunction();
+ if(selected?.uid===beforeUid)$('adminNameStatus').textContent='接続診断：'+message;
+}));
 $('saveAdminName').addEventListener('click',()=>execute(async()=>{
  if(!selected||$('adminNicknameSection').hidden)return;
  const target=selected,uid=target.uid;
@@ -602,9 +629,27 @@ $('saveAdminName').addEventListener('click',()=>execute(async()=>{
   throw Error('確認中に対象アカウントが変わりました。保存を停止しました');
  if(before.name!==current)
   throw Error('登録名が変更されています。登録一覧を更新してください');
- const result=await api.updateOpenChatName({
-  uid,confirmationUid:uid,expectedName:current,newName:next
- });
+ let result;
+ try{
+  result=await api.updateOpenChatName({
+   uid,confirmationUid:uid,expectedName:current,newName:next
+  });
+ }catch(error){
+  // 送信結果不明でもサーバー側に保存済みの場合がある。
+  // 同じUID・保存先・新名をサーバーから読戻して確認してから判断する。
+  const server=await currentNameSource(uid).catch(()=>null);
+  if(server?.source===before.source&&server.name===next){
+   result={data:{uid,source:server.source,newName:next}};
+  }else if(!server||server.source!==before.source||
+           server.name!==current){
+   throw Error('名前変更の送信結果が不明です。別の値に上書きせず、'+
+    '「登録一覧を更新」でサーバーを確認してください。'+
+    '（エラー：'+String(error?.code||error?.message||error)+'）');
+  }else if(String(error?.code||'').endsWith('/internal')){
+   const diagnostic=await probeOpenChatNameFunction();
+   throw Error('Firebase保存処理がinternalで失敗しました。'+diagnostic);
+  }else throw error;
+ }
  if(result.data?.source!==before.source)
   throw Error('更新された保存先が想定と異なります。サーバーを確認してください');
  if(result.data?.uid!==uid||result.data.newName!==next||
