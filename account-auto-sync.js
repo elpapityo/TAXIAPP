@@ -9,7 +9,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
   let deviceSession=null,viewerLogin=false,explicitWriterLogin=false;
-  let pendingRegistration=null,registrationBusy=false,authGeneration=0;
+  let pendingRegistration=null,registrationBusy=false,authGeneration=0,adminAuthorized=false;
   // A dedicated print session may READ its own duties but never take over
   // the Galaxy's last-login-wins writerSessionId.
   const printViewerMode=(()=>{
@@ -34,6 +34,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(signOut)signOut.disabled=!user;
    const takeOver=$('accountTakeOver');
    if(takeOver)takeOver.hidden=printViewerMode||!user||!enabled||deviceSession?.state()!=='viewer';
+   const manageLink=$('accountAdminLink');
+   if(manageLink)manageLink.hidden=!user||!adminAuthorized;
   }
   function displayRegistration(open){
    const panel=$('accountRegistration');
@@ -265,6 +267,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   async function authChanged(next){
    clearTimeout(timer);
    authGeneration++;
+   adminAuthorized=false;
    pendingRegistration=null;registrationBusy=false;
    displayRegistration(false);displayOpenChatName('');
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
@@ -287,6 +290,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
     if(!stillSignedIn())return;
     const adminDoc=adminSnap.exists()?adminSnap.data():null;
     const admin=adminDoc?.enabled===true;
+    adminAuthorized=admin;
+    controls();
     let profile=userSnap.exists()?userSnap.data():null;
     let active=profile?.status==='active';
     if(!admin&&!userSnap.exists()){
