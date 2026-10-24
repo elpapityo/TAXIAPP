@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const html=fs.readFileSync('ui-preview.html','utf8');
+const html=fs.readFileSync('ui-layout-lab.html','utf8');
 assert.match(html,/data-device="fold"/);
 assert.match(html,/id="foldSubModes"/);
 assert.match(html,/data-fold-view="half"/);
