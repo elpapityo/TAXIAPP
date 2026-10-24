@@ -276,8 +276,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
    controls();
    if(!next){status('Googleログインで設定を端末間共有');return;}
    status('Googleアカウントを確認しています…');
-   const accountUid=uid;
-   const stillSignedIn=()=>uid===accountUid&&auth.currentUser?.uid===accountUid;
+   const accountUid=uid,generation=authGeneration;
+   const stillSignedIn=()=>authGeneration===generation&&uid===accountUid&&auth.currentUser?.uid===accountUid;
    try{
     const profileRef=fire.doc(db,'users',accountUid);
     const [adminSnap,userSnap]=await Promise.all([
@@ -295,8 +295,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
      const decision=root.TAXIAPP_LOGIN_UTILS.autoRegistrationDecision(
       next,adminDoc,profile,tokenInfo);
      if(decision==='create'){
-      // The user chooses their LINE Open Chat name. This is a self-reported
-      // nickname, not verification against the LINE service.
+      // The user chooses their LINE Open Chat name. It stays in the private
+      // user profile, reserved for a future consent-based public display.
+      // This is not verification against the LINE service.
       pendingRegistration={uid:accountUid,user:next,generation:authGeneration};
       displayRegistration(true);
       status('初回登録：オプチャネームを入力して「登録を完了」を押してください');
@@ -318,7 +319,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
      uid,admin,active,
      firebase:{f:fire,db,auth,session:deviceSession}
     });
-    if(auth.currentUser?.uid!==uid)return;
+    if(!stillSignedIn())return;
     enabled=true;
     baseline=readBase();
     localSignature=api.signature(currentPrefs());
