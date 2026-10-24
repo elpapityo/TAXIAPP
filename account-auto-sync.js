@@ -29,6 +29,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(label)label.textContent=message;
   }
   function controls(){
+   const accountBar=$('accountBar');
+   accountBar?.classList.toggle('account-signed-in',!!user);
+   document.body?.classList.toggle('taxi-account-signed-in',!!user);
    const signIn=$('accountSignIn'),signOut=$('accountSignOut');
    if(signIn)signIn.hidden=!!user; 
    const initialRegister=$('accountInitialRegister');
