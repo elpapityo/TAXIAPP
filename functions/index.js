@@ -10,7 +10,7 @@ const {getAuth}=require('firebase-admin/auth');
 if(!getApps().length)initializeApp();
 const db=getFirestore(),authentication=getAuth();
 const region='asia-northeast1';
-const options={region,memory:'256MiB',timeoutSeconds:120,maxInstances:1};
+const options={region,memory:'256MiB',timeoutSeconds:120,maxInstances:1,concurrency:1,minInstances:0};
 const fail=(code,message)=>{throw new HttpsError(code,message);};
 async function administrator(request,requireRecent=false){
  const uid=request.auth?.uid;
