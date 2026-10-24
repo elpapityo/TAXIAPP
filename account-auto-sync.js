@@ -10,6 +10,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
   let deviceSession=null,viewerLogin=false,explicitWriterLogin=false;
   let pendingRegistration=null,registrationBusy=false,authGeneration=0,adminAuthorized=false;
+  let accountSwitchBusy=false;
   // A dedicated print session may READ its own duties but never take over
   // the Galaxy's last-login-wins writerSessionId.
   const printViewerMode=(()=>{
@@ -31,7 +32,17 @@ root.TAXIAPP_ACCOUNT_AUTO={
    const signIn=$('accountSignIn'),signOut=$('accountSignOut');
    if(signIn)signIn.hidden=!!user;
    if(signOut)signOut.hidden=!user;
-   if(signOut)signOut.disabled=!user;
+   if(signOut)signOut.disabled=!user||accountSwitchBusy;
+   for(const id of ['accountSwitchLogin','accountSwitchRegister']){
+    const button=$(id);
+    if(button){button.hidden=!user;button.disabled=!user||accountSwitchBusy;}
+   }
+   const intro=$('accountAccessIntro');
+   if(intro)intro.hidden=!!user;
+   const identity=$('accountCurrentIdentity');
+   if(identity)identity.textContent=user?
+    'Google：'+String(user.email||'メール非公開')+'／ UID：'+String(user.uid||'不明'):
+    'Googleアカウント：未ログイン';
    const takeOver=$('accountTakeOver');
    if(takeOver)takeOver.hidden=printViewerMode||!user||!enabled||deviceSession?.state()!=='viewer';
    const manageLink=$('accountAdminLink');
@@ -342,13 +353,45 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(!root.TAXIAPP_LOGIN_UTILS?.firebaseConfigReady(conf)){
     status('Googleログイン準備中（従来版は利用可能）');return;
    }
-   $('accountSignIn')?.addEventListener('click',async()=>{
-    if(!auth){status('ログイン機能を読み込み中です…');return;}
-    viewerLogin=printViewerMode;explicitWriterLogin=!printViewerMode;
+   async function selectGoogleAccount(intent){
+    if(!auth||!fb){status('ログイン機能を読み込み中です…');return;}
+    if(accountSwitchBusy)return;
+    accountSwitchBusy=true;controls();
     try{
-     await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());
-     if(!printViewerMode&&deviceSession?.state()==='viewer')await deviceSession.claim();
-    }catch(e){status('ログイン失敗：'+String(e.code||e.message||e));}
+     const previous=auth.currentUser;
+     if(previous){
+      // GoogleのポップアップはUIDを直ちに切り替えられる。
+      // 事前に必ず従来の端末保存・同期待ち保護を実行する。
+      const approved=await deps.beforeSignOut?.();
+      if(approved===false){
+       status('進行中・未同期の日報があるため、アカウント切替を中止しました。');
+       return;
+      }
+      if(auth.currentUser?.uid!==previous.uid)
+       throw Error('アカウントを確認中に認証が変わりました。切替を中止しました');
+      await fb.signOut(auth);
+     }
+     viewerLogin=printViewerMode;explicitWriterLogin=!printViewerMode;
+     const provider=new fb.GoogleAuthProvider();
+     provider.setCustomParameters?.({prompt:'select_account'});
+     status(intent==='register'?
+      '新しいGoogleアカウントを選択してください。登録済みの場合は既存登録にログインします。':
+      'ログインするGoogleアカウントを選択してください。');
+     await fb.signInWithPopup(auth,provider);
+     if(!printViewerMode&&deviceSession?.state()==='viewer'&&enabled)
+      await deviceSession.claim();
+    }catch(error){
+     status('アカウント選択を完了できません：'+String(error.code||error.message||error));
+    }finally{
+     accountSwitchBusy=false;controls();
+    }
+   }
+   $('accountSignIn')?.addEventListener('click',()=>{void selectGoogleAccount('login');});
+   $('accountSwitchLogin')?.addEventListener('click',()=>{
+    void selectGoogleAccount('login');
+   });
+   $('accountSwitchRegister')?.addEventListener('click',()=>{
+    void selectGoogleAccount('register');
    });
    $('accountRegister')?.addEventListener('click',()=>{void completeRegistration();});
    $('accountOpenChatName')?.addEventListener('keydown',event=>{
