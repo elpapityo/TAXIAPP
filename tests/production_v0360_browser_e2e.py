@@ -81,6 +81,42 @@ try:
     assert municipalities.get('status')==200,municipalities
     assert municipalities.get('city')=='兵庫県伊丹市',municipalities
     assert municipalities['path']=='/municipalities.json',municipalities
+    # The original 3-column UI must fit a phone without horizontal clipping.
+    # This DOM-only synthetic fixture never edits, sends, or replaces a duty.
+    js("""const main=document.querySelector('#main-content');
+      const box=document.createElement('details');box.open=true;
+      box.id='monthly-width-fixture';box.className='details monthly-sales-panel';
+      box.innerHTML='<summary>月間売上表</summary><div class="inner">'+
+       '<h2 class="h2" style="position:absolute;visibility:hidden">クラウド日報管理</h2>'+
+       '<div class="monthly-sales-scroll"><table class="monthly-sales-table">'+
+       '<colgroup><col class="monthly-date-col"><col class="monthly-money-col">'+
+       '<col class="monthly-money-col"></colgroup><thead><tr>'+
+       '<th>日付・曜日・祝日</th><th>税込売上</th><th>税別売上</th></tr></thead>'+
+       '<tbody><tr class="monthly-day-holiday"><th>10/12（月・祝）</th>'+
+       '<td>123,456</td><td>112,232</td></tr></tbody></table></div></div>';
+      main.appendChild(box);""")
+    for width in (320,360,420,580):
+        driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{
+          'width':width,'height':900,'deviceScaleFactor':1,'mobile':True})
+        width_state=js("""const fixture=document.querySelector('#monthly-width-fixture');
+          const wrap=fixture.querySelector('.monthly-sales-scroll');
+          const table=wrap.querySelector('table');
+          const last=table.querySelector('tbody tr td:last-child');
+          const h1=document.querySelector('#main-content .section-heading .h1');
+          const h2=fixture.querySelector('.h2');
+          return {viewport:innerWidth, wrap:wrap.clientWidth,scroll:wrap.scrollWidth,
+            tableRight:table.getBoundingClientRect().right,
+            wrapRight:wrap.getBoundingClientRect().right,
+            pageRight:document.documentElement.getBoundingClientRect().right,
+            lastRight:last.getBoundingClientRect().right,
+            lastText:last.textContent,
+            titleSize:parseFloat(getComputedStyle(h1).fontSize),
+            itemSize:parseFloat(getComputedStyle(h2).fontSize)};""")
+        assert width_state['scroll']<=width_state['wrap']+1,(width,width_state)
+        assert width_state['tableRight']<=width_state['wrapRight']+1,(width,width_state)
+        assert width_state['lastRight']<=width_state['viewport']+1,(width,width_state)
+        assert width_state['titleSize']<=width_state['itemSize']+1,(width,width_state)
+    print('PASS Chrome: 月間売上3列が320-580pxで切れず、画面タイトルは項目見出し以下')
     assert stored()==sentinel
     print('PASS Chrome: production municipality JSON route resolves; original IDB/localStorage unaffected')
 finally:
