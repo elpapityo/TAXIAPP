@@ -95,7 +95,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="actions"><button id="signIn" class="primary">Googleで管理者ログイン</button><button id="signOut" hidden>ログアウト</button></div>
 </section>
 <section id="workspace" hidden>
-<div class="warning">⚠ 完全削除は復旧できません。テスト用と確認されたアカウントだけを対象にしてください。管理者・旧Google原本は対象外です。端末がオフラインの場合、端末の未同期データを遠隔で消すことはできません。</div>
+<div class="warning">現在はSpark（無料）プランです。オプチャネームはFirebase管理画面で編集できます。Cloud Functions未配信のため、管理者PCからの完全削除や他人の日報変更は行えません。<strong>Firestoreの営業原本やGoogle原本を直接削除しないでください。</strong></div>
 <section class="panel">
 <h2>登録アカウント一覧（管理者を含む）</h2>
 <p class="muted">一般利用者はオプチャネーム、管理者は「管理者」と表示します。Firestoreの登録ユーザーと管理者登録を統合表示します。</p>
@@ -123,7 +123,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="admin-fold-body">
 <div class="admin-account-actions">
 <strong>オプチャネームの編集</strong>
-<p class="muted">現在のSpark（無料）プランでは、この画面から直接保存できません。Firebase管理画面で登録名だけを変更します。</p>
+<p class="muted">現在のSpark（無料）プランでは、この画面から直接保存できません。Firebase管理者アカウントで管理画面を開き、選択した登録名だけを変更します。</p>
 <div class="actions">
 <a id="openNameConsole" class="action-link" href="https://console.firebase.google.com/project/taxiapp-2b6bd/firestore/data" target="_blank" rel="noopener noreferrer">Firebase管理画面で名前を変更</a>
 </div>
@@ -160,7 +160,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </div>
 
 </div>
-<div id="adminSourceNotice" class="admin-info-note" hidden>管理者自身のFirestore日報・設定は本人認証で閲覧できます。旧Google日報は対象外です。<a href="./index.html">TAXIAPP本体</a> か従来のGoogle帳票で確認してください。<strong>管理者アカウントの完全削除は禁止</strong>です。日報のゴミ箱移動は別操作です。</div>
+<div id="adminSourceNotice" class="admin-info-note" hidden>管理者自身のFirestore日報・設定は本人認証で閲覧できます。旧Google日報は対象外です。<a href="./index.html">TAXIAPP本体</a> か従来のGoogle帳票で確認してください。管理者PCからの削除・復元は現在利用できません。</div>
 <div id="cloudDeleteControls" hidden>
 <div id="accountDeletionSection" class="admin-action-form" hidden>
 <h3>テストアカウントの完全削除</h3>
@@ -196,7 +196,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </tr></thead><tbody id="dutyRows"></tbody></table></div>
 <div class="actions"><button id="moreDuties" hidden>さらに50件表示</button></div>
 <details id="dutySelected" class="admin-fold admin-duty-fold" hidden>
-<summary>選択した日報の詳細・編集 <span class="admin-fold-hint">乗務内容・ゴミ箱移動・復元</span></summary>
+<summary>選択した日報の詳細 <span class="admin-fold-hint">乗務内容の閲覧</span></summary>
 <div class="admin-fold-body">
 <p id="dutyHeader" class="helper"></p>
 <div class="admin-duty-top-actions" aria-label="選択した日報の操作" hidden>
