@@ -59,8 +59,26 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 .admin-duty-raw{max-height:320px;overflow:auto;background:#f1f5fa;padding:12px;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all}
 #dutyRows button{min-width:72px}
 #adminDataPanel .helper{font-size:13px;color:#52657b}
+.admin-selected-title{font-size:17px;font-weight:700;margin:5px 0 12px;overflow-wrap:anywhere}
+.admin-fold-controls{margin:0 0 12px}
+.admin-fold-controls button{min-height:36px;padding:6px 12px;font-size:13px}
+.admin-fold{background:#fff;border:1px solid #cdd7e2;border-radius:10px;margin:10px 0;overflow:hidden}
+.admin-fold>summary{padding:14px 15px;background:#f0f5fa;cursor:pointer;font-size:16px;font-weight:700;line-height:1.6;list-style-position:inside}
+.admin-fold>summary:hover{background:#e5eef7}
+.admin-fold>summary:focus-visible{outline:3px solid #125f99;outline-offset:-3px}
+.admin-fold[open]>summary{border-bottom:1px solid #d6e0eb}
+.admin-fold-hint{font-size:12px;font-weight:400;color:#526579;margin-left:9px}
+.admin-fold-body{padding:12px 14px 15px}
+.admin-fold-body .admin-account-actions{margin:0 0 9px}
+.admin-info-note{padding:10px 12px;background:#f5f8fc;border:1px solid #cbd7e2;border-radius:8px;line-height:1.6}
+.admin-duty-fold{margin-top:16px}
+#adminDataPanel>h3{font-size:16px;margin:3px 0 8px}
 [hidden]{display:none!important}
-@media(max-width:650px){body{padding:12px}h1{font-size:21px}.panel{padding:12px}}
+@media(max-width:650px){body{padding:12px}h1{font-size:21px}.panel{padding:12px}
+ .admin-fold>summary{padding:12px;font-size:15px}
+ .admin-fold-hint{display:block;margin-left:20px}
+ .admin-fold-body{padding:10px}
+}
 </style>
 </head>
 <body>
@@ -86,7 +104,20 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </section>
 <section class="panel" id="selectedPanel" hidden>
 <h2>選択アカウントのデータ管理</h2>
+<p id="selectedAccountHeading" class="admin-selected-title" aria-live="polite"></p>
+<div class="admin-fold-controls actions">
+<button id="expandAdminSections" type="button">各項目をすべて開く</button>
+<button id="collapseAdminSections" type="button">各項目をすべて閉じる</button>
+</div>
+<details id="accountInfoFold" class="admin-fold">
+<summary>登録情報 <span class="admin-fold-hint">UID・状態・登録日時</span></summary>
+<div class="admin-fold-body">
 <div id="targetDetails"></div>
+</div>
+</details>
+<details id="accountActionsFold" class="admin-fold">
+<summary>アカウントの操作 <span class="admin-fold-hint">オプチャネーム変更・テスト用の削除</span></summary>
+<div class="admin-fold-body">
 <div class="admin-account-actions">
 <strong>このアカウントの操作</strong>
 <div class="actions">
@@ -111,7 +142,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p><a href="https://console.firebase.google.com/project/taxiapp-2b6bd/firestore/data" target="_blank" rel="noopener noreferrer">Firebaseのデータ画面を開く</a></p>
 </div>
 </div>
-<div id="adminSourceNotice" class="warning" hidden>管理者自身のFirestore原本と設定は、既存の本人認証で直接閲覧できます。<strong>以前のGoogleスプレッドシートに保存された日報はこの画面に含まれません。</strong>旧日報・印刷データは <a href="./index.html">TAXIAPP本体</a> または従来のGoogle帳票から確認してください。管理者自身の削除操作はここでは無効です。</div>
+<div id="adminSourceNotice" class="admin-info-note" hidden>管理者自身のFirestore日報・設定は本人認証で閲覧できます。旧Google日報は対象外です。<a href="./index.html">TAXIAPP本体</a> か従来のGoogle帳票で確認してください。<strong>管理者アカウントの完全削除は禁止</strong>です。日報のゴミ箱移動は別操作です。</div>
 <div id="accountDeletionSection" class="admin-action-form" hidden>
 <h3>テストアカウントの完全削除</h3>
 <div class="actions"><button id="closeAccountDelete" class="close-action" type="button">削除確認を閉じる</button></div>
@@ -126,8 +157,13 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div id="previewDetails" class="warning" hidden></div>
 <div class="actions"><button id="deleteAccount" class="danger" disabled>認証と全データを完全削除</button></div>
 </div>
-<section id="adminDataPanel" class="panel">
-<h2>利用者別データ閲覧・個別日報削除</h2>
+</div>
+</details>
+<details id="dutyManagementFold" class="admin-fold" open>
+<summary>日報・設定の管理 <span class="admin-fold-hint">日報一覧・詳細・個別ゴミ箱移動</span></summary>
+<div class="admin-fold-body">
+<section id="adminDataPanel">
+<h3>利用者別データ閲覧・個別日報削除</h3>
 <p class="helper">日報は50件ずつ取得し、保存済みの計算値を表示します。管理者本人の閲覧はFirebase Functions不要ですが、編集保存・ゴミ箱移動・他の利用者の詳細閲覧には管理者用Cloud Functionsの本番配信が必要です。旧Google原本には作用しません。</p>
 <div class="actions">
 <button id="loadDuties">この利用者の日報を表示</button>
@@ -138,8 +174,9 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <th>乗務日</th><th>乗務ID</th><th>記録件数</th><th>状態</th><th>更新番号</th><th>操作</th>
 </tr></thead><tbody id="dutyRows"></tbody></table></div>
 <div class="actions"><button id="moreDuties" hidden>さらに50件表示</button></div>
-<section id="dutySelected" hidden>
-<h2>選択した日報（閲覧・編集・ゴミ箱移動）</h2>
+<details id="dutySelected" class="admin-fold admin-duty-fold" hidden>
+<summary>選択した日報の詳細・編集 <span class="admin-fold-hint">乗務内容・ゴミ箱移動・復元</span></summary>
+<div class="admin-fold-body">
 <p id="dutyHeader" class="helper"></p>
 <div class="admin-duty-top-actions" aria-label="選択した日報の操作">
 <button id="editDuty" class="primary" disabled>この日報を編集（乗降地）</button>
@@ -167,13 +204,16 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <button id="trashDuty" class="danger" disabled>この1乗務をゴミ箱へ移す</button>
 </div>
 <div id="dutyDetail" aria-label="日本語で整理した日報明細"></div>
+</div>
+</details>
 </section>
-</section>
+</div>
+</details>
 </section>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
-<script type="module" src="./account-admin.js?v=20261025-name-internal-1"></script>
+<script type="module" src="./account-admin.js?v=20261025-foldable-1"></script>
 </body>
 </html>

@@ -79,6 +79,7 @@ function clearDutyPanel(){
  $('adminLocationEdit').hidden=true;
  $('dutyRows').textContent='';
  $('dutySelected').hidden=true;
+ $('dutySelected').open=false;
  $('settingsDetail').hidden=true;
  $('moreDuties').hidden=true;
  $('trashConfirmId').value='';
@@ -88,6 +89,12 @@ function selectUser(user){
  clearDutyPanel();
  selected=user;preview=null;
  $('selectedPanel').hidden=false;
+ $('selectedAccountHeading').textContent=(user.openChatName||'（名前未登録）')+
+  '（'+(user.isAdmin?'管理者':'一般利用者')+'）／ UID：'+user.uid;
+ // 別ユーザーを選ぶと開閉状態だけを初期化。データの読み込みや原本は変更しない。
+ $('accountInfoFold').open=false;
+ $('accountActionsFold').open=false;
+ $('dutyManagementFold').open=true;
  $('accountDeletionSection').hidden=true;
  $('adminNicknameSection').hidden=true;
  $('adminNameStatus').textContent='';
@@ -252,6 +259,16 @@ onAuthStateChanged(auth,async user=>{
   await loadList();
  }catch(e){if(myEpoch===epoch)notice('権限を確認できません：'+String(e.message||e),true);}
 });
+for(const [id,open] of [
+ ['expandAdminSections',true],['collapseAdminSections',false]
+]){
+ $(id).addEventListener('click',()=>{
+  if(!selected)return;
+  for(const fold of ['accountInfoFold','accountActionsFold','dutyManagementFold'])
+   $(fold).open=open;
+  if(!$('dutySelected').hidden)$('dutySelected').open=open;
+ });
+}
 $('signIn').addEventListener('click',()=>execute(async()=>{
  await signInWithPopup(auth,new GoogleAuthProvider());
 },false));
@@ -354,6 +371,8 @@ async function readDuty(shiftId){
  selectedDuty=duty;dutyUid=uid;
  editDraft=null;$('adminLocationEdit').hidden=true;
  $('dutySelected').hidden=false;
+ $('dutyManagementFold').open=true;
+ $('dutySelected').open=true;
  $('dutyTrashSection').hidden=true;
  $('dutyHeader').textContent='UID：'+uid+'／乗務ID：'+shiftId+
   '／更新番号：'+duty.revision+'／'+(duty.trashed?'ゴミ箱':duty.shift.endedAt||duty.shift.endedIso?'入庫済み':'進行中');
@@ -664,6 +683,7 @@ $('saveAdminName').addEventListener('click',()=>execute(async()=>{
     serverName.name!==next||verified.storedOpenChatName!==next)
   throw Error('更新後の登録名を確認できません。再読み込みしてください');
  selectUser(verified);
+ $('accountActionsFold').open=true;
  notice('オプチャネームを更新し、サーバーから読み戻し確認しました。');
 }));
 $('openAccountDelete').addEventListener('click',()=>{
