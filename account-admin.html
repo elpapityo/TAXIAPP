@@ -103,6 +103,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="actions"><button id="saveAdminName" class="primary" type="button">管理者として変更を保存</button><button id="probeAdminName" type="button">接続診断（保存しない）</button><button id="cancelAdminName" type="button">閉じる</button></div>
 <p class="muted">変更した名前はGoogleアカウント名ではなく、TAXIAPP内の登録名です。保存には管理者専用のFirebase Functionsが必要です。</p>
 <p id="adminNameStatus" role="status" aria-live="polite"></p>
+<p class="muted">「接続診断（保存しない）」は関数の受付だけを確認し、登録名を変更しません。<code>internal</code> の場合は、通信先がない場合とサーバー処理の異常を区別して表示します。</p>
 <div id="adminNameManualHelp" class="warning" hidden>
 <p>Cloud Functionsがまだ配信されていない場合、管理者自身の登録名はFirebase Consoleで変更できます。</p>
 <p id="adminNameManualPath"></p>
