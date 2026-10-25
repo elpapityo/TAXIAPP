@@ -2759,7 +2759,7 @@ function renderDutyStatus(shift){
  const routeWithSave=route?(quick?route.replace(/<\/div>$/,quick+'</div>'):route):
   (quick?'<div class="preview-duty-route">'+quick+'</div>':'');
  const meterCompact=displayPrefs().driveLayout==='meter';
- const elapsedVisible=!meterCompact&&(cruising?cruisingSummaryVisible('elapsed'):driveStatusFieldVisible('elapsed'));
+ const elapsedVisible=false; // メーター型上部では経過時間を表示しない。内部計測は継続。
  if(!columns.length&&!routeWithSave&&!elapsedVisible)return '';
  const leading=meterCompact?columns.slice(0,2):columns;
  const additional=meterCompact?columns.slice(2):[];
