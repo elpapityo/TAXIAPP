@@ -2925,6 +2925,32 @@ function meterConfirmRecordedFields(action,shift){
  }
  return rows.slice(0,9);
 }
+function showHighwayCaptureConfirm(shift,seg,index){
+ if(!shift||!seg||displayPrefs().driveLayout!=='meter')return;
+ const viewer=window.TAXIAPP_METER_CONFIRM;
+ if(!viewer)return;
+ const shiftId=shift.id,recordId=shift.draft?.id;
+ const key='highway-'+(++meterConfirmSequence);
+ const rows=[
+  {label:'高速入口時刻',value:seg.entryTime||'未入力'},
+  {label:'高速入口距離',value:seg.entryKm?seg.entryKm+' km':'未入力'},
+  {label:'高速出口時刻',value:seg.exitTime||'未入力'},
+  {label:'高速出口距離',value:seg.exitKm?seg.exitKm+' km':'未入力'}
+ ];
+ viewer.show({key,title:'高速の時刻・距離を確認',rows,edit:()=>{
+  const current=getShift();
+  if(current?.id!==shiftId||current.draft?.id!==recordId)return;
+  tab='drive';render();
+  setTimeout(()=>{
+   const detail=appEl.querySelector('.meter-details');
+   if(detail)detail.open=true;
+   const fold=detail?.querySelector('[data-highway-fold]');
+   if(fold)fold.open=true;
+   const target=fold?.querySelector('[data-hwy-row="'+index+'"]')||fold||detail;
+   target?.scrollIntoView?.({behavior:'smooth',block:'center'});
+  },80);
+ }});
+}
 function meterConfirmRefresh(){
  const current=meterConfirmCurrent,viewer=window.TAXIAPP_METER_CONFIRM;
  if(!current||!viewer?.activeKey()||viewer.activeKey()!==current.key)return;
@@ -7606,10 +7632,10 @@ appEl.addEventListener('click',event=>{
       seg[distKey]=window.TAXIAPP_EXTERNAL_GPS.calculated(gps.tripKm,base,gps.runId).toFixed(1);
       const el=appEl.querySelector('[data-hwy-index="'+index+'"][data-hwy-field="'+distKey+'"]');
       if(el&&document.activeElement!==el)el.value=seg[distKey];
-      saveLater();
+      saveLater();showHighwayCaptureConfirm(current,seg,index);
       toast('高速の時刻とGPS距離を入力しました。');
     }).catch(error=>toast('時刻を記録しました。GPS距離は取得できません：'+error.message,true));
-  }else toast('高速の時刻を記録しました。距離を確認してください。');
+  }else{showHighwayCaptureConfirm(shift,seg,index);toast('高速の時刻を記録しました。距離を確認してください。');}
   return;
  }
  const hwyGps=event.target.closest('[data-hwy-gps]');
@@ -7636,7 +7662,8 @@ appEl.addEventListener('click',event=>{
    const timeInput=appEl.querySelector('[data-hwy-index="'+index+'"][data-hwy-field="'+timeKey+'"]');
    if(distanceInput)distanceInput.value=value;
    if(timeInput)timeInput.value=time;
-   saveLater();toast('高速のGPS距離 '+value+'km・時刻 '+time+' を入力しました。');
+   saveLater();showHighwayCaptureConfirm(current,seg,index);
+   toast('高速のGPS距離 '+value+'km・時刻 '+time+' を入力しました。');
   }).catch(error=>toast('GPS距離を取得できません：'+error.message,true));
   return;
  }
