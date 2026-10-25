@@ -16,7 +16,7 @@ const context={
  currentLoginScope:{uid,admin:true,firebase:{auth:{currentUser:{uid,email,displayName:'本人の表示名'}}}},
  accountScope:{uid,kind:'legacy',adminFirestorePreview:false},
  deviceMode:'writer',writerLoadGate:false,
- safeText:esc,
+ safeText:esc,document:{getElementById:id=>id==='accountOpenChatNameLabel'?{textContent:'オプチャネーム：テスター'}:null},
  memberDiary:()=>context.accountScope.kind==='member',
  legacyDiary:()=>context.accountScope.kind==='legacy'
 };
