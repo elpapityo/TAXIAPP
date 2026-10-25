@@ -6398,18 +6398,17 @@ function flushVisibleDraftInputs(shift){
  const meterRoot=appEl.querySelector('#main-content .meter-console');
  const root=meterRoot||appEl.querySelector('#main-content .hero')||appEl.querySelector('.hero');
  if(!root)return;
- // Expanded detail inputs may be stale clones of the quick settlement fields.
- // Read those first, then let the visible quick K/N fields take precedence.
- const expandedMeterFields=meterRoot?appEl.querySelector('#main-content .meter-details[open]'):null;
- const quickFields=meterRoot?.querySelectorAll('.meter-quick-inputs [data-col]')||[];
- for(const input of [...(expandedMeterFields?.querySelectorAll('[data-col]')||[]),...root.querySelectorAll('[data-col]'),...quickFields]){
-  const key=input.dataset.col;
-  if(!key||key==='AP'||key==='AQ'||input.disabled)continue;
-  // Closed details are already excluded by getClientRects(). Open details
-  // contain editable settlement fields and must be flushed before validation.
-  if(typeof input.getClientRects==='function'&&!input.getClientRects().length)continue;
-  const value=String(input.value??'');
-  if(String(draft.raw[key]??'')!==value)draft.raw[key]=value;
+ // Input events already write into draft.raw. Do not bulk-copy rendered clones
+ // back to the draft: GPS/address updates may have changed the source since
+ // the last render, and a stale detail field would destroy that newer value.
+ // Only commit an actively edited field whose latest IME input is pending.
+ const focused=document.activeElement;
+ if(focused?.matches?.('[data-col]')&&
+    appEl.querySelector('#main-content')?.contains(focused)&&
+    !focused.disabled&&focused.dataset.col!=='AP'&&focused.dataset.col!=='AQ'){
+  const key=focused.dataset.col;
+  draft.raw[key]=String(focused.value??'');
+  mirrorDriveColumnInput(focused,key);
  }
  for(const input of root.querySelectorAll('[data-meta]')){
   if(input.disabled||input.closest('details'))continue;
