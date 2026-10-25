@@ -7657,11 +7657,12 @@ appEl.addEventListener('click',event=>{
    const now=new Date(gps.capturedAt);
    if(!Number.isFinite(now.getTime()))throw Error('GPS取得時刻が不正です');
    const time=stamp(now).slice(0,5);
-   seg[key]=value;seg[timeKey]=time;
+   seg[key]=value;
+   if(!String(seg[timeKey]??'').trim())seg[timeKey]=time;
    const distanceInput=appEl.querySelector('[data-hwy-index="'+index+'"][data-hwy-field="'+key+'"]');
    const timeInput=appEl.querySelector('[data-hwy-index="'+index+'"][data-hwy-field="'+timeKey+'"]');
    if(distanceInput)distanceInput.value=value;
-   if(timeInput)timeInput.value=time;
+   if(timeInput)timeInput.value=seg[timeKey];
    saveLater();showHighwayCaptureConfirm(current,seg,index);
    toast('高速のGPS距離 '+value+'km・時刻 '+time+' を入力しました。');
   }).catch(error=>toast('GPS距離を取得できません：'+error.message,true));
