@@ -94,27 +94,14 @@ assert.match(source,/data-cruising-summary-field\],\[data-drive-status-field\]/)
 assert.match(source,/if\(!columns\.length&&!routeWithSave&&!elapsedVisible\)return '';/);
 assert.match(source,/stickySaveButton:'off'/,'既存利用者の上部登録ボタンは初期OFF');
 assert.match(source,/<title>TAXIAPP v\d+\.\d+\.\d+(?:-dev\.\d+)? — 乗務日報<\/title>/);
-// Meter-only alighting clock must be a selectable header CARD, not mandatory "other" content.
-context.window={TAXIAPP_ALIGHT_CLOCK:{reference:()=>({hasAlight:true,seconds:125})}};
-context.durationJapanese=()=> '00時間02分05秒';
+// メーター型の経過時間カードは表示しないが、設定と原本は保持する。
 model.prefs.ui.driveLayout='meter';
 model.prefs.ui.driveStatusDisplay='on';
 model.prefs.cruisingSummaryFields={state:true,sales:true,elapsed:true};
 model.prefs.driveStatusFields={state:true,elapsed:true};
-blank.draft=null;
-status.state='空車・流し中';status.waiting=false;status.dispatch=false;
-let meterView=render();
-assert.match(meterView,/data-duty-field="elapsed"/,'selected elapsed card must be visible');
-assert.match(meterView,/data-meter-elapsed-label>前回の降車から/);
-assert.ok(meterView.indexOf('data-duty-field="elapsed"')<meterView.indexOf('meter-summary-more'),
- 'the selected clock must be outside the other-information accordion');
-assert.doesNotMatch(meterView,/meter-elapsed-panel/);
-model.prefs.cruisingSummaryFields.elapsed=false;
-assert.doesNotMatch(render(),/data-duty-field="elapsed"/,'unselected clock must be hidden');
+blank.draft=null;status.state='空車・流し中';status.waiting=false;status.dispatch=false;
+assert.doesNotMatch(render(),/data-duty-field="elapsed"/);
 blank.draft={kind:'ride',raw:{M:'08:30'}};status.state='実車中';
-model.prefs.driveStatusFields.elapsed=true;
-assert.match(render(),/data-duty-field="elapsed"/,'ride clock card is individually configurable');
-model.prefs.driveStatusFields.elapsed=false;
-assert.doesNotMatch(render(),/data-duty-field="elapsed"/,'ride clock card can be hidden');
-
-console.log('PASS 1024 visibility combinations and selectable meter-mode alight clock; existing duty data untouched');
+assert.doesNotMatch(render(),/data-duty-field="elapsed"/);
+assert.equal(JSON.stringify(saved),stored,'表示変更で保存原本を変更しない');
+console.log('PASS 1024 visibility combinations and hidden meter-mode alight clock; existing duty data untouched');
