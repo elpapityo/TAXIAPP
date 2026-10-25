@@ -22,7 +22,7 @@ const context={
  safeText:escape,shortTime:s=>String(s||'').slice(0,5),
  feeSettings:()=>({uberSurcharge:100}),updateDiscountForDraft(){},applyUberDisplayedDefault:()=>false,
  saveLater(){throw Error('Rendering only must never save')},
- gpsTripUI:null,RAW_COLUMNS:[],PAYMENTS:[],TYPES:['乗'],DISPATCH_TYPES:[],
+ gpsTripUI:null,RAW_COLUMNS:[],PAYMENTS:[],shownPayments:()=>[],TYPES:['乗'],DISPATCH_TYPES:[],
  feeSettingsForDraft:()=>({}),uberAppAmounts:()=>null,uberDispatchFeeApplies:()=>false,
  cashChange:()=>({due:1000,change:0,shortage:0}),
  paymentBreakdown:()=>({items:[{type:'現'}]}),
