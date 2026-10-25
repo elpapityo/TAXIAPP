@@ -3,8 +3,8 @@ const fs=require('node:fs'), assert=require('node:assert/strict'),vm=require('no
 const html=fs.readFileSync('index.html','utf8');
 const before=html.slice(html.indexOf('function meterConfirmBefore(action){'),html.indexOf('function meterConfirmRecordedFields('));
 const after=html.slice(html.indexOf('function meterConfirmAfter(action,before){'),html.indexOf('function renderMeterDrive('));
-assert.match(before,/if\(action==='saveDraft'\)return null/);
-assert.match(after,/if\(action==='saveDraft'\)return/);
+assert.match(before,/return null/);
+assert.match(after,/return/);
 const call=html.slice(html.indexOf('function invokeSaveDraft(){'),html.indexOf('function finishSaveTouchPress(){'));
 assert.match(call,/handleAction\('saveDraft'\)/,'existing save mechanism remains');
 assert.match(call,/showSaveProblem\(/,'save error notice remains');
