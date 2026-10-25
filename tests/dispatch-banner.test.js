@@ -15,6 +15,7 @@ const ctx={
  locationField:()=>'<input data-location="AL">',
  safeText:s=>String(s).replaceAll('<','&lt;').replaceAll('>','&gt;'),
  renderAllFields:()=>'<div>全項目</div>',
+ displayPrefs:()=>({driveLayout:'legacy'}),
  rideFieldDataShown:(_key,existing)=>true,
  rideFieldShown:()=>true,distanceEnabled:()=>true,
  DISPATCH_TYPES:[]
