@@ -6345,7 +6345,9 @@ function requestDropLocation(shift,record){
 function flushVisibleDraftInputs(shift){
  const draft=shift?.draft;
  if(!draft)return;
- const root=appEl.querySelector('.hero');
+ // Meter layout has a duty summary hero before the actual input console.
+ // Read the visible quick inputs from that console, not the summary card.
+ const root=appEl.querySelector('.meter-console')||appEl.querySelector('.hero');
  if(!root)return;
  for(const input of root.querySelectorAll('[data-col]')){
   const key=input.dataset.col;
