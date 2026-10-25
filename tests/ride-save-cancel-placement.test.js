@@ -7,8 +7,8 @@ const wrapper=src.slice(src.indexOf('function renderDraft(shift){'),src.indexOf(
 const save=ride.indexOf('data-action="saveDraft"');
 const cancel=ride.indexOf('data-action="discardDraft"');
 const details=ride.indexOf('renderPaymentSplit(shift,d)');
-assert.ok(cancel>=0&&details>cancel&&save>details,'save must follow the payment details');
-assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,1);
+assert.ok(save>=0&&cancel>save&&details>cancel,'既存入力の保存と取消は支払内訳より前に表示');
+assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,2);
 assert.equal((ride.match(/data-action="discardDraft"/g)||[]).length,1);
 assert.match(wrapper,/d.kind==='ride'\?'':/,'ride cancel must not be duplicated below form');
 assert.match(wrapper,/d.kind==='dispatch'\?'迎車入力を取り消す（営業記録なし）'/,'dispatch cancel is retained');
