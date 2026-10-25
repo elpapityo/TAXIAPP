@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-assert.match(html,/<title>TAXIAPP v0\.3\.179 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.180 — 乗務日報<\/title>/);
 assert.match(html,/meter-confirm\.js\?v=20261025-174/);
 class Element{
  constructor(tag='div'){this.tagName=tag;this.children=[];this.listeners={};this.attributes={};this.classList={add(){}};this.hidden=false;}
