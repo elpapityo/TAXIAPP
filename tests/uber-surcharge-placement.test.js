@@ -19,7 +19,7 @@ assert.equal(fee('現'),true);
 assert.equal(fee('U','0'),false,'zero Uber-only initial value must not apply dispatch fee');
 assert.equal(fee('現','8300'),false);
 const ride=s.slice(s.indexOf('function renderRideForm('),s.indexOf('function renderEmptyForm('));
-const button=ride.indexOf('class="actions settlement-save-first"'),payment=ride.indexOf('${renderPaymentSplit(shift,d)}');
+const button=ride.indexOf('class="actions settlement-save-first"'),payment=ride.indexOf('renderPaymentSplit(shift,d)');
 assert.ok(button>=0&&payment>button,'cancel action before payment details');
 assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,1,'ride has only one save button');
 const lower=ride.indexOf('class="actions settlement-save-bottom"');
