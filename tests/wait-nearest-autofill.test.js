@@ -49,7 +49,7 @@ async function scenario(count,options={}){
   waitRecord:(shiftId,waitId)=>shift.id===shiftId&&shift.waiting?.id===waitId?shift.waiting:null,
   nativeAutoDistanceEnabled:()=>false,nativeDiaryGpsEnabled:()=>false,
   reverseAddress:async()=> 'GPS取得住所',saveLater(){},save:async()=>{saveCalls++;},
-  render(){throw Error('GPS nearest stand must not redraw current form');},
+  render(){throw Error('GPS nearest stand must not redraw current form');},meterConfirmRefresh:()=>{},
   gpsMessage:e=>String(e),gpsTripUI:null
  };
  vm.createContext(ctx);

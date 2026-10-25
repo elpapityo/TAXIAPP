@@ -23,6 +23,7 @@ const scope={
  getShift:()=>({draft:{id:'ride-1'}}),
  closeKeypad:(commit,suppressRender)=>actions.push('closeKeypad:'+commit+':'+suppressRender),
  handleAction:act=>actions.push(act),
+ meterConfirmBefore:()=>null,meterConfirmAfter:()=>{},
  toast:(msg,isError)=>alerts.push([msg,isError]),
  setTimeout:fn=>{const id=nextTimer++;timers.set(id,fn);return id;},
  clearTimeout:id=>timers.delete(id),
