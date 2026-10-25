@@ -15,5 +15,5 @@ assert.match(html,/seg\[key\]=value;/);
 assert.match(html,/if\(!String\(seg\[timeKey\]\?\?''\)\.trim\(\)\)seg\[timeKey\]=time;/);
 assert.match(html,/showHighwayCaptureConfirm\(current,seg,index\)/);
 assert.match(html,/!String\(seg\[distKey\]\?\?''\)\.trim\(\)/);
-assert.match(html,/if\(!canEditNow\(\)\|\|current\?\.id!==shiftId\|\|current\.draft\?\.id!==recordId/);
+assert.match(html,/if\(!canEditNow\(\)\|\|accountScope\.uid!==uid\|\|current\?\.id!==shiftId\|\|current\.draft\?\.id!==recordId/);
 console.log('高速時刻・距離の双方向ボタン、メーター金額入力、修正先、保存表示の構造検証成功');
