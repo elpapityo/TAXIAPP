@@ -7,5 +7,5 @@ assert.match(html,/\.meter-passenger-fields \.chip\{min-width:0;min-height:44px/
 assert.match(html,/function passengerChoice\(col,value,label,compact=false\)/);
 assert.match(html,/compact\?\[\['1','1'\],\['2','2'\],\['3','3'\],\['4','4'\]\]/);
 assert.doesNotMatch(html,/button\('男'\+safeText/);
-assert.match(html,/<title>TAXIAPP v0\.3\.191 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.192 — 乗務日報<\/title>/);
 console.log('PASS: 詳細人数入力 男女各一行・1〜4選択・入力破棄維持');
