@@ -61,7 +61,7 @@ const shift={id:'shift-111-xyz',date:'2026-10-20',startedIso:'2026-10-20T06:00:0
  assert.match(index,/syncUI\.bootstrapWriter\(\)/);
  assert.match(index,/function canEditNow\(\)\{return deviceMode==='writer'&&!writerLoadGate;\}/);
  assert.match(account,/deviceSession\.begin\(next,\{\s*viewer:printViewerMode,claimOnLogin:!printViewerMode&&explicitWriterLogin\s*\}\)/);
- assert.match(account,/if\(!printViewerMode&&deviceSession\?\.state\(\)==='viewer'\)await deviceSession\.claim\(\)/);
+ assert.match(account,/if\(!printViewerMode&&deviceSession\?\.state\(\)==='viewer'&&enabled\)\s*await deviceSession\.claim\(\)/);
  assert.match(account,/if\(printViewerMode\)return;/);
  assert.match(index,/TAXIAPP_PRINT_VIEWER_MODE/);
  assert.match(index,/firestorePrintGooglePostRequest/);
