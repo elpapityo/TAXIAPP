@@ -1,5 +1,5 @@
 'use strict';
-/* 出庫0kmで古い欠測が残るAndroid距離ラボの合成シミュレーション */
+/* 出庫時の任意の有効な距離で旧欠測が残るAndroid距離ラボの合成シミュレーション */
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const bridge=require('../gps-diary-bridge.js');
@@ -40,8 +40,14 @@ async function scenario({odometer='0',unresolvedGap=true,gapCount=3,elapsedSecon
  assert.equal(bridge.gapAcknowledged(normal.localStorage,normal.id,3),false);
  const nonzero=await scenario({odometer:'30511'});
  assert.equal(nonzero.shift.externalGpsSnapshot.tripKm,30511);
- assert.equal(bridge.gapAcknowledged(nonzero.localStorage,nonzero.id,3),false,
-  'out-of-range gaps are never bypassed on ordinary odometer input');
+ assert.equal(bridge.gapAcknowledged(nonzero.localStorage,nonzero.id,3),true,
+  'the entered departure odometer is a valid anchor regardless of its value');
+ const tenth=await scenario({odometer:'0.1'});
+ assert.equal(tenth.shift.externalGpsSnapshot.tripKm,0.1);
+ assert.equal(bridge.gapAcknowledged(tenth.localStorage,tenth.id,3),true);
+ assert.equal(bridge.calculated(107,bridge.baseline(tenth.localStorage,tenth.id),'new-session-1234567'),1.6);
+ assert.equal(bridge.gapAcknowledged(tenth.localStorage,tenth.id,4),false,
+  'a later GPS gap must still block automatic readings');
  const delayed=await scenario({elapsedSeconds:11});
  assert.equal(delayed.shift.externalGpsSnapshot.tripKm,0);
  assert.equal(bridge.gapAcknowledged(delayed.localStorage,delayed.id,3),false,
@@ -50,5 +56,5 @@ async function scenario({odometer='0',unresolvedGap=true,gapCount=3,elapsedSecon
  assert.equal(switched.writes,0,'asynchronous GPS must not modify a different duty');
  assert.equal(bridge.baseline(switched.localStorage,switched.id),null);
  assert.match(script,/allowUnresolvedGap:true/);
- console.log('出庫0kmの初回GPS基準・既存欠測の限定補正・新欠測拒否・乗務切替レース：合成テスト成功');
+ console.log('出庫時の0km・0.1km・任意距離の初回GPS基準・既存欠測の限定補正・新欠測拒否・乗務切替レース：合成テスト成功');
 })().catch(error=>{console.error(error);process.exitCode=1;});
