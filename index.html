@@ -6408,7 +6408,6 @@ function flushVisibleDraftInputs(shift){
     !focused.disabled&&focused.dataset.col!=='AP'&&focused.dataset.col!=='AQ'){
   const key=focused.dataset.col;
   draft.raw[key]=String(focused.value??'');
-  mirrorDriveColumnInput(focused,key);
  }
  for(const input of root.querySelectorAll('[data-meta]')){
   if(input.disabled||input.closest('details'))continue;
