@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const s=fs.readFileSync('index.html','utf8');
+const start=s.indexOf('function syncFloatingDutySummary(){');
+const end=s.indexOf('function jumpFromDutyPanel(',start);
+const fn=s.slice(start,end);
+assert.match(fn,/const shouldShow=rect\.bottom<0&&bounds\.bottom>0/);
+assert.match(fn,/if\(tooTall&&mirror&&!mirror\.hidden\)\{\s*mirror\.hidden=true;\s*pinned\.style\.top='0px'/);
+assert.match(fn,/pinned\.hidden=top\+finalHeight>allowedHeight\|\|right-left<180/);
+const render=s.slice(s.indexOf('function renderMeterDrive(shift){'),s.indexOf('function renderDrive(',s.indexOf('function renderMeterDrive(shift){')));
+assert.match(render,/button\('保存','saveDraft','meter-finish'\)/);
+assert.match(render,/button\('障割 '/);
+assert.match(render,/button\('高速','meterHighway','meter-highway'\)/);
+assert.match(s,/<title>TAXIAPP v0\.3\.182 — 乗務日報<\/title>/);
+console.log('PASS 精算の固定操作優先、詳細操作と保存ボタン維持');
