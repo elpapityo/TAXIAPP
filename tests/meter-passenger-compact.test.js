@@ -2,10 +2,10 @@
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8');
 assert.match(html,/\.meter-passenger-fields \.form-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
-assert.match(html,/\.meter-passenger-fields \.selector\{grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+assert.match(html,/\.meter-passenger-fields \.selector\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 assert.match(html,/\.meter-passenger-fields \.chip\{min-width:0;min-height:44px/);
-assert.match(html,/function passengerChoice\(col,value,label\)/);
-assert.match(html,/selector\(col,\[\['0','0'\],\['1','1'\],\['2','2'\],\['3','3'\],\['4','4'\],\['5','5'\]\]/);
+assert.match(html,/function passengerChoice\(col,value,label,compact=false\)/);
+assert.match(html,/compact\?\[\['1','1'\],\['2','2'\],\['3','3'\],\['4','4'\]\]/);
 assert.match(html,/button\('入力破棄','discardDraft','meter-sub'\)\+button\('男'/);
 assert.match(html,/<title>TAXIAPP v0\.3\.181 — 乗務日報<\/title>/);
-console.log('PASS: 詳細人数入力 男女各一行・0〜5選択・入力破棄維持');
+console.log('PASS: 詳細人数入力 男女各一行・1〜4選択・入力破棄維持');
