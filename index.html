@@ -7719,7 +7719,7 @@ async function importBackup(file){
   toast(addition.length+'乗務を復元しました。クラウド原本がゴミ箱の場合は個別に復元してください。');
  }
 }
-appEl.addEventListener('click',async event=>{
+appEl.addEventListener('click',event=>{
  const hwyTime=event.target.closest('[data-hwy-now]');
  if(hwyTime){
   event.preventDefault();
@@ -7750,6 +7750,7 @@ appEl.addEventListener('click',async event=>{
  }
  const nearby=event.target.closest('[data-hwy-nearby]');
  if(nearby){
+  void (async()=>{
   event.preventDefault();
   if(!canEditNow()||model.prefs?.highwayNearbyIC!==true)return;
   const shift=getShift(),draft=shift?.draft,index=Number(nearby.dataset.hwyNearby),key=nearby.dataset.hwyIcField;
@@ -7793,6 +7794,7 @@ appEl.addEventListener('click',async event=>{
    row.append(panel);
   }catch(error){if(valid())toast('ICを検索できません。手動入力できます：'+(error.message||'通信エラー'),true);}
   finally{if(nearby.isConnected)nearby.disabled=false;}
+  })().catch(error=>toast('IC検索処理に失敗しました：'+error.message,true));
   return;
  }
  const hwyGps=event.target.closest('[data-hwy-gps]');
