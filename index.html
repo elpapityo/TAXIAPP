@@ -1372,6 +1372,12 @@ html.meter-confirm-field-edit #floating-duty-summary{display:none!important}\n .
 /* Meter waiting card is displayed directly below the action buttons. */
 .meter-wait-inline{margin-top:12px}
 .meter-wait-inline .wait-display{margin:0}
+
+.meter-inline-editor{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--sheet)}
+.meter-inline-editor>.field-label{margin:10px 0 6px}
+.meter-inline-passengers .passenger-control{margin-top:10px}
+.meter-inline-passengers .selector{display:flex;flex-wrap:nowrap;gap:6px}
+.meter-inline-passengers .selector>.chip{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -3069,8 +3075,8 @@ function renderMeterDrive(shift){
   button('障割 '+(d.raw.O==='シ'?'✓':''),'meterDiscount','meter-discount')+button('保存','saveDraft','meter-finish')+button('高速','meterHighway','meter-highway'):
   button('支払いへ','meterSettle','meter-settle')+button('障割 '+(d.raw.O==='シ'?'✓':''),'meterDiscount','meter-discount')+button('高速','meterHighway','meter-highway')+button('入力破棄','discardDraft','meter-sub')+button('男'+safeText(d.raw.I||'0')+'・女'+safeText(d.raw.J||'0'),'meterPassengers','meter-passenger-shortcut');
  else actions=button('登録する','saveDraft')+button('入力破棄','discardDraft','meter-sub');
- const dispatchFields=d?.kind==='dispatch'?'<div class="field-label" style="margin-top:12px">迎車の配車種別</div>'+selector('E',DISPATCH_TYPES,d.raw.E,true):'';
- const passengerFields=d?.kind==='ride'?'<details class="meter-passenger-fields" aria-label="乗車人数の入力"><summary>乗車人数　男 '+safeText(d.raw.I||'0')+'人・女 '+safeText(d.raw.J||'0')+'人</summary><div class="form-grid">'+passengerChoice('I',d.raw.I,'男性',true)+passengerChoice('J',d.raw.J,'女性',true)+'</div></details>':'';
+ const dispatchFields=d?.kind==='dispatch'?'<div class="meter-inline-editor" aria-label="迎車入力"><div class="field-label">配車元</div>'+selector('E',DISPATCH_TYPES,d.raw.E,true)+field('C',d.raw,{label:'迎車受信時刻'})+locationField('AL',d.raw,'お迎え場所・住所','gpsPickup')+'</div>':'';
+ const passengerFields=d?.kind==='ride'&&!settling?'<div class="meter-inline-editor" aria-label="実車入力"><div class="field-label">配車区分</div>'+selector('E',TYPES,d.raw.E)+field('G',d.raw,{label:'乗車時刻'})+locationField('AL',d.raw,'乗車地・住所','gpsPickup')+'<div class="meter-inline-passengers">'+passengerChoice('I',d.raw.I,'男性',true)+passengerChoice('J',d.raw.J,'女性',true)+'</div><div class="field-label">支払い方法</div>'+selector('N',shownPayments(d.raw.N),d.raw.N,true)+'</div>':'';
  const quick=settling?'<div class="meter-quick-inputs">'+field('K',d.raw,{label:'メーター金額（円）',required:true})+
   '<label class="field"><span class="field-label">支払い方法</span><select class="control" data-col="N" aria-label="支払い方法"><option value="">選択してください</option>'+
   shownPayments(d.raw.N).map(([code,label])=>'<option value="'+safeText(code)+'" '+(d.raw.N===code?'selected':'')+'>'+safeText(label)+'</option>').join('')+
@@ -3240,7 +3246,7 @@ function renderRideForm(shift,d){
  if(applyUberDisplayedDefault(d,shift.settings))saveLater();
  const pickupFields=`${optionalRideField('received',`<div class="pickup-received-time">${field('C',r,{label:'データ受信・待機開始時刻'})}</div>`)}<div class="field-label" style="margin:14px 0 8px">配車区分</div>${selector('E',TYPES,r.E)}<div class="form-grid pickup-main-fields" style="margin-top:15px">${field('G',r,{label:'乗車時刻'})}${optionalRideField('distanceStart',field('F',r,{label:'乗車時の走行距離（km）',required:true}))}</div><div class="pickup-address-line">${locationField('AL',r,'乗車地・住所','gpsPickup')}</div>`;
  const passengers=optionalRideField('passengers',`<div class="form-grid">${passengerChoice('I',r.I,'男性')}${passengerChoice('J',r.J,'女性')}</div>`);
- const payment=`<div class="field-label" style="font-weight:800;margin:13px 0 8px">支払方法</div>${selector('N',PAYMENTS,r.N,true)}`;
+ const payment=`<div class="field-label" style="font-weight:800;margin:13px 0 8px">支払方法</div>${selector('N',shownPayments(r.N),r.N,true)}`;
  const realHighway=hasRealHighway(r),emptyHighway=hasEmptyHighway(r);
  const highwayMode=(mode,label,active)=>`<button class="btn highway-choice" type="button" data-highway-mode="${mode}" aria-pressed="${active}">${active?'✓ ':''}${label}</button>`;
  const realHighwayFields=realHighway&&Array.isArray(d.meta?.highwaySections)?`<div class="highway-mode-fields" aria-label="実車分の高速入力">${renderHighwaySections(d,'実')}</div>`:realHighway?`<div class="highway-mode-fields" aria-label="実車分の高速入力"><h3>実車分（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター'})}${field('T',r,{label:'降インター'})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div></div>`:'';
