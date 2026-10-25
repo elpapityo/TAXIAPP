@@ -6576,17 +6576,19 @@ function handleAction(action,id){
      const bridge=window.TAXIAPP_EXTERNAL_GPS;
      const existing=bridge.baseline(localStorage,departingId);
      const b=bridge.ensureStart(localStorage,departingId,data.tripKm,odometer,data.runId);
-     // A confirmed departure odometer of exactly 0km is a manual baseline.
-     // Accept only an already reported gap at the immediate departure fix;
-     // do not clear gaps raised later during actual driving.
+     // The entered departure trip (including 0.1km) is the confirmed anchor.
+     // Acknowledge only a gap present at the first immediate departure fix.
+     // Later or delayed fixes must retain their gap warning: missing travel
+     // after departure cannot be inferred from GPS cumulative distance.
      const secondsSinceStart=(Date.now()-Date.parse(startedAt))/1000;
-     const confirmedZero=String(odometer).trim()!==''&&Number(odometer)===0;
-     const departureOnly=!existing&&confirmedZero&&data.unresolvedGap===true&&
+     const confirmedDeparture=String(odometer).trim()!==''&&
+      Number.isFinite(Number(odometer))&&Number(odometer)>=0;
+     const departureOnly=!existing&&confirmedDeparture&&data.unresolvedGap===true&&
       secondsSinceStart>=0&&secondsSinceStart<=10;
      if(departureOnly)bridge.acknowledgeGap(localStorage,departingId,data.gapCount);
      current.externalGpsSnapshot={tripKm:b.value,rawGpsKm:data.tripKm,at:new Date().toISOString()};
      saveLater();updateElapsedTimer();
-     toast(departureOnly?'出庫時0kmをGPS基準に登録しました。以後の欠測は手入力が必要です。':
+     toast(departureOnly?'出庫時の入力距離をGPS基準に登録しました。以後の欠測は手入力が必要です。':
       data.unresolvedGap?'GPS基準は登録しましたが欠測があるため、最初の距離は車両トリップで確認してください。':
       '出庫時GPSトリップ基準 '+b.gps.toFixed(3)+'km を記録しました。',Boolean(data.unresolvedGap&&!departureOnly));
     }).catch(err=>toast('出庫時GPS基準を取得できません：'+err.message+'。GPSを確認してください。',true));
