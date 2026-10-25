@@ -22,6 +22,7 @@ const context={
  safeText:escape,shortTime:s=>String(s||'').slice(0,5),
  feeSettings:()=>({uberSurcharge:100}),updateDiscountForDraft(){},applyUberDisplayedDefault:()=>false,
  saveLater(){throw Error('Rendering only must never save')},
+ displayPrefs:()=>({driveLayout:'legacy'}),
  gpsTripUI:null,RAW_COLUMNS:[],PAYMENTS:[],shownPayments:()=>[],TYPES:['乗'],DISPATCH_TYPES:[],
  feeSettingsForDraft:()=>({}),uberAppAmounts:()=>null,uberDispatchFeeApplies:()=>false,
  cashChange:()=>({due:1000,change:0,shortage:0}),
@@ -79,7 +80,7 @@ for(let mask=0;mask<(1<<keys.length);mask++){
   assert.match(out,/payment-split/,'payment reconciliation is mandatory');
   const dispatch={...draft,kind:'dispatch',meta:{},raw:{...raw,E:'G'}};
   const dispatchOut=call('renderDispatchForm',shift,dispatch);
-  assert.equal(dispatchOut.includes('data-meta="dispatchNote"'),model.prefs.rideFieldVisibility.dispatchNote);
+  assert.equal(dispatchOut.includes('data-meta="dispatchNote"'),model.prefs.rideFieldVisibility.dispatchNote,'既存入力のメモ設定を維持');
   assert.match(dispatchOut,/data-col="E"/);
   assert.match(dispatchOut,/data-col="AL"/);
   assert.match(dispatchOut,/data-action="boardDispatch"/);

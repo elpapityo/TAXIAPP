@@ -6,8 +6,8 @@ const ride=src.slice(src.indexOf('function renderRideForm('),src.indexOf('functi
 const wrapper=src.slice(src.indexOf('function renderDraft(shift){'),src.indexOf('function renderDispatchForm('));
 const save=ride.indexOf('data-action="saveDraft"');
 const cancel=ride.indexOf('data-action="discardDraft"');
-const details=ride.indexOf('${renderPaymentSplit(shift,d)}');
-assert.ok(save>=0&&cancel>save&&details>cancel,'save and cancel buttons must precede payment details');
+const details=ride.indexOf('renderPaymentSplit(shift,d)');
+assert.ok(save>=0&&cancel>save&&details>cancel,'既存入力の保存と取消は支払内訳より前に表示');
 assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,2);
 assert.equal((ride.match(/data-action="discardDraft"/g)||[]).length,1);
 assert.match(wrapper,/d.kind==='ride'\?'':/,'ride cancel must not be duplicated below form');
