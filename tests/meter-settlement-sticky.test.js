@@ -11,5 +11,5 @@ const render=s.slice(s.indexOf('function renderMeterDrive(shift){'),s.indexOf('f
 assert.match(render,/button\('保存','saveDraft','meter-finish'\)/);
 assert.match(render,/button\('障割 '/);
 assert.match(render,/button\('高速','meterHighway','meter-highway'\)/);
-assert.match(s,/<title>TAXIAPP v0\.3\.185 — 乗務日報<\/title>/);
+assert.match(s,/<title>TAXIAPP v0\.3\.186 — 乗務日報<\/title>/);
 console.log('PASS 精算の固定操作優先、詳細操作と保存ボタン維持');
