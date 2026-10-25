@@ -21,7 +21,7 @@ assert.equal(fee('現','8300'),false);
 const ride=s.slice(s.indexOf('function renderRideForm('),s.indexOf('function renderEmptyForm('));
 const button=ride.indexOf('class="actions settlement-save-first"'),payment=ride.indexOf('renderPaymentSplit(shift,d)');
 assert.ok(button>=0&&payment>button,'cancel action before payment details');
-assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,1,'ride has only one save button');
+assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,2,'既存入力では上下の保存ボタンを維持');
 const lower=ride.indexOf('class="actions settlement-save-bottom"');
 const supplement=ride.indexOf('${renderAllFields(d)}');
 assert.ok(lower>payment&&lower<supplement,'save is immediately before supplement');
