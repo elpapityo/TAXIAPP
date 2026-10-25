@@ -2974,9 +2974,13 @@ function meterConfirmEdit(snapshot){
  setTimeout(()=>{
   const detail=appEl.querySelector('.meter-details')||appEl.querySelector('.break-page');
   if(detail?.tagName==='DETAILS')detail.open=true;
-  const target=snapshot.action==='meterSettle'?detail?.querySelector('[data-col="K"]'):null;
-  (target||detail)?.scrollIntoView?.({behavior:'smooth',block:'center'});
-  if(target)target.focus({preventScroll:true});
+  // 乗車の確認からは乗車情報へ移動する。詳細欄の先頭や高速欄を修正先にしない。
+  const rideStart=['beginRide','boardDispatch','breakBoard'].includes(snapshot.action);
+  const target=snapshot.action==='meterSettle'
+   ?detail?.querySelector('[data-col="K"]')
+   :rideStart?detail?.querySelector('.pickup-visible'):null;
+  (target||detail)?.scrollIntoView?.({behavior:'smooth',block:rideStart?'start':'center'});
+  if(target?.matches?.('input,select,textarea'))target.focus({preventScroll:true});
  },80);
 }
 function meterConfirmAfter(action,before){
@@ -6341,7 +6345,9 @@ function requestDropLocation(shift,record){
 function flushVisibleDraftInputs(shift){
  const draft=shift?.draft;
  if(!draft)return;
- const root=appEl.querySelector('.hero');
+ // Meter layout has a duty summary hero before the actual input console.
+ // Read the visible quick inputs from that console, not the summary card.
+ const root=appEl.querySelector('.meter-console')||appEl.querySelector('.hero');
  if(!root)return;
  for(const input of root.querySelectorAll('[data-col]')){
   const key=input.dataset.col;
