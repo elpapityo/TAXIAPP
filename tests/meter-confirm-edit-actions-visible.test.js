@@ -1,0 +1,17 @@
+'use strict';
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const html=fs.readFileSync('index.html','utf8');
+const css=html.match(/html\.meter-confirm-field-edit #floating-duty-summary[^\n]*/)?.[0]||'';
+assert.match(css,/display:none!important/,'詳細編集中は上部概要のみ畳む');
+assert.doesNotMatch(css,/floating-meter-actions/,'操作ボタンを非表示にしない');
+assert.match(html,/#floating-meter-actions\{position:fixed!important/,'元の操作ボタン配置を維持');
+const start=html.indexOf('function meterConfirmEdit(');
+const end=html.indexOf('function meterConfirmAfter(',start);
+const edit=html.slice(start,end);
+for(const col of ['G','F','AL'])assert.ok(edit.includes("'"+col+"'"),'個別修正 '+col);
+assert.match(edit,/document\.documentElement\.classList\.add\('meter-confirm-field-edit'\)/);
+assert.match(edit,/action\.getBoundingClientRect\(\)\.bottom\+16/);
+assert.match(edit,/if\(actual<edge\)window\.scrollBy/);
+assert.match(edit,/classList\.remove\('meter-confirm-field-edit'\)/,'詳細編集終了時に元へ戻す');
+assert.match(html,/<title>TAXIAPP v0\.3\.176 — 乗務日報<\/title>/);
+console.log('PASS: メーター操作ボタン維持・固定位置回避・3項目修正・通常表示復帰');
