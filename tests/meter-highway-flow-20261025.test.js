@@ -11,7 +11,9 @@ assert.match(html,/snapshot\.action==='meterSettle'\?detail\?\.querySelector\('\
 assert.match(html,/data-hwy-gps/);
 assert.match(html,/data-hwy-distance-field/);
 assert.match(html,/const timeKey=key==='entryKm'\?'entryTime':'exitTime'/);
-assert.match(html,/seg\[key\]=value;seg\[timeKey\]=time;/);
+assert.match(html,/seg\[key\]=value;/);
+assert.match(html,/if\(!String\(seg\[timeKey\]\?\?''\)\.trim\(\)\)seg\[timeKey\]=time;/);
+assert.match(html,/showHighwayCaptureConfirm\(current,seg,index\)/);
 assert.match(html,/!String\(seg\[distKey\]\?\?''\)\.trim\(\)/);
 assert.match(html,/if\(!canEditNow\(\)\|\|current\?\.id!==shiftId\|\|current\.draft\?\.id!==recordId/);
 console.log('高速時刻・距離の双方向ボタン、メーター金額入力、修正先、保存表示の構造検証成功');
