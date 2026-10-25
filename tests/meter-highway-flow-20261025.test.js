@@ -10,7 +10,7 @@ assert.doesNotMatch(html,/メーター金額は上のメーター型入力欄に
 assert.match(html,/snapshot\.action==='meterSettle'\?detail\?\.querySelector\('\[data-col="K"\]'\)/);
 assert.match(html,/data-hwy-gps/);
 assert.match(html,/data-hwy-distance-field/);
-assert.match(html,/const timeKey=key==='entryKm'\?'entryTime':'exitTime'/);
+assert.match(html,/timeKey=key==='entryKm'\?'entryTime':'exitTime'/);
 assert.match(html,/seg\[key\]=value;/);
 assert.match(html,/if\(!String\(seg\[timeKey\]\?\?''\)\.trim\(\)\)seg\[timeKey\]=time;/);
 assert.match(html,/showHighwayCaptureConfirm\(current,seg,index\)/);
