@@ -80,7 +80,7 @@ for(let mask=0;mask<(1<<keys.length);mask++){
   assert.match(out,/payment-split/,'payment reconciliation is mandatory');
   const dispatch={...draft,kind:'dispatch',meta:{},raw:{...raw,E:'G'}};
   const dispatchOut=call('renderDispatchForm',shift,dispatch);
-  assert.equal(dispatchOut.includes('data-meta="dispatchNote"'),false,'任意メモは通常入力では非表示');
+  assert.equal(dispatchOut.includes('data-meta="dispatchNote"'),model.prefs.rideFieldVisibility.dispatchNote,'既存入力のメモ設定を維持');
   assert.match(dispatchOut,/data-col="E"/);
   assert.match(dispatchOut,/data-col="AL"/);
   assert.match(dispatchOut,/data-action="boardDispatch"/);
