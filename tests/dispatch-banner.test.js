@@ -33,6 +33,6 @@ assert.ok(out.includes('data-field="F"'));
 assert.ok(out.includes('data-location="AL"'));
 assert.ok(out.includes('data-action="boardDispatch"'));
 assert.ok(out.includes('data-action="cancelDispatch"'));
-assert.ok(out.includes('依頼メモ（任意）'));
+assert.ok(!out.includes('依頼メモ（任意）'));
 assert.ok(out.includes('迎車中にキャンセルになった場合'));
 console.log('Dispatch form banner removal passed; dispatch timestamp, inputs, GPS and actions remain present.');
