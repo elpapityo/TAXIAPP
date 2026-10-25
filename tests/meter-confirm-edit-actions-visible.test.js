@@ -13,5 +13,5 @@ assert.match(edit,/document\.documentElement\.classList\.add\('meter-confirm-fie
 assert.match(edit,/action\.getBoundingClientRect\(\)\.bottom\+16/);
 assert.match(edit,/if\(actual<edge\)window\.scrollBy/);
 assert.match(edit,/classList\.remove\('meter-confirm-field-edit'\)/,'詳細編集終了時に元へ戻す');
-assert.match(html,/<title>TAXIAPP v0\.3\.184 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.185 — 乗務日報<\/title>/);
 console.log('PASS: メーター操作ボタン維持・固定位置回避・3項目修正・通常表示復帰');
