@@ -8,6 +8,7 @@ class Element{
  setAttribute(k,v){this.attributes[k]=v;}
  addEventListener(type,fn){(this.listeners[type]??=[]).push(fn);}
  append(...children){this.children.push(...children);}
+ appendChild(child){this.children.push(child);return child;}
  replaceChildren(...children){this.children=children;}
  get childElementCount(){return this.children.length;}
  click(){for(const fn of this.listeners.click||[])fn({target:this});}
