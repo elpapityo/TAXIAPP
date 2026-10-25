@@ -2929,7 +2929,7 @@ function showHighwayCaptureConfirm(shift,seg,index){
  if(!shift||!seg||displayPrefs().driveLayout!=='meter')return;
  const viewer=window.TAXIAPP_METER_CONFIRM;
  if(!viewer)return;
- const shiftId=shift.id,recordId=shift.draft?.id;
+ const shiftId=shift.id,recordId=shift.draft?.id,uid=accountScope.uid;
  const key='highway-'+(++meterConfirmSequence);
  const rows=[
   {label:'高速入口時刻',value:seg.entryTime||'未入力'},
@@ -2939,7 +2939,7 @@ function showHighwayCaptureConfirm(shift,seg,index){
  ];
  viewer.show({key,title:'高速の時刻・距離を確認',rows,edit:()=>{
   const current=getShift();
-  if(current?.id!==shiftId||current.draft?.id!==recordId)return;
+  if(accountScope.uid!==uid||current?.id!==shiftId||current.draft?.id!==recordId||!canEditNow())return;
   tab='drive';render();
   setTimeout(()=>{
    const detail=appEl.querySelector('.meter-details');
@@ -7622,10 +7622,10 @@ appEl.addEventListener('click',event=>{
   if(field)field.value=seg[key];
   saveLater();
   if(nativeDiaryGpsEnabled()&&!String(seg[distKey]??'').trim()){
-    const shiftId=shift.id,recordId=shift.draft.id;
+    const shiftId=shift.id,recordId=shift.draft.id,uid=accountScope.uid;
     window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(gps=>{
       const current=getShift();
-      if(!canEditNow()||current?.id!==shiftId||current.draft?.id!==recordId||
+      if(!canEditNow()||accountScope.uid!==uid||current?.id!==shiftId||current.draft?.id!==recordId||
         !nativeDiaryGpsEnabled()||
         !current.draft?.meta?.highwaySections?.includes(seg)||String(seg[distKey]??'').trim())return;
       const base=window.TAXIAPP_EXTERNAL_GPS.baseline(localStorage,shiftId);
@@ -7646,11 +7646,11 @@ appEl.addEventListener('click',event=>{
   if(!seg||!['entryKm','exitKm'].includes(key)||!nativeDiaryGpsEnabled()){
    toast('Android GPS距離ラボの接続を確認してください。',true);return;
   }
-  const shiftId=shift.id,recordId=draft.id,timeKey=key==='entryKm'?'entryTime':'exitTime';
+  const shiftId=shift.id,recordId=draft.id,uid=accountScope.uid,timeKey=key==='entryKm'?'entryTime':'exitTime';
   const oldValue=String(seg[key]??'');
   window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(gps=>{
    const current=getShift();
-   if(!canEditNow()||current?.id!==shiftId||current.draft?.id!==recordId||
+   if(!canEditNow()||accountScope.uid!==uid||current?.id!==shiftId||current.draft?.id!==recordId||
       current.draft?.meta?.highwaySections?.[index]!==seg||String(seg[key]??'')!==oldValue)return;
    const base=nativeDistanceBase(current,gps);
    const value=window.TAXIAPP_EXTERNAL_GPS.calculated(gps.tripKm,base,gps.runId).toFixed(1);
@@ -7664,7 +7664,7 @@ appEl.addEventListener('click',event=>{
    if(distanceInput)distanceInput.value=value;
    if(timeInput)timeInput.value=seg[timeKey];
    saveLater();showHighwayCaptureConfirm(current,seg,index);
-   toast('高速のGPS距離 '+value+'km・時刻 '+time+' を入力しました。');
+   toast('高速のGPS距離 '+value+'km・時刻 '+seg[timeKey]+' を確認しました。');
   }).catch(error=>toast('GPS距離を取得できません：'+error.message,true));
   return;
  }
