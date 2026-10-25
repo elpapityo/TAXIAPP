@@ -54,22 +54,26 @@ pointer(seven);
 assert.deepEqual(digits,['7']);
 click(seven);
 assert.deepEqual(digits,['7'],'synthesized click must not double-enter the digit');
+// Android may also emit click(detail=0) on finger release.
+pointer(seven);
+click(seven,0);
+assert.deepEqual(digits,['7','7'],'detail=0 release must not double-enter');
 
 // A relocated click at a different key is also ignored.
 click(digit('2'));
-assert.deepEqual(digits,['7']);
+assert.deepEqual(digits,['7','7']);
 
 // Another deliberate tap works even if the old click was lost.
 const eight=digit('8');
 pointer(eight);
 pointer(digit('4'));
-assert.deepEqual(digits,['7','8','4']);
+assert.deepEqual(digits,['7','7','8','4']);
 click(eight);
 assert.deepEqual(digits,['7','8','4']);
 
 // Keyboard and assistive activation (click detail=0) is still supported.
 click(digit('9'),0);
-assert.deepEqual(digits,['7','8','4','9']);
+assert.deepEqual(digits,['7','7','8','4','9']);
 
 // A deliberate Done press needs its own pointerdown and dismisses once.
 const done=command('done');
@@ -82,5 +86,5 @@ assert.equal(timers.size,0,'pending dismiss timer cleared');
 
 // Click after keypad closure has no effect.
 click(digit('1'));
-assert.deepEqual(digits,['7','8','4','9']);
+assert.deepEqual(digits,['7','7','8','4','9']);
 console.log('Keypad ghost-tap regression passed: opening click ignored; deliberate digits, Done and keyboard work.');
