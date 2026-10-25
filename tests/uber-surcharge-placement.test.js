@@ -20,11 +20,11 @@ assert.equal(fee('U','0'),false,'zero Uber-only initial value must not apply dis
 assert.equal(fee('現','8300'),false);
 const ride=s.slice(s.indexOf('function renderRideForm('),s.indexOf('function renderEmptyForm('));
 const button=ride.indexOf('class="actions settlement-save-first"'),payment=ride.indexOf('${renderPaymentSplit(shift,d)}');
-assert.ok(button>=0&&payment>button,'save before payment details');
-assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,2,'ride has two equivalent save buttons');
+assert.ok(button>=0&&payment>button,'cancel action before payment details');
+assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,1,'ride has only one save button');
 const lower=ride.indexOf('class="actions settlement-save-bottom"');
 const supplement=ride.indexOf('${renderAllFields(d)}');
-assert.ok(lower>payment&&lower<supplement,'second save is immediately before supplement');
+assert.ok(lower>payment&&lower<supplement,'save is immediately before supplement');
 const split=s.slice(s.indexOf('function renderPaymentSplit('),s.indexOf('function renderRideForm('));
 assert.ok(split.indexOf('${line(0)}')<split.indexOf('${renderPaymentDetails(shift,d)}'),'payment method fields precede breakdown details');
 console.log('Uber surcharge and settlement save placement regressions passed');
