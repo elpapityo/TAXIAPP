@@ -23,12 +23,16 @@ const begin=html.indexOf('function flushVisibleDraftInputs(');
 const end=html.indexOf('function handleAction(',begin);
 assert.ok(begin>0&&end>begin);
 const fakeInputs=[];
+const scope={contains:input=>fakeInputs.includes(input),querySelectorAll:selector=>selector==='[data-col]'?fakeInputs:[]};
 const ctx={
  number:value=>value===null||value===undefined||String(value).trim()===''?null:Number(value),
  updateDiscountForDraft:()=>{},
  splitPaymentMeta:()=>({second:'',manualSlot:null,manualAmount:''}),
+ getShift:()=>activeShift,
+ tab:'drive',
  appEl:{querySelector:q=>{
-   if(q==='.hero')return {querySelectorAll:selector=>selector==='[data-col]'?fakeInputs:[]};
+   if(q==='#main-content')return scope;
+   if(q==='#main-content .hero')return {querySelectorAll:selector=>selector==='[data-col]'?fakeInputs:[]};
    return null;
  }},
  document:{activeElement:null},
@@ -48,10 +52,15 @@ assert.equal(manual.raw.L,'3.0','driver-entered distance must remain intact');
 assert.equal(ctx.discardInvalidAutoDropDistance(mkDraft('10.0','11.0',{})),false);
 
 const shift={draft:mkDraft('10.0','',{})};
-fakeInputs.push({
- dataset:{col:'K'},value:'2550',disabled:false,
- closest:()=>null,getClientRects:()=>[{}]
-});
+const activeShift=shift;
+const focused={dataset:{col:'K'},value:'2550',disabled:false,matches:selector=>selector==='[data-col]'};
+fakeInputs.push(focused);
+ctx.document.activeElement=focused;
 ctx.flushVisibleDraftInputs(shift);
-assert.equal(shift.draft.raw.K,'2550','active Android input is flushed before save validation');
+assert.equal(shift.draft.raw.K,'2550','focused Android input is flushed before save validation');
+// A stale rendered field must not replace a newer GPS/address/model value.
+shift.draft.raw.K='2800';
+ctx.document.activeElement=null;
+ctx.flushVisibleDraftInputs(shift);
+assert.equal(shift.draft.raw.K,'2800','stale UI does not overwrite model when not editing');
 console.log('Ride save GPS regression passed: no async form redraw, impossible GPS drop excluded, manual values protected, input flushed.');
