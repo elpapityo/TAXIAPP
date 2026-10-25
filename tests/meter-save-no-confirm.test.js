@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('node:fs'), assert=require('node:assert/strict'),vm=require('node:vm');
+const html=fs.readFileSync('index.html','utf8');
+const before=html.slice(html.indexOf('function meterConfirmBefore(action){'),html.indexOf('function meterConfirmRecordedFields('));
+const after=html.slice(html.indexOf('function meterConfirmAfter(action,before){'),html.indexOf('function renderMeterDrive('));
+assert.match(before,/if\(action==='saveDraft'\)return null/);
+assert.match(after,/if\(action==='saveDraft'\)return/);
+const call=html.slice(html.indexOf('function invokeSaveDraft(){'),html.indexOf('function finishSaveTouchPress(){'));
+assert.match(call,/handleAction\('saveDraft'\)/,'existing save mechanism remains');
+assert.match(call,/showSaveProblem\(/,'save error notice remains');
+assert.match(html,/toast\(\`№ \$\{d\.raw\.A\} を保存しました/,'existing success notice remains');
+const beforeFn=vm.runInNewContext('('+before.trim().replace(/function meterConfirmBefore\(action\)/,'function meterConfirmBefore(action)')+')',{});
+assert.equal(beforeFn('saveDraft'),null);
+assert.match(html,/<title>TAXIAPP v0\.3\.180 — 乗務日報<\/title>/);
+console.log('PASS: 保存後ポップアップなし・保存処理・成功と失敗通知の維持');
