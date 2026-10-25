@@ -16,6 +16,7 @@ const ctx={
  safeText:s=>String(s).replaceAll('<','&lt;').replaceAll('>','&gt;'),
  renderAllFields:()=>'<div>全項目</div>',
  rideFieldDataShown:(_key,existing)=>true,
+ rideFieldShown:()=>true,distanceEnabled:()=>true,
  DISPATCH_TYPES:[]
 };
 vm.createContext(ctx);
