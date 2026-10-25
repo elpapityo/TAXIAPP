@@ -6341,10 +6341,11 @@ function requestDropLocation(shift,record){
 function flushVisibleDraftInputs(shift){
  const draft=shift?.draft;
  if(!draft)return;
- // Settlement inputs may sit outside .hero in the meter layout.
- const root=appEl.querySelector('#main-content');
+ const root=appEl.querySelector('.hero');
  if(!root)return;
- for(const input of root.querySelectorAll('[data-col]')){
+ // In meter layout, the expanded settlement form is a sibling of .hero.
+ const expandedMeterFields=appEl.querySelector('.meter-details[open]');
+ for(const input of [...root.querySelectorAll('[data-col]'),...(expandedMeterFields?.querySelectorAll('[data-col]')||[])]){
   const key=input.dataset.col;
   if(!key||key==='AP'||key==='AQ'||input.disabled)continue;
   // Closed details are already excluded by getClientRects(). Open details
