@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const text=fs.readFileSync('index.html','utf8');
+const start=text.indexOf('function renderMeterDrive('),end=text.indexOf('function renderDrive(',start);
+const body=text.slice(start,end);
+assert.match(body,/button\('入力破棄','discardDraft','meter-sub'\)\+button\('乗車人数/,'入力破棄の隣に人数表示');
+assert.match(body,/safeText\(d\.raw\.I\|\|'0'\)/,'男性の既存値を使う');
+assert.match(body,/safeText\(d\.raw\.J\|\|'0'\)/,'女性の既存値を使う');
+assert.match(body,/meter-passenger-fields/,'既存の人数選択欄を利用');
+const a=text.indexOf("if(action==='meterPassengers')");
+const b=text.indexOf("if(action==='meterSettle')",a);
+const handler=text.slice(a,b);
+assert.match(handler,/panel\.open=!panel\.open/);
+assert.match(handler,/panel\.scrollIntoView/);
+assert.match(text,/\.meter-actions \.meter-passenger-shortcut\{grid-column:span 2/);
+console.log('PASS: 入力破棄維持・男女人数表示・既存セレクタ展開');
