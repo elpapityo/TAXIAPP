@@ -3051,7 +3051,7 @@ function renderMeterDrive(shift){
   '<div class="meter-actions">'+actions+'</div>'+renderMeterHighwayInline(shift)+(d?.kind==='empty'?'<div class="meter-inline-editor">'+renderEmptyForm(shift,d)+'</div>':'')+(waiting?'<div class="meter-wait-inline">'+renderWaitCard(shift)+'</div>':'')+dispatchFields+passengerFields+quick+
   '</section>'+
   '<details class="details meter-details" '+(d?.kind==='empty'?'open':'')+'><summary>詳細入力・修正（距離・高速・決済など）</summary><div class="inner">'+
-  (d?renderDraft(shift):renderNewAction(shift,Boolean(waiting)))+'</div></details>';
+  (d?.kind==='empty'?'空車高速の入力は操作ボタン直下に表示しています。':d?renderDraft(shift):renderNewAction(shift,Boolean(waiting)))+'</div></details>';
 }
 function renderDrive(shift){const active=getShift();if(!active)breakPageOpen=false;if(!active){
  const previous=lastVerifiedPreviousDuty?.uid===accountScope.uid?lastVerifiedPreviousDuty.shift:null;
