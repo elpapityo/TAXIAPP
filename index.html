@@ -2817,6 +2817,8 @@ function meterConfirmationValues(state){
  const record=state.action==='saveDraft'
   ?shift.records.find(r=>r.id===state.recordId):shift.draft?.id===state.recordId?shift.draft:null;
  const raw=record?.raw||{},meta=record?.meta||{},waiting=shift.waiting;
+ const breakEntry=state.action==='beginBreak'?shift.breakActive:
+  state.action==='endBreak'?shift.breakSessions?.find(item=>item.id===state.recordId):null;
  const rows=[],add=(label,value,isDistance=false)=>rows.push(meterConfirmRow(label,value,isDistance));
  const value=(field,location)=>{
   const original=String(raw[field]??'').trim();
@@ -2858,6 +2860,13 @@ function meterConfirmationValues(state){
   add('待機開始時刻',time(waiting.startedAt));
   if(rideFieldShown('distanceStart'))add('待機開始時の走行距離',String(waiting.odometer||'').trim()?waiting.odometer+' km':/取得中/.test(waiting.gpsStatus||'')?'取得中':'未取得',true);
   add('待機場所',waiting.place||(/取得中/.test(waiting.gpsStatus||'')?'取得中':'未取得'));
+ }else if(state.action==='beginBreak'&&breakEntry){
+  add('休憩開始時刻',time(breakEntry.startedAt));
+  add('休憩場所',breakEntry.place||(!breakEntry.geo?'取得中':'未取得'));
+ }else if(state.action==='endBreak'&&breakEntry){
+  add('休憩開始時刻',time(breakEntry.startedAt));
+  add('休憩終了時刻',time(breakEntry.endedAt));
+  if(breakEntry.place)add('休憩場所',breakEntry.place);
  }else if(state.action==='cancelDispatch'){
   add('迎車キャンセル',raw.B||'未取得');
   add('キャンセル時刻',time(meta.cancelAt));
@@ -2890,18 +2899,22 @@ function refreshMeterConfirmation(){
 }
 function showMeterMultiConfirm(shift,action,record=shift?.draft){
  if(displayPrefs().driveLayout!=='meter'||!shift?.id||!accountScope.uid||
-   !record?.id&&action!=='beginWait')return;
+   !record?.id&&!['beginWait','beginBreak','endBreak'].includes(action))return;
  closeMeterConfirmation();
  const state={uid:accountScope.uid,shiftId:shift.id,recordId:record?.id||'',action};
  if(meterConfirmationValues(state)===null)return;
  meterConfirmation=state;
  const titles={beginRide:'実車開始',boardDispatch:'迎車から実車開始',breakBoard:'休憩後の実車開始',
    beginDispatch:'迎車受付',breakDispatch:'休憩後の迎車',meterSettle:'降車・支払いへ',
-   beginWait:'待機開始',cancelDispatch:'迎車キャンセル',meterEmptyHighway:'空車高速',
+   beginWait:'待機開始',beginBreak:'休憩開始',endBreak:'休憩終了',
+   cancelDispatch:'迎車キャンセル',meterEmptyHighway:'空車高速',
    saveDraft:'営業記録の保存'};
  document.getElementById('meterConfirmTitle').textContent=(titles[action]||'営業記録')+'の確認';
  const panel=document.getElementById('meterMultiConfirm');
  panel.hidden=false;
+ const help=panel.querySelector('.meter-confirm-heading small');
+ if(help)help.textContent='約10秒後に自動で閉じます';
+ document.getElementById('meterConfirmRows').dataset.snapshot='';
  refreshMeterConfirmation();
  meterConfirmTimer=setTimeout(closeMeterConfirmation,10000);
  // 現行GPS・住所処理をそのまま待ち、取得された既存のraw値で表示だけを更新する。
@@ -2922,7 +2935,7 @@ function showMeterMultiConfirm(shift,action,record=shift?.draft){
   closeMeterConfirmation();
   if(type!=='edit'||!state)return;
   const shift=model.shifts.find(s=>s.id===state.shiftId);
-  if(!shift||accountScope.uid!==state.uid)return;
+  if(!shift||accountScope.uid!==state.uid||!canEditNow()||model.activeId!==shift.id)return;
   if(state.action==='saveDraft'){
    // 保存済み乗車を変更する場合は既存の履歴編集導線を使用する。
    const saved=shift.records.find(r=>r.id===state.recordId);
@@ -6636,7 +6649,7 @@ function handleAction(action,id){
  if(action==='closeBreakPage'){breakPageOpen=false;render();return;}
  if(action==='beginBreak'){
   if(!shift||shift.draft||shift.waiting||shift.breakActive)return;
-  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};saveOperationalEvent(shift);render();getBreakPlaceGps(shift.id,shift.breakActive.id);toast('休憩を開始しました');return;
+  const now=new Date();shift.breakActive={id:'break-'+now.getTime(),startedAt:stamp(now),startedIso:now.toISOString(),place:''};saveOperationalEvent(shift);render();getBreakPlaceGps(shift.id,shift.breakActive.id);showMeterMultiConfirm(shift,'beginBreak',shift.breakActive);toast('休憩を開始しました');return;
  }
  if(action==='breakBoard'||action==='breakDispatch'){
   if(!shift||shift.draft||shift.waiting)return;
@@ -6647,7 +6660,8 @@ function handleAction(action,id){
  if(action==='gpsBreakPlace'){if(shift?.breakActive)getBreakPlaceGps(shift.id,shift.breakActive.id);return;}
  if(action==='endBreak'){
   if(!shift?.breakActive)return;
-  endBreak(shift,new Date());breakPageOpen=false;saveOperationalEvent(shift);render();toast('休憩を終了しました');return;
+  endBreak(shift,new Date());breakPageOpen=false;saveOperationalEvent(shift);render();
+  showMeterMultiConfirm(shift,'endBreak',shift.breakSessions?.at(-1));toast('休憩を終了しました');return;
  }
  if(action==='cancelWaiting'){
   if(!shift?.waiting||shift.draft)return;
@@ -6684,7 +6698,7 @@ function handleAction(action,id){
  }
  if(action==='beginDispatch'){
   if(!shift||shift.draft)return;
-  try{shift.draft=makeDispatch(shift,new Date(),'G');saveOperationalEvent(shift);focusDispatchSourceAfterRender=true;render();showMeterMultiConfirm(shift,'beginDispatch');toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
+  try{shift.draft=makeDispatch(shift,new Date(),'G');saveOperationalEvent(shift);focusDispatchSourceAfterRender=displayPrefs().driveLayout!=='meter';render();showMeterMultiConfirm(shift,'beginDispatch');toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='waitNew'){if(shift?.waiting){shift.waiting.place='';shift.waiting.placeId='';shift.waiting.placeSource='manual';saveLater();render();}return;}
  if(action==='gpsWait'){if(shift?.waiting)getWaitGps(shift,shift.waiting);return;}
