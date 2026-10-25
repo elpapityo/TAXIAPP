@@ -6722,13 +6722,13 @@ function handleAction(action,id){
   if(start===null||start<0){toast('出庫時の車両トリップ（km）を入力してください',true);return;}
   if(end===null||end<0){toast('入庫時走行距離（km）を入力してください',true);return;}
   if(end<start){toast('入庫距離は出庫距離以上にしてください',true);return;}
-  if(!confirm(`乗務を終了しますか？\n営業 ${shift.records.length}件\n出庫距離 ${startText} km → 入庫距離 ${endText} km\n走行距離 ${(end-start).toLocaleString('ja-JP')} km`))return;
   const override=String(appEl.querySelector('[data-shift-end-time]')?.value||'').trim();
   const ended=override?new Date(override):new Date();
   if(!Number.isFinite(ended.getTime())||
      (override&&(ended.getTime()<new Date(shift.startedIso).getTime()||ended.getTime()>Date.now()+60000))){
    toast('入庫日時は出庫以降、現在以前の日時を指定してください。',true);return;
   }
+  if(!confirm(`乗務を終了しますか？\n入庫時刻 ${shortTime(stamp(ended))}\n営業 ${shift.records.length}件\n出庫距離 ${startText} km → 入庫距離 ${endText} km\n走行距離 ${(end-start).toLocaleString('ja-JP')} km`))return;
   shift.startingOdo=startText;shift.endingOdo=endText;
   pauseWaiting(shift,ended,'return');endBreak(shift,ended);shift.endedAt=stamp(ended);shift.endedIso=ended.toISOString();gpsTripUI?.stop(shift,true);model.activeId=null;
   const completedId=shift.id;
