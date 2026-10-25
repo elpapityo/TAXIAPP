@@ -2,9 +2,9 @@
 (function(root){
 'use strict';
 const $=id=>document.getElementById(id);
-let active=null,timer=null,onEdit=null;
+let active=null,timer=null,onEdit=null,onEditField=null;
 function stopTimer(){if(timer!==null){clearTimeout(timer);timer=null;}}
-function close(){stopTimer();active=null;onEdit=null;const el=$('meterRecordNotice');if(el)el.hidden=true;}
+function close(){stopTimer();active=null;onEdit=null;onEditField=null;const el=$('meterRecordNotice');if(el)el.hidden=true;}
 function update(rows,key){
  if(!active||active.key!==key)return;
  const body=$('meterRecordNoticeRows');if(!body)return;
@@ -13,6 +13,12 @@ function update(rows,key){
   if(!row||!row.label)continue;
   const cell=document.createElement('div');
   cell.className='meter-confirm-row'+(row.prominent?' prominent':'');
+  if(onEditField&&['乗車時刻','乗車時の走行距離','乗車地'].includes(row.label)){
+   cell.setAttribute('role','button');cell.tabIndex=0;
+   cell.setAttribute('aria-label',row.label+'を修正');
+   cell.addEventListener('click',()=>{const edit=onEditField;close();edit(row.label);});
+   cell.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();cell.click();}});
+  }
   const label=document.createElement('span');label.textContent=String(row.label);
   const value=document.createElement('strong');
   const displayed=row.value===null||row.value===undefined||row.value===''?'未取得':String(row.value);
@@ -25,10 +31,10 @@ function update(rows,key){
   empty.textContent='記録結果を確認中です';body.appendChild(empty);
  }
 }
-function show({title,rows,key,edit}){
+function show({title,rows,key,edit,editField}){
  const panel=$('meterRecordNotice');if(!panel||!key)return;
  stopTimer();
- active={key};onEdit=typeof edit==='function'?edit:null;
+ active={key};onEdit=typeof edit==='function'?edit:null;onEditField=typeof editField==='function'?editField:null;
  const heading=$('meterRecordNoticeTitle');if(heading)heading.textContent=String(title||'記録内容を確認');
  panel.hidden=false;
  update(rows,key);
