@@ -7719,7 +7719,7 @@ async function importBackup(file){
   toast(addition.length+'乗務を復元しました。クラウド原本がゴミ箱の場合は個別に復元してください。');
  }
 }
-appEl.addEventListener('click',event=>{
+appEl.addEventListener('click',async event=>{
  const hwyTime=event.target.closest('[data-hwy-now]');
  if(hwyTime){
   event.preventDefault();
