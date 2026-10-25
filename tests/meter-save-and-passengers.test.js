@@ -5,7 +5,7 @@ const fn=src.slice(src.indexOf('function flushVisibleDraftInputs(shift){'),src.i
 const item=(key,value)=>({dataset:{col:key},value,disabled:false,getClientRects:()=>[1]});
 const stale=item('K',''),quickK=item('K','6000'),quickN=item('N','D');
 const detail={querySelectorAll:()=>[stale]};
-const root={querySelectorAll:selector=>selector.includes('meter-quick-inputs')?[quickK,quickN]:[item('K','')]};
+const root={querySelectorAll:selector=>selector.includes('meter-quick-inputs')?[quickK,quickN]:selector==='[data-col]'?[item('K','')]:[]};
 const appEl={querySelector:selector=>selector.includes('.meter-console')?root:selector.includes('.meter-details[open]')?detail:null};
 const ctx={appEl,updateDiscountForDraft:()=>{},splitPaymentMeta:()=>({})};
 vm.createContext(ctx);vm.runInContext(fn+';this.flush=flushVisibleDraftInputs;',ctx);
