@@ -6345,7 +6345,9 @@ function flushVisibleDraftInputs(shift){
  if(!root)return;
  for(const input of root.querySelectorAll('[data-col]')){
   const key=input.dataset.col;
-  if(!key||key==='AP'||key==='AQ'||input.disabled||input.closest('details'))continue;
+  if(!key||key==='AP'||key==='AQ'||input.disabled)continue;
+  // Closed details are already excluded by getClientRects(). Open details
+  // contain editable settlement fields and must be flushed before validation.
   if(typeof input.getClientRects==='function'&&!input.getClientRects().length)continue;
   const value=String(input.value??'');
   if(String(draft.raw[key]??'')!==value)draft.raw[key]=value;
