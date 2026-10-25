@@ -9,7 +9,7 @@ assert.ok(script,'main drive logic found');
 new Function(script);
 assert.match(script,/driveLayout:'legacy'/,'retain legacy preference for old records');
 assert.match(script,/const mode='legacy'/,'unified sales view should not unexpectedly switch business flows');
-assert.match(script,/function renderNewAction\(shift\)/);
+assert.match(script,/function renderNewAction\(shift(?:,hideWaitCard=false)?\)/);
 assert.match(script,/class="action-grid cruising-action-grid cruising-action-compact"/,
  'fixed two-column work actions must be available');
 assert.match(script,/data-action="beginDispatch"/);
