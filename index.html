@@ -6381,6 +6381,17 @@ function requestDropLocation(shift,record){
  },200);
 }
 // Commit any pending Android text-input values before validation.
+// Quick and expanded inputs are two views of the same draft.raw column.
+// Keep their DOM values aligned immediately, without changing calculations or GPS.
+function mirrorDriveColumnInput(source,col){
+ if(tab!=='drive'||!getShift()?.draft)return;
+ const scope=appEl.querySelector('#main-content');
+ if(!scope)return;
+ for(const other of scope.querySelectorAll('[data-col]')){
+  if(other===source||other.dataset.col!==col||other.disabled)continue;
+  if(other.value!==source.value)other.value=source.value;
+ }
+}
 function flushVisibleDraftInputs(shift){
  const draft=shift?.draft;
  if(!draft)return;
@@ -7158,7 +7169,7 @@ if(target.dataset.shiftstart&&s){if(e.type==='change'){try{revisedShiftTime(s,ta
   }}
   saveLater();return;
  }
- if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;if(['K','E','N'].includes(col)&&applyUberDisplayedDefault(s.draft,s.settings)){
+ if(target.dataset.col&&s?.draft){const col=target.dataset.col;if(col==='AQ'||col==='AP')return;const alightJustStamped=col==='K'&&target.value!==''?stampAlightIfNeeded(s):false; s.draft.raw[col]=target.value;mirrorDriveColumnInput(target,col);if(['K','E','N'].includes(col)&&applyUberDisplayedDefault(s.draft,s.settings)){
   const uberField=appEl.querySelector('[data-meta="uberAppDisplayed"]');
   if(uberField&&document.activeElement!==uberField)uberField.value=s.draft.meta.uberAppDisplayed;
  }if(e.type==='change'&&target.value.trim()&&['F','L','S','V','AB','AE'].includes(col)&&distanceEnabled(col)&&!s.draft.editId){
