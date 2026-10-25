@@ -6,7 +6,7 @@ const ride=src.slice(src.indexOf('function renderRideForm('),src.indexOf('functi
 const wrapper=src.slice(src.indexOf('function renderDraft(shift){'),src.indexOf('function renderDispatchForm('));
 const save=ride.indexOf('data-action="saveDraft"');
 const cancel=ride.indexOf('data-action="discardDraft"');
-const details=ride.indexOf('${renderPaymentSplit(shift,d)}');
+const details=ride.indexOf('renderPaymentSplit(shift,d)');
 assert.ok(cancel>=0&&details>cancel&&save>details,'save must follow the payment details');
 assert.equal((ride.match(/data-action="saveDraft"/g)||[]).length,1);
 assert.equal((ride.match(/data-action="discardDraft"/g)||[]).length,1);
