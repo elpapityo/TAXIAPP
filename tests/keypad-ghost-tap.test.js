@@ -69,7 +69,7 @@ pointer(eight);
 pointer(digit('4'));
 assert.deepEqual(digits,['7','7','8','4']);
 click(eight);
-assert.deepEqual(digits,['7','8','4']);
+assert.deepEqual(digits,['7','7','8','4']);
 
 // Keyboard and assistive activation (click detail=0) is still supported.
 click(digit('9'),0);
