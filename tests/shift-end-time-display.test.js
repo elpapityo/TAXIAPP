@@ -17,5 +17,5 @@ assert.match(ending,/const ended=override\?new Date\(override\):new Date\(\)/);
 assert.match(ending,/ended\.getTime\(\)<new Date\(shift\.startedIso\)\.getTime\(\)/);
 assert.match(ending,/shift\.endedAt=stamp\(ended\);shift\.endedIso=ended\.toISOString\(\)/);
 assert.match(ending,/const savedReturn=save\(\);render\(\)/);
-assert.match(html,/<title>TAXIAPP v0\.3\.194 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.195 — 乗務日報<\/title>/);
 console.log('PASS 入庫時刻の未確定表示・指定日時・自動記録・過去入庫表示・保存維持');
