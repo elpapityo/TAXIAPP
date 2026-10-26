@@ -19,5 +19,5 @@ assert.equal(shift.draft.raw.K,'8200','連続入力も反映');
 const passenger=src.slice(src.indexOf('function passengerChoice('),src.indexOf('function paymentOptions(',src.indexOf('function passengerChoice(')));
 assert.match(passenger,/compact\?\[\['1','1'\],\['2','2'\],\['3','3'\],\['4','4'\]\]/);
 assert.match(src,/compact&&String\(current\?\?'0'\)===select\.dataset\.value\?'0'/);
-assert.match(src,/<title>TAXIAPP v0\.3\.201 — 乗務日報<\/title>/);
+assert.match(src,/<title>TAXIAPP v0\.3\.202 — 乗務日報<\/title>/);
 console.log('PASS: メーター金額6000/8200・DiDi保存判定への取り込み、人数1〜4・同値タップで0');
