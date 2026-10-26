@@ -584,13 +584,17 @@ root.TAXIAPP_SYNC_UI=function(d){
      if(d.getModel()?.shifts?.some(s=>s.id===id))throw Error('端末にもある日報はファイル管理の乗務削除から操作してください');
      const listed=await scopedRequest('syncList',{shiftIds:[id]});
      const matches=listed?.shifts?.filter(s=>s.id===id);
-     if(matches?.length!==1||matches[0].deleted||!matches[0].ended)throw Error('未入庫、削除済み、または一覧を確認できない日報です');
+     if(matches?.length!==1||matches[0].deleted)throw Error('削除済み、またはサーバー一覧を確認できない日報です');
      const revision=Number(matches[0].revision);
      if(!Number.isSafeInteger(revision)||revision<1)throw Error('更新番号を確認できません');
      const remote=await scopedRequest('syncGet',{shiftId:id});
-     if(remote?.id!==id||remote.shift?.id!==id||Number(remote.revision)!==revision||(!remote.shift.endedAt&&!remote.shift.endedIso))
-      throw Error('サーバー原本が変化したか入庫が確認できません');
+     if(remote?.id!==id||remote.shift?.id!==id||Number(remote.revision)!==revision)
+      throw Error('サーバー原本の更新番号または内容が変化しました');
+     if(remote.shift.draft)throw Error('入力中の下書きがあるため削除できません');
+     const unfinished=!remote.shift.endedAt&&!remote.shift.endedIso;
+     if(unfinished&&d.getModel()?.activeId===id)throw Error('現在進行中の乗務は削除できません');
      const shift=remote.shift;
+     if(unfinished&&!root.confirm('【未入庫の過去日報】\n入庫時刻がない日報です。現在の乗務ではないこと、不要な記録であることを確認してください。\\nバックアップを保存してゴミ箱へ移動しますか？'))return false;
      if(!root.confirm('【Firestore日報のゴミ箱移動】\n'+String(shift.date||'日付不明')+'／営業'+shift.records.length+'件\nID: '+id+
        '\n通常履歴・印刷対象から外れます。復元は可能です。続けますか？'))return false;
      verifyScope();
