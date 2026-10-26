@@ -7,7 +7,7 @@
 <label>緯度<input id="lat" type="number" step="any" placeholder="緯度"></label><label>経度<input id="lon" type="number" step="any" placeholder="経度"></label>
 <label>検索半径<select id="radius"><option value="3000">3 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option></select></label>
 <button id="search">周辺のIC名を検索</button><p id="status" role="status">まだ検索していません。</p></section>
-<section><h2>検索結果</h2><ol id="results"></ol><small>IC名は道路データに登録された名称・番号です。入口・出口の利用可否、進入方向、高速料金の正確性を保証するものではありません。検索元：© OpenStreetMap contributors（Overpass API）</small></section></main>
+<section><h2>検索結果</h2><ol id="results"></ol><small>IC名は道路データに登録された名称・番号です。入口・出口の利用可否、進入方向、高速料金の正確性を保証するものではありません。検索元：© OpenStreetMap contributors（Nominatim名称検索）。候補を全件網羅する方式ではありません。</small></section></main>
 <script>
 "use strict";
 const el=id=>document.getElementById(id);
@@ -18,30 +18,36 @@ function distance(a,b,c,d){const r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/
 el("search").onclick=async()=>{
  const lat=Number(el("lat").value),lon=Number(el("lon").value),radius=Number(el("radius").value),button=el("search");
  if(!el("lat").value||!el("lon").value||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){status("有効な緯度・経度を入力してください。");return;}
- const query='[out:json][timeout:12];node["highway"="motorway_junction"](around:'+radius+','+lat+','+lon+');out 100;';
- button.disabled=true;el("results").replaceChildren();status("IC名を検索しています…");
- const hosts=['https://overpass.private.coffee/api/interpreter','https://overpass-api.de/api/interpreter'];
- const failures=[];
+ const degrees=radius/111000,lonDegrees=degrees/Math.max(.1,Math.cos(lat*Math.PI/180));
+ const viewbox=[lon-lonDegrees,lat+degrees,lon+lonDegrees,lat-degrees].join(',');
+ const urls=[
+  'https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:'インターチェンジ',format:'jsonv2',addressdetails:'1','accept-language':'ja',countrycodes:'jp',limit:'30',viewbox,bounded:'1'}),
+  'https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:'IC',format:'jsonv2',addressdetails:'1','accept-language':'ja',countrycodes:'jp',limit:'30',viewbox,bounded:'1'})
+ ];
+ button.disabled=true;el("results").replaceChildren();status("別方式（名称検索）でIC候補を探しています…");
+ let results=[],failures=[];
  try{
-  let json=null;
-  for(let i=0;i<hosts.length;i++){
-   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
+  for(let i=0;i<urls.length;i++){
+   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),9000);
    try{
-    status("IC名を検索しています… 検索先 "+(i+1)+"/"+hosts.length);
-    const response=await fetch(hosts[i]+'?data='+encodeURIComponent(query),{signal:ctrl.signal,cache:'no-store'});
-    if(!response.ok)throw new Error("HTTP "+response.status);
-    const result=await response.json();
-    if(result.remark)throw new Error(String(result.remark).slice(0,140));
-    if(!Array.isArray(result.elements))throw new Error("道路データの応答形式が不正です");
-    json=result;break;
-   }catch(error){failures.push("検索先 "+(i+1)+"："+(error.name==="AbortError"?"12秒でタイムアウト":error.message));}
+    status("IC候補の名称検索中… "+(i+1)+"/"+urls.length);
+    const response=await fetch(urls[i],{signal:ctrl.signal,headers:{'Accept':'application/json'}});
+    if(!response.ok)throw Error("HTTP "+response.status);
+    const data=await response.json();if(!Array.isArray(data))throw Error("データ形式が不正です");
+    for(const x of data){
+     const n=String(x.name||x.display_name||'').split(',')[0].trim(),y=Number(x.lat),z=Number(x.lon);
+     if(!n||!Number.isFinite(y)||!Number.isFinite(z)||distance(lat,lon,y,z)>radius/1000)continue;
+     const name=n.match(/(?:インターチェンジ|ＩＣ|\\bIC\\b|出入口|ランプ|ジャンクション|ＪＣＴ|\\bJCT\\b)/i)?n:'';
+     if(name)results.push({name,km:distance(lat,lon,y,z)});
+    }
+   }catch(error){failures.push("検索 "+(i+1)+"："+(error.name==="AbortError"?"9秒でタイムアウト":error.message));}
    finally{clearTimeout(timer);}
+   if(results.length)break;
   }
-  if(!json)throw new Error(failures.join(" ／ "));
-  const items=json.elements.map(x=>({name:String(x.tags?.name||x.tags?.["name:ja"]||x.tags?.ref||"").trim(),km:distance(lat,lon,x.lat,x.lon)})).filter(x=>x.name).sort((x,y)=>x.km-y.km).filter((x,i,a)=>a.findIndex(y=>y.name===x.name)===i);
-  if(!items.length){status("周囲"+radius/1000+"kmに名称付きのICが見つかりませんでした。検索範囲を広げるか座標を確認してください。");return;}
-  for(const x of items){const li=document.createElement("li");li.textContent=x.name+"　約"+x.km.toFixed(2)+" km（直線距離）";el("results").appendChild(li);}
-  status(items.length+"件のIC名を取得しました。"+(failures.length?"（最初の検索先が失敗したため別の検索先を使用）":""));
+  results=results.sort((x,y)=>x.km-y.km).filter((x,i,arr)=>arr.findIndex(z=>z.name===x.name)===i);
+  if(!results.length){status("IC候補を確認できませんでした。"+(failures.length?" "+failures.join(" ／ "):"名称検索に該当なし。")+" この方式は周辺ICの全件取得には対応しません。");return;}
+  for(const x of results){const li=document.createElement("li");li.textContent=x.name+"　約"+x.km.toFixed(2)+" km（候補・直線距離）";el("results").appendChild(li);}
+  status(results.length+"件の名称候補を表示しました。Nominatimによる名前検索のため周辺ICを網羅しません。入口・出口や高速料金は未確認です。");
  }catch(e){status(e.name==="AbortError"?"検索時間切れです。通信状況または検索サービスの混雑を確認してください。":"IC名を取得できません："+e.message);}finally{button.disabled=false;}
 };
 </script></body></html>
