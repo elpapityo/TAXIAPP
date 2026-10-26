@@ -7462,7 +7462,7 @@ async function importDevice(){
   render();toast('PCから'+newCount+'乗務と設定を引き継ぎました。Google送信は手動にしています。');
  }catch(e){toast('一括引き継ぎに失敗：'+String(e.message||e),true);}
 }
-async async function deleteWholeShift(shiftId){
+async function deleteWholeShift(shiftId){
  if(!canEditNow()){toast('乗務の削除は認証済みの操作端末で行ってください',true);return;}
  const shift=model.shifts.find(s=>s.id===shiftId);
  if(!shift){toast('削除対象が見つかりません',true);return;}
