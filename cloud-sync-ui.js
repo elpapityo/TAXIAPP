@@ -578,7 +578,37 @@ root.TAXIAPP_SYNC_UI=function(d){
      throw Error('クラウドの削除完了を確認できません');
     cloudRows=cloudRows.map(x=>x.id===id?{...x,revision:done.revision,deleted:true}:x);
     d.toast('選択した乗務をクラウドのゴミ箱へ移しました。原本は保持しています。');
-   }else if(kind==='trashLocal'){
+   }else if(kind==='trashById'){
+     if(!d.remoteOnDemand?.())throw Error('本人Firestore日報だけが対象です');
+     if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(id))throw Error('乗務IDが不正です');
+     if(d.getModel()?.shifts?.some(s=>s.id===id))throw Error('端末にもある日報はファイル管理の乗務削除から操作してください');
+     const listed=await scopedRequest('syncList',{shiftIds:[id]});
+     const matches=listed?.shifts?.filter(s=>s.id===id);
+     if(matches?.length!==1||matches[0].deleted||!matches[0].ended)throw Error('未入庫、削除済み、または一覧を確認できない日報です');
+     const revision=Number(matches[0].revision);
+     if(!Number.isSafeInteger(revision)||revision<1)throw Error('更新番号を確認できません');
+     const remote=await scopedRequest('syncGet',{shiftId:id});
+     if(remote?.id!==id||remote.shift?.id!==id||Number(remote.revision)!==revision||(!remote.shift.endedAt&&!remote.shift.endedIso))
+      throw Error('サーバー原本が変化したか入庫が確認できません');
+     const shift=remote.shift;
+     if(!root.confirm('【Firestore日報のゴミ箱移動】\n'+String(shift.date||'日付不明')+'／営業'+shift.records.length+'件\nID: '+id+
+       '\n通常履歴・印刷対象から外れます。復元は可能です。続けますか？'))return false;
+     verifyScope();
+     d.download(JSON.stringify({version:1,ownerUid:d.scopeKey?.()||null,shifts:[shift],cloudBackup:{kind:'TAXIAPP_BEFORE_TRASH',revision}}),
+       'TAXIAPP_削除前バックアップ_'+d.dateStamp()+'_'+id+'.json','application/json;charset=utf-8');
+     if(!root.confirm('JSONバックアップを端末外にも保管しましたか？\n未保存ならキャンセルしてください。'))return false;
+     const check=await scopedRequest('syncList',{shiftIds:[id]});
+     if(check?.shifts?.length!==1||check.shifts[0].deleted||
+        Number(check.shifts[0].revision)!==revision||d.getModel()?.shifts?.some(s=>s.id===id))
+      throw Error('削除前の再確認で状態が変化したため停止しました');
+     const done=await scopedRequest('syncTrash',{shiftId:id,baseRevision:revision});
+     const after=await scopedRequest('syncList',{shiftIds:[id]});
+     if(done?.id!==id||done.deleted!==true||Number(done.revision)!==revision+1||
+        after?.shifts?.length!==1||after.shifts[0].deleted!==true||Number(after.shifts[0].revision)!==revision+1)
+      throw Error('サーバーでゴミ箱移動を確認できません。再操作せず一覧を更新してください');
+     cloudLoaded=false;
+     d.toast('選択した日報を本人Firestoreのゴミ箱に移動しました');
+    }else if(kind==='trashLocal'){
     // Explicit manual deletion only. Do not confuse normal verified-device
     // retention cleanup with a server trash operation.
     if(!d.remoteOnDemand?.())throw Error('本人Firestore保存中の日報のみゴミ箱へ移動できます');
