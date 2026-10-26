@@ -11,5 +11,5 @@ assert.match(call,/showSaveProblem\(/,'save error notice remains');
 assert.match(html,/toast\(\`№ \$\{d\.raw\.A\} を保存しました/,'existing success notice remains');
 const beforeFn=vm.runInNewContext('('+before.trim().replace(/function meterConfirmBefore\(action\)/,'function meterConfirmBefore(action)')+')',{});
 assert.equal(beforeFn('saveDraft'),null);
-assert.match(html,/<title>TAXIAPP v0\.3\.196 — 乗務日報<\/title>/);
+assert.match(html,/<title>TAXIAPP v0\.3\.197 — 乗務日報<\/title>/);
 console.log('PASS: 保存後ポップアップなし・保存処理・成功と失敗通知の維持');
