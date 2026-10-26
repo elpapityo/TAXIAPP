@@ -617,7 +617,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     // retention cleanup with a server trash operation.
     if(!d.remoteOnDemand?.())throw Error('本人Firestore保存中の日報のみゴミ箱へ移動できます');
     const local=d.getModel()?.shifts?.find(shift=>shift.id===id);
-    if(!local||local.draft||(!local.endedAt&&!local.endedIso))
+    if(!local||(!local.endedAt&&!local.endedIso))
      throw Error('入庫済みの日報だけをゴミ箱へ移動できます');
     const baseline=verifiedRevision(id);
     if(baseline===null||engine.isSendUnknown(id)||engine.isConflict(id))
