@@ -5760,7 +5760,7 @@ function renderCloudManagement(){
    '<p class="caption-note" style="overflow-wrap:anywhere">乗務ID：'+safeText(row.id)+'</p>'+
    '<p class="panel-strip">サーバー原本：取得済み ／ 更新番号 '+row.revision+'（編集後は再保存して照合）</p>'+
    '<button class="btn" type="button" data-action="cloudManageOpen" data-id="'+safeText(row.id)+'">'+
-    (editable?'営業記録を編集する':'営業記録を確認する')+'</button></article>';
+    (editable?'営業記録を編集する':'営業記録を確認する')+'</button>'+ (canEditNow()?'<button class="btn red" type="button" data-action="cloudManageTrash" data-id="'+safeText(row.id)+'">この乗務をゴミ箱へ移動</button>':'')+'</article>';
  }).join('');
  const filter=memberDiary()?
   '<section class="card"><h2 class="h2">乗務日を指定して取得</h2>'+
@@ -6618,6 +6618,7 @@ function handleAction(action,id){
   }
   if(action==='cloudTrashList'){void syncUI.cloudAction('load');return;}
   if(action==='cloudTrash'){void syncUI.cloudAction('trash',id);return;}
+  if(action==='cloudManageTrash'){void syncUI.cloudAction('trashById',id).then(ok=>{if(ok){historyCloudDate='';historyCloudRows=[];render();}});return;}
   if(action==='cloudRestore'){void syncUI.cloudAction('restore',id);return;}
   if(action==='adminFirestorePreviewVerify'){void verifyAdminFirestorePreviewDuty();return;}
   if(action==='adminFirestorePreviewStart'){void startAdminFirestorePreview();return;}
