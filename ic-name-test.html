@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TAXIAPP IC名取得テスト</title>
+<style>body{font-family:system-ui,"Noto Sans JP",sans-serif;background:#f2f6fb;color:#18314b;margin:0;padding:16px}main{max-width:720px;margin:auto}section{background:white;border:1px solid #ccd8e5;border-radius:12px;padding:18px;margin:14px 0}h1{font-size:23px}label{display:block;margin:12px 0;font-weight:bold}input,select,button{font-size:17px;padding:12px;border-radius:9px;border:1px solid #9aacc0;max-width:100%;box-sizing:border-box}input{width:100%}button{cursor:pointer;background:#1462a3;color:white;border:0;margin:4px 0;min-height:48px}button.secondary{background:#edf3f9;color:#163951;border:1px solid #b4c5d6}button:disabled{opacity:.5}#status{white-space:pre-wrap;background:#f4f7fb;padding:14px;border-radius:8px}li{padding:10px 0;border-bottom:1px solid #e0e6ef}small{color:#52657a}</style></head>
+<body><main><h1>高速道路 IC名取得テスト</h1><p>現在地または入力座標から近くのインターチェンジ名をOpenStreetMap道路データで検索します。TAXIAPP営業データへの保存・変更はしません。</p>
+<section><button id="loc">現在地を取得</button><button class="secondary" id="sample">伊丹空港周辺で試す</button>
+<label>緯度<input id="lat" type="number" step="any" placeholder="緯度"></label><label>経度<input id="lon" type="number" step="any" placeholder="経度"></label>
+<label>検索半径<select id="radius"><option value="3000">3 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option></select></label>
+<button id="search">周辺のIC名を検索</button><p id="status" role="status">まだ検索していません。</p></section>
+<section><h2>検索結果</h2><ol id="results"></ol><small>IC名は道路データに登録された名称・番号です。入口・出口の利用可否、進入方向、高速料金の正確性を保証するものではありません。検索元：© OpenStreetMap contributors（Overpass API）</small></section></main>
+<script>
+"use strict";
+const el=id=>document.getElementById(id);
+const status=t=>{el("status").textContent=t;};
+el("sample").onclick=()=>{el("lat").value="34.7855";el("lon").value="135.4382";status("参考座標をセットしました。検索を押してください。");};
+el("loc").onclick=()=>{if(!navigator.geolocation){status("ブラウザで位置情報を利用できません。");return;}status("現在地を取得しています…");navigator.geolocation.getCurrentPosition(p=>{el("lat").value=p.coords.latitude.toFixed(7);el("lon").value=p.coords.longitude.toFixed(7);status("現在地を取得しました（精度 ±"+Math.round(p.coords.accuracy)+"m）。検索を押してください。");},e=>{status(e.code===1?"位置情報の許可がありません。ブラウザと端末の許可を確認してください。":e.code===3?"GPS取得が時間切れです。屋外で再試行してください。":"GPS測位できません。座標を手入力して検索できます。");},{enableHighAccuracy:true,timeout:15000,maximumAge:0});};
+function distance(a,b,c,d){const r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 6371*2*Math.asin(Math.sqrt(h));}
+el("search").onclick=async()=>{
+ const lat=Number(el("lat").value),lon=Number(el("lon").value),radius=Number(el("radius").value),button=el("search");
+ if(!el("lat").value||!el("lon").value||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){status("有効な緯度・経度を入力してください。");return;}
+ const query='[out:json][timeout:20];node["highway"="motorway_junction"](around:'+radius+','+lat+','+lon+');out 100;';
+ button.disabled=true;el("results").replaceChildren();status("道路データを検索しています…");
+ const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),25000);
+ try{
+  let response=await fetch('https://overpass.private.coffee/api/interpreter?data='+encodeURIComponent(query),{signal:ctrl.signal});
+  if(!response.ok)throw new Error("道路データ通信 HTTP "+response.status);
+  const json=await response.json();
+  const items=(json.elements||[]).map(x=>({name:String(x.tags?.name||x.tags?.["name:ja"]||x.tags?.ref||"").trim(),km:distance(lat,lon,x.lat,x.lon)})).filter(x=>x.name).sort((x,y)=>x.km-y.km).filter((x,i,a)=>a.findIndex(y=>y.name===x.name)===i);
+  if(!items.length){status("周囲"+radius/1000+"kmに名称付きのICが見つかりませんでした。検索範囲を広げるか座標を確認してください。");return;}
+  for(const x of items){const li=document.createElement("li");li.textContent=x.name+"　約"+x.km.toFixed(2)+" km（直線距離）";el("results").appendChild(li);}
+  status(items.length+"件のIC名を取得しました。");
+ }catch(e){status(e.name==="AbortError"?"検索時間切れです。通信状況または検索サービスの混雑を確認してください。":"IC名を取得できません："+e.message);}finally{clearTimeout(timer);button.disabled=false;}
+};
+</script></body></html>
