@@ -590,7 +590,7 @@ root.TAXIAPP_SYNC_UI=function(d){
      const remote=await scopedRequest('syncGet',{shiftId:id});
      if(remote?.id!==id||remote.shift?.id!==id||Number(remote.revision)!==revision)
       throw Error('サーバー原本の更新番号または内容が変化しました');
-     if(remote.shift.draft)throw Error('入力中の下書きがあるため削除できません');
+     // A saved draft field may remain on a closed historical duty. Preserve it in the JSON backup; the owner confirms trashing the whole duty.
      const unfinished=!remote.shift.endedAt&&!remote.shift.endedIso;
      if(unfinished&&d.getModel()?.activeId===id)throw Error('現在進行中の乗務は削除できません');
      const shift=remote.shift;
@@ -617,7 +617,7 @@ root.TAXIAPP_SYNC_UI=function(d){
     // retention cleanup with a server trash operation.
     if(!d.remoteOnDemand?.())throw Error('本人Firestore保存中の日報のみゴミ箱へ移動できます');
     const local=d.getModel()?.shifts?.find(shift=>shift.id===id);
-    if(!local||local.draft||(!local.endedAt&&!local.endedIso))
+    if(!local||(!local.endedAt&&!local.endedIso))
      throw Error('入庫済みの日報だけをゴミ箱へ移動できます');
     const baseline=verifiedRevision(id);
     if(baseline===null||engine.isSendUnknown(id)||engine.isConflict(id))
