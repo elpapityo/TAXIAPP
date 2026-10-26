@@ -7481,8 +7481,8 @@ async function deleteWholeShift(shiftId){
  const display=shift.date+'　'+shortTime(shift.startedAt)+'〜'+(shift.endedAt?shortTime(shift.endedAt):'未入庫');
  const total=totals(shift.records,shift.settings,shift.date);
  if(firestore){
-  if(unfinished||shift.draft){
-   toast('未入庫・編集中の日報は削除できません。営業記録と下書きを保護しています',true);return;
+  if(unfinished){
+   toast('乗務中・未入庫の日報は削除できません。営業記録を保護しています',true);return;
   }
   if(syncUI.verifiedRevision(shiftId)===null){
    toast('Firestoreの保存確認ができていないため削除しません。未同期・競合・送信結果不明を確認してください',true);return;
