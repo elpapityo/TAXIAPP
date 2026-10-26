@@ -3077,7 +3077,7 @@ function renderMeterDrive(shift){
  const button=(label,action,style='')=>'<button class="btn meter-action '+style+'" type="button" data-action="'+action+'" '+(!d&&full&&['beginDispatch','beginRide','meterEmptyHighway'].includes(action)?'disabled':'')+'>'+label+'</button>';
  let actions='';
  if(!d)actions=waiting?
-  button('迎車','beginDispatch','meter-dispatch')+button('実車','beginRide','meter-ride')+button('空車（待機終了）','cancelWaiting','meter-sub'):
+  button('迎車','beginDispatch','meter-dispatch')+button('実車','beginRide','meter-ride')+button('待機終了','cancelWaiting','meter-sub'):
   button('待機','beginWait','meter-wait')+button('迎車','beginDispatch','meter-dispatch')+button('実車','beginRide','meter-ride')+button('高速','meterEmptyHighway','meter-highway')+button('休憩','openBreakPage','meter-break');
  else if(d.kind==='dispatch')actions=button('実車','boardDispatch','meter-ride')+button('キャンセル','cancelDispatch','meter-sub');
  else if(d.kind==='ride')actions=settling?
