@@ -28,6 +28,27 @@ try:
   'origin':'http://127.0.0.1:8765','permissions':['geolocation']})
  driver.execute_cdp_cmd('Emulation.setGeolocationOverride', {
   'latitude':34.780123,'longitude':135.400321,'accuracy':12})
+ # GSI's address response is simulated for stable end-to-end testing.
+ # Only a single GSI host is intercepted; municipalities.json loads from this site.
+ driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': r"""
+ (() => {
+  const nativeFetch=window.fetch.bind(window), nativeConfirm=window.confirm.bind(window);
+  window.__demoReverseRequests=[];
+  window.fetch=function(resource,options){
+   const url=String(resource);
+   if(url.startsWith('https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?')){
+    window.__demoReverseRequests.push(url);
+    return Promise.resolve(new Response(JSON.stringify({results:{
+     muniCd:'28207',lv01Nm:'中央一丁目'}}),{
+     status:200,headers:{'Content-Type':'application/json'}}));
+   }
+   return nativeFetch(resource,options);
+  };
+  window.confirm=function(message){
+   return String(message).includes('国土地理院')?true:nativeConfirm(message);
+  };
+ })();
+ """})
  driver.get('http://127.0.0.1:8765/demo/index.html')
  wait.until(lambda _: app_ready())
  wait.until(lambda _: app_visible())
@@ -53,15 +74,18 @@ try:
  # Same real meter workflow: board -> alight/payment -> fare -> settle -> saved row.
  js("document.querySelector('[data-action=beginRide]').click()")
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft?.kind==='ride'"))
- # Same GPS pickup action as production. Mock coordinates prove the actual button
- # populates the current ride without any remote reverse geocoding.
+ # Same GPS pickup action as production. Device GPS -> explicit GSI consent
+ # -> API municipality/area conversion -> Japanese district in the field.
  assert js("return !!document.querySelector('[data-action=gpsPickup]')")
  assert js("return !document.querySelector('[data-action=gpsPickup]').disabled")
  js("document.querySelector('[data-action=gpsPickup]').click()")
  wait.until(lambda _: js("""const r=window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft;
-  return r?.meta?.pickupGeo?.lat===34.780123 && r?.raw?.AL?.includes('GPS座標');"""))
+  return r?.meta?.pickupGeo?.lat===34.780123 && r?.raw?.AL?.includes('中央');"""))
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft.raw.D.startsWith('34.780123,135.400321')")
- assert js("return document.querySelector('[data-col=AL]').value.includes('GPS座標')")
+ assert js("return document.querySelector('[data-col=AL]').value.includes('中央')")
+ assert js("return window.__demoReverseRequests.length===1")
+ assert js("return window.__demoReverseRequests[0].includes('lat=34.780123')")
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft.meta.pickupAddressProvider==='国土地理院'")
 
  js("document.querySelector('[data-action=meterSettle]').click()")
  wait.until(lambda _: js("return Boolean(document.querySelector('[data-col=K]'))"))
@@ -74,7 +98,8 @@ try:
  assert js("return !!document.querySelector('[data-action=gpsDrop]')")
  js("document.querySelector('[data-action=gpsDrop]').click()")
  wait.until(lambda _: js("""const r=window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft;
-   return r?.meta?.dropGeo?.lat===34.780123 && r?.raw?.AM?.includes('GPS座標');"""))
+   return r?.meta?.dropGeo?.lat===34.780123 && r?.raw?.AM?.includes('中央');"""))
+ assert js("return window.__demoReverseRequests.length===2")
  js("document.querySelector('[data-action=saveDraft]').click()")
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length===3"))
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft===null")
@@ -114,7 +139,7 @@ try:
  assert app_visible(),'reload must not return to blank screen'
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
  assert js("return localStorage.length")==0
- print('PASS: real Chrome, device GPS pickup/drop, browser trip start/stop, no cloud sharing, concurrent tabs, reload')
+ print('PASS: Chrome GPS to GSI district, pickup/drop populated, browser trip, tab isolation')
 finally:
  try:
   logs=driver.get_log('browser')
