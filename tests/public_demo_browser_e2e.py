@@ -56,6 +56,32 @@ try:
  # Test the observed failure: app exists but production login CSS must not blank it.
  assert app_visible(),'demo user must actually see the operation screen'
  assert js("return document.querySelector('.meter-console').getBoundingClientRect().height>100")
+
+ # The three control buttons at the top of the drive screen use the same 36px height.
+ assert js("""const a=document.querySelector('.preview-screen-head .drive-head-actions');
+  if(!a)return false;
+  const buttons=[...a.querySelectorAll('button')];
+  const shortcut=a.querySelector('.drive-field-shortcut');
+  const theme=a.querySelector('.drive-theme-toggle');
+  if(!shortcut||!theme||buttons.length<3)return false;
+  const heights=buttons.map(b=>Math.round(b.getBoundingClientRect().height));
+  return heights.every(h=>h===36);
+ """), 'drive header button heights must all be 36px'
+ # Toggle with existing theme setting, and toggle back; no shift or payment data changes.
+ original_theme=js("return document.documentElement.dataset.uiTheme")
+ assert original_theme in ('day','night')
+ initial_count=js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")
+ next_theme='night' if original_theme=='day' else 'day'
+ assert js("return document.querySelector('.drive-theme-toggle').dataset.uiValue")==next_theme
+ js("document.querySelector('.drive-theme-toggle').click()")
+ wait.until(lambda _: js("return document.documentElement.dataset.uiTheme")==next_theme)
+ wait.until(lambda _: js("return document.querySelector('.drive-theme-toggle')?.dataset.uiValue")==original_theme)
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==initial_count
+ js("document.querySelector('.drive-theme-toggle').click()")
+ wait.until(lambda _: js("return document.documentElement.dataset.uiTheme")==original_theme)
+ wait.until(lambda _: js("return document.querySelector('.drive-theme-toggle')?.dataset.uiValue")==next_theme)
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==initial_count
+
  driver.set_window_size(1510,850)
  assert app_visible(),'desktop Edge-like width must not blank the demo'
  driver.set_window_size(430,960)
