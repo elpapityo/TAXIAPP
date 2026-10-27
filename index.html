@@ -2209,7 +2209,7 @@ function historyMatches(){const date=historyDate||selectedShift()?.date||dateSta
  if(legacyDiary()&&legacyHistoryRemote?.uid===accountScope.uid&&legacyHistoryRemote.shift?.date===date&&
     !merged.has(legacyHistoryRemote.id))merged.set(legacyHistoryRemote.id,legacyHistoryRemote.shift);
  return [...merged.values()].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
-function selectedHistoryShift(){const a=historyMatches();return historyShiftId?a.find(s=>s.id===historyShiftId)||null:a[0]||null;}
+function selectedHistoryShift(){const a=historyMatches();return historyShiftId?a.find(s=>s.id===historyShiftId)||null:a.length===1?a[0]:null;}
 function selectedPrintShift(){return printShiftId?(model.shifts.find(s=>s.id===printShiftId)||null):selectedShift();}
 function lastPayment(shift){return (shift?.records||[]).filter(r=>r.kind==='ride'&&r.status==='complete'&&r.meta?.settledIso&&Number.isFinite(Date.parse(r.meta.settledIso))).sort((a,b)=>Date.parse(b.meta.settledIso)-Date.parse(a.meta.settledIso))[0]||null;}
 function durationSeconds(a,b=new Date()){const start=Date.parse(a),end=b instanceof Date?b.getTime():Date.parse(b);return Number.isFinite(start)&&Number.isFinite(end)?Math.max(0,Math.floor((end-start)/1000)):null;}
