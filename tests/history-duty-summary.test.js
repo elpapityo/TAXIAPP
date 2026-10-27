@@ -83,6 +83,6 @@ for(const html of [main,demo]){
  assert.match(html,/function meterSalesTaxExcludedReference\(gross\)/);
  assert.match(html,/const t=\{records:records\.length,rides:0,cancels:0/,'canonical totals retained');
 }
-assert.match(main,/<title>TAXIAPP v0\.3\.213 — 乗務日報<\/title>/);
-assert.match(demo,/<title>TAXIAPP v0\.3\.213 — 公開操作デモ<\/title>/);
+assert.match(main,/<title>TAXIAPP v0\.3\.214 — 乗務日報<\/title>/);
+assert.match(demo,/<title>TAXIAPP v0\.3\.214 — 公開操作デモ<\/title>/);
 console.log('PASS: history KPI from canonical totals, past UID duty, completed/ongoing time, missing km, tax and dispatch split, original record immutable');
