@@ -99,7 +99,7 @@ try:
  js("document.querySelector('[data-action=gpsDrop]').click()")
  wait.until(lambda _: js("""const r=window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft;
    return r?.meta?.dropGeo?.lat===34.780123 && r?.raw?.AM?.includes('中央');"""))
- assert js("return window.__demoReverseRequests.length===2")
+ assert js("return window.__demoReverseRequests.length===1"), 'identical GPS points should reuse GSI cache, not send twice'
  js("document.querySelector('[data-action=saveDraft]').click()")
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length===3"))
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft===null")
