@@ -6117,6 +6117,121 @@ async function loadMonthlySales(){
  }
 }
 
+
+// 本人UID別の端末設定にだけ保存する乗務計画。日報の金額・距離・履歴原本は変更しない。
+const MONTH_PLAN_NAMES=Object.freeze({work:'出番',off:'公休',leave:'有休',after:'明け'});
+let monthlyPlanDate='',monthlyPlanMessage='';
+function monthlyPlanDates(period){
+ const result=[];
+ for(let t=Date.parse(period.startDate+'T00:00:00Z'),end=Date.parse(period.endDate+'T00:00:00Z');t<=end;t+=86400000)
+  result.push(new Date(t).toISOString().slice(0,10));
+ return result;
+}
+function monthlyPlanEntry(date){
+ const entry=model.prefs?.monthlyDutyPlans?.[date];
+ if(!entry||!Object.prototype.hasOwnProperty.call(MONTH_PLAN_NAMES,entry.status))return null;
+ const time=t=>typeof t==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t)?t:'';
+ return {status:entry.status,start:time(entry.start),end:time(entry.end)};
+}
+function monthlyPlanGoal(month=monthlySalesMonth){
+ const n=model.prefs?.monthlySalesGoals?.[month];
+ return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
+}
+function monthlyPlanProgress(period){
+ const ok=monthlySalesData?.startDate===period.startDate&&monthlySalesData?.endDate===period.endDate;
+ const report=ok?monthlySalesData:null,byDay=new Map(report?.days?.map(x=>[x.date,x])||[]);
+ const goal=monthlyPlanGoal(),gross=report?.sum.meter??null,duties=report?.sum.duties??null;
+ const days=monthlyPlanDates(period).map(date=>({date,plan:monthlyPlanEntry(date),actual:byDay.get(date)}));
+ const work=days.filter(x=>x.plan?.status==='work');
+ const left=work.filter(x=>x.date>=dateStamp()&&!x.actual?.duties).length;
+ const avg=duties>0?gross/duties:null;
+ return {report,byDay,goal,gross,duties,days,planned:work.length,left,
+  pct:goal&&gross!==null?Math.round(1000*gross/goal)/10:null,
+  short:goal&&gross!==null?Math.max(0,goal-gross):null,
+  need:goal&&gross!==null&&left>0?Math.ceil(Math.max(0,goal-gross)/left):null,
+  expected:avg!==null?Math.round(gross+avg*left):null};
+}
+function renderMonthlyManagement(){
+ let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
+ catch{return titleBlock('月間営業管理','MONTHLY PLAN','締め月を確認してください。')+'<p class="warn">集計期間が不正です。</p>';}
+ const p=monthlyPlanProgress(period),dates=p.days.map(x=>x.date);
+ if(!dates.includes(monthlyPlanDate))monthlyPlanDate=dates[0];
+ const date=monthlyPlanDate,entry=monthlyPlanEntry(date),actual=p.byDay.get(date);
+ const kpi=(name,value,cls='')=>'<div class="month-goal-kpi '+cls+'"><small>'+name+'</small><strong>'+safeText(value)+'</strong></div>';
+ const card='<section class="card month-plan-overview"><h2 class="h2">月間目標と営業実績</h2>'+
+  '<div class="month-plan-top"><label class="field"><span class="field-label">締め月</span>'+
+  '<input id="monthlyDashboardMonth" class="control" type="month" value="'+safeText(monthlySalesMonth)+'"></label>'+
+  '<span class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</span></div>'+
+  '<div class="month-goal-grid">'+
+  kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
+  kpi('確定売上（税込）',p.gross===null?'未取得':money(p.gross))+
+  kpi('目標達成率',p.pct===null?'未算出':p.pct+'%')+
+  kpi('目標までの不足',p.short===null?'未算出':money(p.short))+
+  kpi('入庫済み乗務',p.duties===null?'未取得':p.duties+'乗務')+
+  kpi('出番予定',p.planned+'日')+kpi('残り出番予定',p.left+'日')+
+  kpi('残り出番に必要な平均売上',p.need===null?'算出不可':money(p.need),'wide')+
+  kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
+  '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報だけ。予測は確定済み乗務平均×残り出番予定による参考値です。未取得データは推測しません。</p>'+
+  '<div class="month-plan-top"><label class="field"><span class="field-label">月間売上目標（円）</span>'+
+  '<input id="monthlyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：1000000" value="'+safeText(p.goal??'')+'" '+(canEditNow()?'':'disabled')+'></label>'+
+  '<button type="button" class="btn primary" data-action="monthlyGoalSave" '+(canEditNow()?'':'disabled')+'>目標を保存</button></div>'+
+  '<p class="caption-note">予定・目標は本人UID別の端末データに保存します。別端末との自動同期は未対応。日報原本は変更しません。</p></section>';
+ let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
+ for(const x of p.days){
+  const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定';
+  cells+='<button type="button" class="month-plan-day '+status+(x.actual?.duties?' realized':'')+
+   (x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
+   '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
+   '</strong><small>'+name+'</small>'+(x.actual?.duties?'<small>実績 '+x.actual.duties+'乗務</small>':'')+'</button>';
+ }
+ const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
+  '<option value="'+v+'" '+(entry?.status===v?'selected':'')+'>'+t+'</option>').join('');
+ const readonly=canEditNow()?'':'disabled';
+ const editor='<section class="card month-plan-editor"><h2 class="h2">選択日：'+safeText(date)+'</h2>'+
+  '<div class="month-plan-fields"><label class="field"><span class="field-label">予定区分</span><select id="monthlyPlanStatus" class="control" '+readonly+'>'+options+'</select></label>'+
+  '<label class="field"><span class="field-label">出庫予定</span><input id="monthlyPlanStart" class="control" type="time" value="'+safeText(entry?.start||'')+'" '+readonly+'></label>'+
+  '<label class="field"><span class="field-label">入庫予定</span><input id="monthlyPlanEnd" class="control" type="time" value="'+safeText(entry?.end||'')+'" '+readonly+'></label></div>'+
+  '<p class="caption-note">入庫時刻が出庫時刻以前なら翌日入庫予定。公休・有休・明けは時刻を保存しません。</p>'+
+  '<div class="actions"><button class="btn primary" data-action="monthlyPlanSave" '+readonly+'>この日の予定を保存</button></div>'+
+  (actual?.duties?'<p class="panel-strip">確定実績：'+actual.duties+'乗務／'+money(actual.meter)+'</p>':
+   p.report?'<p class="caption-note">この日の確定実績はありません。</p>':'<p class="caption-note">実績はまだ取得していません。</p>')+
+  (monthlyPlanMessage?'<p class="caption-note" role="status">'+safeText(monthlyPlanMessage)+'</p>':'')+'</section>';
+ const calendar='<section class="card"><h2 class="h2">乗務予定カレンダー</h2>'+
+  '<p class="caption-note">出番・公休・有休・明けを日付ごとに保存。確定実績のある日は下線で区別します。</p>'+
+  '<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+
+  cells+'</div>'+editor+'</section>';
+ return titleBlock('月間営業管理','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+card+calendar+renderMonthlySales();
+}
+function monthlyGoalSave(){
+ if(!canEditNow())return;
+ const value=String(document.getElementById('monthlyGoalInput')?.value??'').trim();
+ if(value&&!/^\d{1,10}$/.test(value)){toast('目標は0～10億円の整数で入力してください',true);return;}
+ const n=value?Number(value):0;
+ if(!Number.isSafeInteger(n)||n>1000000000){toast('目標金額が不正です',true);return;}
+ model.prefs??={};model.prefs.monthlySalesGoals??={};
+ if(n===0)delete model.prefs.monthlySalesGoals[monthlySalesMonth];
+ else model.prefs.monthlySalesGoals[monthlySalesMonth]=n;
+ saveLater();render();toast(n?'月間目標を端末へ保存しました':'目標を未設定にしました');
+}
+function monthlyPlanSave(){
+ if(!canEditNow())return;
+ let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
+ catch{toast('締め期間が不正です',true);return;}
+ if(!monthlyPlanDates(period).includes(monthlyPlanDate)){toast('対象の日付を選択してください',true);return;}
+ const status=String(document.getElementById('monthlyPlanStatus')?.value||'unset');
+ if(status!=='unset'&&!Object.prototype.hasOwnProperty.call(MONTH_PLAN_NAMES,status)){toast('予定区分が不正です',true);return;}
+ const start=String(document.getElementById('monthlyPlanStart')?.value||''),end=String(document.getElementById('monthlyPlanEnd')?.value||'');
+ const valid=t=>/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t);
+ if(status==='work'&&((!!start!==!!end)||(start&&!valid(start))||(end&&!valid(end)))){
+  toast('出庫・入庫の時刻は両方入力するか、両方空欄にしてください',true);return;
+ }
+ model.prefs??={};model.prefs.monthlyDutyPlans??={};
+ if(status==='unset')delete model.prefs.monthlyDutyPlans[monthlyPlanDate];
+ else model.prefs.monthlyDutyPlans[monthlyPlanDate]={status,start:status==='work'?start:'',end:status==='work'?end:''};
+ monthlyPlanMessage=monthlyPlanDate+'：'+(MONTH_PLAN_NAMES[status]||'未設定')+'を端末に保存しました';
+ saveLater();render();
+}
+
 function renderOperations(shift){
  const head=titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。');
  if(!shift)return head+renderMonthlySales()+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
