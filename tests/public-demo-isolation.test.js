@@ -7,7 +7,7 @@ assert.match(demo,/<title>TAXIAPP v0\.3\.207 — 公開操作デモ<\/title>/);
 assert.match(demo,/<html lang="ja">/,'login-free demo must start without authentication lock');
 assert.doesNotMatch(demo,/<html\b[^>]*class="[^"]*taxi-auth-locked/,'never hide the demo app behind production login CSS');
 assert.match(demo,/html\.taxi-auth-locked #accountBar,[\s\S]*?#app/,'production style is still present, so keeping auth lock would blank the demo');
-assert.match(demo,/connect-src 'none'/);
+assert.match(demo,/connect-src 'self' https:\/\/mreversegeocoder\.gsi\.go\.jp;/,'GSI + site-local lookup only');
 assert.match(demo,/default-src 'none'/);
 assert.doesNotMatch(demo,/<script\s+src=|<iframe\b|<link\s+rel="preload"/i);
 assert.equal((demo.match(/<script\b/g)||[]).length,1,'all scripts inline');
@@ -19,10 +19,15 @@ assert.match(demo,/navigator\.geolocation\.getCurrentPosition/,'production locat
 assert.match(demo,/TAXIAPP_GPS_TRIP=Object\.freeze/,'browser GPS distance engine stays embedded');
 assert.match(demo,/TAXIAPP_GPS_UI=/,'the production trip UI stays embedded');
 assert.match(demo,/function reverseAddress\(gps\)/,'offline GPS location labeling is enabled');
-assert.match(demo,/GPS座標.*外部送信なし/,'address lookup is not falsely presented as live');
+assert.match(demo,/国土地理院へ送信して町名・丁目に変換/,'disclose third-party position lookup');
+assert.match(demo,/demoGsiConsent=window\.confirm\(/,'requires permission before GSI request');
+assert.match(demo,/fetch\('\.\.\/municipalities\.json'/,'municipalities data available from parent folder');
+assert.match(demo,/https:\/\/mreversegeocoder\.gsi\.go\.jp\/reverse-geocoder\/LonLatToAddress/);
 assert.match(demo,/deviceGpsEnabled:true/);
 assert.doesNotMatch(demo,/demoForbiddenActions=\/[^\n]*\|gps\|permission\|/,'GPS controls must be accessible');
-assert.doesNotMatch(demo,/fetch=window\.fetch|window\.fetch\(|fetch\('https:\/\/mreversegeocoder/,'GPS coordinates must never be sent to an external server');
+assert.match(demo,/const gsi=url\.startsWith\('https:\/\/mreversegeocoder\.gsi\.go\.jp\/reverse-geocoder\/LonLatToAddress\?'\)/);
+assert.match(demo,/return Promise\.reject\(Error\('独立デモでは未許可の通信を遮断しました'\)\)/);
+assert.doesNotMatch(demo,/window\.TAXIAPP_SYNC_UI\(\{|window\.TAXIAPP_ACCOUNT_DIARY\.create\(\)/,'other production services remain unavailable');
 
 assert.match(demo,/const syncUI=demoSync/);
 assert.match(demo,/const accountDiary=demoDiary/);

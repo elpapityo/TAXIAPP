@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; font-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' https://mreversegeocoder.gsi.go.jp; img-src 'none'; font-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -2374,7 +2374,16 @@ const demoNavigator=Object.freeze({
  get permissions(){return window.navigator.permissions;}
 });
 function demoUnavailable(){toast('独立デモではこの操作を使用できません。クラウド・本番データには接続しません。');return false;}
-function demoBlockedFetch(){return Promise.reject(Error('独立デモ：通信無効'));}
+function demoBlockedFetch(resource,options){
+ const url=String(resource);
+ const municipal=url==='../municipalities.json';
+ const gsi=url.startsWith('https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?');
+ if(municipal||gsi){
+  if(gsi&&demoGsiConsent!=='allowed')return Promise.reject(Error('住所変換が許可されていません。'));
+  return window.fetch(resource,options);
+ }
+ return Promise.reject(Error('独立デモでは未許可の通信を遮断しました'));
+}
 const demoDiary=Object.freeze({ready:()=>false,status:()=>({ready:false,enabled:false}),bind:()=>{},unbind:()=>{},endpoint:()=>null});
 const demoSync=new Proxy({status:()=>({busy:false,conflicts:[],lastError:'',confirmed:[],pending:[]}),message:()=> '独立デモ・クラウド未接続',dutySyncStatus:()=>({state:'disabled',label:'デモでは利用不可'}),panel:()=>'<p class="warn">独立デモでは同期は利用できません。</p>',privateDiaryPanel:()=>'',conflictPanel:()=>'',cloudEntries:()=>[],cloudEntry:()=>null},{get:(obj,key)=>key in obj?obj[key]:()=>false});
 const demoForbiddenActions=/sync|cloud|firestore|google|migrat|viewerRefresh|writerRefresh|account|takeOver|backup|restore|import|download|exportEncrypted|device|printTo|openSheet|loadHistory|historyAdd|historyMark|HistoryLocation|HistoryDate|legacy/i;
@@ -2385,7 +2394,7 @@ function demoMarkDisabled(){
  const nodes=appEl.querySelectorAll('button,a,input,select');
  for(const el of nodes){if(!demoIsUnavailable(el))continue;el.setAttribute('data-demo-disabled','');el.setAttribute('aria-disabled','true');el.title='独立デモでは利用できません';if(el.tagName==='A')el.removeAttribute('href');else el.disabled=true;}
  for(const selector of ['[data-internal-settings]','[data-distance-address-settings]']){
-  const box=appEl.querySelector(selector);if(box&&!box.querySelector('.demo-mode-note')){const note=document.createElement('p');note.className='demo-mode-note';note.textContent='独立デモ：端末のGPSは許可時だけ取得します。住所変換は外部送信せず座標表示です。距離の試験計測もできます。';box.querySelector('.inner')?.prepend(note);}
+  const box=appEl.querySelector(selector);if(box&&!box.querySelector('.demo-mode-note')){const note=document.createElement('p');note.className='demo-mode-note';note.textContent='独立デモ：GPS住所変換を初めて利用するときは国土地理院への座標送信確認が出ます。許可しない場合も座標は内部保持し、住所を手入力できます。';box.querySelector('.inner')?.prepend(note);}
  }
  const controls=appEl.querySelectorAll('.viewer-sync-controls');for(const el of controls)el.remove();
 }
@@ -6582,7 +6591,7 @@ function renderSettings(shift){const active=getShift();return `${titleBlock('設
 <option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：自動入力しない（手入力・GPS取得ボタンは利用可能）</option></select></label>${nativeAutoDistanceEnabled()?`<div class="gps-source-choice"><h2 class="h2">③ 自動入力に使うGPSを選択</h2><p class="helper">ブラウザGPS：Chromeで測定。GPS距離ラボ：Android専用アプリで測定（別途アプリの起動が必要）。</p><label class="field"><span class="field-label">GPSの取得方法</span><select class="control" data-native-diary-gps>
  <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>ブラウザGPS（Chromeの位置情報を利用）</option>
  <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>GPS距離ラボ（Android専用アプリ）</option>
- </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">GPS取得地点の表示（デモは座標のみ）</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>GPS座標を入力欄へ表示（外部送信なし）</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>GPS座標だけ内部保存（住所は手入力）</option></select></label></section></div></details></div></details>`;}
+ </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">GPS座標から町名・丁目を取得</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>GPS座標を国土地理院へ送信して町名・丁目に変換</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>住所変換OFF（座標は内部保存・手入力）</option></select></label></section></div></details></div></details>`;}
 
 /* 設定の分類は表示上の振分けのみ。既存の入力・保存関数は変更しない。 */
 let settingsCategoryActive='driver';
@@ -6678,20 +6687,44 @@ let municipalityLookupPromise=null;
 const gsiAddressCache=new Map();
 function loadMunicipalities(){
  if(!municipalityLookupPromise){
-  municipalityLookupPromise=fetch('./municipalities.json',{cache:'force-cache',signal:AbortSignal.timeout(8000)})
+  municipalityLookupPromise=fetch('../municipalities.json',{cache:'force-cache',signal:AbortSignal.timeout(8000)})
    .then(resp=>{if(!resp.ok)throw Error('市区町村表を取得できません');return resp.json();})
    .then(data=>{if(!data||typeof data!=='object'||!data['28207'])throw Error('市区町村表が不正です');return data;})
    .catch(err=>{municipalityLookupPromise=null;throw err;});
  }
  return municipalityLookupPromise;
 }
-// Browser-only coordinate label: no third-party request and no inferred address.
+let demoGsiConsent='unasked';
 async function reverseAddress(gps){
- const lat=Number(gps?.lat),lon=Number(gps?.lng);
- if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)
-  throw Error('GPS座標が不正です');
- return 'GPS座標 '+lat.toFixed(5)+', '+lon.toFixed(5);
+ if(demoGsiConsent==='unasked'){
+  demoGsiConsent=window.confirm('住所への変換はGPS座標を国土地理院へ送信します。デモ中の住所変換を許可しますか？')?'allowed':'denied';
+ }
+ if(demoGsiConsent!=='allowed')throw Error('住所変換が許可されていません。');
+
+ const lat=Number(gps.lat),lon=Number(gps.lng);
+ if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw Error('GPS座標が不正です');
+ const key=`${lat.toFixed(5)},${lon.toFixed(5)}`;
+ if(gsiAddressCache.has(key))return gsiAddressCache.get(key);
+ const url=`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+ const [resp,municipalities]=await Promise.all([
+  fetch(url,{signal:AbortSignal.timeout(8500)}),
+  loadMunicipalities()
+ ]);
+ if(!resp.ok)throw Error('住所検索通信エラー');
+ const response=await resp.json();
+ const found=response?.results;
+ if(!found?.muniCd||!found?.lv01Nm)throw Error('住所データなし');
+ const area=String(found.lv01Nm).trim();
+ const city=municipalities[String(Number(found.muniCd))];
+ if(!city||!area)throw Error('市区町村・町域の特定不可');
+ // 乗務画面は町名＋丁目番号のみ。座標は従来どおり別途保存する。
+ const normalized=area.normalize('NFKC').replace(/[一二三四五六七八九十]+(?=丁目)/g,kanji=>{const nums={'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};if(kanji==='十')return '10';if(kanji.includes('十')){const [left,right]=kanji.split('十');return String((left?nums[left]:1)*10+(right?nums[right]:0));}return String(nums[kanji]||kanji);}).replace(/([0-9]+)丁目.*$/,'$1');
+ const address=normalized;
+ gsiAddressCache.set(key,address);
+ if(gsiAddressCache.size>64)gsiAddressCache.delete(gsiAddressCache.keys().next().value);
+ return address;
 }
+
 function waitRecord(shiftId,waitId){
  const active=model.shifts.find(s=>s.id===shiftId);
  if(!active)return null;
@@ -7080,11 +7113,11 @@ async function getGps(shift,d,when){const key=when==='pickup'?'pickup':'drop';co
   target.meta[key+'Geo']=gps;target.raw[locationKey]=`${gps.lat.toFixed(6)},${gps.lng.toFixed(6)}`;
   // Coordinates belong in the dedicated location column and metadata, not the human-readable address.
   if(when==='pickup'&&target.meta.pickupWaitProvisional&&target.raw.AL===target.meta.waitPlace){target.raw.AL='';target.meta.pickupWaitProvisional=false;}
-  target.meta[key+'GpsStatus']='デモ内にGPS座標を保持しました。住所欄へ座標を表示します。';await save();refreshDraftGpsFields(shift.id,d.id);
+  target.meta[key+'GpsStatus']='GPS座標を保存しました。町名・丁目へ変換しています…';await save();refreshDraftGpsFields(shift.id,d.id);
   if(currentDuty?.draft?.id===target.id&&nativeDiaryGpsEnabled())fillNativeDistanceSilently(currentDuty,target,when==='pickup'?'F':'L');
   toast('GPS座標を記録しました。');
  if(model.prefs.reverseAddress==='off'){const latest=gpsTarget(shift,d.id);if(latest){latest.meta[key+'GpsStatus']='GPS座標保存済み。住所欄は手入力してください。';saveLater();refreshDraftGpsFields(shift.id,d.id);}return;}
- try{const address=await reverseAddress(gps),latest=gpsTarget(shift,d.id);if(!latest)return;if(address){const old=latest.raw[addressKey];if(!old||/^\s*-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?\s*$/.test(String(old))){latest.raw[addressKey]=address;latest.meta[key+'AddressProvider']='ブラウザGPS（座標のみ・外部送信なし）';latest.meta[key+'GpsStatus']='GPS座標保存済み（住所は推定せず、外部送信もしていません）。';await save();refreshDraftGpsFields(shift.id,d.id);toast('GPS座標を入力しました。必要なら住所を手入力してください。');}else{latest.meta[key+'GpsStatus']='GPS座標保存済み。手入力した住所は維持しました。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}}catch(e){const last=gpsTarget(shift,d.id);if(last){last.meta[key+'GpsStatus']='GPS座標は保存済み。町名・丁目を取得できませんでした。住所は手入力できます。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}},err=>{const live=gpsTarget(shift,d.id);if(live){live.meta[key+'GpsStatus']=gpsMessage(err);saveLater();refreshDraftGpsFields(shift.id,d.id);}toast(gpsMessage(err),true);},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+ try{const address=await reverseAddress(gps),latest=gpsTarget(shift,d.id);if(!latest)return;if(address){const old=latest.raw[addressKey];if(!old||/^\s*-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?\s*$/.test(String(old))){latest.raw[addressKey]=address;latest.meta[key+'AddressProvider']='国土地理院';latest.meta[key+'GpsStatus']='GPS座標保存済み。国土地理院の町名・丁目（推定）です。';await save();refreshDraftGpsFields(shift.id,d.id);toast('推定住所を入力しました。必要なら修正してください。');}else{latest.meta[key+'GpsStatus']='GPS座標保存済み。手入力した住所は維持しました。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}}catch(e){const last=gpsTarget(shift,d.id);if(last){last.meta[key+'GpsStatus']='座標を保存しましたが、住所変換できませんでした。住所は手入力できます。';saveLater();refreshDraftGpsFields(shift.id,d.id);}}},err=>{const live=gpsTarget(shift,d.id);if(live){live.meta[key+'GpsStatus']=gpsMessage(err);saveLater();refreshDraftGpsFields(shift.id,d.id);}toast(gpsMessage(err),true);},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 function requestDropLocation(shift,record){
  if(!shift||!record||record.kind!=='ride'||record.editId||record.meta?.dropGpsRequested||
@@ -8671,7 +8704,7 @@ for(const [mins,type,yen,from,to] of [[42,'乗',1500,'デモ駅','架空公園']
 }
 model.shifts.push(sample);model.activeId=sample.id;tab='drive';
 const banner=document.createElement('aside');banner.className='demo-evaluation-banner';banner.setAttribute('role','note');
-banner.innerHTML='<strong>操作体験デモ　TAXIAPP v0.3.207</strong><span>ログイン不要・訪問者ごとに独立／本番データなし／再読込で初期化。GPSは許可時のみ利用／クラウド・印刷なし。</span><button type="button" id="demoFreshStart">出庫前から試す</button><button id="demoGpsCheck" type="button">⌖ GPSを確認</button>';
+banner.innerHTML='<strong>操作体験デモ　TAXIAPP v0.3.207</strong><span>ログイン不要／再読込で初期化。住所変換の許可時だけ国土地理院へGPS座標送信／クラウド・印刷なし。</span><button type="button" id="demoFreshStart">出庫前から試す</button><button id="demoGpsCheck" type="button">⌖ GPSを確認</button>';
 document.body.prepend(banner);
 document.getElementById('demoGpsCheck').addEventListener('click',()=>requestGpsPermission());
 document.getElementById('demoFreshStart').addEventListener('click',()=>{
