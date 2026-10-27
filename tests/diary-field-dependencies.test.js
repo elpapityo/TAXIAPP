@@ -15,8 +15,10 @@ const source=[
 const model={prefs:{rideFieldVisibility:{},pickupDropDistance:'on',highwayDistance:'on'}};
 const numeric=x=>(x===null||x===undefined||String(x).trim()===''?null:Number.isFinite(Number(x))?Number(x):null);
 const escape=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;');
+let simpleMode=false;
 const context={
  model,console,
+ simpleModeActive:()=>simpleMode,
  window:{TAXIAPP_HIGHWAY_SECTIONS:highway},
  number:numeric,amount:x=>numeric(x)??0,money:n=>'¥'+Number(n).toFixed(0),kmOne:x=>String(x??''),
  safeText:escape,shortTime:s=>String(s||'').slice(0,5),
@@ -133,6 +135,21 @@ assert.equal(JSON.stringify(invalid),original,'validation must not clear hidden 
 invalid.meta.highwaySections[0].fee='-1';
 assert.ok(vm.runInContext('validateDraft(draft)',context).some(x=>x.includes('料金')),
  'bad toll fee must not slip through merely because distance is hidden');
+// シンプルでは乗降距離を必須にしない。高速距離の検査と記録は維持する。
+simpleMode=true;
+model.prefs.pickupDropDistance='on';model.prefs.highwayDistance='on';
+invalid.meta.highwaySections[0].fee='500';
+const simpleErrors=vm.runInContext('validateDraft(draft)',context);
+assert.ok(!simpleErrors.includes('乗車時の走行距離'),'simple mode must not require usual pickup km');
+assert.ok(simpleErrors.some(x=>x.includes('乗距離・降距離')),'expressway distances still validated');
+assert.equal(vm.runInContext("rideFieldShown('distanceStart')",context),false);
+assert.equal(vm.runInContext("rideFieldShown('distanceEnd')",context),false);
+const simpleMarkup=call('renderRideForm',shift,recordedHighway);
+assert.match(simpleMarkup,/data-highway-fold/,'highway entry remains available');
+assert.doesNotMatch(simpleMarkup,/data-col="F"|data-col="L"/,'no ordinary distance inputs on the simple form');
+assert.equal(model.prefs.pickupDropDistance,'on','ordinary input prefs must not be changed');
+assert.equal(JSON.stringify(recordedHighway),preserved,'hide-only does not alter saved kms or duty');
+simpleMode=false;
 assert.ok(html.includes('data-ride-distance-setting="${key}"'));
 assert.ok(html.includes("event.target.matches('[data-distance-setting],[data-ride-distance-setting]')"));
 assert.ok(html.includes('event.target.dataset.distanceSetting||event.target.dataset.rideDistanceSetting'));

@@ -11,5 +11,5 @@ assert.equal(new Set(keys).size,44,'legacy CSV keys must be unique');
 assert.match(html,/function exportRows\(shift\)\{return shift\.records\.filter\(r=>r\.kind!=='dispatch'\)\.map\(r=>RAW_COLUMNS\.map\(\(\[k\]\)=>deriveRaw\(r,shift\.settings\)\[k\]\?\?''\)\);\}/);
 assert.match(html,/function exportCsv\(shift\)\{return .*RAW_COLUMNS\.map\(x=>x\[1\]\)/);
 assert.match(html,/if\(!distanceEnabled\(key\)\)return ''/,'OFF hides input fields, not export columns');
-assert.match(html,/if\(distanceEnabled\('F'\)&&number\(draft\.raw\.F\)===null\)/,'OFF allows absent pickup distance');
+assert.match(html,/if\(distanceEnabled\('F'\)&&number\(draft\.raw\.F\)===null&&.*simpleModeActive\(\)/,'通常表示は乗車距離必須、シンプル表示のみ例外');
 console.log('Fixed 44-column CSV, stable order and OFF UI / validation guards: PASS');
