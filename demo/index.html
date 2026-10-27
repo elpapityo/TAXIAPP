@@ -5354,8 +5354,12 @@ function canEditCloudHistory(shift){
 // long history sections; keep the record action table always accessible.
 function historyFoldSection(key,title,html){
  if(!html)return '';
- const body=html.replace(/^<section class="card"><h2 class="h2">[^<]*<\/h2>/,'')
-  .replace(/\s*<\/section>\s*$/,'');
+ // Strip the wrapping card only when its opening tag and heading match.
+ // Other complete sections (the duty summary and highway operations panel)
+ // must retain their closing tags to avoid breaking the following panels.
+ const plainCard=/^<section class="card"><h2 class="h2">[^<]*<\/h2>/.test(html);
+ const body=plainCard?html.replace(/^<section class="card"><h2 class="h2">[^<]*<\/h2>/,'')
+  .replace(/\s*<\/section>\s*$/,''):html;
  return '<details class="details history-fold-panel" data-history-panel="'+safeText(key)+'">'+
   '<summary>'+safeText(title)+'</summary><div class="inner">'+body+'</div></details>';
 }
