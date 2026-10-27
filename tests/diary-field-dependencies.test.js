@@ -136,7 +136,8 @@ assert.ok(vm.runInContext('validateDraft(draft)',context).some(x=>x.includes('�
 assert.ok(html.includes('data-ride-distance-setting="${key}"'));
 assert.ok(html.includes("event.target.matches('[data-distance-setting],[data-ride-distance-setting]')"));
 assert.ok(html.includes('event.target.dataset.distanceSetting||event.target.dataset.rideDistanceSetting'));
-assert.ok(html.includes('model.prefs.rideFieldVisibility[key]=event.target.checked;saveLater();render();return;'));
+assert.match(html,/model\.prefs\.rideFieldVisibility\[key\]=event\.target\.checked;/,'通常表示の項目設定保存を維持');
+assert.match(html,/simpleModeActive\(\)\)setSimpleFieldVisible\('ride',key,event\.target\.checked\)/,'シンプル表示だけ独立した項目設定を保存');;
 // Execute the exact source change handler as a writer, with simulated DOM controls.
 // The production read-only browser blocks edits by design; never bypass that guard.
 const handlerStart=html.indexOf("if(event.target.matches('[data-distance-setting],[data-ride-distance-setting]'))");
