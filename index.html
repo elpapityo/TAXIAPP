@@ -1441,6 +1441,14 @@ html.meter-confirm-field-edit #floating-duty-summary{display:none!important}\n .
 /* シンプル表示では通常の走行距離を入力面から外す。記録値は保持する。 */
 html[data-ui-simple-mode="on"] .wait-odometer-field,
 html[data-ui-simple-mode="on"] [data-action="gpsWaitOdo"]{display:none}
+
+.history-duty-summary{margin:12px 0 18px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--sheet)}
+.history-duty-summary h3{margin:0 0 6px}
+.history-duty-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:9px;margin:10px 0}
+.history-duty-summary-item{background:var(--sky);border:1px solid var(--line);border-radius:11px;padding:11px;min-width:0;display:flex;flex-direction:column;gap:4px}
+.history-duty-summary-item span{color:var(--muted);font-size:12px}
+.history-duty-summary-item strong{font-size:clamp(17px,3.4vw,23px);font-weight:750;overflow-wrap:anywhere}
+.history-duty-summary-item small{font-size:11px;color:var(--muted);line-height:1.4}
 </style>
 </head>
 <body>
@@ -4546,10 +4554,65 @@ function historyOneRowIndex(){
   (html||'<p class="caption-note">端末に日報がありません。必要な日付を指定して取得してください。</p>')+
   '</section>';
 }
+/* 選択された1乗務の履歴サマリー。料金・税別額・待機時間は既存の正本処理を再利用する。 */
+function dutyHistorySummaryValues(shift,now=new Date()){
+ const totalsValue=totals(shift.records,shift.settings,shift.date);
+ const finished=Boolean(shift.endedIso||shift.endedAt);
+ const endedTime=shift.endedIso?new Date(shift.endedIso):null;
+ const referenceTime=endedTime&&Number.isFinite(endedTime.getTime())?endedTime:now;
+ const elapsed=shiftElapsed(shift,referenceTime);
+ const wait=totalWaitSeconds(shift,referenceTime);
+ const before=number(shift.startingOdo),after=number(shift.endingOdo);
+ const km=before!==null&&after!==null&&after>=before
+  ?Math.round((after-before)*1000)/1000:null;
+ const sales={app:0,boardingOther:0,other:0,go:0,didi:0,uber:0};
+ for(const record of shift.records||[]){
+  if(record.kind!=='ride'||record.status!=='complete')continue;
+  const value=pricing(record,shift.settings,shift.date).meter;
+  const type=record.raw?.E;
+  if(type==='G'){sales.app+=value;sales.go+=value;}
+  else if(type==='D'){sales.app+=value;sales.didi+=value;}
+  else if(type==='U'){sales.app+=value;sales.uber+=value;}
+  else if(type==='乗')sales.boardingOther+=value;
+  else sales.other+=value;
+ }
+ return {t:totalsValue,finished,elapsed,wait,km,sales,
+  netReference:meterSalesTaxExcludedReference(totalsValue.meter),
+  yenPerKm:km!==null&&km>0?totalsValue.meter/km:null,
+  yenPerHour:elapsed!==null&&elapsed>0?totalsValue.meter*3600/elapsed:null};
+}
+function renderDutyHistorySummary(shift){
+ if(!shift)return '';
+ const v=dutyHistorySummaryValues(shift);
+ const unit=(value,suffix)=>value===null?'算出不可':money(value)+suffix;
+ const hours=value=>value===null?'未記録':durationHms(Math.floor(value));
+ const distance=v.km===null?'未記録':v.km.toLocaleString('ja-JP',{maximumFractionDigits:3})+' km';
+ const item=(name,value,description='')=>'<div class="history-duty-summary-item"><span>'+name+'</span><strong>'+value+'</strong>'+
+  (description?'<small>'+description+'</small>':'')+'</div>';
+ return '<section class="history-duty-summary" aria-label="乗務サマリー">'+
+  '<h3 class="h2">乗務サマリー</h3>'+
+  '<p class="caption-note">'+(v.finished?'入庫済みの乗務':'乗務中の途中経過')+'／選択した日付・乗務の原本から表示</p>'+
+  '<div class="history-duty-summary-grid">'+
+   item(v.finished?'営業時間（出庫～入庫）':'出庫からの経過時間',hours(v.elapsed),'休憩を含む出庫からの時間')+
+   item('営業回数',v.t.rides+' 件','精算確定した乗車')+
+   item('キャンセル回数',v.t.cancels+' 件')+
+   item('待機時間合計（記録分）',hours(v.wait),'流し時間が含まれる場合があります')+
+   item('総走行距離',distance,'出庫・入庫トリップの差')+
+   item('距離単価',unit(v.yenPerKm,' /km'),'メーター売上÷総走行距離')+
+   item('時間単価',unit(v.yenPerHour,' /時間'),'メーター売上÷出庫からの時間')+
+   item('メーター売上（税込）',money(v.t.meter),'既存の確定メーター売上')+
+   item('メーター売上（税別参考）',money(v.netReference),'既存月間売上と同じ10%割戻し')+
+   item('アプリ配車売上',money(v.sales.app),'GO・DiDi・Uberのメーター売上')+
+   item('乗込み・その他／無線売上',money(v.sales.boardingOther),'現行の「乗」区分。乗込みだけとは限りません')+
+   (v.sales.other?item('配車区分未分類',money(v.sales.other),'種別が未登録の確定営業'):'')+
+  '</div>'+
+  '<p class="footnote">売上内訳は配車区分による分類で、決済方法別の売上ではありません。金額には高速料金・GO手数料・Uber配車料・キャンセル照合額を加えません。税別は正式な税務処理ではなく参考値です。距離・時刻が欠ける場合の単価は算出不可とします。</p>'+
+  '</section>';
+}
 function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift)||canEditLegacyHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}${historyOneRowIndex()}<div class="actions"><button type="button" class="btn teal big" data-tab="highway">🛣 高速道路の個別明細・合計を見る</button></div>
 <section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${found.length>1?`<label class="field"><span class="field-label">同じ日の乗務</span><select class="control" id="historyShiftSelect">${found.map((s,i)=>`<option value="${safeText(s.id)}" ${shift?.id===s.id?'selected':''}>${i+1}件目／出庫 ${shortTime(s.startedAt)}・${s.records.length}営業</option>`).join('')}</select></label>`:''}<span class="caption-note">${memberDiary()?'本人Firestoreの過去日報を日付指定で閲覧できます。閲覧時は端末の乗務原本を置き換えません。':'端末に保存された日報を表示します。Google原本だけの日報は「管理」→「クラウド日報管理」で乗務IDを指定して1件取得できます。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>クラウドからこの日付を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div>${memberDiary()?(()=>{const found=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);return '<div class="caption-note">'+(found?'本人Firestoreから取得済み／更新番号 '+found.revision:syncUI.dutySyncStatus(shift).label)+'</div>';})():legacyHistoryRemote?.id===shift.id&&legacyHistoryRemote.uid===accountScope.uid?'<div class="caption-note">旧Google原本の取得版：'+legacyHistoryRemote.revision+'／乗務ID：'+safeText(shift.id)+'</div>':''}</div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
-${memberDiary()&&!editableHistory&&getShift()?.id!==shift.id?'<div class="actions"><button class="btn primary" data-action="loadCloudHistory">Firestoreの原本を取得して編集</button><p class="caption-note">競合中の端末日報は上書きしません。取得先と保存元が一致しない場合は編集を停止します。</p></div>':''}${editableHistory?'<div class="actions"><button class="btn" data-action="historyDateEditStart">出庫日を訂正</button><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${renderHistoryDateCorrection(shift)}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">編集</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
+${memberDiary()&&!editableHistory&&getShift()?.id!==shift.id?'<div class="actions"><button class="btn primary" data-action="loadCloudHistory">Firestoreの原本を取得して編集</button><p class="caption-note">競合中の端末日報は上書きしません。取得先と保存元が一致しない場合は編集を停止します。</p></div>':''}${editableHistory?'<div class="actions"><button class="btn" data-action="historyDateEditStart">出庫日を訂正</button><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${renderHistoryDateCorrection(shift)}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${renderDutyHistorySummary(shift)}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">編集</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
 ${shift.records.length?`<details class="details history-fold-panel history-detail-section" data-history-panel="records"><summary>営業明細の詳細（${shift.records.length}件）</summary><div class="inner"><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</div></details>`:''}`}`;}
 // Seven-purpose operations dashboard. Presentation only: no stored record mutations.
 function opsBreakSeconds(shift,now=new Date()){
