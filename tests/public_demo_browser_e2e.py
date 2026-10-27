@@ -97,6 +97,29 @@ try:
  assert js("return !document.querySelector('#accountSignIn')"),'real login must not appear'
  assert js("return localStorage.length")==0,'no real browser localStorage'
  assert js("return !document.querySelector('script[src]')"),'no external JS'
+ # Independent monthly management must accept local plans and goals without editing a duty.
+ js("document.querySelector('.taxi-mobile-more-panel [data-tab=monthly]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('#monthlyDashboardMonth')"))
+ assert js("return !!document.querySelector('.month-plan-calendar')")
+ assert js("return !document.querySelector('#monthlyGoalInput').disabled")
+ initial_duty=js("return JSON.stringify(window.__TAXIAPP_DEMO__.snapshot().shifts)")
+ js("document.getElementById('monthlyGoalInput').value='950000'; document.querySelector('[data-action=monthlyGoalSave]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlySalesGoals?.[document.getElementById('monthlyDashboardMonth').value]===950000"))
+ js("document.querySelector('.month-plan-day').click()")
+ wait.until(lambda _: js("return !!document.querySelector('#monthlyPlanStatus')"))
+ chosen_date=js("return document.querySelector('.month-plan-day.selected').dataset.id")
+ js("""document.getElementById('monthlyPlanStatus').value='work';
+     document.getElementById('monthlyPlanStart').value='17:00';
+     document.getElementById('monthlyPlanEnd').value='06:00';
+     document.querySelector('[data-action=monthlyPlanSave]').click()""")
+ wait.until(lambda _: js("return !!document.querySelector('.month-plan-day.work')"))
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyPlans[arguments[0]].start",chosen_date)=='17:00'
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyPlans[arguments[0]].end",chosen_date)=='06:00'
+ assert js("return JSON.stringify(window.__TAXIAPP_DEMO__.snapshot().shifts)")==initial_duty, 'monthly plan must not mutate the current duty'
+ js("document.querySelector('[data-tab=live]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('.operations-overview')"))
+ assert not js("return !!document.querySelector('[data-monthly-sales-panel]')"), 'monthly totals belong to the independent screen'
+
  # A visitor can inspect the selected duty summary without login or altering records.
  js("document.querySelector('[data-tab=history]').click()")
  wait.until(lambda _: js("return !!document.querySelector('[data-history-panel=summary]')"))
