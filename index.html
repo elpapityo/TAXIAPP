@@ -2784,7 +2784,8 @@ function cruisingUnitMetrics(shift,sales,now=Date.now()){
 const CRUISING_SUMMARY_FIELDS=[['state','現在の営業状態'],['sales','現在の売上'],['netSales','税抜売上'],['kmUnit','キロ単価'],['distanceProjection','売上予想（距離）'],['hourUnit','時間単価'],['rideUnit','本数単価'],['remaining','残り時間'],['distance','残距離（目安）'],['route','乗車地・降車地'],['elapsed','前回降車／出庫からの経過時間（メーター型のカード）']];
 function cruisingSummaryVisible(key){
  const setting=model.prefs?.cruisingSummaryFields;
- return simpleFieldVisible('cruising',key,setting&&Object.prototype.hasOwnProperty.call(setting,key)?setting[key]!==false:key!=='netSales');
+ const normal=setting&&Object.prototype.hasOwnProperty.call(setting,key)?setting[key]!==false:key!=='netSales';
+ return typeof simpleFieldVisible==='function'?simpleFieldVisible('cruising',key,normal):normal;
 }
 function renderCruisingSummarySettings(){
  return `<section class="card"><h2 class="h2">空車・流し時の上部表示項目</h2>
@@ -2803,7 +2804,8 @@ const DRIVE_STATUS_FIELDS=[
 ];
 function driveStatusFieldVisible(key){
  const stored=model.prefs?.driveStatusFields;
- return simpleFieldVisible('status',key,!stored||stored[key]!==false);
+ const normal=!stored||stored[key]!==false;
+ return typeof simpleFieldVisible==='function'?simpleFieldVisible('status',key,normal):normal;
 }
 function renderDriveStatusFieldSettings(){
  return `<div class="cruising-summary-settings">${DRIVE_STATUS_FIELDS.map(([key,label])=>
@@ -2882,7 +2884,7 @@ function renderGuidedHeading(shift){
 function renderDriveLayoutChooser(){
  // Display and layout preferences are managed under Settings; keep Drive focused on work.
  const meter=displayPrefs().driveLayout==='meter',simple=simpleModeActive();
- return '<div class="preview-screen-head"><div class="preview-screen-title"><h1>営業入力</h1><small>'+(simple?'シンプル表示：詳細項目は必要なときに開けます':'入力方式・表示サイズは「設定」から変更できます')+'</small></div><div class="drive-head-actions">'+
+ return '<div class="preview-screen-head"><div class="preview-screen-title"><h1>営業入力</h1><small>'+(simple?'シンプル表示：詳細項目は必要なときに開けます':'入力方式・表示サイズ・画面の向きは「設定」から変更できます')+'</small></div><div class="drive-head-actions">'+
  (simple?'<button type="button" class="btn drive-meter-toggle" data-ui-key="simpleMode" data-ui-value="off">詳細表示へ</button>':
  '<button type="button" class="btn drive-meter-toggle" data-toggle-meter aria-pressed="'+meter+'">メーターモード '+(meter?'ON':'OFF')+'</button><button type="button" class="btn" data-ui-key="simpleMode" data-ui-value="on">シンプルモード</button>')+
  '<button type="button" class="btn drive-field-shortcut" data-tab="settings" data-open-ride-fields>⚙ 入力項目を選ぶ</button></div></div>';
@@ -3143,7 +3145,7 @@ const t=totals(active.records,active.settings,active.date);
  const title=titleBlock('乗務入力','DAILY OPERATIONS',`${friendlyDate(active.date)}　出庫 ${shortTime(active.startedAt)}`);
  const content=selectedMode==='meter'?renderMeterDrive(active):(active.draft?renderDraft(active):renderNewAction(active));
  const rest=metrics(active)+renderRecent(active);
- const visibleRest=simpleModeActive()?'<details class="details simple-drive-results"><summary>売上集計・営業履歴を表示</summary><div class="inner">'+rest+'</div></details>':rest;
+ const visibleRest=typeof simpleModeActive==='function'&&simpleModeActive()?'<details class="details simple-drive-results"><summary>売上集計・営業履歴を表示</summary><div class="inner">'+rest+'</div></details>':rest;
  return `${renderDriveLayoutChooser()}${summary}${title}${stage}${selectedMode==='meter'?'':paymentElapsedPanel(active)}${content}${active.draft?'':visibleRest}`;}
 
 let breakPageOpen=false;
@@ -3278,7 +3280,8 @@ const RIDE_DISTANCE_PREFS=[
 function rideFieldShown(key){
  if(key==='distanceStart'||key==='distanceEnd')return distanceEnabled('F');
  const settings=model.prefs?.rideFieldVisibility||{};
- return simpleFieldVisible('ride',key,settings[key]!==false);
+ const normal=settings[key]!==false;
+ return typeof simpleFieldVisible==='function'?simpleFieldVisible('ride',key,normal):normal;
 }
 function optionalRideField(key,content){return rideFieldShown(key)?content:'';}
 function rideFieldDataShown(key,existing){
