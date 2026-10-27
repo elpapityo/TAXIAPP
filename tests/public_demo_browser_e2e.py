@@ -23,6 +23,11 @@ def app_visible():
    rect.width>250&&rect.height>200 &&
    getComputedStyle(panel).display!=='none';""")
 try:
+ # Deterministic browser geolocation: no real person's position enters the test.
+ driver.execute_cdp_cmd('Browser.grantPermissions', {
+  'origin':'http://127.0.0.1:8765','permissions':['geolocation']})
+ driver.execute_cdp_cmd('Emulation.setGeolocationOverride', {
+  'latitude':34.780123,'longitude':135.400321,'accuracy':12})
  driver.get('http://127.0.0.1:8765/demo/index.html')
  wait.until(lambda _: app_ready())
  wait.until(lambda _: app_visible())
@@ -35,6 +40,10 @@ try:
  driver.set_window_size(430,960)
  assert app_visible(),'phone-size viewport must still display the app'
  assert js("return window.__TAXIAPP_DEMO__.externalServicesEnabled") is False
+ assert js("return window.__TAXIAPP_DEMO__.deviceGpsEnabled") is True
+ assert js("return !document.querySelector('#demoGpsCheck').disabled")
+ assert js("return !!navigator.geolocation && window.isSecureContext")
+ js("document.getElementById('demoGpsCheck').click()")
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts.length")==1
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
  assert js("return document.querySelectorAll('[data-drive-record-id]').length")==2
@@ -44,9 +53,16 @@ try:
  # Same real meter workflow: board -> alight/payment -> fare -> settle -> saved row.
  js("document.querySelector('[data-action=beginRide]').click()")
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft?.kind==='ride'"))
- js("""const el=document.querySelector('[data-col=AL]');if(!el)throw Error('pickup address input absent');
-      el.value='デモ乗車地点';el.dispatchEvent(new Event('input',{bubbles:true}));
-      el.dispatchEvent(new Event('change',{bubbles:true}));""")
+ # Same GPS pickup action as production. Mock coordinates prove the actual button
+ # populates the current ride without any remote reverse geocoding.
+ assert js("return !!document.querySelector('[data-action=gpsPickup]')")
+ assert js("return !document.querySelector('[data-action=gpsPickup]').disabled")
+ js("document.querySelector('[data-action=gpsPickup]').click()")
+ wait.until(lambda _: js("""const r=window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft;
+  return r?.meta?.pickupGeo?.lat===34.780123 && r?.raw?.AL?.includes('GPS座標');"""))
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft.raw.D.startsWith('34.780123,135.400321')")
+ assert js("return document.querySelector('[data-col=AL]').value.includes('GPS座標')")
+
  js("document.querySelector('[data-action=meterSettle]').click()")
  wait.until(lambda _: js("return Boolean(document.querySelector('[data-col=K]'))"))
  js("""const amount=document.querySelector('[data-col=K]');amount.value='1800';
@@ -54,10 +70,27 @@ try:
       amount.dispatchEvent(new Event('change',{bubbles:true}));
       const cash=document.querySelector('[data-setcol=N][data-value=\\"現\\"]');
       if(cash)cash.click();""")
+ # Dropoff GPS is also recorded using the browser device's position.
+ assert js("return !!document.querySelector('[data-action=gpsDrop]')")
+ js("document.querySelector('[data-action=gpsDrop]').click()")
+ wait.until(lambda _: js("""const r=window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft;
+   return r?.meta?.dropGeo?.lat===34.780123 && r?.raw?.AM?.includes('GPS座標');"""))
  js("document.querySelector('[data-action=saveDraft]').click()")
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length===3"))
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft===null")
  assert js("return !document.querySelector('#accountSignIn')")
+ # Native device GPS is disabled; browser trip measurement must be accessible.
+ js("document.querySelector('[data-tab=settings]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('[data-settings-category-choice=gps]')"))
+ js("document.querySelector('[data-settings-category-choice=gps]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('[data-action=gpsTripStart]')"))
+ assert js("return !document.querySelector('[data-action=gpsTripStart]').disabled")
+ js("document.querySelector('[data-action=gpsTripStart]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].gpsTrip?.enabled===true"))
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].gpsTrip?.lastSeenMs>0"))
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].gpsTrip.tripKm>=0")
+ js("document.querySelector('[data-action=gpsTripStop]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].gpsTrip?.enabled===false"))
  first=driver.current_window_handle
  driver.switch_to.new_window('tab')
  driver.get('http://127.0.0.1:8765/demo/index.html')
@@ -81,7 +114,7 @@ try:
  assert app_visible(),'reload must not return to blank screen'
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
  assert js("return localStorage.length")==0
- print('PASS: real Chrome, no login, same meter UI, independent concurrent tabs, reset, no persistence')
+ print('PASS: real Chrome, device GPS pickup/drop, browser trip start/stop, no cloud sharing, concurrent tabs, reload')
 finally:
  try:
   logs=driver.get_log('browser')
