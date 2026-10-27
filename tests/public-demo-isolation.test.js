@@ -13,6 +13,17 @@ assert.doesNotMatch(demo,/<script\s+src=|<iframe\b|<link\s+rel="preload"/i);
 assert.equal((demo.match(/<script\b/g)||[]).length,1,'all scripts inline');
 for(const [,code] of demo.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)){if(code.trim())new Function(code);}
 assert.match(demo,/const localStorage=demoMemoryStorage,navigator=demoNavigator,fetch=demoBlockedFetch,indexedDB=undefined/);
+assert.match(demo,/get geolocation\(\)\{return window\.navigator\.geolocation;\}/,'device geolocation is exposed only when used');
+assert.match(demo,/get permissions\(\)\{return window\.navigator\.permissions;\}/,'permission API is available in demo');
+assert.match(demo,/navigator\.geolocation\.getCurrentPosition/,'production location capture is enabled');
+assert.match(demo,/TAXIAPP_GPS_TRIP=Object\.freeze/,'browser GPS distance engine stays embedded');
+assert.match(demo,/TAXIAPP_GPS_UI=/,'the production trip UI stays embedded');
+assert.match(demo,/function reverseAddress\(gps\)/,'offline GPS location labeling is enabled');
+assert.match(demo,/GPS座標.*外部送信なし/,'address lookup is not falsely presented as live');
+assert.match(demo,/deviceGpsEnabled:true/);
+assert.doesNotMatch(demo,/demoForbiddenActions=\/[^\n]*\|gps\|permission\|/,'GPS controls must be accessible');
+assert.doesNotMatch(demo,/fetch=window\.fetch|window\.fetch\(|fetch\('https:\/\/mreversegeocoder/,'GPS coordinates must never be sent to an external server');
+
 assert.match(demo,/const syncUI=demoSync/);
 assert.match(demo,/const accountDiary=demoDiary/);
 assert.doesNotMatch(demo,/window\.TAXIAPP_ACCOUNT_AUTO\.create\(\{|window\.TAXIAPP_SYNC_UI\(\{|window\.TAXIAPP_ACCOUNT_DIARY\.create\(\)/);
