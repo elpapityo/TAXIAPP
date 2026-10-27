@@ -553,7 +553,7 @@ root.TAXIAPP_SYNC_UI=function(d){
      }
     }
     verifyScope();cloudLoaded=true;
-    d.toast('クラウド保存 '+cloudRows.filter(r=>!r.deleted).length+'乗務／ゴミ箱 '+cloudRows.filter(r=>r.deleted).length+'乗務');
+    d.toast('クラウド保存 '+cloudRows.filter(r=>!r.deleted).length+'乗務');
    }else if(kind==='trash'){
     const row=cloudLoaded&&cloudRows.find(x=>x.id===id&&!x.deleted);
     if(!row)throw Error('対象を一覧から取得し直してください');

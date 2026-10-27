@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.209 — 乗務日報</title>
+<title>TAXIAPP v0.3.210 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -2044,11 +2044,11 @@ function blockViewerEdit(event){
   currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
   accountDiary.ready());
  const readOnlySelection=target.matches?.(
-  '#historyDate,#historyShiftSelect,#printShiftSelect,#highwayShiftSelect,#monthlySalesMonth');
+  '#historyDate,#historyShiftSelect,#historyCalendarDutySelect,#printShiftSelect,#highwayShiftSelect,#monthlySalesMonth');
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
- const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"]')||
+ const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"]')||
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
@@ -2066,16 +2066,19 @@ for(const eventName of ['click','pointerdown','input','change','keydown','submit
 let historyDate='',historyShiftId='',cloudManagementDate='',legacyHistoryRemote=null,legacyHistoryBusy=false,legacyHistoryMessage='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
 let historyCloudRows=[],historyLocationEdit=null,historyDateCorrection=null;
-let historyCalendarMonth='',historyCalendarIndexScope='';
+let historyCalendarMonth='',historyCalendarIndexScope='',historyCalendarIndexPromise=null;
+let historyCalendarChoicesDate='',historyCalendarChoiceId='',historyCalendarMessage='',historyCalendarBusy=false,historyCalendarRequestEpoch=0;
 function ensureHistoryCalendarIndex(){
  if(!memberDiary()||!accountDiary.ready()||syncUI.cloudEntries()!==null||
     !(canEditNow()||TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'))return;
  const uid=String(accountScope.uid||''),scope=uid+'|'+accountScopeGeneration;
  if(historyCalendarIndexScope===scope)return;
  historyCalendarIndexScope=scope;
- void syncUI.cloudAction('load').then(()=>{
+ const indexPromise=syncUI.cloudAction('load');
+ historyCalendarIndexPromise=indexPromise;
+ void indexPromise.then(()=>{
   if(accountScope.uid===uid&&accountScopeGeneration===Number(scope.split('|')[1])&&tab==='history')render();
- });
+ }).finally(()=>{if(historyCalendarIndexPromise===indexPromise)historyCalendarIndexPromise=null;});
 }
 // The combined business-status screen remembers which sections the driver opened.
 let operationPanelOpen={}; // One open at a time, native named accordion.
@@ -2219,7 +2222,7 @@ function historyMatches(){const date=historyDate||selectedShift()?.date||dateSta
  if(legacyDiary()&&legacyHistoryRemote?.uid===accountScope.uid&&legacyHistoryRemote.shift?.date===date&&
     !merged.has(legacyHistoryRemote.id))merged.set(legacyHistoryRemote.id,legacyHistoryRemote.shift);
  return [...merged.values()].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));}
-function selectedHistoryShift(){const a=historyMatches();return historyShiftId?a.find(s=>s.id===historyShiftId)||null:a.length===1?a[0]:null;}
+function selectedHistoryShift(){const a=historyMatches();return historyShiftId?a.find(s=>s.id===historyShiftId)||null:historyDate?null:a.length===1?a[0]:null;}
 function selectedPrintShift(){return printShiftId?(model.shifts.find(s=>s.id===printShiftId)||null):selectedShift();}
 function lastPayment(shift){return (shift?.records||[]).filter(r=>r.kind==='ride'&&r.status==='complete'&&r.meta?.settledIso&&Number.isFinite(Date.parse(r.meta.settledIso))).sort((a,b)=>Date.parse(b.meta.settledIso)-Date.parse(a.meta.settledIso))[0]||null;}
 function durationSeconds(a,b=new Date()){const start=Date.parse(a),end=b instanceof Date?b.getTime():Date.parse(b);return Number.isFinite(start)&&Number.isFinite(end)?Math.max(0,Math.floor((end-start)/1000)):null;}
@@ -4581,10 +4584,74 @@ function historyDayCandidates(date){
  }
  return [...entries.values()].sort((a,b)=>String(b.startedIso).localeCompare(String(a.startedIso))||b.id.localeCompare(a.id));
 }
+
+function historyCalendarSelectionHtml(date){
+ if(historyCalendarChoicesDate!==date||historyCalendarBusy)return '';
+ const entries=historyDayCandidates(date);
+ if(entries.length<2)return '';
+ return '<div class="history-duty-chooser"><label class="field"><span class="field-label">この日の乗務（'+entries.length+'件）</span>'+
+  '<select id="historyCalendarDutySelect" class="control">'+
+  '<option value="">取得する乗務を選択してください</option>'+
+  entries.map((e,i)=>'<option value="'+safeText(e.id)+'" '+(historyCalendarChoiceId===e.id?'selected':'')+'>'+
+   (i+1)+'件目 ／ 出庫 '+safeText(e.startedIso?shortTime(e.startedIso):'時刻未記録')+
+   (e.local?' ／ 端末にもあり':'')+' ／ '+safeText(e.id)+'</option>').join('')+
+  '</select></label><button class="btn primary" type="button" data-action="historyCalendarFetchSelected">選択した乗務を取得</button></div>';
+}
+async function openHistoryCalendarDuty(date,entry){
+ if(!entry||entry.date!==date)return;
+ historyCalendarChoicesDate='';historyCalendarChoiceId='';historyCalendarMessage='';
+ historyShiftId=entry.id;
+ if(entry.remote)await loadHistoryFromCloud(date,entry.id);
+ else if(entry.oldGoogle)await loadLegacyHistoryById(entry.id);
+ else {tab='history';render();}
+}
+async function historyCalendarFetchDate(){
+ if(historyCalendarBusy)return;
+ const date=historyDate||selectedShift()?.date||dateStamp();
+ if(historyCalendarMonth&&historyCalendarMonth!==date.slice(0,7)){
+  toast('表示中のカレンダーから日付を選択してください',true);return;
+ }
+ try{protectOpenHistoryEdit();}
+ catch(error){toast('修正控えを保護できず取得を停止：'+String(error.message||error),true);return;}
+ const uid=accountScope.uid,generation=accountScopeGeneration,epoch=++historyCalendarRequestEpoch;
+ const valid=()=>uid===accountScope.uid&&generation===accountScopeGeneration&&
+  epoch===historyCalendarRequestEpoch&&date===(historyDate||selectedShift()?.date||dateStamp())&&tab==='history';
+ historyCalendarBusy=true;historyCalendarMessage='選択した日付の乗務を確認中…';
+ historyCalendarChoicesDate='';historyCalendarChoiceId='';render();
+ try{
+  if(memberDiary()){
+   if(!accountDiary.ready())throw Error('本人Firestoreへの接続を確認してください');
+   if(historyCalendarIndexPromise)await historyCalendarIndexPromise;
+   if(!valid())return;
+   const loaded=await syncUI.cloudAction('load');
+   if(!valid())return;
+   if(!loaded||!Array.isArray(syncUI.cloudEntries()))
+    throw Error('Firestoreの一覧を確認できません。通信状態を確認して再試行してください');
+  }
+  if(!valid())return;
+  const entries=historyDayCandidates(date);
+  if(entries.length===0){
+   historyShiftId='';historyCalendarMessage=memberDiary()||oldGoogleIndexLoaded?
+    'この日付の乗務記録はありません。':'端末内に該当乗務がありません。旧Google原本は管理画面で確認してください。';
+  }else if(entries.length===1){
+   await openHistoryCalendarDuty(date,entries[0]);
+   if(!valid())return;
+   historyCalendarMessage=entries[0].remote?
+    (historyCloudRows.some(r=>r.id===entries[0].id)?'1乗務を取得しました。':'Firestore原本の取得結果を確認してください。'):
+    '1乗務を表示しました。';
+  }else{
+   historyShiftId='';historyCalendarChoicesDate=date;historyCalendarChoiceId='';
+   historyCalendarMessage=entries.length+'乗務あります。対象を選択して取得してください。';
+  }
+ }catch(error){if(valid())historyCalendarMessage='取得・更新できません：'+String(error?.message||error);}
+ finally{if(valid()){historyCalendarBusy=false;render();}}
+}
+
 function historyCalendarMarkup(date){
  const month=/^\d{4}-(0[1-9]|1[0-2])$/.test(historyCalendarMonth)?historyCalendarMonth:date.slice(0,7);
  const m=/^(\d{4})-(\d{2})$/.exec(month);if(!m)return '';
  const year=Number(m[1]),mon=Number(m[2]),days=new Date(Date.UTC(year,mon,0)).getUTCDate();
+ const selectedInMonth=date.slice(0,7)===month;
  const offset=(new Date(Date.UTC(year,mon-1,1)).getUTCDay()+6)%7;
  const cloud=memberDiary()?syncUI.cloudEntries():
   (oldGoogleIndexLoaded&&oldGoogleIndexUid===accountScope.uid?oldGoogleIndex:null);
@@ -4615,7 +4682,13 @@ function historyCalendarMarkup(date){
   '<div class="history-calendar-grid history-calendar-weekdays">'+['月','火','水','木','金','土','日'].map(x=>'<span>'+x+'</span>').join('')+
   '</div><div class="history-calendar-grid">'+cells+'</div>'+
   '<p class="caption-note">● 乗務あり（件数表示）／－ なし／? 未確認。'+safeText(message)+'</p>'+
-  (memberDiary()?'<button class="btn" type="button" data-action="historyIndexLoad">日報がある日を取得・更新</button>':'')+'</section>';
+  '<p class="caption-note">'+(selectedInMonth?'選択日：'+safeText(date):'この月の日付を選択してください')+'</p>'+
+  '<button class="btn primary" type="button" data-action="historyCalendarFetchDate" '+
+   (historyCalendarBusy||historyCloudBusy||!selectedInMonth?'disabled':'')+'>'+
+   (historyCalendarBusy?'確認中…':'選択日の日報を取得・更新')+'</button>'+
+  (historyCalendarMessage?'<p class="caption-note" role="status">'+safeText(historyCalendarMessage)+'</p>':'')+
+  (historyCloudMessage?'<p class="caption-note" role="status">'+safeText(historyCloudMessage)+'</p>':'')+
+  (selectedInMonth?historyCalendarSelectionHtml(date):'')+'</section>';
 }
 function historyDutyChooser(date,management=false){
  const entries=historyDayCandidates(date);
@@ -4632,6 +4705,7 @@ function chooseHistoryDate(date){
   new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date)throw Error('有効な日付を選んでください');
  protectOpenHistoryEdit();
  historyDate=date;historyCalendarMonth=date.slice(0,7);historyShiftId='';
+ historyCalendarRequestEpoch++;historyCalendarChoicesDate='';historyCalendarChoiceId='';historyCalendarMessage='';historyCalendarBusy=false;
  historyCloudEpoch++;historyCloudShifts=[];historyCloudRows=[];historyCloudUid='';historyCloudDate='';historyCloudMessage='';historyCloudBusy=false;
  render();
 }
@@ -4723,8 +4797,8 @@ function renderDutyHistorySummary(shift){
   '<p class="footnote">売上内訳は配車区分による分類で、決済方法別の売上ではありません。金額には高速料金・GO手数料・Uber配車料・キャンセル照合額を加えません。税別は正式な税務処理ではなく参考値です。距離・時刻が欠ける場合の単価は算出不可とします。</p>'+
   '</section>';
 }
-function renderHistory(_shift){const shift=selectedHistoryShift(),found=historyMatches(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift)||canEditLegacyHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}${historyCalendarMarkup(date)}${historyFoldSection('index','過去の乗務一覧',historyOneRowIndex())}
-<section class="card history-filter"><label class="field"><span class="field-label">確認する日付</span><input type="date" class="control" id="historyDate" value="${safeText(date)}"></label>${historyDutyChooser(date)}<span class="caption-note">${memberDiary()?'本人Firestoreの一覧で日付と乗務IDを選び、原本は1件だけ取得します。閲覧時は端末の乗務原本を置き換えません。':'端末に保存された日報を表示します。Google原本だけの日報は「管理」→「クラウド日報管理」で乗務IDを指定して1件取得できます。'}</span>${memberDiary()?'<button class="btn" data-action="loadCloudHistory" '+(historyCloudBusy?'disabled':'')+'>選択した1乗務を取得</button><span class="caption-note">'+safeText(historyCloudMessage)+'</span>':''}</section>${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div>${memberDiary()?(()=>{const found=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);return '<div class="caption-note">'+(found?'本人Firestoreから取得済み／更新番号 '+found.revision:syncUI.dutySyncStatus(shift).label)+'</div>';})():legacyHistoryRemote?.id===shift.id&&legacyHistoryRemote.uid===accountScope.uid?'<div class="caption-note">旧Google原本の取得版：'+legacyHistoryRemote.revision+'／乗務ID：'+safeText(shift.id)+'</div>':''}</div></div>
+function renderHistory(_shift){const shift=selectedHistoryShift(),date=historyDate||selectedShift()?.date||dateStamp(),editableHistory=canEditCloudHistory(shift)||canEditLegacyHistory(shift);return `${titleBlock('営業履歴','TRIP HISTORY','日付を選んで過去の営業履歴を確認できます。')}${historyCalendarMarkup(date)}
+${firestorePrintPcPanel(shift,date)}${!shift?`<div class="card empty-state">乗務データがありません。</div>`:`<div class="card"><div class="section-heading"><div><h2 class="h2">${friendlyDate(shift.date)}</h2><div class="meta">${shift.records.length}件を保存済み</div>${memberDiary()?(()=>{const found=historyCloudRows.find(row=>row.id===shift.id&&row.shift?.date===historyCloudDate);return '<div class="caption-note">'+(found?'本人Firestoreから取得済み／更新番号 '+found.revision:syncUI.dutySyncStatus(shift).label)+'</div>';})():legacyHistoryRemote?.id===shift.id&&legacyHistoryRemote.uid===accountScope.uid?'<div class="caption-note">旧Google原本の取得版：'+legacyHistoryRemote.revision+'／乗務ID：'+safeText(shift.id)+'</div>':''}</div></div>
 ${!getShift()&&model.shifts[0]?.id===shift.id&&shift.endedAt?`<div class="actions" style="margin:10px 0 16px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(shift.id)}">↶ この乗務の入庫を取り消す</button></div>`:''}
 ${memberDiary()&&!editableHistory&&getShift()?.id!==shift.id?'<div class="actions"><button class="btn primary" data-action="loadCloudHistory">Firestoreの原本を取得して編集</button><p class="caption-note">競合中の端末日報は上書きしません。取得先と保存元が一致しない場合は編集を停止します。</p></div>':''}${editableHistory?'<div class="actions"><button class="btn" data-action="historyDateEditStart">出庫日を訂正</button><button class="btn" data-action="historyAddRecord" data-id="ride">＋ 乗車記録</button><button class="btn" data-action="historyAddRecord" data-id="cancel">＋ キャンセル</button><button class="btn" data-action="historyAddRecord" data-id="empty">＋ 空車高速</button></div>':''}${renderHistoryDateCorrection(shift)}${historyProtectedEditsHtml(shift)}${historyLocationEditHtml(shift)}${historyFoldSection('summary','乗務サマリー',renderDutyHistorySummary(shift))}${shift.gpsTrip?historyFoldSection('gps','GPS走行距離（参考値）',gpsDistanceSummary(shift)):''}${historyFoldSection('analysis','日報詳細分析：13時間・275km＋高速免除',dailyReferenceDetails(shift,dailyReferenceFor(shift)))}<details class="details history-fold-panel" data-history-panel="list" open><summary>営業記録一覧（${shift.records.length}件）</summary><div class="inner"><div class="table-wrap"><table class="data-table"><thead><tr><th>№</th><th>区分</th><th>時間</th><th>乗車・降車地</th><th>金額</th><th>支払</th><th>操作</th></tr></thead><tbody>${shift.records.map((r,i)=>`<tr><td>${safeText(r.raw.A)}</td><td>${prettyTag(r)}</td><td>${r.kind==='cancel'?`${shortTime(r.meta?.dispatchAt||r.raw.C)}—${shortTime(r.meta?.cancelAt)}`:`${shortTime(r.raw.G)}—${shortTime(r.raw.M)}`}</td><td>${safeText(r.raw.AL||'—')} / ${safeText(r.raw.AM||'—')}</td><td>${money(pricing(r,shift.settings,shift.date).printedDetail)}</td><td>${safeText(LABELS[r.raw.N]||'—')}${r.meta?.splitPayment?.second?'＋'+safeText(LABELS[r.meta.splitPayment.second]||r.meta.splitPayment.second):''}</td><td><div class="record-actions"><button class="linkbutton" data-action="showRecordDetails" data-id="${safeText(r.id)}">詳細</button>${getShift()?.id===shift.id?`<button class="linkbutton" data-action="editRecord" data-id="${safeText(r.id)}">修正</button><button class="linkbutton danger" data-action="deleteRecord" data-id="${safeText(r.id)}">削除</button>`:(editableHistory?`<button class="linkbutton" data-action="editHistoryLocation" data-shift-id="${safeText(shift.id)}" data-id="${safeText(r.id)}">編集</button><button class="linkbutton danger" data-action="historyMarkRecordRemoval" data-id="${safeText(r.id)}">削除</button>`:'帰庫済み')}</div></td></tr>`).join('')}</tbody></table></div>${!shift.records.length?`<div class="empty-state">まだ記録はありません。</div>`:''}</div></details></div>
 ${historyFoldSection('highway','高速詳細',opsHighwayPanel(shift))}${shift.records.length?`<details class="details history-fold-panel history-detail-section" data-history-panel="records"><summary>営業明細の詳細（${shift.records.length}件）</summary><div class="inner"><p class="helper">各営業の金種別の受取金額・納金対象額、時刻、距離を確認できます。</p>${shift.records.map(record=>historyRecordDetails(record,shift)).join('')}</div></details>`:''}`}`;}
@@ -6777,7 +6851,7 @@ function handleAction(action,id){
   // Print-only PC mode may read a date and submit the selected source;
   // all ride, settlement, settings and cloud-mutating actions stay blocked.
   const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&
-   ['loadCloudHistory','firestorePrintToGoogle','firestorePrintProbe','historyIndexLoad','historyIndexOpen','cloudIndexOpen','cloudTrashList','historyCalendarPrev','historyCalendarNext','historyCalendarPick','historyFetchOne','cloudManageFetchOne'].includes(action);
+   ['loadCloudHistory','firestorePrintToGoogle','firestorePrintProbe','historyIndexLoad','historyIndexOpen','cloudIndexOpen','cloudTrashList','historyCalendarPrev','historyCalendarNext','historyCalendarPick','historyFetchOne','cloudManageFetchOne','historyCalendarFetchDate','historyCalendarFetchSelected'].includes(action);
   const verifiedOctoberTransfer=action==='migrateOctober16GoogleDuty'&&
    deviceMode==='writer'&&legacyDiary()&&!TAXIAPP_PRINT_VIEWER_MODE&&
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
@@ -6880,10 +6954,22 @@ function handleAction(action,id){
    if(!memberDiary()||(!canEditNow()&&!TAXIAPP_PRINT_VIEWER_MODE))return;
    void syncUI.cloudAction('load').then(()=>render());return;
   }
+  if(action==='historyCalendarFetchDate'){void historyCalendarFetchDate();return;}
+  if(action==='historyCalendarFetchSelected'){
+   const date=historyDate||selectedShift()?.date||dateStamp();
+   if(historyCalendarChoicesDate!==date||historyCalendarBusy)return;
+   const id=historyCalendarChoiceId||String(document.getElementById('historyCalendarDutySelect')?.value||'');
+   const entry=historyDayCandidates(date).find(e=>e.id===id);
+   if(!entry){toast('取得する乗務を一覧から選択してください',true);return;}
+   try{protectOpenHistoryEdit();}catch(error){toast('修正控えの保護に失敗：'+String(error.message||error),true);return;}
+   void openHistoryCalendarDuty(date,entry);return;
+  }
   if(action==='historyCalendarPrev'||action==='historyCalendarNext'){
    const date=historyDate||selectedShift()?.date||dateStamp(),month=historyCalendarMonth||date.slice(0,7);
    const [y,m]=month.split('-').map(Number),delta=action==='historyCalendarPrev'?-1:1;
-   historyCalendarMonth=new Date(Date.UTC(y,m-1+delta,1)).toISOString().slice(0,7);render();return;
+   historyCalendarMonth=new Date(Date.UTC(y,m-1+delta,1)).toISOString().slice(0,7);
+   historyCalendarRequestEpoch++;historyCalendarChoicesDate='';historyCalendarChoiceId='';historyCalendarMessage='';historyCalendarBusy=false;
+   render();return;
   }
   if(action==='historyCalendarPick'){
    try{chooseHistoryDate(id);}catch(e){toast(String(e.message||e),true);}return;
@@ -8230,6 +8316,9 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
   const date=String(event.target.value||'');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
   cloudManagementDate=date;render();return;
+ }
+ if(event.target.id==='historyCalendarDutySelect'){
+  historyCalendarChoiceId=String(event.target.value||'');return;
  }
  if(event.target.id==='historyDate'){
   try{protectOpenHistoryEdit();}
