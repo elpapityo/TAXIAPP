@@ -5449,6 +5449,9 @@ async function openHistoryCalendarDuty(date,entry){
 async function historyCalendarFetchDate(){
  if(historyCalendarBusy)return;
  const date=historyDate||selectedShift()?.date||dateStamp();
+ if(historyCalendarMonth&&historyCalendarMonth!==date.slice(0,7)){
+  toast('表示中のカレンダーから日付を選択してください',true);return;
+ }
  try{protectOpenHistoryEdit();}
  catch(error){toast('修正控えを保護できず取得を停止：'+String(error.message||error),true);return;}
  const uid=accountScope.uid,generation=accountScopeGeneration,epoch=++historyCalendarRequestEpoch;
@@ -5489,6 +5492,7 @@ function historyCalendarMarkup(date){
  const month=/^\d{4}-(0[1-9]|1[0-2])$/.test(historyCalendarMonth)?historyCalendarMonth:date.slice(0,7);
  const m=/^(\d{4})-(\d{2})$/.exec(month);if(!m)return '';
  const year=Number(m[1]),mon=Number(m[2]),days=new Date(Date.UTC(year,mon,0)).getUTCDate();
+ const selectedInMonth=date.slice(0,7)===month;
  const offset=(new Date(Date.UTC(year,mon-1,1)).getUTCDay()+6)%7;
  const cloud=memberDiary()?syncUI.cloudEntries():
   (oldGoogleIndexLoaded&&oldGoogleIndexUid===accountScope.uid?oldGoogleIndex:null);
@@ -5519,13 +5523,13 @@ function historyCalendarMarkup(date){
   '<div class="history-calendar-grid history-calendar-weekdays">'+['月','火','水','木','金','土','日'].map(x=>'<span>'+x+'</span>').join('')+
   '</div><div class="history-calendar-grid">'+cells+'</div>'+
   '<p class="caption-note">● 乗務あり（件数表示）／－ なし／? 未確認。'+safeText(message)+'</p>'+
-  '<p class="caption-note">選択日：'+safeText(date)+'</p>'+
+  '<p class="caption-note">'+(selectedInMonth?'選択日：'+safeText(date):'この月の日付を選択してください')+'</p>'+
   '<button class="btn primary" type="button" data-action="historyCalendarFetchDate" '+
-   (historyCalendarBusy||historyCloudBusy?'disabled':'')+'>'+
+   (historyCalendarBusy||historyCloudBusy||!selectedInMonth?'disabled':'')+'>'+
    (historyCalendarBusy?'確認中…':'選択日の日報を取得・更新')+'</button>'+
   (historyCalendarMessage?'<p class="caption-note" role="status">'+safeText(historyCalendarMessage)+'</p>':'')+
   (historyCloudMessage?'<p class="caption-note" role="status">'+safeText(historyCloudMessage)+'</p>':'')+
-  historyCalendarSelectionHtml(date)+'</section>';
+  (selectedInMonth?historyCalendarSelectionHtml(date):'')+'</section>';
 }
 function historyDutyChooser(date,management=false){
  const entries=historyDayCandidates(date);
