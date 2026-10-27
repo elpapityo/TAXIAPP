@@ -2657,6 +2657,7 @@ async function switchAccountScope(scope){
  meterConfirmCurrent=null;
  const generation=++accountScopeGeneration;
  resetMonthlySales(); // The previous UID's report must never be displayed after a login change.
+ monthlyPlanDate='';monthlyPlanMessage=''; // The next account starts with no prior UI selection.
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;accountScopeLoaded=false;
  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
