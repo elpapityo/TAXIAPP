@@ -2956,7 +2956,17 @@ for(const eventName of ['click','pointerdown','input','change','keydown','submit
 let historyDate='',historyShiftId='',cloudManagementDate='',legacyHistoryRemote=null,legacyHistoryBusy=false,legacyHistoryMessage='',printShiftId='',highwayShiftId='',storageStatus='確認中';
 let historyCloudShifts=[],historyCloudUid='',historyCloudDate='',historyCloudMessage='',historyCloudBusy=false,historyCloudEpoch=0;
 let historyCloudRows=[],historyLocationEdit=null,historyDateCorrection=null;
-let historyCalendarMonth='';
+let historyCalendarMonth='',historyCalendarIndexScope='';
+function ensureHistoryCalendarIndex(){
+ if(!memberDiary()||!accountDiary.ready()||syncUI.cloudEntries()!==null||
+    !(canEditNow()||TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'))return;
+ const uid=String(accountScope.uid||''),scope=uid+'|'+accountScopeGeneration;
+ if(historyCalendarIndexScope===scope)return;
+ historyCalendarIndexScope=scope;
+ void syncUI.cloudAction('load').then(()=>{
+  if(accountScope.uid===uid&&accountScopeGeneration===Number(scope.split('|')[1])&&tab==='history')render();
+ });
+}
 // The combined business-status screen remembers which sections the driver opened.
 let operationPanelOpen={}; // One open at a time, native named accordion.
 
@@ -8776,7 +8786,7 @@ appEl.addEventListener('click',event=>{
  }
  closeKeypad(true,true);renderAfterKeypad=false;rideSettingsJumpRequested=tabButton.hasAttribute('data-open-ride-fields');
  if(rideSettingsJumpRequested){settingsCategoryActive='display';settingsOpenState=null;}
- tab=tabButton.dataset.tab;render();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
+ tab=tabButton.dataset.tab;render();if(tab==='history')ensureHistoryCalendarIndex();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
  }const meterBefore=meterConfirmBefore(action.dataset.action);
