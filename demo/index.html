@@ -5401,8 +5401,8 @@ function dutyHistorySummaryValues(shift,now=new Date()){
  const finished=Boolean(shift.endedIso||shift.endedAt);
  const endedTime=shift.endedIso?new Date(shift.endedIso):null;
  const referenceTime=endedTime&&Number.isFinite(endedTime.getTime())?endedTime:now;
- const elapsed=shiftElapsed(shift,referenceTime);
- const wait=totalWaitSeconds(shift,referenceTime);
+ const elapsed=finished&&!shift.endedIso?null:shiftElapsed(shift,referenceTime);
+ const wait=finished&&!shift.endedIso?closedWaitSeconds(shift):totalWaitSeconds(shift,referenceTime);
  const before=number(shift.startingOdo),after=number(shift.endingOdo);
  const km=before!==null&&after!==null&&after>=before
   ?Math.round((after-before)*1000)/1000:null;
