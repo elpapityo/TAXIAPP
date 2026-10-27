@@ -12,7 +12,7 @@ for(const source of scripts) new vm.Script(source); // Parse all inline scripts.
 const nav=html.match(/const labels=\{([^}]+)\};/);
 assert.ok(nav);
 assert.deepEqual([...nav[1].matchAll(/([a-z]+):\[/g)].map(x=>x[1]),
- ['drive','live','history','print','shift','manage','settings']);
+ ['drive','live','monthly','history','print','shift','manage','settings']);
 assert.match(html,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
 assert.doesNotMatch(html,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);overflow:visible/);
 assert.doesNotMatch(html,/tab==='data'\?/);
