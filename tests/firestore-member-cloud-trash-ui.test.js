@@ -48,7 +48,7 @@ const sync=root.TAXIAPP_SYNC_UI({
 });
 const renderCtx={legacyDiary:()=>false,memberDiary:()=>true,syncUI:sync,managementSubNav:()=>'',titleBlock:()=>'',
  cloudManagementDate:'2026-10-21',historyDate:'2026-10-21',historyCloudBusy:false,historyCloudMessage:'',
- historyCloudUid:'',historyCloudDate:'',historyCloudRows:[],accountScope:{uid:'owner-A'},safeText:x=>String(x),dateStamp:()=> '2026-10-21'};
+ historyCloudUid:'',historyCloudDate:'',historyCloudRows:[],accountScope:{uid:'owner-A'},safeText:x=>String(x),dateStamp:()=> '2026-10-21',historyDutyChooser:()=>''};
 vm.createContext(renderCtx);
 vm.runInContext(html.slice(from,to),renderCtx);
 const rendered=renderCtx.renderCloudManagement();
