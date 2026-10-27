@@ -77,6 +77,25 @@ try:
  assert '乗務サマリー' in js("return document.querySelector('[data-history-panel=summary] summary').textContent")
  js("document.querySelector('[data-history-panel=summary] summary').click()")
  assert js("return document.querySelector('.history-duty-summary').getBoundingClientRect().height>150")
+
+ # Global card hierarchy: outer duty and nested summary have distinct fills,
+ # heading colors and smaller nested padding in both light and night themes.
+ for theme in ['day','night']:
+  assert js("""const html=document.documentElement,theme=arguments[0];
+   html.setAttribute('data-ui-theme',theme);
+   const outer=document.querySelector('.history-duty-card');
+   const inner=outer?.querySelector('details[data-history-panel="summary"]');
+   const heading=outer?.querySelector('.section-heading .h2');
+   const subheading=inner?.querySelector('summary');
+   const content=inner?.querySelector(':scope > .inner');
+   if(!outer||!inner||!heading||!subheading||!content)return false;
+   const css=x=>getComputedStyle(x);
+   return css(outer).backgroundColor!==css(inner).backgroundColor &&
+    css(heading).color!==css(subheading).color &&
+    Number.parseFloat(css(content).paddingLeft)<Number.parseFloat(css(outer).paddingLeft);
+   """,theme), 'nested card hierarchy must remain visually distinct in '+theme
+ js("document.documentElement.removeAttribute('data-ui-theme')")
+
  for key in ['営業回数','キャンセル回数','時間単価','距離単価',
   '待機時間合計','税込','税別参考','アプリ配車売上','乗込み・その他／無線売上']:
   assert key in js("return document.querySelector('.history-duty-summary').textContent"),key
