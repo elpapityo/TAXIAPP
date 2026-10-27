@@ -73,9 +73,11 @@ try:
  assert js("return !document.querySelector('script[src]')"),'no external JS'
  # A visitor can inspect the selected duty summary without login or altering records.
  js("document.querySelector('[data-tab=history]').click()")
- wait.until(lambda _: js("return !!document.querySelector('.history-duty-summary')"))
+ wait.until(lambda _: js("return !!document.querySelector('[data-history-panel=summary]')"))
+ assert '乗務サマリー' in js("return document.querySelector('[data-history-panel=summary] summary').textContent")
+ js("document.querySelector('[data-history-panel=summary] summary').click()")
  assert js("return document.querySelector('.history-duty-summary').getBoundingClientRect().height>150")
- for key in ['乗務サマリー','営業回数','キャンセル回数','時間単価','距離単価',
+ for key in ['営業回数','キャンセル回数','時間単価','距離単価',
   '待機時間合計','税込','税別参考','アプリ配車売上','乗込み・その他／無線売上']:
   assert key in js("return document.querySelector('.history-duty-summary').textContent"),key
  assert '¥2,300' in js("return document.querySelector('.history-duty-summary').textContent")

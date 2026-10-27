@@ -77,12 +77,12 @@ assert.equal(v.elapsed>0,true,'active shift uses live elapsed time');
 assert.equal(v.wait>900,true,'active wait is counted');
 for(const html of [main,demo]){
  assert.match(html,/function renderHistory\(_shift\)\{const shift=selectedHistoryShift\(\)/);
- assert.match(html,/\$\{historyLocationEditHtml\(shift\)\}\$\{renderDutyHistorySummary\(shift\)\}/,
+ assert.match(html,/\$\{historyLocationEditHtml\(shift\)\}\$\{historyFoldSection\('summary','乗務サマリー',renderDutyHistorySummary\(shift\)\)\}/,
   'summary must render for the selected dated history, not only the current shift');
  assert.match(html,/\.history-duty-summary-grid\{/,'responsive history KPI CSS');
  assert.match(html,/function meterSalesTaxExcludedReference\(gross\)/);
  assert.match(html,/const t=\{records:records\.length,rides:0,cancels:0/,'canonical totals retained');
 }
-assert.match(main,/<title>TAXIAPP v0\.3\.208 — 乗務日報<\/title>/);
-assert.match(demo,/<title>TAXIAPP v0\.3\.208 — 公開操作デモ<\/title>/);
+assert.match(main,/<title>TAXIAPP v0\.3\.209 — 乗務日報<\/title>/);
+assert.match(demo,/<title>TAXIAPP v0\.3\.209 — 公開操作デモ<\/title>/);
 console.log('PASS: history KPI from canonical totals, past UID duty, completed/ongoing time, missing km, tax and dispatch split, original record immutable');
