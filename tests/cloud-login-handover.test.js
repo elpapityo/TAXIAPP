@@ -66,7 +66,9 @@ const shift={id:'shift-111-xyz',date:'2026-10-20',startedIso:'2026-10-20T06:00:0
  assert.match(index,/TAXIAPP_PRINT_VIEWER_MODE/);
  assert.match(index,/firestorePrintGooglePostRequest/);
  assert.match(index,/const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&/);
- assert.match(index,/\['loadCloudHistory','firestorePrintToGoogle','firestorePrintProbe','historyIndexLoad','historyIndexOpen','cloudIndexOpen','cloudTrashList'\]\.includes\(action\)/);
+ assert.match(index,/const printReadAction=TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&/);
+  assert.match(index,/\['loadCloudHistory','firestorePrintToGoogle','firestorePrintProbe','historyIndexLoad','historyIndexOpen','cloudIndexOpen','cloudTrashList'/);
+  assert.match(index,/historyCalendarPick.*historyFetchOne.*cloudManageFetchOne/,'閲覧専用で許すのはカレンダーと1乗務の読取り操作だけ');
   assert.doesNotMatch(index,/\['loadCloudHistory','firestorePrintToGoogle'[^\n]*'cloudTrash'[^\n]*\]\.includes\(action\)/,'印刷専用の閲覧端末に削除操作は許可しない');
  assert.match(index,/const verifiedOctoberTransfer=action==='migrateOctober16GoogleDuty'/);
  assert.match(index,/const monthlyReadAction=action==='loadMonthlySales'&&deviceMode==='viewer'&&/);
