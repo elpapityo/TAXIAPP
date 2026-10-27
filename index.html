@@ -2289,11 +2289,11 @@ function blockViewerEdit(event){
   currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
   accountDiary.ready());
  const readOnlySelection=target.matches?.(
-  '#historyDate,#historyShiftSelect,#historyCalendarDutySelect,#printShiftSelect,#highwayShiftSelect,#monthlySalesMonth');
+  '#historyDate,#historyShiftSelect,#historyCalendarDutySelect,#printShiftSelect,#highwayShiftSelect,#monthlySalesMonth,#monthlyDashboardMonth');
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
- const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"]')||
+ const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"]')||
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
@@ -7220,7 +7220,7 @@ function handleAction(action,id){
    deviceMode==='writer'&&legacyDiary()&&!TAXIAPP_PRINT_VIEWER_MODE&&
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
    currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid;
-  const monthlyReadAction=action==='loadMonthlySales'&&deviceMode==='viewer'&&
+  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick'].includes(action)&&deviceMode==='viewer'&&
    memberDiary()&&accountDiary.ready()&&currentLoginScope?.uid===accountScope.uid;
   if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer){
    toast('操作権がない端末では営業記録を変更できません',true);return;
