@@ -71,6 +71,18 @@ try:
  assert js("return !document.querySelector('#accountSignIn')"),'real login must not appear'
  assert js("return localStorage.length")==0,'no real browser localStorage'
  assert js("return !document.querySelector('script[src]')"),'no external JS'
+ # A visitor can inspect the selected duty summary without login or altering records.
+ js("document.querySelector('[data-tab=history]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('.history-duty-summary')"))
+ assert js("return document.querySelector('.history-duty-summary').getBoundingClientRect().height>150")
+ for key in ['乗務サマリー','営業回数','キャンセル回数','時間単価','距離単価',
+  '待機時間合計','税込','税別参考','アプリ配車売上','乗込み・その他／無線売上']:
+  assert key in js("return document.querySelector('.history-duty-summary').textContent"),key
+ assert '¥2,300' in js("return document.querySelector('.history-duty-summary').textContent")
+ assert '¥1,500' in js("return document.querySelector('.history-duty-summary').textContent")
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
+ js("document.querySelector('[data-tab=drive]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('.meter-console')"))
  # Same real meter workflow: board -> alight/payment -> fare -> settle -> saved row.
  js("document.querySelector('[data-action=beginRide]').click()")
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].draft?.kind==='ride'"))
