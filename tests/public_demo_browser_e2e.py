@@ -13,10 +13,27 @@ wait=WebDriverWait(driver,25)
 def js(source,*args):return driver.execute_script(source,*args)
 def app_ready():
  return js("return Boolean(window.__TAXIAPP_DEMO__ && document.querySelector('#main-content .meter-console'))")
+def app_visible():
+ return js("""const app=document.querySelector('#app'),panel=document.querySelector('#main-content');
+  if(!app||!panel)return false;
+  const rect=app.getBoundingClientRect();
+  return !document.documentElement.classList.contains('taxi-auth-locked') &&
+   getComputedStyle(app).display!=='none' &&
+   getComputedStyle(app).visibility==='visible' &&
+   rect.width>250&&rect.height>200 &&
+   getComputedStyle(panel).display!=='none';""")
 try:
  driver.get('http://127.0.0.1:8765/demo/index.html')
  wait.until(lambda _: app_ready())
+ wait.until(lambda _: app_visible())
  assert '公開操作デモ' in driver.title
+ # Test the observed failure: app exists but production login CSS must not blank it.
+ assert app_visible(),'demo user must actually see the operation screen'
+ assert js("return document.querySelector('.meter-console').getBoundingClientRect().height>100")
+ driver.set_window_size(1510,850)
+ assert app_visible(),'desktop Edge-like width must not blank the demo'
+ driver.set_window_size(430,960)
+ assert app_visible(),'phone-size viewport must still display the app'
  assert js("return window.__TAXIAPP_DEMO__.externalServicesEnabled") is False
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts.length")==1
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
@@ -45,6 +62,7 @@ try:
  driver.switch_to.new_window('tab')
  driver.get('http://127.0.0.1:8765/demo/index.html')
  wait.until(lambda _: app_ready())
+ assert app_visible(),'concurrent tab also shows live demo'
  second=driver.current_window_handle
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
  # A change in one tab cannot affect a second tab's JavaScript model.
@@ -53,12 +71,14 @@ try:
  wait.until(lambda _: driver.switch_to.alert is not None)
  driver.switch_to.alert.accept()
  wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().shifts.length===0"))
+ assert app_visible(),'app stays visible after resetting from the top banner'
  assert js("return document.querySelector('[data-action=startShift]')!==null"),'start-duty control exists'
  driver.switch_to.window(second)
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
  assert js("return document.querySelector('[data-drive-record-id]')!==null")
  driver.refresh()
  wait.until(lambda _: app_ready())
+ assert app_visible(),'reload must not return to blank screen'
  assert js("return window.__TAXIAPP_DEMO__.snapshot().shifts[0].records.length")==2
  assert js("return localStorage.length")==0
  print('PASS: real Chrome, no login, same meter UI, independent concurrent tabs, reset, no persistence')
