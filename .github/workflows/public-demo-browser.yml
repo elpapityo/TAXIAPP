@@ -1,0 +1,46 @@
+name: TAXIAPP public demo standalone browser
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'demo/index.html'
+      - 'tests/public-demo-isolation.test.js'
+      - 'tests/public_demo_browser_e2e.py'
+      - '.github/workflows/public-demo-browser.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'demo/index.html'
+      - 'tests/public-demo-isolation.test.js'
+      - 'tests/public_demo_browser_e2e.py'
+permissions:
+  contents: read
+jobs:
+  demo-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check demo isolation and production UI source
+        run: node tests/public-demo-isolation.test.js
+      - name: Install Selenium
+        run: python -m pip install --disable-pip-version-check 'selenium>=4.25,<5'
+      - name: Start local demo server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/taxiapp-demo.log 2>&1 &
+          python3 - <<'PY'
+          import time,urllib.request
+          for _ in range(30):
+           try:
+            if urllib.request.urlopen('http://127.0.0.1:8765/demo/index.html',timeout=2).status==200:break
+           except Exception:time.sleep(.5)
+          else:raise SystemExit('Demo web server did not start')
+          PY
+      - name: Exercise demo in Chrome with two concurrent tabs
+        run: python3 tests/public_demo_browser_e2e.py
