@@ -18,13 +18,15 @@ root.TAXIAPP_ACCOUNT_AUTO={
    catch{return false;}
   })();
   let deferredWhileEditing=false;
-  let busy=false,again=false,timer=null,booted=false;
+  let busy=false,again=false,timer=null,booted=false,settingsMessage='設定の同期状態を確認していません';
   // A single per-UID session listener revokes old editors.
   // User settings use one-off server reads only, never continuous watching.
   let localSignature=null;
   const KEY='taxiapp-account-pref-base-v1-',BACKUP='taxiapp-account-pref-backup-v1-';
   const $=id=>document.getElementById(id);
   function status(message){
+   settingsMessage=String(message||'');
+   deps.onSettingsStatus?.(settingsMessage);
    const label=$('accountStatus');
    if(label)label.textContent=message;
    if(document.documentElement.classList.contains('taxi-auth-locked')){
@@ -151,6 +153,16 @@ root.TAXIAPP_ACCOUNT_AUTO={
   const writerFields=()=>deviceSession?.state()==='writer'
    ?{writerSessionId:deviceSession.sessionId()}:{};
   function stillCurrent(accountUid){return enabled&&uid===accountUid&&auth.currentUser?.uid===accountUid;}
+  // 書込み完了だけで保存済みとしない。本人UIDのサーバー原本と内容を照合する。
+  async function verifySavedPrefs(expected,accountUid){
+   const snapshot=await fire.getDocFromServer(ref());
+   if(!stillCurrent(accountUid)||!deviceSession?.canWrite())return false;
+   if(!snapshot.exists())throw Error('設定を送信しましたがサーバー原本を読み戻せません');
+   const actual=api.extract({version:1,shifts:[],prefs:api.validate(snapshot.data())}).prefs;
+   if(!api.same(actual,expected))
+    throw Error('送信した設定とサーバー原本が一致しません。端末の設定を保持して再照合してください');
+   return true;
+  }
   async function apply(shared){
    const model=deps.getModel(),newModel=api.merge(model,{
     format:api.FORMAT,schemaVersion:1,prefs:shared
@@ -197,8 +209,11 @@ root.TAXIAPP_ACCOUNT_AUTO={
       return true;
      });
      if(!stillCurrent(accountUid))return;
-     if(result){storeBase(beginning);status('設定は自動保存済み');}
-     else again=true;
+     if(result){
+      if(!await verifySavedPrefs(beginning,accountUid))return;
+      if(!api.same(currentPrefs(),beginning)){again=true;return;}
+      storeBase(beginning);status('設定はFirestore読戻し確認済み');
+     }else again=true;
      return;
     }
     if(!base){
@@ -226,6 +241,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
       });
      }
      if(!stillCurrent(accountUid))return;
+     if(!api.same(currentPrefs(),beginning)){again=true;return;}
+     if(!await verifySavedPrefs(selected,accountUid))return;
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
      await apply(selected);
      if(!stillCurrent(accountUid))return;
@@ -255,10 +272,12 @@ root.TAXIAPP_ACCOUNT_AUTO={
      if(!stillCurrent(accountUid))return;
     }
     if(!api.same(currentPrefs(),beginning)){again=true;return;}
+    if(!await verifySavedPrefs(result,accountUid))return;
+    if(!api.same(currentPrefs(),beginning)){again=true;return;}
     if(!api.same(result,beginning))await apply(result);
     if(!stillCurrent(accountUid))return;
     storeBase(result);
-    status('設定情報の同期確認済み（日報とは別）');
+    status('設定のFirestore読戻し確認済み（日報とは別）');
    }finally{
     busy=false;
     // Applying a remote update is not a user edit.
@@ -570,7 +589,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
    schedule(200);
   }
   return {start,localSaved,editingEnded,refreshViewerMonthlyPrefs:loadViewerMonthlyPrefs,
-   status:()=>({enabled,uid,mode:deviceSession?.state()})};
+   syncNow:()=>{if(enabled&&deviceSession?.canWrite())schedule(0);},
+   status:()=>({enabled,uid,mode:deviceSession?.state(),message:settingsMessage})};
  }
 };
 })(typeof window!=='undefined'?window:globalThis);
