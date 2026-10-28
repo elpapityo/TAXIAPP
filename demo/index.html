@@ -6069,8 +6069,12 @@ let monthlySalesOpened=false;
 const monthlySalesToday=new Date();
 let monthlySalesMonth=monthlySalesToday.getFullYear()+'-'+String(monthlySalesToday.getMonth()+1).padStart(2,'0'),monthlySalesEpoch=0;
 let monthlySalesData=null,monthlySalesBusy=false,monthlySalesMessage='';
+let monthlyViewerPrefs=null,monthlyViewerPrefsMessage='';
+function monthlyPrefs(){
+ return deviceMode==='viewer'?(monthlyViewerPrefs||{}):(model.prefs||{});
+}
 function monthlySalesClosingDay(){
- const value=String(model.prefs?.monthlySalesCloseDay||'end');
+ const value=String(monthlyPrefs()?.monthlySalesCloseDay||'end');
  return value==='end'||/^(?:[1-9]|[12]\d|3[01])$/.test(value)?value:'end';
 }
 function monthlySalesPeriod(month,closingDay){
@@ -6241,13 +6245,13 @@ function monthlyPlanDates(period){
  return result;
 }
 function monthlyPlanEntry(date){
- const entry=model.prefs?.monthlyDutyPlans?.[date];
+ const entry=monthlyPrefs()?.monthlyDutyPlans?.[date];
  if(!entry||!Object.prototype.hasOwnProperty.call(MONTH_PLAN_NAMES,entry.status))return null;
  const time=t=>typeof t==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t)?t:'';
  return {status:entry.status,start:time(entry.start),end:time(entry.end)};
 }
 function monthlyActualEntry(date){
- const code=model.prefs?.monthlyDutyActuals?.[date]?.status;
+ const code=monthlyPrefs()?.monthlyDutyActuals?.[date]?.status;
  return Object.prototype.hasOwnProperty.call(MONTH_ACTUAL_NAMES,code)?code:null;
 }
 function monthlyActualLabel(date,plan,actualDay){
@@ -6256,7 +6260,7 @@ function monthlyActualLabel(date,plan,actualDay){
  if(actualDay?.duties)return '実績区分未登録（乗務記録あり）';
  return '未確定'+(plan?.status?'（予定 '+MONTH_PLAN_NAMES[plan.status]+'）':'');
 }
-function monthlyPublicGoalIncluded(){return model.prefs?.monthlyIncludePublicSales==='on';}
+function monthlyPublicGoalIncluded(){return monthlyPrefs()?.monthlyIncludePublicSales==='on';}
 function monthlyDefaultDepartureStatus(date){
  const old=monthlyActualEntry(date);
  if(MONTH_ACTUAL_WORK.includes(old))return old;
@@ -6283,11 +6287,11 @@ function monthlyPublicGoalSave(){
  saveLater();render();toast('公出売上の集計設定を保存しました');
 }
 function monthlyPlanGoal(month=monthlySalesMonth){
- const n=model.prefs?.monthlySalesGoals?.[month];
+ const n=monthlyPrefs()?.monthlySalesGoals?.[month];
  return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
 }
 function monthlyDutyGoal(month=monthlySalesMonth){
- const n=model.prefs?.monthlyDutySalesGoals?.[month];
+ const n=monthlyPrefs()?.monthlyDutySalesGoals?.[month];
  return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
 }
 const MONTH_PLAN_WEEKDAYS=Object.freeze(['日','月','火','水','木','金','土']);
@@ -6338,10 +6342,10 @@ function renderMonthlyBulkSettings(period){
 
 function monthlyValidGoal(n){return Number.isSafeInteger(n)&&n>0&&n<=1000000000;}
 function monthlyDateGoal(date){
- const direct=model.prefs?.monthlyDateSalesGoals?.[date];
+ const direct=monthlyPrefs()?.monthlyDateSalesGoals?.[date];
  if(monthlyValidGoal(direct))return {value:direct,source:'個別設定'};
  const weekday=new Date(date+'T00:00:00Z').getUTCDay();
- const weekly=model.prefs?.monthlyWeekdaySalesGoals?.[String(weekday)];
+ const weekly=monthlyPrefs()?.monthlyWeekdaySalesGoals?.[String(weekday)];
  if(monthlyValidGoal(weekly))return {value:weekly,source:MONTH_PLAN_WEEKDAYS[weekday]+'曜日'};
  const base=monthlyDutyGoal();
  return {value:base,source:base?'基本目標':'未設定'};
@@ -6349,7 +6353,7 @@ function monthlyDateGoal(date){
 function renderMonthlyTargetSettings(p){
  const readonly=canEditNow()?'':'disabled';
  const weekdayItems=[1,2,3,4,5,6,0].map(day=>{
-  const n=model.prefs?.monthlyWeekdaySalesGoals?.[String(day)];
+  const n=monthlyPrefs()?.monthlyWeekdaySalesGoals?.[String(day)];
   return '<label class="field"><span class="field-label">'+MONTH_PLAN_WEEKDAYS[day]+'曜日の目標（円）</span>'+
    '<input class="control" id="monthlyWeekdayGoal'+day+'" type="number" min="0" max="1000000000" step="1000" inputmode="numeric" '+
    'placeholder="基本目標を使用" value="'+safeText(monthlyValidGoal(n)?n:'')+'" '+readonly+'></label>';
@@ -6552,7 +6556,7 @@ function renderMonthlyManagement(){
    '（'+safeText(dailyGoal.source)+'）</p>'+
   '<label class="field"><span class="field-label">この日だけ変更（円）</span>'+
   '<input id="monthlyDateGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" '+
-  'placeholder="空欄なら曜日別・基本の目標" value="'+safeText(monthlyValidGoal(model.prefs?.monthlyDateSalesGoals?.[date])?model.prefs.monthlyDateSalesGoals[date]:'')+'" '+readonly+'></label>'+
+  'placeholder="空欄なら曜日別・基本の目標" value="'+safeText(monthlyValidGoal(monthlyPrefs()?.monthlyDateSalesGoals?.[date])?monthlyPrefs().monthlyDateSalesGoals[date]:'')+'" '+readonly+'></label>'+
   '<p class="caption-note">空欄で保存すると個別設定が解除され、曜日別・基本目標へ戻ります。</p>'+
   '<div class="actions"><button class="btn" type="button" data-action="monthlyDateGoalSave" '+readonly+'>この日の目標を保存・解除</button></div></div>'+
   comparison+
@@ -6580,8 +6584,12 @@ function renderMonthlyManagement(){
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="bulk" aria-pressed="'+(monthlyManagementMode==='bulk')+'">予定の一括登録</button></section>';
+ const viewerBanner=deviceMode==='viewer'?
+  '<section class="card"><p class="caption-note" role="status">'+
+  safeText(monthlyViewerPrefsMessage||'本人の月間設定をFirestoreから取得していません')+
+  '</p><div class="actions"><button type="button" class="btn" data-action="monthlyViewerRefresh">月間設定を再取得</button></div></section>':'';
  return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+
-  nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
+  viewerBanner+nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
    monthlyManagementMode==='bulk'?renderMonthlyBulkSettings(period):card+calendar+renderMonthlySales());
 }
 function monthlyGoalSave(){
