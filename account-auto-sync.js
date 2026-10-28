@@ -165,10 +165,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
     }).prefs:null;
     const base=baseline||readBase();
     if(!remote){
-     const summary=api.summary(beginning);
-     if(summary.driver==='（未設定）'&&summary.waitPlaceCount===0){
-      status('Google接続済み・設定は未登録');return;
-     }
+     // 初回ログインで乗務員名・待機所が未設定でも、月間予定や目標は同期対象。
+     // 他端末が先に作成した設定原本は、この後のトランザクションで保護する。
      // Never overwrite a remotely-created document from another device.
      const result=await fire.runTransaction(db,async tx=>{
       const doc=await tx.get(ref());
