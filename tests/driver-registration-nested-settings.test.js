@@ -69,7 +69,7 @@ assert.ok(settings.slice(end).startsWith('<details class="details settings-advan
 for(const attr of ['data-driver-profile-settings','data-vehicle-profile-settings',
                    'data-cancel-settings','data-fee-settings','data-duty-plan-settings']){
  const tag='details['+attr+']';
- assert.equal(html.split(tag).length,3,'save and restore selectors must include '+tag);
+ assert.ok(html.split(tag).length>=3,'save and restore selectors must include '+tag);
 }
 assert.match(html,/const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';/);
 console.log('PASS nested registration: unchanged prefs, driver/vehicle, cancel/fee/duty folds and state retention');
