@@ -18,6 +18,8 @@ assert.equal(calc("monthlySalesPeriod('2027-01','15').startDate"),'2026-12-16');
 assert.equal(calc('meterSalesTaxExcludedReference(1100)'),1000);
 assert.equal(calc('meterSalesTaxExcludedReference(3200)'),2909);
 assert.equal(calc("monthlySalesDayLabel('2026-11-03').holiday"),'文化の日');
+assert.equal(calc("monthlySalesDayLabel('2026-11-03').kind"),'holiday','holiday takes priority over weekday color');
+assert.equal(calc("monthlySalesDayLabel('2026-11-06').kind"),'friday');
 assert.equal(calc("monthlySalesDayLabel('2026-11-07').kind"),'saturday');
 assert.equal(calc("monthlySalesDayLabel('2026-11-01').kind"),'sunday');
 assert.equal(calc("monthlySalesDayLabel('2027-03-22').holiday"),'振替休日');
@@ -26,6 +28,7 @@ calc("monthlySalesMonth='2026-11';monthlySalesOpened=true");
 calc("monthlySalesData={startDate:'2026-11-01',endDate:'2026-11-30',unfinished:1,days:["+
  "{date:'2026-11-01',duties:0,departures:0,unfinished:0,meter:0},"+
  "{date:'2026-11-03',duties:1,departures:1,unfinished:0,meter:1100},"+
+ "{date:'2026-11-06',duties:0,departures:0,unfinished:0,meter:0},"+
  "{date:'2026-11-07',duties:0,departures:1,unfinished:1,meter:0}],"+
  "sum:{duties:1,departures:2,unfinished:1,meter:1100}}");
 const html=calc('renderMonthlySales()');
@@ -33,6 +36,7 @@ assert.match(html,/data-monthly-sales-panel open/,'開閉状態が維持され�
 assert.match(html,/monthly-day-holiday/);
 assert.match(html,/11\/03（火・祝）/);
 assert.doesNotMatch(html,/文化の日/,'祝日の名称は表に表示しない');
+assert.match(html,/monthly-day-friday/);
 assert.match(html,/monthly-day-saturday/);
 assert.match(html,/monthly-day-sunday/);
 assert.doesNotMatch(html,/<th scope="col">出庫<\/th>/,'出庫列は設けない');
