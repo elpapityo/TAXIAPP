@@ -62,6 +62,14 @@ for(const weekday of ['friday','saturday','sunday','holiday'])
  assert.match(screen,new RegExp('month-plan-day [^"]*month-weekday-'+weekday),'calendar has weekday/holiday visual category');
 assert.match(screen,/month-date-tag">祝<\/em>/,'holiday visible as a label');
 assert.match(screen,/month-settings-surface/,'selected-day settings visually separated from report');
+assert.match(screen,/<details class="card month-plan-editor month-settings-surface month-settings-fold" data-monthly-fold="date" >/,'the date editor starts folded');
+assert.match(screen,/選択日の設定：2026-11-01/,'the folded row identifies the selected date');
+assert.match(screen,/data-action="monthlyPlanSave"/,'the existing save action is still inside its fold');
+assert.match(live,/if\(tab==='monthly'&&monthlyScrollToEditor\)monthlyFoldOpen\.date=true;/,'selecting a date must open its editor');
+assert.match(live,/for\(const fold of appEl\.querySelectorAll\('details\[data-monthly-fold\]'\)\)/,'re-render retains manually expanded sections');
+calc('monthlyFoldOpen.date=true');
+assert.match(calc('renderMonthlyManagement()'),/data-monthly-fold="date" open/,'selected-date editor can open');
+calc('monthlyFoldOpen.date=false');
 assert.match(screen,/月末着地予測（参考）/);
 assert.match(screen,/基本の日別目標/);
 assert.match(screen,/予定と確定実績の比較/);
@@ -115,6 +123,13 @@ assert.match(targetScreen,/設定画面｜月間・曜日別の売上目標/,'ta
 assert.match(targetScreen,/month-settings-surface/);
 assert.match(targetScreen,/月間売上目標（円）/);
 assert.match(targetScreen,/monthlyWeekdayGoal1/);
+assert.match(targetScreen,/<details class="card month-settings-surface month-settings-fold" data-monthly-fold="weekday" >/,'seven weekday fields start folded');
+assert.match(targetScreen,/曜日別の売上目標・公出設定/,'the folded title identifies public work settings');
+assert.match(targetScreen,/data-action="monthlyWeekdayGoalSave"/,'existing weekday save remains reachable');
+assert.match(targetScreen,/data-action="monthlyPublicGoalSave"/,'existing public-work save remains reachable');
+calc('monthlyFoldOpen.weekday=true');
+assert.match(calc('renderMonthlyManagement()'),/data-monthly-fold="weekday" open/,'weekday settings can be expanded');
+calc('monthlyFoldOpen.weekday=false');
 assert.match(targetScreen,/value="77,000"/,'existing Friday goal is comma formatted');
 assert.match(targetScreen,/value="120,000"/,'monthly goal is comma formatted');
 assert.match(targetScreen,/value="26,000"/,'basic goal is comma formatted');
