@@ -1691,6 +1691,7 @@ html[data-ui-theme="night"] .preview-screen-head .drive-theme-toggle{
 .month-plan-day strong{font-size:12px}
 .month-plan-day small{font-size:10px;overflow-wrap:anywhere;text-align:center}
 .month-plan-day.work{background:#dbf2e7;border-color:#80bda6;color:#135b47}
+.month-plan-day.public{background:#fff1d9;border-color:#d8b36d;color:#82510f}
 .month-plan-day.off{background:#f0f2f5;border-color:#b8c7d4;color:#526679}
 .month-plan-day.leave{background:#fff0da;border-color:#dfc493;color:#82521b}
 .month-plan-day.after{background:#e8ecf9;border-color:#aebbe0;color:#344c82}
@@ -5368,7 +5369,7 @@ async function loadMonthlySales(){
 
 
 // 本人UID別の端末設定にだけ保存する乗務計画。日報の金額・距離・履歴原本は変更しない。
-const MONTH_PLAN_NAMES=Object.freeze({work:'出番',off:'公休',leave:'有休',after:'明け'});
+const MONTH_PLAN_NAMES=Object.freeze({work:'出番',public:'公出予定',off:'公休',leave:'有休',after:'明け'});
 const MONTH_ACTUAL_NAMES=Object.freeze({normal:'通常出勤',public:'公出',absent:'欠勤',off:'公休',leave:'有休',after:'明け'});
 const MONTH_ACTUAL_WORK=Object.freeze(['normal','public']);
 let monthlyPlanDate='',monthlyPlanMessage='',monthlyManagementMode='calendar',monthlyDayView='calendar',monthlyScrollToEditor=false;
@@ -5398,7 +5399,7 @@ function monthlyPublicGoalIncluded(){return model.prefs?.monthlyIncludePublicSal
 function monthlyDefaultDepartureStatus(date){
  const old=monthlyActualEntry(date);
  if(MONTH_ACTUAL_WORK.includes(old))return old;
- return monthlyPlanEntry(date)?.status==='work'?'normal':'';
+ const planned=monthlyPlanEntry(date)?.status;return planned==='work'?'normal':planned==='public'?'public':'';
 }
 function monthlyActualSave(){
  if(!canEditNow())return;
@@ -5443,7 +5444,7 @@ function monthlyPlanBulkSave(){
  const start=String(document.getElementById('monthlyBulkStart')?.value||'');
  const end=String(document.getElementById('monthlyBulkEnd')?.value||'');
  const valid=t=>/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t);
- if(status==='work'&&((!!start!==!!end)||(start&&!valid(start))||(end&&!valid(end)))){
+ if(['work','public'].includes(status)&&((!!start!==!!end)||(start&&!valid(start))||(end&&!valid(end)))){
   toast('出庫・入庫は両方入力するか、両方空欄にしてください',true);return;
  }
  const overwrite=Boolean(document.getElementById('monthlyBulkOverwrite')?.checked);
@@ -5451,7 +5452,7 @@ function monthlyPlanBulkSave(){
   (overwrite||!monthlyPlanEntry(date)));
  if(!dates.length){toast('登録対象がありません。既存予定を保護しました。',true);return;}
  const next={...(model.prefs?.monthlyDutyPlans||{})};
- for(const date of dates)next[date]={status,start:status==='work'?start:'',end:status==='work'?end:''};
+ for(const date of dates)next[date]={status,start:['work','public'].includes(status)?start:'',end:['work','public'].includes(status)?end:''};
  model.prefs??={};model.prefs.monthlyDutyPlans=next;
  monthlyPlanMessage=dates.length+'日分の予定を登録しました。実績区分・日報は変更していません。';
  monthlyManagementMode='calendar';saveLater();render();toast(monthlyPlanMessage);
@@ -5510,7 +5511,7 @@ function renderMonthlyTargetSettings(p){
   '<label class="field"><input type="checkbox" id="monthlyPublicIncluded" '+
   (monthlyPublicGoalIncluded()?'checked ':'')+readonly+'> 公出売上を月間目標の対象に含める</label>'+
   '<div class="actions"><button type="button" class="btn" data-action="monthlyPublicGoalSave" '+readonly+'>公出の集計設定を保存</button></div>'+
-  '<p class="caption-note">初期値は対象外。総売上と日報原本は変わりません。給与計算はしません。</p>'+
+  '<p class="caption-note">初期値は対象外。総売上と日報原本は変わりません。公出予定を残り見込みに含めるかも連動します。給与計算はしません。</p>'+
   '<p class="caption-note">設定は本人UID別の端末データに保存。ログイン中は既存の設定同期で照合します。日報原本には書き込みません。</p></section>';
 }
 function monthlyWeekdayGoalSave(){
@@ -5568,12 +5569,14 @@ function monthlyPlanProgress(period){
  const registeredPublic=days.filter(x=>monthlyActualEntry(x.date)==='public').length;
  const confirmedWorkDays=report?report.days.filter(x=>x.duties>0).length:null;
  const work=days.filter(x=>x.plan?.status==='work');
- const left=work.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
+ const plannedPublic=days.filter(x=>x.plan?.status==='public').length;
+ const eligible=days.filter(x=>x.plan?.status==='work'||(monthlyPublicGoalIncluded()&&x.plan?.status==='public'));
+ const left=eligible.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
   !['absent','leave','off','after','public'].includes(monthlyActualEntry(x.date))).length;
  const includedDuties=report?report.days.reduce((n,d)=>n+
   (monthlyActualEntry(d.date)==='public'&&!monthlyPublicGoalIncluded()?0:(d.duties||0)),0):0;
  const avg=includedDuties>0?countedGross/includedDuties:null;
- return {report,byDay,goal,dutyGoal,gross,publicGross,normalGross,countedGross,duties,days,planned:work.length,left,registeredAbsences,registeredPublic,confirmedWorkDays,
+ return {report,byDay,goal,dutyGoal,gross,publicGross,normalGross,countedGross,duties,days,planned:work.length,plannedPublic,left,registeredAbsences,registeredPublic,confirmedWorkDays,
   pct:goal&&countedGross!==null?Math.round(1000*countedGross/goal)/10:null,
   short:goal&&countedGross!==null?Math.max(0,goal-countedGross):null,
   need:goal&&countedGross!==null&&left>0?Math.ceil(Math.max(0,goal-countedGross)/left):null,
@@ -5608,7 +5611,7 @@ function renderMonthlyManagement(){
   kpi('公出分の確定売上',p.publicGross===null?'未取得':money(p.publicGross))+
   kpi('入庫済み乗務',p.duties===null?'未取得':p.duties+'乗務')+
   kpi('実際に入庫した日数',p.confirmedWorkDays===null?'未取得':p.confirmedWorkDays+'日')+
-  kpi('出番予定',p.planned+'日')+kpi('残り出番予定',p.left+'日')+
+  kpi('出番予定',p.planned+'日')+kpi('公出予定',p.plannedPublic+'日')+kpi('残り目標対象の予定',p.left+'日')+
   kpi('欠勤登録',p.registeredAbsences+'日')+
   kpi('公出登録',p.registeredPublic+'日')+
   kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
@@ -5620,7 +5623,8 @@ function renderMonthlyManagement(){
  for(const x of p.days){
   const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定',actualCode=monthlyActualEntry(x.date);
   const cellGoal=monthlyDateGoal(x.date);
-  const showGoal=status==='work'||status==='unset'||Boolean(x.actual?.duties);
+  const showGoal=(status==='work'||status==='unset'||(status==='public'&&monthlyPublicGoalIncluded())||Boolean(x.actual?.duties))&&
+   !(actualCode==='public'&&!monthlyPublicGoalIncluded());
   cells+='<button type="button" class="month-plan-day '+status+(x.actual?.duties?' realized':'')+
    (x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
    '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
@@ -5628,7 +5632,8 @@ function renderMonthlyManagement(){
    (actualCode?'<small class="month-day-status '+(actualCode==='public'||actualCode==='absent'?actualCode:'')+'">実績 '+MONTH_ACTUAL_NAMES[actualCode]+'</small>':'')+
    (x.actual?.duties?'<small class="month-day-yen" title="'+safeText(money(x.actual.meter))+'">'+monthlyCalendarMoney(x.actual.meter)+'</small>':
      x.actual?.unfinished?'<small>進行中 '+x.actual.unfinished+'件</small>':'')+
-   (showGoal&&cellGoal.value?'<small class="month-day-goal">目標 '+money(cellGoal.value)+'</small>':'')+'</button>';
+   (showGoal&&cellGoal.value?'<small class="month-day-goal">目標 '+money(cellGoal.value)+'</small>':
+    (actualCode==='public'||status==='public')&&!monthlyPublicGoalIncluded()?'<small>月間目標の対象外</small>':'')+'</button>';
  }
  const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
   '<option value="'+v+'" '+(entry?.status===v?'selected':'')+'>'+t+'</option>').join('');
@@ -5636,8 +5641,8 @@ function renderMonthlyManagement(){
  const actualCode=monthlyActualEntry(date);
  const actualOptions='<option value="unset">未確定・未登録</option>'+
   Object.entries(MONTH_ACTUAL_NAMES).map(([key,name])=>'<option value="'+key+'" '+(key===actualCode?'selected':'')+'>'+name+'</option>').join('');
- const plannedLabel=entry?.status==='work'
-  ?'出番／出庫 '+(entry.start||'未設定')+'／入庫 '+(entry.end||'未設定')+
+ const plannedLabel=['work','public'].includes(entry?.status)
+  ?MONTH_PLAN_NAMES[entry.status]+'／出庫 '+(entry.start||'未設定')+'／入庫 '+(entry.end||'未設定')+
    (entry.start&&entry.end&&entry.end<=entry.start?'（翌日入庫）':'')
   :(MONTH_PLAN_NAMES[entry?.status]||'未設定');
  const entries=Array.isArray(actual?.entries)?actual.entries:[];
@@ -5656,7 +5661,8 @@ function renderMonthlyManagement(){
   '<p class="caption-note">勤務実績：'+safeText(monthlyActualLabel(date,entry,actual))+'</p>'+
   (!p.report?'<p class="caption-note">本人Firestoreの月間実績は未取得です。</p>':
    actual?.duties?'<p class="panel-strip">確定：'+actual.duties+'乗務／'+money(actual.meter)+
-     (dailyGoal.value?' ／ 日別目標との差額 '+money(actual.meter-dailyGoal.value):'')+'</p>'+
+     (dailyGoal.value&&!(actualCode==='public'&&!monthlyPublicGoalIncluded())?' ／ 日別目標との差額 '+money(actual.meter-dailyGoal.value):
+    actualCode==='public'&&!monthlyPublicGoalIncluded()?' ／ 公出：月間目標対象外':'')+'</p>'+
     (dutyDetails||'<p class="caption-note">時刻の明細は取得できませんでした。</p>'):
     '<p class="caption-note">この出庫日の確定実績はありません。</p>')+
   '<p class="caption-note">実績は日報からの読取専用表示です。予定の編集で日報は変更しません。</p></div>';
@@ -5664,7 +5670,7 @@ function renderMonthlyManagement(){
   '<div class="month-plan-fields"><label class="field"><span class="field-label">予定区分</span><select id="monthlyPlanStatus" class="control" '+readonly+'>'+options+'</select></label>'+
   '<label class="field"><span class="field-label">出庫予定</span><input id="monthlyPlanStart" class="control" type="time" value="'+safeText(entry?.start||'')+'" '+readonly+'></label>'+
   '<label class="field"><span class="field-label">入庫予定</span><input id="monthlyPlanEnd" class="control" type="time" value="'+safeText(entry?.end||'')+'" '+readonly+'></label></div>'+
-  '<p class="caption-note">入庫時刻が出庫時刻以前なら翌日入庫予定。公休・有休・明けは時刻を保存しません。</p>'+
+  '<p class="caption-note">出番・公出予定の入庫時刻が出庫時刻以前なら翌日入庫予定。公休・有休・明けは時刻を保存しません。</p>'+
   '<div class="actions"><button class="btn primary" data-action="monthlyPlanSave" '+readonly+'>この日の予定を保存</button></div>'+
   '<div class="month-plan-compare"><h3 class="subsection">勤務実績区分</h3>'+
   '<p class="caption-note">出番予定はそのまま保持し、実際の区分だけ変更できます。日報がないだけでは自動欠勤にしません。</p>'+
@@ -5684,11 +5690,12 @@ function renderMonthlyManagement(){
  const listItems=p.days.map(x=>{
   const a=monthlyActualEntry(x.date),plan=MONTH_PLAN_NAMES[x.plan?.status]||'未設定';
   const d=monthlyDateGoal(x.date),actualStatus=a?MONTH_ACTUAL_NAMES[a]:'未確定';
+  const quotaApplies=monthlyPublicGoalIncluded()||!(a==='public'||x.plan?.status==='public');
   const amount=x.actual?.duties?money(x.actual.meter):x.actual?.unfinished?'進行中':'—';
   return '<button type="button" class="month-day-list-item'+(x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+'">'+
    '<strong>'+safeText(x.date.slice(5).replace('-','/'))+'（'+MONTH_PLAN_WEEKDAYS[monthlyWeekday(x.date)]+'）</strong>'+
    '<span class="day-main"><small>予定 '+safeText(plan)+' ／ 実績 '+safeText(actualStatus)+'</small>'+
-   '<small>目標 '+(d.value?money(d.value):'未設定')+'</small></span>'+
+   '<small>目標 '+(quotaApplies?(d.value?money(d.value):'未設定'):'対象外（公出）')+'</small></span>'+
    '<span class="day-sale">'+safeText(amount)+'</span></button>';
  }).join('');
  const calendar='<section class="card"><h2 class="h2">日別の予定・実績</h2>'+
@@ -5741,12 +5748,12 @@ function monthlyPlanSave(){
  if(status!=='unset'&&!Object.prototype.hasOwnProperty.call(MONTH_PLAN_NAMES,status)){toast('予定区分が不正です',true);return;}
  const start=String(document.getElementById('monthlyPlanStart')?.value||''),end=String(document.getElementById('monthlyPlanEnd')?.value||'');
  const valid=t=>/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t);
- if(status==='work'&&((!!start!==!!end)||(start&&!valid(start))||(end&&!valid(end)))){
+ if(['work','public'].includes(status)&&((!!start!==!!end)||(start&&!valid(start))||(end&&!valid(end)))){
   toast('出庫・入庫の時刻は両方入力するか、両方空欄にしてください',true);return;
  }
  model.prefs??={};model.prefs.monthlyDutyPlans??={};
  if(status==='unset')delete model.prefs.monthlyDutyPlans[monthlyPlanDate];
- else model.prefs.monthlyDutyPlans[monthlyPlanDate]={status,start:status==='work'?start:'',end:status==='work'?end:''};
+ else model.prefs.monthlyDutyPlans[monthlyPlanDate]={status,start:['work','public'].includes(status)?start:'',end:['work','public'].includes(status)?end:''};
  monthlyPlanMessage=monthlyPlanDate+'：'+(MONTH_PLAN_NAMES[status]||'未設定')+'を端末に保存しました';
  saveLater();render();
 }
