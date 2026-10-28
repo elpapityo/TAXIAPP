@@ -2324,7 +2324,7 @@ function blockViewerEdit(event){
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
- const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"],[data-action="monthlyViewerRefresh"]')||
+ const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"],[data-action="monthlyDayView"],[data-action="monthlyViewerRefresh"]')||
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
@@ -5603,7 +5603,8 @@ function monthlyPlanProgress(period){
   return x.plan?.status==='work'||(monthlyPublicGoalIncluded()&&x.plan?.status==='public');
  });
  const left=eligible.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
-  !['absent','leave','off','after','public'].includes(monthlyActualEntry(x.date))).length;
+  !['absent','leave','off','after'].includes(monthlyActualEntry(x.date))&&
+  (monthlyActualEntry(x.date)!=='public'||monthlyPublicGoalIncluded())).length;
  const includedDuties=report?report.days.reduce((n,d)=>n+
   (monthlyActualEntry(d.date)==='public'&&!monthlyPublicGoalIncluded()?0:(d.duties||0)),0):0;
  const avg=includedDuties>0?countedGross/includedDuties:null;
