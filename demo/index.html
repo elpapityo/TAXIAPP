@@ -3264,10 +3264,7 @@ const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>accountScope.adminFirestorePreview?
  'taxiapp-admin-firestore-preview-v1-'+accountScope.uid:
  memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
-const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],
- // 新規本人アカウント専用。既存ユーザーの設定・日報は変更しない。
- pickupDropDistance:'off',highwayDistance:'on',autoDistance:'off',gpsTripAtStart:'off',
- ui:{text:'large',buttons:'large',contrast:'high',theme:'day',driveLayout:'meter',simpleMode:'on'}}});
+const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let accountScopeLoaded=false;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
@@ -3317,6 +3314,23 @@ function firstRunGuideActive(){
   currentLoginScope?.firebase?.auth?.currentUser?.uid===firstRunGuide.uid&&
   accountScope.uid===firstRunGuide.uid&&model.prefs?.initialGuideCompleted!==true);
 }
+function firstRunGuideApplyNewDefaults(){
+ // 新規登録の本人ガイドが存在する場合だけ初期値を与える。
+ // 値が登録済みの項目は上書きしない。通常の空アカウントや管理者は対象外。
+ if(!firstRunGuide?.uid||accountScope.uid!==firstRunGuide.uid||!memberDiary()||!canEditNow())return;
+ model.prefs??={};
+ const p=model.prefs;
+ if(p.initialGuideDefaultsApplied===true)return;
+ if(!Object.prototype.hasOwnProperty.call(p,'pickupDropDistance'))p.pickupDropDistance='off';
+ if(!Object.prototype.hasOwnProperty.call(p,'highwayDistance'))p.highwayDistance='on';
+ if(!Object.prototype.hasOwnProperty.call(p,'autoDistance'))p.autoDistance='off';
+ if(!Object.prototype.hasOwnProperty.call(p,'gpsTripAtStart'))p.gpsTripAtStart='off';
+ p.ui??={};
+ if(!Object.prototype.hasOwnProperty.call(p.ui,'driveLayout'))p.ui.driveLayout='meter';
+ if(!Object.prototype.hasOwnProperty.call(p.ui,'simpleMode'))p.ui.simpleMode='on';
+ p.initialGuideDefaultsApplied=true;
+ saveLater();
+}
 function firstRunGuideActivate(){
  if(!accountScopeLoaded||!canEditNow()||!accountScope.uid||!currentLoginScope?.uid||
     accountScope.uid!==currentLoginScope.uid||
@@ -3324,6 +3338,7 @@ function firstRunGuideActivate(){
  if(model.prefs?.initialGuideCompleted===true){firstRunGuide=null;return;}
  firstRunGuide=firstRunGuide?.uid===accountScope.uid?firstRunGuide:firstRunGuideRead(accountScope.uid);
  if(!firstRunGuide)return;
+ firstRunGuideApplyNewDefaults();
  const active=getShift();
  if(active&&!active.endedAt&&!active.endedIso)return; // Do not interrupt live duty entry.
  tab='settings';
