@@ -1812,7 +1812,7 @@ html[data-ui-theme="night"] .month-plan-day.realized{box-shadow:inset 0 -4px #91
 <script src="./login-core.js?v=20261024-openchat-name-1"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
-<script src="./account-auto-sync.js?v=20261029-uid-fixed-monthly-220"></script>
+<script src="./account-auto-sync.js?v=20261029-local-confirmed-monthly-220"></script>
 <script src="./account-diary-store.js?v=20261022-9"></script>
 <script src="./meter-confirm.js?v=20261025-174"></script>
 <script>
@@ -9160,6 +9160,7 @@ model=emptyAccountModel();render();
 accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
  getModel:()=>model,
  canApplyPrefs:()=>canEditNow(),
+ isLocalSaved:()=>!localSavePending&&!persistTimer&&storageStatus!=='保存できない環境',
  beforeSignOut:async()=>{
   // アカウント切替を開始する前に、進行中の日報と未確認の原本を保護する。
   // ログイン先で別UIDを開いても、営業中の本人日報を失わない。
@@ -9230,7 +9231,7 @@ accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
 });
 accountSettingsAuto.start().catch(e=>console.warn('Account sync initialization',e));
 appEl.addEventListener('focusout',()=>{
- accountSettingsAuto?.localSaved();
+ // 入力終了は保存完了ではない。保存後のsave()だけがlocalSaved()を呼ぶ。
  accountSettingsAuto?.editingEnded();
 });
 // Do not sync an unidentified account.
