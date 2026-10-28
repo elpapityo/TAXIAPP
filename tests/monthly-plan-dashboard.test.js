@@ -21,7 +21,6 @@ const ctx={Date,model,deviceMode:'writer',accountSettingsAuto:{status:()=>({mess
  days:[{date:'2026-11-02',meter:10000,duties:1,entries:[{id:'duty-2',startedAt:'11/02 17:00',endedAt:'11/03 06:00',duration:46800,meter:10000}]},{date:'2026-11-04',meter:20000,duties:1}]
 },monthlySalesClosingDay:()=> 'end',
 monthlySalesPeriod:()=>({startDate:'2026-11-01',endDate:'2026-11-30'}),
-monthlySalesDayLabel:()=>({weekday:'月',holiday:false}),
 renderMonthlySales:()=>'<details data-monthly-sales-panel></details>',
 durationHms:seconds=>String(Math.round(seconds/3600))+'時間',
 safeText:String,money:n=>Number(n).toLocaleString('ja-JP')+'円',
@@ -31,6 +30,10 @@ saveLater:()=>{saved++},render:()=>{},toast:x=>alerts.push(x),
 titleBlock:()=>'<h1>月間営業計画・実績</h1>',
 document:{getElementById:id=>fields[id]||null}};
 vm.createContext(ctx);
+const dateLabelStart=live.indexOf('const MONTHLY_HOLIDAYS=');
+const dateLabelEnd=live.indexOf('// 税抜額は既存の営業画面',dateLabelStart);
+assert.ok(dateLabelStart>0&&dateLabelEnd>dateLabelStart,'use published holiday and weekday classifier');
+vm.runInContext(live.slice(dateLabelStart,dateLabelEnd),ctx);
 vm.runInContext(source,ctx);
 const calc=text=>vm.runInContext(text,ctx);
 assert.equal(calc('monthlyPlanDates({startDate:"2026-11-01",endDate:"2026-11-30"}).length'),30);
@@ -46,6 +49,11 @@ assert.match(screen,/月間目標と営業実績/);
 assert.match(screen,/月間設定の保存を確認/,'writer can request a server readback');
 assert.match(screen,/設定の読戻し確認済み/,'monthly page exposes the settings confirmation status');
 assert.match(screen,/日別の予定・実績/);
+assert.match(screen,/表示・確認画面｜月間の予定と実績/,'calendar identifies report view');
+for(const weekday of ['friday','saturday','sunday','holiday'])
+ assert.match(screen,new RegExp('month-plan-day [^"]*month-weekday-'+weekday),'calendar has weekday/holiday visual category');
+assert.match(screen,/month-date-tag">祝<\/em>/,'holiday visible as a label');
+assert.match(screen,/month-settings-surface/,'selected-day settings visually separated from report');
 assert.match(screen,/月末着地予測（参考）/);
 assert.match(screen,/基本の日別目標/);
 assert.match(screen,/予定と確定実績の比較/);
@@ -58,6 +66,8 @@ assert.match(screen,/カレンダー/);
 calc("monthlyDayView='list'");
 const listing=calc('renderMonthlyManagement()');
 assert.match(listing,/日別一覧/);
+for(const weekday of ['friday','saturday','sunday','holiday'])
+ assert.match(listing,new RegExp('month-day-list-item month-weekday-'+weekday),'list uses same weekday/holiday colors');
 assert.match(listing,/month-day-list-item/);
 assert.match(listing,/10,000円/);
 assert.match(listing,/予定 出番/);
@@ -93,6 +103,8 @@ assert.equal(model.prefs.monthlyDutyPlans['2026-11-13'],undefined);
 calc("monthlyManagementMode='targets'");
 const targetScreen=calc('renderMonthlyManagement()');
 assert.match(targetScreen,/曜日別の売上目標/);
+assert.match(targetScreen,/設定画面｜月間・曜日別の売上目標/,'targets are explicitly a settings view');
+assert.match(targetScreen,/month-settings-surface/);
 assert.match(targetScreen,/月間売上目標（円）/);
 assert.match(targetScreen,/monthlyWeekdayGoal1/);
 assert.doesNotMatch(targetScreen,/日別の予定・実績/);
