@@ -13,6 +13,9 @@ const extract=html=>{
  return html.slice(a,b);
 };
 const source=extract(live);
+assert.match(live,/pickupDropDistance:'off',highwayDistance:'on',autoDistance:'off',gpsTripAtStart:'off'/,'新規登録者だけ距離・自動取得の初期値を設定');
+assert.match(live,/driveLayout:'meter',simpleMode:'on'/,'メーター型のシンプル表示を初期ON');
+assert.match(live,/if\(key==='distanceStart'\|\|key==='distanceEnd'\)return distanceEnabled\('F'\)/,'シンプルモードの距離表示は選択した設定に従う');
 assert.equal(extract(demo),source,'公開デモと正式版の初回案内ロジックは同じ');
 assert.match(auth,/let createdHere=false;/);
 assert.match(auth,/await fire\.setDoc\(profileRef,[\s\S]*?createdHere=true;/);
@@ -20,7 +23,7 @@ assert.match(auth,/if\(createdHere\)\{\s*try\{deps\.onInitialRegistrationVerifie
  '新規作成とサーバー検証を完了した本人だけ初回案内する');
 assert.match(live,/onInitialRegistrationVerified:firstRunGuideRegistered/);
 assert.match(live,/onWriterBootstrapReady:\(\)=>\{[\s\S]*?firstRunGuideActivate\(\)/);
-assert.match(live,/selected\.map\(el=>el\.outerHTML\)\.join\(''\)/,'既存の正式設定入力欄を再利用する');
+assert.match(live,/renderFirstRunGuideFields\(\)/,'初回専用の入力フォームを利用する');
 assert.match(live,/if\(isGuide&&FIRST_RUN_STEPS\[firstRunGuide\.step\]\.id===chosen\.id\)/);
 assert.match(live,/data-first-run-action="skip"/);
 assert.match(live,/\.first-run-step\.active/,'色と文字で段階を示す');
@@ -36,7 +39,8 @@ const ctx={
   setItem:(key,value)=>{memory.set(key,String(value));},
   removeItem:key=>{memory.delete(key);}
  },
- save:async()=>true,render:()=>{},toast:(msg)=>notice.push(msg)
+ save:async()=>true,render:()=>{},toast:(msg)=>notice.push(msg),
+ monthlyGoalInputRaw:()=>'',document:{getElementById:()=>({value:''})}
 };
 vm.createContext(ctx);
 vm.runInContext(source,ctx);
@@ -50,8 +54,8 @@ const call=expr=>vm.runInContext(expr,ctx);
  call('firstRunGuideActivate()');
  assert.equal(ctx.tab,'settings');
  assert.equal(call('firstRunGuideActive()'),true);
- assert.match(call('renderFirstRunGuide()'),/1 \/ 4/);
- assert.match(call('renderFirstRunGuide()'),/乗務員・車両/);
+ assert.match(call('renderFirstRunGuide()'),/3 \/ 7/);
+ assert.match(call('renderFirstRunGuide()'),/メーターモード/);
  let saves=0;
  ctx.save=async()=>{saves++;return false;};
  await call("firstRunGuideAction('next')");
@@ -59,7 +63,7 @@ const call=expr=>vm.runInContext(expr,ctx);
  ctx.save=async()=>{saves++;return true;};
  await call("firstRunGuideAction('next')");
  assert.equal(call('firstRunGuide.step'),1);
- assert.equal(ctx.settingsCategoryActive,'display');
+ assert.equal(ctx.settingsCategoryActive,'driver');
  assert.equal(JSON.parse(memory.get('taxiapp-initial-guide-v1-new-A')).step,1);
  // 同一UIDで再ログインした場合だけ中断時の段階を復元する。
  call("firstRunGuide=null;tab='drive';firstRunGuideActivate()");
@@ -68,8 +72,10 @@ const call=expr=>vm.runInContext(expr,ctx);
  await call("firstRunGuideAction('next')");
  assert.equal(ctx.settingsCategoryActive,'gps');
  await call("firstRunGuideAction('next')");
- assert.equal(ctx.settingsCategoryActive,'data');
- assert.match(call('renderFirstRunGuide()'),/初期設定を完了/);
+ assert.equal(ctx.settingsCategoryActive,'display');
+ await call("firstRunGuideAction('next')");
+ assert.equal(ctx.settingsCategoryActive,'monthly');
+ assert.match(call('renderFirstRunGuide()'),/保存して利用開始/);
  await call("firstRunGuideAction('finish')");
  assert.equal(ctx.model.prefs.initialGuideCompleted,true);
  assert.equal(call('firstRunGuideActive()'),false);
@@ -94,9 +100,11 @@ const call=expr=>vm.runInContext(expr,ctx);
  assert.equal(call('firstRunGuideActive()'),false,'別UIDには初期設定の表示を許可しない');
  ctx.accountScope.uid='new-B';
  await call("firstRunGuideAction('skip')");
- assert.equal(ctx.model.prefs.initialGuideCompleted,true,'今回は終了でも完了扱いにする');
- assert.equal(memory.has('taxiapp-initial-guide-v1-new-B'),false);
- console.log('PASS: 新規登録UID限定・4段階設定・保存失敗保護・再ログイン再開・UID分離・初回終了');
+ assert.equal(ctx.model.prefs.initialGuideCompleted,undefined,'中断しても完了扱いにしない');
+ assert.equal(memory.has('taxiapp-initial-guide-v1-new-B'),true,'本人の再開位置を残す');
+ call('firstRunGuideActivate()');
+ assert.equal(call('firstRunGuideActive()'),true,'次回は中断位置から再開する');
+ console.log('PASS: 新規登録UID限定・7項目登録・保存失敗保護・再ログイン再開・UID分離');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 
 
