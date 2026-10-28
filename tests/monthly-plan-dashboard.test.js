@@ -164,13 +164,23 @@ assert.equal(model.prefs.monthlyDutyPlans['2026-11-06'].end,'07:00');
 assert.equal(calc('monthlyDefaultDepartureStatus("2026-11-06")'),'public');
 let publicPlanned=calc('monthlyPlanProgress({startDate:"2026-11-01",endDate:"2026-11-30"})');
 assert.equal(publicPlanned.plannedPublic,1);
-assert.ok(!publicPlanned.left||publicPlanned.left>=0,'public planned shift excluded from remaining quota by default');
+const beforePublicIncluded=publicPlanned.left;
+assert.ok(beforePublicIncluded>=0,'公出予定は初期設定では残り目標対象から除外');
 fields.monthlyPublicIncluded.checked=true;
 calc('monthlyPublicGoalSave()');
 publicPlanned=calc('monthlyPlanProgress({startDate:"2026-11-01",endDate:"2026-11-30"})');
 assert.equal(publicPlanned.plannedPublic,1);
+assert.equal(publicPlanned.left,beforePublicIncluded+1,
+ '公出売上を含めると未乗務の公出予定1日が残り出番に増える');
+model.prefs.monthlyDutyActuals['2026-11-06']={status:'public'};
+publicPlanned=calc('monthlyPlanProgress({startDate:"2026-11-01",endDate:"2026-11-30"})');
+assert.equal(publicPlanned.left,beforePublicIncluded+1,
+ '実績を公出と登録しても、未乗務の出番は目標算入設定に従う');
 fields.monthlyPublicIncluded.checked=false;
 calc('monthlyPublicGoalSave()');
+assert.equal(calc('monthlyPlanProgress({startDate:"2026-11-01",endDate:"2026-11-30"}).left'),beforePublicIncluded,
+ '公出対象をOFFに戻すと未乗務の公出は残り出番から除外');
+delete model.prefs.monthlyDutyActuals['2026-11-06'];
 
 const bulkInputs={monthlyBulkStatus:{value:'off'},monthlyBulkStart:{value:''},monthlyBulkEnd:{value:''},monthlyBulkOverwrite:{checked:false}};
 for(const [id,val] of Object.entries(bulkInputs))fields[id]=val;
