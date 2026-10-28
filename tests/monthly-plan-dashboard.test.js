@@ -13,7 +13,7 @@ const originalDuty=JSON.stringify([{id:'duty-1',records:[{id:'ride-1',raw:{K:'10
 const model={prefs:{monthlySalesGoals:{'2026-11':50000},monthlyDutySalesGoals:{'2026-11':20000},monthlyDutyPlans:{'2026-11-12':{status:'work',start:'17:00',end:'06:00'}}},shifts:JSON.parse(originalDuty)};
 const fields={monthlyGoalInput:{value:'120000'},monthlyDutyGoalInput:{value:'26000'},monthlyPlanStatus:{value:'work'},monthlyPlanStart:{value:'18:00'},monthlyPlanEnd:{value:'07:00'}};
 let saved=0,alerts=[];
-const ctx={Date,model,deviceMode:'writer',monthlyPrefs:()=>model.prefs,
+const ctx={Date,model,deviceMode:'writer',accountSettingsAuto:{status:()=>({message:'設定の読戻し確認済み'})},monthlyPrefs:()=>model.prefs,
  monthlyViewerPrefs:null,monthlyViewerPrefsMessage:'',
  monthlySalesMonth:'2026-11',monthlySalesBusy:false,monthlySalesMessage:'',monthlySalesData:{
  startDate:'2026-11-01',endDate:'2026-11-30',
@@ -43,6 +43,8 @@ assert.equal(calc('monthlyPlanActualClock("","18:45")'),'18:45');
 assert.equal(calc('monthlyPlanActualClock("","")'),'記録なし');
 const screen=calc('renderMonthlyManagement()');
 assert.match(screen,/月間目標と営業実績/);
+assert.match(screen,/月間設定の保存を確認/,'writer can request a server readback');
+assert.match(screen,/設定の読戻し確認済み/,'monthly page exposes the settings confirmation status');
 assert.match(screen,/日別の予定・実績/);
 assert.match(screen,/月末着地予測（参考）/);
 assert.match(screen,/基本の日別目標/);
