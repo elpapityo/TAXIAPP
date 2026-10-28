@@ -123,6 +123,20 @@ try:
  wait.until(lambda _: js("return !!document.querySelector('.month-plan-day.work')"))
  assert js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyPlans[arguments[0]].start",chosen_date)=='17:00'
  assert js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyPlans[arguments[0]].end",chosen_date)=='06:00'
+ js("document.getElementById('monthlyActualStatus').value='public'; document.querySelector('[data-action=monthlyActualSave]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyActuals?.[arguments[0]]?.status==='public'",chosen_date))
+ js("document.querySelector('[data-action=monthlyManagementMode][data-id=targets]').click()")
+ wait.until(lambda _: js("return !!document.getElementById('monthlyPublicIncluded')"))
+ js("document.getElementById('monthlyPublicIncluded').checked=true; document.querySelector('[data-action=monthlyPublicGoalSave]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyIncludePublicSales==='on'"))
+ js("document.querySelector('[data-action=monthlyManagementMode][data-id=bulk]').click()")
+ wait.until(lambda _: js("return !!document.getElementById('monthlyBulkStatus')"))
+ js("""for(let d=0;d<7;d++)document.getElementById('monthlyBulkDay'+d).checked=(d===1);
+     document.getElementById('monthlyBulkStatus').value='off';
+     document.querySelector('[data-action=monthlyPlanBulkSave]').click()""")
+ wait.until(lambda _: js("return !!document.querySelector('.month-plan-calendar')"))
+ assert js("return Object.values(window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyPlans).some(x=>x.status==='off')")
+ assert js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDutyActuals[arguments[0]].status",chosen_date)=='public'
  assert js("return JSON.stringify(window.__TAXIAPP_DEMO__.snapshot().shifts)")==initial_duty, 'monthly plan must not mutate the current duty'
  js("document.querySelector('[data-tab=live]').click()")
  wait.until(lambda _: js("return !!document.querySelector('.operations-overview')"))
