@@ -99,15 +99,23 @@ try:
  assert js("return !document.querySelector('script[src]')"),'no external JS'
  # Independent monthly management must accept local plans and goals without editing a duty.
  js("document.querySelector('.taxi-mobile-more-panel [data-tab=monthly]').click()")
- wait.until(lambda _: js("return !!document.querySelector('#monthlyDashboardMonth')"))
- assert js("return !!document.querySelector('.month-plan-calendar')")
- assert js("return !document.querySelector('#monthlyGoalInput').disabled")
+ wait.until(lambda _: js("return !!document.querySelector('.month-plan-calendar')"))
  initial_duty=js("return JSON.stringify(window.__TAXIAPP_DEMO__.snapshot().shifts)")
+ js("document.querySelector('[data-action=monthlyManagementMode][data-id=targets]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('#monthlyGoalInput')"))
+ assert js("return !document.querySelector('#monthlyGoalInput').disabled")
+ selected_month=js("return document.getElementById('monthlyDashboardMonth').value")
  js("document.getElementById('monthlyGoalInput').value='950000'; document.querySelector('[data-action=monthlyGoalSave]').click()")
- wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlySalesGoals?.[document.getElementById('monthlyDashboardMonth').value]===950000"))
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlySalesGoals?.[arguments[0]]===950000",selected_month))
+ js("document.getElementById('monthlyWeekdayGoal1').value='33000'; document.querySelector('[data-action=monthlyWeekdayGoalSave]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyWeekdaySalesGoals?.['1']===33000"))
+ js("document.querySelector('[data-action=monthlyManagementMode][data-id=calendar]').click()")
+ wait.until(lambda _: js("return !!document.querySelector('.month-plan-day')"))
  js("document.querySelector('.month-plan-day').click()")
  wait.until(lambda _: js("return !!document.querySelector('#monthlyPlanStatus')"))
  chosen_date=js("return document.querySelector('.month-plan-day.selected').dataset.id")
+ js("document.getElementById('monthlyDateGoalInput').value='44000'; document.querySelector('[data-action=monthlyDateGoalSave]').click()")
+ wait.until(lambda _: js("return window.__TAXIAPP_DEMO__.snapshot().prefs.monthlyDateSalesGoals?.[arguments[0]]===44000",chosen_date))
  js("""document.getElementById('monthlyPlanStatus').value='work';
      document.getElementById('monthlyPlanStart').value='17:00';
      document.getElementById('monthlyPlanEnd').value='06:00';
