@@ -175,12 +175,12 @@ const snap=prefs=>({exists:()=>true,data:()=>({
 })});
 verifyCtx.fire={getDocFromServer:async()=>snap(verifyCtx.expected)};
 (async()=>{
- assert.equal(await vm.runInContext('verifySavedPrefs(expected,"own-uid",12)',verifyCtx),true);
+ assert.equal(await vm.runInContext('verifySavedPrefs(expected,"own-uid",12,ref())',verifyCtx),true);
  verifyCtx.fire={getDocFromServer:async()=>snap({monthlySalesGoals:{'2026-11':900000}})};
- await assert.rejects(vm.runInContext('verifySavedPrefs(expected,"own-uid",12)',verifyCtx),/一致しません/);
+ await assert.rejects(vm.runInContext('verifySavedPrefs(expected,"own-uid",12,ref())',verifyCtx),/一致しません/);
  verifyCtx.authGeneration=13;
  verifyCtx.fire={getDocFromServer:async()=>snap(verifyCtx.expected)};
- assert.equal(await vm.runInContext('verifySavedPrefs(expected,"own-uid",12)',verifyCtx),false);
+ assert.equal(await vm.runInContext('verifySavedPrefs(expected,"own-uid",12,ref())',verifyCtx),false);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 console.log('Account settings migration passed: name, waiting places, inputs, display, fares, credentials and shift preservation.');
 console.log('Account settings automatic synchronization regression passed.');
@@ -212,3 +212,42 @@ vm.runInContext('transfer='+applyCallback,applyCtx);
  assert.equal(applyCtx.model.prefs.monthlySalesGoals['2026-11'],1200000);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 
+
+// 非同期トランザクションのFirestore読込中に認証先が変わった場合、旧UIDへも新UIDへも書かない。
+const reconcileBegin=auto.indexOf('  async function reconcile(){');
+const reconcileFinish=auto.indexOf('  async function completeRegistration(){',reconcileBegin);
+assert.ok(reconcileBegin>0&&reconcileFinish>reconcileBegin);
+const accountWrites=[],accountReads=[];
+const raceCtx={
+ api,uid:'uid-A',authGeneration:1,auth:{currentUser:{uid:'uid-A'}},
+ enabled:true,busy:false,again:false,baseline:null,db:{},
+ deviceSession:{canWrite:()=>true},deps:{canApplyPrefs:()=>true,isEditing:()=>false},
+ navigator:{onLine:true},status:()=>{},
+ currentPrefs:()=>({monthlySalesGoals:{'2026-11':1000000}}),
+ readBase:()=>null,stillCurrent:uid=>raceCtx.uid===uid&&raceCtx.auth.currentUser.uid===uid,
+ ref:()=>({path:'accountSettings/'+raceCtx.uid}),
+ storeBase:()=>{throw Error('書込確認できていない設定の基準版を進めない')},
+ writerFields:()=>({writerSessionId:'session'}),verifySavedPrefs:()=>{throw Error('invalid readback')},
+ schedule:()=>{throw Error('invalid repeat')},
+};
+raceCtx.fire={
+ getDocFromServer:async ref=>{accountReads.push(ref.path);return {exists:()=>false};},
+ runTransaction:async(db,cb)=>cb({
+  get:async ref=>{
+   accountReads.push(ref.path);
+   raceCtx.uid='uid-B';raceCtx.auth.currentUser.uid='uid-B';raceCtx.authGeneration=2;
+   return {exists:()=>false};
+  },
+  set:(ref,data)=>accountWrites.push({path:ref.path,data}),
+  update:(ref,data)=>accountWrites.push({path:ref.path,data})
+ })
+};
+vm.createContext(raceCtx);
+vm.runInContext(auto.slice(reconcileBegin,reconcileFinish),raceCtx);
+(async()=>{
+ await assert.rejects(vm.runInContext('reconcile()',raceCtx),/ログインが変更されました/);
+ assert.deepEqual(accountReads,['accountSettings/uid-A','accountSettings/uid-A'],
+  'サーバー照合とトランザクションは開始時の本人UIDへ固定');
+ assert.equal(accountWrites.length,0,'認証切替後は設定原本を書き込まない');
+ assert.equal(raceCtx.busy,false,'失敗後も同期の実行中表示を解除');
+})().catch(error=>{console.error(error);process.exitCode=1;});
