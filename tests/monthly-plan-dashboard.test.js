@@ -87,7 +87,7 @@ assert.equal(model.prefs.monthlyWeekdaySalesGoals['1'],32000);
 assert.equal(model.prefs.monthlyWeekdaySalesGoals['4'],49000);
 assert.equal(calc('monthlyDateGoal("2026-11-02").value'),32000);
 assert.equal(calc('monthlyDateGoal("2026-12-07").value'),32000,'weekday goals persist across months');
-assert.equal(calc('monthlyDateGoal("2026-11-05").value'),26000,'unconfigured weekday falls back to basic goal');
+assert.equal(calc('monthlyDateGoal("2026-11-03").value'),26000,'unconfigured weekday falls back to basic goal');
 fields.monthlyWeekdayGoal1.value='bad';
 calc('monthlyWeekdayGoalSave()');
 assert.equal(model.prefs.monthlyWeekdaySalesGoals['1'],32000,'invalid input cannot replace a saved weekday target');
