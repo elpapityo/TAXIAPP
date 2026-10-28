@@ -3264,7 +3264,10 @@ const legacyDiary=()=>accountScope.kind==='legacy';
 const scopedStorageKey=()=>accountScope.adminFirestorePreview?
  'taxiapp-admin-firestore-preview-v1-'+accountScope.uid:
  memberDiary()?'taxiapp-account-state-v1-'+accountScope.uid:KEY;
-const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}});
+const emptyAccountModel=()=>({version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],
+ // 新規本人アカウント専用。既存ユーザーの設定・日報は変更しない。
+ pickupDropDistance:'off',highwayDistance:'on',autoDistance:'off',gpsTripAtStart:'off',
+ ui:{text:'large',buttons:'large',contrast:'high',theme:'day',driveLayout:'meter',simpleMode:'on'}}});
 let viewerLocalModel=null,viewerCloudLoaded=false,viewerCloudError=false,viewerOpenCount=0;
 let accountScopeLoaded=false;
 let writerLoadGate=true,writerLoadError='',writerLoadEpoch=0;
@@ -3276,10 +3279,11 @@ function canWriteBootstrapConflict(id){return Boolean(bootstrapConflictResolutio
 // 初回の利用登録を自分で完了したUIDだけ案内する。既存利用者の欠損設定を「初回」と推定しない。
 const FIRST_RUN_GUIDE_PREFIX='taxiapp-initial-guide-v1-';
 const FIRST_RUN_STEPS=Object.freeze([
- {id:'driver',title:'乗務員・車両',text:'会社名・乗務員名・社員番号・車両番号・月間締め日を登録します。'},
- {id:'display',title:'画面と入力',text:'文字・ボタンの大きさや操作方法を選びます。'},
- {id:'gps',title:'GPS・距離',text:'位置情報・住所変換・距離測定の設定を確認します。'},
- {id:'data',title:'保存とバックアップ',text:'本人の保存先・ログイン状態・バックアップ方法を確認します。'}
+ {id:'display',title:'メーターモード',text:'初期値はメーター型のシンプル表示ONです。'},
+ {id:'driver',title:'乗務員設定',text:'会社名・乗務員名・社員番号・車番・売上締め日を入力します。'},
+ {id:'gps',title:'距離設定',text:'乗降距離OFF、高速距離ON、自動取得OFFから始めます。'},
+ {id:'display',title:'入力項目の選択',text:'シンプル表示に必要な項目と決済方法を選びます。'},
+ {id:'monthly',title:'月間売上目標',text:'目標額を入力します。詳細な予定は後から登録できます。'}
 ]);
 let firstRunGuide=null,firstRunGuideBusy=false;
 function firstRunGuideStore(uid,step){
@@ -3326,24 +3330,54 @@ function firstRunGuideActivate(){
  settingsCategoryActive=FIRST_RUN_STEPS[firstRunGuide.step].id;
  settingsOpenState=null;
 }
+function renderFirstRunGuideFields(){
+ if(!firstRunGuideActive())return '';
+ const step=firstRunGuide.step;
+ if(step===0)return '<section class="card"><h3 class="h2">営業入力の方式</h3><p class="caption-note">新規登録者の初期値はメーター型・シンプル表示ONです。後から変更できます。</p>'+
+  renderUiChoice('simpleMode',[['on','シンプル表示ON（メーター型）'],['off','シンプル表示OFF（詳細表示）']])+'</section>';
+ if(step===1)return '<p class="caption-note">待機所の登録は初期設定に含めません。必要なら後から変更できます。</p>'+renderDriverDefaults();
+ if(step===2){
+  const enabled=key=>model.prefs?.[key]!=='off';
+  return '<section class="card"><h3 class="h2">距離の設定</h3>'+
+   '<label class="field"><span class="field-label">乗車・降車の距離</span><select class="control" data-distance-setting="pickupDropDistance">'+
+   '<option value="off" '+(!enabled('pickupDropDistance')?'selected':'')+'>OFF（距離なし）</option>'+
+   '<option value="on" '+(enabled('pickupDropDistance')?'selected':'')+'>ON（入力する）</option></select></label>'+
+   '<label class="field"><span class="field-label">高速道路の距離</span><select class="control" data-distance-setting="highwayDistance">'+
+   '<option value="on" '+(enabled('highwayDistance')?'selected':'')+'>ON（高速距離あり）</option>'+
+   '<option value="off" '+(!enabled('highwayDistance')?'selected':'')+'>OFF（距離なし）</option></select></label>'+
+   '<label class="field"><span class="field-label">GPS距離の自動取得・入力</span><select class="control" data-native-auto-distance>'+
+   '<option value="off" '+(!nativeAutoDistanceEnabled()?'selected':'')+'>OFF（自動取得なし）</option>'+
+   '<option value="on" '+(nativeAutoDistanceEnabled()?'selected':'')+'>ON（自動入力）</option></select></label>'+
+   '<p class="caption-note">高速距離と高速料金は、乗降距離OFFでも入力できます。過去の距離を消しません。</p></section>';
+ }
+ if(step===3)return '<section class="card"><h3 class="h2">入力項目の選択</h3>'+
+  '<p class="caption-note">ここで選んだ表示項目がシンプルモードにも反映されます。過去記録は変更しません。</p>'+
+  renderRideFieldSettings()+
+  renderPaymentVisibilitySettings().replace('data-payment-visibility-settings>','data-payment-visibility-settings open>')+'</section>';
+ const target=model.prefs?.monthlySalesGoals?.[monthlySalesMonth];
+ return '<section class="card"><h3 class="h2">月間売上の目標額</h3>'+
+  '<p class="caption-note">締め日は乗務員設定の値を使用。曜日別目標は後から登録できます。</p>'+
+  '<label class="field"><span class="field-label">対象月</span><input class="control" readonly value="'+safeText(monthlySalesMonth)+'"></label>'+
+  '<label class="field"><span class="field-label">月間目標（円・空欄可）</span>'+
+  '<input class="control" id="initialGuideMonthlyGoal" type="text" inputmode="numeric" data-monthly-goal-money maxlength="13" value="'+safeText(monthlyValidGoal(target)?monthlyGoalInputDisplay(target):'')+'" placeholder="例：1,000,000"></label>'+
+  '<p class="caption-note">既存の月間目標と同じ本人設定へ保存します。実際の売上・料金の計算は変更しません。</p></section>';
+}
 function renderFirstRunGuide(){
  if(!firstRunGuideActive())return '';
  const i=firstRunGuide.step,step=FIRST_RUN_STEPS[i];
  const progress=FIRST_RUN_STEPS.map((item,k)=>
   '<span class="first-run-step'+(k===i?' active':k<i?' done':'')+'">'+
-  safeText((k+1)+' '+item.title)+'</span>').join('');
+  safeText((k+3)+' '+item.title)+'</span>').join('');
  return '<section class="card first-run-guide" aria-label="初回ログインの設定ガイド">'+
-  '<div class="first-run-eyebrow">はじめての設定 ／ '+(i+1)+' / '+FIRST_RUN_STEPS.length+'</div>'+
-  '<h2 class="h2">'+safeText(step.title)+'</h2>'+
-  '<p class="helper">'+safeText(step.text)+'</p>'+
-  '<p class="caption-note">表示中の設定欄は既存の正式な設定です。編集内容は端末保存を確認してから次へ進みます。後から「設定」で変更できます。</p>'+
+  '<div class="first-run-eyebrow">初回登録 ／ '+(i+3)+' / 7（Google認証・オプチャ名登録済み）</div>'+
+  '<h2 class="h2">'+safeText(step.title)+'</h2><p class="helper">'+safeText(step.text)+'</p>'+
+  '<p class="caption-note">設定は後から変更できます。端末保存を確認してから次へ進みます。</p>'+
   '<div class="first-run-steps" aria-label="設定の進行状況">'+progress+'</div>'+
   '<div class="actions">'+(i?'<button type="button" class="btn" data-first-run-action="back" '+(firstRunGuideBusy?'disabled':'')+'>前へ</button>':'')+
   '<button type="button" class="btn primary" data-first-run-action="'+(i===FIRST_RUN_STEPS.length-1?'finish':'next')+'" '+
-  (firstRunGuideBusy?'disabled':'')+'>'+(i===FIRST_RUN_STEPS.length-1?'初期設定を完了':'保存して次へ')+'</button>'+
-  '<button type="button" class="btn" data-first-run-action="skip" '+(firstRunGuideBusy?'disabled':'')+'>今回は終了する</button></div>'+
-  (firstRunGuideBusy?'<p class="caption-note" role="status">設定を端末へ保存しています…</p>':'')+
-  '</section>';
+  (firstRunGuideBusy?'disabled':'')+'>'+(i===FIRST_RUN_STEPS.length-1?'保存して利用開始':'保存して次へ')+'</button>'+
+  '<button type="button" class="btn" data-first-run-action="skip" '+(firstRunGuideBusy?'disabled':'')+'>いったん終了（次回再開）</button></div>'+
+  (firstRunGuideBusy?'<p class="caption-note" role="status">端末に保存しています…</p>':'')+'</section>';
 }
 async function firstRunGuideAction(action){
  if(firstRunGuideBusy||!firstRunGuideActive()||
@@ -3353,12 +3387,36 @@ async function firstRunGuideAction(action){
   accountScope.uid===owner&&currentLoginScope?.uid===owner&&
   currentLoginScope.firebase?.auth?.currentUser?.uid===owner&&canEditNow();
  firstRunGuideBusy=true;
+ let previousGoals,changedGoals=false;
  try{
+  if(action==='finish'&&firstRunGuide.step===FIRST_RUN_STEPS.length-1){
+   const amount=monthlyGoalInputRaw(document.getElementById('initialGuideMonthlyGoal')?.value);
+   if(amount===null){toast('月間目標は0～10億円の数字で入力してください',true);return;}
+   if(amount!==''){
+    previousGoals=model.prefs?.monthlySalesGoals===undefined?undefined:deepCopy(model.prefs.monthlySalesGoals);
+    changedGoals=true;
+    model.prefs??={};model.prefs.monthlySalesGoals??={};
+    if(Number(amount)===0)delete model.prefs.monthlySalesGoals[monthlySalesMonth];
+    else model.prefs.monthlySalesGoals[monthlySalesMonth]=Number(amount);
+   }
+  }
   if(await save()!==true||!valid()){
-   if(valid())toast('端末の設定保存が未完了です。設定を保護して操作を止めました。',true);
+   if(valid()){
+    if(changedGoals){
+     if(previousGoals===undefined)delete model.prefs.monthlySalesGoals;
+     else model.prefs.monthlySalesGoals=previousGoals;
+    }
+    toast('端末の設定保存が未完了です。設定を保護して停止しました。',true);
+   }
    return;
   }
-  if(action==='finish'||action==='skip'){
+  if(action==='skip'){
+   // 中断は「完了」ではない。次の本人ログイン時に同じ項目から再開。
+   firstRunGuide=null;tab='drive';render();
+   toast('設定を中断しました。次回ログイン時に続きから再開します。');
+   return;
+  }
+  if(action==='finish'){
    model.prefs??={};
    const previous=model.prefs.initialGuideCompleted;
    model.prefs.initialGuideCompleted=true;
@@ -3366,24 +3424,19 @@ async function firstRunGuideAction(action){
     if(valid()){
      if(previous===undefined)delete model.prefs.initialGuideCompleted;
      else model.prefs.initialGuideCompleted=previous;
-     toast('初回設定の完了を保存できません。再度お試しください。',true);
+     toast('初期設定の完了を保存できません。もう一度お試しください。',true);
     }
     return;
    }
    try{localStorage.removeItem(FIRST_RUN_GUIDE_PREFIX+owner);}catch{}
-   firstRunGuide=null;
-   settingsCategoryActive='driver';
-   tab='drive';
-   render();
-   toast(action==='finish'?'初期設定を保存しました。乗務画面を開きます。':'初期設定ガイドを終了しました。設定はいつでも変更できます。');
+   firstRunGuide=null;settingsCategoryActive='driver';tab='drive';render();
+   toast('初期設定を保存しました。乗務画面を開きます。');
   }else{
    const step=Math.max(0,Math.min(FIRST_RUN_STEPS.length-1,firstRunGuide.step+(action==='next'?1:-1)));
    firstRunGuide={uid:owner,step};
    if(!firstRunGuideStore(owner,step))
-    toast('設定の進捗を端末に記録できません。次回ログイン時は最初から案内される場合があります。',true);
-   settingsCategoryActive=FIRST_RUN_STEPS[step].id;
-   settingsOpenState=null;
-   render();
+    toast('端末に進捗を保存できません。次回は先頭からの再開となる場合があります。',true);
+   settingsCategoryActive=FIRST_RUN_STEPS[step].id;settingsOpenState=null;render();
   }
  }catch(error){if(valid())toast('初回設定の保存に失敗しました：'+String(error.message||error),true);}
  finally{firstRunGuideBusy=false;}
@@ -4103,7 +4156,7 @@ function metrics(shift,previous=false){const t=totals(shift.records,shift.settin
 function selector(col,values,current,descriptions=false){return `<div class="selector" role="group" aria-label="${safeText(col==='N'?'支払方法':col==='I'?'男性人数':col==='J'?'女性人数':col)}">${values.map(v=>{let key=Array.isArray(v)?v[0]:v,label=Array.isArray(v)?v[1]:v;const visible=(col==='N'||col==='I'||col==='J')?key:(descriptions?`${key} · ${label}`:label);return `<button type="button" data-setcol="${safeText(col)}" data-value="${safeText(key)}" class="chip label-chip ${String(current)===String(key)?'active':''}" aria-label="${safeText(label)}" title="${safeText(label)}" aria-pressed="${String(current)===String(key)}">${safeText(visible)}</button>`}).join('')}</div>`;}
 const NATIVE_DIARY_GPS_PREF='taxiapp-production-native-gps-v140';
 const NATIVE_AUTO_DISTANCE_PREF='taxiapp-production-auto-distance-v140';
-function nativeAutoDistanceEnabled(){return false;}
+function nativeAutoDistanceEnabled(){return memberDiary()&&model.prefs?.autoDistance==='on';}
 function nativeDiaryGpsEnabled(){return false;}
 // Reconnect after GPS restart without guessing unmeasured travel.
 function nativeDistanceBase(shift,data){
@@ -4538,13 +4591,13 @@ function renderMeterDrive(shift){
   (rideFieldShown('discount')||Boolean(d.raw.O)?button('障割 '+(d.raw.O==='シ'?'✓':''),'meterDiscount','meter-discount'):'')+button('保存','saveDraft','meter-finish'):
   button('支払','meterSettle','meter-settle')+(rideFieldShown('discount')||Boolean(d.raw.O)?button('障割 '+(d.raw.O==='シ'?'✓':''),'meterDiscount','meter-discount'):'')+button('高速','meterHighway','meter-highway')+button('入力破棄','discardDraft','meter-sub');
  else actions=button('登録する','saveDraft')+button('入力破棄','discardDraft','meter-sub');
- const dispatchFields=d?.kind==='dispatch'?'<div class="meter-inline-editor" aria-label="迎車入力"><div class="field-label">配車元</div>'+selector('E',DISPATCH_TYPES,d.raw.E,true)+(simple?'':rideFieldShown('received')?field('C',d.raw,{label:'迎車受信時刻'}):'')+locationField('AL',d.raw,'お迎え場所・住所','gpsPickup')+(!simple&&distanceEnabled('F')?field('F',d.raw,{label:'迎車先の走行距離（km）'}):'')+'</div>':'';
- const passengerFields=d?.kind==='ride'&&!settling?'<div class="meter-inline-editor" aria-label="実車入力"><div class="field-label">配車区分</div>'+selector('E',TYPES,d.raw.E)+(!simple||!d.raw.G?field('G',d.raw,{label:'乗車時刻'}):'')+(!simple&&distanceEnabled('F')?field('F',d.raw,{label:'乗車時の走行距離（km）'}):'')+locationField('AL',d.raw,'乗車地・住所','gpsPickup')+(rideFieldShown('passengers')?'<div class="meter-inline-passengers">'+passengerChoice('I',d.raw.I,'男性',true)+passengerChoice('J',d.raw.J,'女性',true)+'</div>':'')+'<div class="field-label">支払い方法</div>'+selector('N',shownPayments(d.raw.N),d.raw.N,true)+'</div>':'';
+ const dispatchFields=d?.kind==='dispatch'?'<div class="meter-inline-editor" aria-label="迎車入力"><div class="field-label">配車元</div>'+selector('E',DISPATCH_TYPES,d.raw.E,true)+(simple?'':rideFieldShown('received')?field('C',d.raw,{label:'迎車受信時刻'}):'')+locationField('AL',d.raw,'お迎え場所・住所','gpsPickup')+(distanceEnabled('F')?field('F',d.raw,{label:'迎車先の走行距離（km）'}):'')+'</div>':'';
+ const passengerFields=d?.kind==='ride'&&!settling?'<div class="meter-inline-editor" aria-label="実車入力"><div class="field-label">配車区分</div>'+selector('E',TYPES,d.raw.E)+(!simple||!d.raw.G?field('G',d.raw,{label:'乗車時刻'}):'')+(distanceEnabled('F')?field('F',d.raw,{label:'乗車時の走行距離（km）'}):'')+locationField('AL',d.raw,'乗車地・住所','gpsPickup')+(rideFieldShown('passengers')?'<div class="meter-inline-passengers">'+passengerChoice('I',d.raw.I,'男性',true)+passengerChoice('J',d.raw.J,'女性',true)+'</div>':'')+'<div class="field-label">支払い方法</div>'+selector('N',shownPayments(d.raw.N),d.raw.N,true)+'</div>':'';
  const breakdown=settling?paymentBreakdown(d,shift.settings,shift.date):null;
  const expandedPayment=Boolean(breakdown&&(breakdown.second||breakdown.invalid||breakdown.invalidUber||breakdown.incomplete||breakdown.autoUber));
  const paymentItems=settling?(simple?'<details class="details simple-payment-detail" '+(expandedPayment?'open':'')+'><summary>複合決済・精算内訳を開く</summary><div class="inner">'+renderPaymentSplit(shift,d)+'</div></details>':renderPaymentSplit(shift,d)):'';
  const quick=settling?'<div class="meter-quick-inputs">'+field('K',d.raw,{label:'メーター金額（円）',required:true})+
- (!simple&&distanceEnabled('L')?field('L',d.raw,{label:'降車時の走行距離（km）'}):'')+
+ (distanceEnabled('L')?field('L',d.raw,{label:'降車時の走行距離（km）'}):'')+
  (!simple||!d.raw.M?field('M',d.raw,{label:'降車時刻（変更可能）'}):'')+
  (rideFieldShown('dropAddress')?locationField('AM',d.raw,'降車地・住所','gpsDrop'):'')+
  (rideFieldShown('discount')||d.raw.O||number(d.raw.AR)!==null?'<div class="meter-settle-discount"><div class="field-label">割引</div>'+selector('O',[['','なし'],['シ','障がい者'],['高','高齢者']],d.raw.O)+field('AR',d.raw,{label:'割引金額'})+'</div>':'')+
@@ -4701,7 +4754,7 @@ const RIDE_DISTANCE_PREFS=[
  ['highwayDistance','高速道路の乗距離・降距離（実車・空車・複数区間共通）']
 ];
 function rideFieldShown(key){
- if(key==='distanceStart'||key==='distanceEnd')return distanceEnabled('F')&&!(typeof simpleModeActive==='function'&&simpleModeActive());
+ if(key==='distanceStart'||key==='distanceEnd')return distanceEnabled('F');
  const settings=model.prefs?.rideFieldVisibility||{};
  const normal=settings[key]!==false;
  return typeof simpleFieldVisible==='function'?simpleFieldVisible('ride',key,normal):normal;
@@ -4716,7 +4769,7 @@ function renderRideFieldSettings(){
  return `<section class="card"><h2 class="h2">日報入力項目の表示設定</h2>
  <p class="helper">✓を外すと画面だけ非表示にします。既存の営業記録・入力値・計算式は消しません。入力中の高速区間や割引は、誤操作防止のため引き続き表示します。補足項目（AppSheet互換）からも確認できます。</p>
  <h3 class="subsection">固定表示・入力必須</h3>
- <p class="caption-note">${RIDE_REQUIRED_FIELDS.join('、')}。${simpleModeActive()?'シンプルモードでは高速道路の距離だけ入力画面に表示し、通常の乗車・降車距離の入力は必須にしません。記録済みの距離とGPS計測は保持します。':'乗車・降車の走行距離管理がONのとき、乗車距離は保存時に必須となり、降車距離も必ず入力欄を表示します。'}</p>
+ <p class="caption-note">${RIDE_REQUIRED_FIELDS.join('、')}。${simpleModeActive()?'シンプルモードの初期値は乗降距離OFF・高速距離ONです。乗降距離をONにすると入力欄を表示します。過去の距離とGPS計測は保持します。':'乗車・降車の走行距離管理がONのとき、乗車距離は保存時に必須となり、降車距離も必ず入力欄を表示します。'}</p>
  <h3 class="subsection">距離管理（既存設定と双方向連動）</h3>
  <div class="cruising-summary-settings">${RIDE_DISTANCE_PREFS.map(distance).join('')}</div>
  <p class="caption-note">距離管理OFFでは距離欄を隠しますが、走行距離の既存記録は削除しません。高速料金・入口出口・時刻は高速距離設定OFFでも記録できます。</p>
@@ -7933,6 +7986,8 @@ function renderSettingsCategorized(shift){
   }
  }
  const header=children.filter(el=>!el.matches('details.settings-advanced')).map(el=>el.outerHTML).join('');
+ // 初回登録は通常の複雑な設定一覧でなく専用フォームを順番に表示する。
+ if(isGuide)return header+renderFirstRunGuide()+renderFirstRunGuideFields();
  const buttons=SETTINGS_CATEGORY_GROUPS.map(item=>
   '<button type="button" class="settings-group-button '+(item.id===chosen.id?'selected':'')+
   '" data-settings-category-choice="'+item.id+'" aria-pressed="'+String(item.id===chosen.id)+'">'+
@@ -9207,7 +9262,12 @@ function handleInput(e){const target=e.target;const s=getShift();
  }
  if(target.matches?.('[data-native-auto-distance]')){
   if(e.type!=='change')return;
-  try{localStorage.setItem(NATIVE_AUTO_DISTANCE_PREF,target.value==='on'?'on':'off');}catch{return;}
+  if(memberDiary()){
+   model.prefs??={};model.prefs.autoDistance=target.value==='on'?'on':'off';saveLater();
+  }else{
+   try{localStorage.setItem(NATIVE_AUTO_DISTANCE_PREF,target.value==='on'?'on':'off');}
+   catch{toast('自動距離設定を保存できません',true);return;}
+  }
   render();return;
  }
  if(target.matches?.('[data-native-diary-gps]')){
