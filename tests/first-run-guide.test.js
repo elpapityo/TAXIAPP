@@ -98,3 +98,55 @@ const call=expr=>vm.runInContext(expr,ctx);
  assert.equal(memory.has('taxiapp-initial-guide-v1-new-B'),false);
  console.log('PASS: 新規登録UID限定・4段階設定・保存失敗保護・再ログイン再開・UID分離・初回終了');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+
+// 登録サーバーの返答ごとに実働のcompleteRegistrationを実行する。
+// 既存アカウントや競合中の登録から、新規利用者ガイドを誤起動させない。
+const registrationStart=auth.indexOf('async function completeRegistration(){');
+const registrationEnd=auth.indexOf('async function authChanged(next){',registrationStart);
+assert.ok(registrationStart>0&&registrationEnd>registrationStart);
+const registrationSource=auth.slice(registrationStart,registrationEnd);
+async function simulateRegistration({existing=false,concurrent=false,verified=true}={}){
+ const hits=[],messages=[],writes=[];
+ const user={uid:'member-1',getIdTokenResult:async()=>({})};
+ const record={status:'active',openChatName:'新人乗務員'};
+ let present=existing,reads=0;
+ const reg={
+  pendingRegistration:{uid:'member-1',user,generation:7},registrationBusy:false,
+  authGeneration:7,auth:{currentUser:user},db:{},
+  fire:{
+   doc:(_db,col,uid)=>({path:col+'/'+uid}),
+   getDocFromServer:async()=>{reads++;
+    const exists=present&&(!verified||reads===1?true:verified);
+    return {exists:()=>exists,data:()=>record};
+   },
+   setDoc:async(ref,doc)=>{writes.push({ref,doc});present=true;
+    if(concurrent)throw Error('concurrent registration');},
+   serverTimestamp:()=>({serverTime:true})
+  },
+  root:{TAXIAPP_LOGIN_UTILS:{
+   normalizeOpenChatName:name=>name,
+   autoRegistrationDecision:()=> 'create'
+  }},
+  $:()=>({value:'新人乗務員'}),displayRegistration:()=>{},
+  status:message=>messages.push(message),console,
+  deps:{onInitialRegistrationVerified:uid=>hits.push(uid)},
+  explicitWriterLogin:false,printViewerMode:false,
+  authChanged:async()=>{}
+ };
+ vm.createContext(reg);vm.runInContext(registrationSource,reg);
+ await vm.runInContext('completeRegistration()',reg);
+ return {hits,writes,messages,reg};
+}
+(async()=>{
+ const created=await simulateRegistration();
+ assert.deepEqual(created.hits,['member-1'],'新規登録＋サーバー読戻し後だけ案内');
+ assert.equal(created.writes.length,1);
+ const known=await simulateRegistration({existing:true});
+ assert.deepEqual(known.hits,[],'既存アカウントには表示しない');
+ assert.equal(known.writes.length,0,'既存プロフィールを書き換えない');
+ const simultaneous=await simulateRegistration({concurrent:true});
+ assert.deepEqual(simultaneous.hits,[],'同時登録されたユーザーを初回登録と誤認しない');
+ assert.equal(simultaneous.writes.length,1);
+ console.log('PASS: 本人の新規登録作成と読戻し後だけ初回設定を案内');
+})().catch(error=>{console.error(error);process.exitCode=1;});
