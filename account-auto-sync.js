@@ -191,6 +191,12 @@ root.TAXIAPP_ACCOUNT_AUTO={
   }
   async function reconcile(){
    if(!deviceSession?.canWrite())return;
+   // 本人の日報読込・端末復元が終わるまで設定を反映しない。
+   // 端末保存権がない時刻に同期基準だけ確定させるのを防ぐ。
+   if(deps.canApplyPrefs?.()===false){
+    status('営業原本の読込完了後に設定を照合します');
+    return;
+   }
    if(enabled&&deps.isEditing?.()){
     // Wait until editing actually ends. Polling every 2.5 seconds generates
     // repeated status changes and may turn into endless cloud reads.
