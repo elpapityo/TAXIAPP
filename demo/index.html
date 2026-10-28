@@ -6678,7 +6678,7 @@ function renderShiftManager(lastShift){
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫日時（変更可能）</span><input id="shiftStartAt" class="control" type="datetime-local" value="${localDateTime(new Date())}"></label>
  <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">出庫時の車両トリップ（km）</span><input id="shiftStartOdo" class="control" data-number-kind="distance" type="text" inputmode="none" value="0.0" placeholder="0.0"><button type="button" class="btn km-step" data-km-step="-1" aria-label="出庫距離を0.1km減らす">−</button><button type="button" class="btn km-step" data-km-step="1" aria-label="出庫距離を0.1km増やす">＋</button></label>
  <p class="caption-note">出庫距離は車両トリップの実測値を入力してください。実GPS計測中なら出庫登録時にGPS累計を基準として紐づけます。</p>
- <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">今回の勤務実績区分</span><select id="shiftActualStatus" class="control"><option value="">選択してください</option><option value="normal">通常出勤</option><option value="public">公出</option></select></label>
+ <label class="field" style="max-width:350px;margin:15px 0"><span class="field-label">今回の勤務実績区分</span><select id="shiftActualStatus" class="control"><option value="" ${monthlyDefaultDepartureStatus(dateStamp())===''?'selected':''}>選択してください</option><option value="normal" ${monthlyDefaultDepartureStatus(dateStamp())==='normal'?'selected':''}>通常出勤</option><option value="public" ${monthlyDefaultDepartureStatus(dateStamp())==='public'?'selected':''}>公出</option></select></label>
  <p class="caption-note">出番予定日は通常出勤が初期値。公休や未設定の日は選んでください。後からカレンダーで修正できます。</p><button class="btn big primary fill" type="button" data-action="startShift">🚕 出庫を記録して乗務開始</button></section>
  ${model.shifts.filter(x=>!x.endedAt&&!x.endedIso).map(x=>'<section class="card"><h2 class="h2">他端末から受信した乗務を編集</h2><p class="helper">'+safeText(x.date)+'　出庫 '+shortTime(x.startedAt)+' ／ '+x.records.length+'件。編集競合を避けるため他端末との同時入力にご注意ください。</p><button class="btn teal" data-action="resumeSyncedShift" data-id="'+safeText(x.id)+'">この端末で乗務入力を開く</button></section>').join('')}
  ${lastShift?`<section class="card"><h2 class="h2">前回の入庫記録</h2><div class="statline"><span>乗務日</span><b>${friendlyDate(lastShift.date)}</b></div><div class="statline"><span>出庫</span><b>${shortTime(lastShift.startedAt)}</b></div><div class="statline"><span>出庫距離</span><b>${number(lastShift.startingOdo)===null?'未記録':safeText(lastShift.startingOdo)+' km'}</b></div><div class="statline"><span>入庫</span><b>${shortTime(lastShift.endedAt)}</b></div><div class="statline"><span>入庫距離</span><b>${number(lastShift.endingOdo)===null?'未記録':safeText(lastShift.endingOdo)+' km'}</b></div>${lastShift.endedAt?`<div class="actions" style="margin-top:14px"><button class="btn red" type="button" data-action="undoEndShift" data-id="${safeText(lastShift.id)}">↶ 入庫を取り消して乗務を再開</button></div><p class="footnote">直近の乗務のみ取り消せます。営業記録は残り、入庫時刻・距離は再入力できます。</p>`:''}</section>`:''}`;
@@ -9556,6 +9556,12 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
   if(!canEditNow()||!PAYMENTS.some(([id])=>id===code))return;
   model.prefs??={};if(simpleModeActive())setSimpleFieldVisible('payments',code,event.target.checked);else model.prefs.paymentVisible={...(model.prefs.paymentVisible||{}),[code]:event.target.checked};
   saveLater();return;
+ }
+ if(event.target.id==='shiftStartAt'){
+  const when=new Date(String(event.target.value||''));
+  const input=document.getElementById('shiftActualStatus');
+  if(input)input.value=Number.isFinite(when.getTime())?monthlyDefaultDepartureStatus(dateStamp(when)):'';
+  return;
  }
  if(event.target.id==='monthlySalesCloseDay'){
   if(!canEditNow())return;
