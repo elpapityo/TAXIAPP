@@ -17,7 +17,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    try{return new URLSearchParams(root.location.search).get('printViewer')==='1';}
    catch{return false;}
   })();
-  let deferredWhileEditing=false;
+  let deferredWhileEditing=false,deferredWhileLocalSave=false;
   let busy=false,again=false,timer=null,booted=false,settingsMessage='設定の同期状態を確認していません';
   // A single per-UID session listener revokes old editors.
   // User settings use one-off server reads only, never continuous watching.
@@ -196,6 +196,13 @@ root.TAXIAPP_ACCOUNT_AUTO={
    // 端末保存権がない時刻に同期基準だけ確定させるのを防ぐ。
    if(deps.canApplyPrefs?.()===false){
     status('営業原本の読込完了後に設定を照合します');
+    return;
+   }
+   // 月間設定の入力が端末へ永続保存されるまでFirestore送信を禁止。
+   // 編集終了時のblurだけでは端末保存完了とはみなさない。
+   if(deps.isLocalSaved?.()===false){
+    deferredWhileLocalSave=true;
+    status('端末の設定保存を確認してからFirestoreと照合します');
     return;
    }
    if(enabled&&deps.isEditing?.()){
@@ -388,7 +395,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    pendingRegistration=null;registrationBusy=false;
    displayRegistration(false);displayOpenChatName('');
    enabled=false;user=next;uid=next?.uid||'';baseline=null;
-   deferredWhileEditing=false;localSignature=null;
+   deferredWhileEditing=false;deferredWhileLocalSave=false;localSignature=null;
    deviceSession?.clear();
    // Clear the previous account even if the next login is denied or inactive.
    await deps.onUserScope?.(null);
@@ -602,13 +609,19 @@ root.TAXIAPP_ACCOUNT_AUTO={
   }
   function localSaved(){
    if(!enabled)return;
+   // 端末書込前の変更は通知しない。保存完了した瞬間だけ同期を解放。
+   if(deps.isLocalSaved?.()===false){deferredWhileLocalSave=true;return;}
+   const waiting=deferredWhileLocalSave;
+   deferredWhileLocalSave=false;
    try{
     const nextSignature=api.signature(currentPrefs());
-    // Duty records and GPS events are saved often; they must not
-    // trigger settings traffic when preferences are unchanged.
-    if(nextSignature===localSignature)return;
+    // 日報/GPSの保存では設定送信を発生させない。
+    if(nextSignature===localSignature){
+     if(waiting)schedule(0);
+     return;
+    }
     localSignature=nextSignature;
-    schedule(1000);
+    schedule(waiting?0:1000);
    }catch(e){status('設定の確認エラー：'+String(e.message||e));}
   }
   function editingEnded(){
