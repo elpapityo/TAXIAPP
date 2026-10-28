@@ -5684,7 +5684,9 @@ async function fetchOldGoogleHistoryIndex(){
    if(row?.id!==id||Number(row.revision)!==rev||shift?.id!==id||
       !Array.isArray(shift.records)||!shift.settings)
     throw Error('取得中に旧Google原本が変更されました');
-   rows.push({id,date:shift.date,startedIso:shift.startedIso||'',
+   rows.push({id,date:shift.date,startedIso:shift.startedIso||'',startedAt:shift.startedAt||'',
+    endedIso:shift.endedIso||'',endedAt:shift.endedAt||'',
+    duration:shift.startedIso&&shift.endedIso?shiftElapsed(shift,new Date(shift.endedIso)):null,
     count:shift.records.length,meter:totals(shift.records,shift.settings,shift.date).meter,
     ended:Boolean(shift.endedAt||shift.endedIso)});
   }
@@ -6142,6 +6144,7 @@ function renderMonthlySales(){
 
 async function loadMonthlySales(){
  if(monthlySalesBusy)return;
+ if(legacyDiary())return loadMonthlyFromLegacyGoogle();
  if(!memberDiary()||!accountDiary.ready()){
   monthlySalesMessage='本人Firestoreのログインを確認してください。';render();return;
  }
@@ -6208,6 +6211,50 @@ async function loadMonthlySales(){
  }
 }
 
+
+// 管理者の正式切替前は旧Google原本を維持。既存syncList/syncGetだけで明示取得する。
+async function loadMonthlyFromLegacyGoogle(){
+ if(monthlySalesBusy)return;
+ if(!legacyDiary()||!googleIsConfigured()||!canEditNow()){
+  monthlySalesMessage='管理者の旧Google原本を読むには操作端末の接続設定が必要です。';render();return;
+ }
+ let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
+ catch(e){monthlySalesMessage=String(e.message||e);render();return;}
+ const uid=accountScope.uid,generation=accountScopeGeneration,epoch=++monthlySalesEpoch;
+ const stable=()=>uid===accountScope.uid&&generation===accountScopeGeneration&&epoch===monthlySalesEpoch&&legacyDiary();
+ monthlySalesBusy=true;monthlySalesData=null;
+ monthlySalesMessage='旧Google原本を確認しています（この操作では保存・変更しません）…';render();
+ try{
+  // The existing index service verifies each duty ID and revision and
+  // returns no partial results. Never treat a stale cache as a fresh read.
+  if(oldGoogleIndexBusy)throw Error('旧Google原本の一覧を別画面で取得中です');
+  oldGoogleIndexLoaded=false;oldGoogleIndexUid='';
+  await fetchOldGoogleHistoryIndex();
+  if(!stable())return;
+  if(!oldGoogleIndexLoaded||oldGoogleIndexUid!==uid)
+   throw Error(oldGoogleIndexMessage||'旧Google原本を読み戻せませんでした');
+  const days=monthlyPlanDates(period).map(date=>({date,duties:0,departures:0,unfinished:0,meter:0,entries:[]}));
+  const map=new Map(days.map(day=>[day.date,day]));
+  const sum={duties:0,departures:0,unfinished:0,meter:0};
+  for(const row of oldGoogleIndex){
+   if(!stable())return;
+   const daily=map.get(row.date);
+   if(!daily)continue;
+   if(!Number.isFinite(row.meter)||row.meter<0)throw Error('旧Google原本の確定金額を照合できません');
+   daily.departures++;sum.departures++;
+   if(!row.ended){daily.unfinished++;sum.unfinished++;continue;}
+   daily.duties++;sum.duties++;
+   daily.meter+=row.meter;sum.meter+=row.meter;
+   daily.entries.push({id:row.id,startedAt:monthlyPlanActualClock(row.startedIso,row.startedAt),
+    endedAt:monthlyPlanActualClock(row.endedIso,row.endedAt),
+    duration:Number.isFinite(row.duration)?row.duration:null,meter:row.meter});
+  }
+  monthlySalesData={...period,days,sum,unfinished:sum.unfinished,source:'legacy-google'};
+  monthlySalesMessage='旧Google原本の照合完了：'+sum.duties+'乗務（読み取りのみ）';
+ }catch(error){
+  if(stable()){monthlySalesData=null;monthlySalesMessage='旧Google月間取得に失敗：'+String(error?.message||error);}
+ }finally{if(stable()){monthlySalesBusy=false;render();}}
+}
 
 // 本人UID別の端末設定にだけ保存する乗務計画。日報の金額・距離・履歴原本は変更しない。
 const MONTH_PLAN_NAMES=Object.freeze({work:'出番',public:'公出予定',off:'公休',leave:'有休',after:'明け'});
@@ -6441,7 +6488,7 @@ function renderMonthlyManagement(){
   '<input id="monthlyDashboardMonth" class="control" type="month" value="'+safeText(monthlySalesMonth)+'"></label>'+
   '<span class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</span>'+
   '<button type="button" class="btn primary" data-action="loadMonthlySales" '+
-  (monthlySalesBusy?'disabled aria-busy="true"':'')+'>確定実績を取得・更新</button></div>'+
+  (monthlySalesBusy?'disabled aria-busy="true"':'')+'>'+(legacyDiary()?'旧Google原本から実績を取得':'確定実績を取得・更新')+'</button></div>'+
   (monthlySalesMessage?'<p class="caption-note" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
   '<div class="month-goal-grid">'+
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
@@ -6464,6 +6511,7 @@ function renderMonthlyManagement(){
   kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
   '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報のみ。予測は目標対象の確定済み乗務平均×残り出番予定による参考値です。欠勤・公出は利用者が登録した件数です。</p></details>'+
   '<p class="caption-note">総売上には公出も含みます。月間目標への算入は「目標設定」で変更できます。</p>'+
+  (legacyDiary()?'<p class="caption-note">管理者の旧Google原本はボタンを押した時だけ既存の一覧・個別原本の照合を行います。原本を変更せず、取得できたデータだけ表示します。</p>':'')+
   '<div class="actions"><button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets">月間・曜日別目標を設定する</button></div>'+
   '<p class="caption-note">予定・目標・勤務区分は本人UID別の端末へ保存し、ログイン中の既存アカウント設定同期で他端末と照合します。同期完了までは端末側で保護し、日報原本は変更しません。</p></section>';
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
