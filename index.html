@@ -5570,7 +5570,13 @@ function monthlyPlanProgress(period){
  const confirmedWorkDays=report?report.days.filter(x=>x.duties>0).length:null;
  const work=days.filter(x=>x.plan?.status==='work');
  const plannedPublic=days.filter(x=>x.plan?.status==='public').length;
- const eligible=days.filter(x=>x.plan?.status==='work'||(monthlyPublicGoalIncluded()&&x.plan?.status==='public'));
+ const eligible=days.filter(x=>{
+  const actualStatus=monthlyActualEntry(x.date);
+  if(['absent','leave','off','after'].includes(actualStatus))return false;
+  if(actualStatus==='normal')return true;
+  if(actualStatus==='public')return monthlyPublicGoalIncluded();
+  return x.plan?.status==='work'||(monthlyPublicGoalIncluded()&&x.plan?.status==='public');
+ });
  const left=eligible.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
   !['absent','leave','off','after','public'].includes(monthlyActualEntry(x.date))).length;
  const includedDuties=report?report.days.reduce((n,d)=>n+
@@ -5623,8 +5629,10 @@ function renderMonthlyManagement(){
  for(const x of p.days){
   const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定',actualCode=monthlyActualEntry(x.date);
   const cellGoal=monthlyDateGoal(x.date);
-  const showGoal=(status==='work'||status==='unset'||(status==='public'&&monthlyPublicGoalIncluded())||Boolean(x.actual?.duties))&&
-   !(actualCode==='public'&&!monthlyPublicGoalIncluded());
+  const publicQuotaDay=actualCode==='public'||(!actualCode&&status==='public'&&!x.actual?.duties);
+  const showGoal=(status==='work'||status==='unset'||actualCode==='normal'||
+   (status==='public'&&monthlyPublicGoalIncluded())||Boolean(x.actual?.duties))&&
+   !(publicQuotaDay&&!monthlyPublicGoalIncluded());
   cells+='<button type="button" class="month-plan-day '+status+(x.actual?.duties?' realized':'')+
    (x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
    '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
@@ -5633,7 +5641,7 @@ function renderMonthlyManagement(){
    (x.actual?.duties?'<small class="month-day-yen" title="'+safeText(money(x.actual.meter))+'">'+monthlyCalendarMoney(x.actual.meter)+'</small>':
      x.actual?.unfinished?'<small>進行中 '+x.actual.unfinished+'件</small>':'')+
    (showGoal&&cellGoal.value?'<small class="month-day-goal">目標 '+money(cellGoal.value)+'</small>':
-    (actualCode==='public'||status==='public')&&!monthlyPublicGoalIncluded()?'<small>月間目標の対象外</small>':'')+'</button>';
+    publicQuotaDay&&!monthlyPublicGoalIncluded()?'<small>月間目標の対象外</small>':'')+'</button>';
  }
  const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
   '<option value="'+v+'" '+(entry?.status===v?'selected':'')+'>'+t+'</option>').join('');
@@ -5690,7 +5698,8 @@ function renderMonthlyManagement(){
  const listItems=p.days.map(x=>{
   const a=monthlyActualEntry(x.date),plan=MONTH_PLAN_NAMES[x.plan?.status]||'未設定';
   const d=monthlyDateGoal(x.date),actualStatus=a?MONTH_ACTUAL_NAMES[a]:'未確定';
-  const quotaApplies=monthlyPublicGoalIncluded()||!(a==='public'||x.plan?.status==='public');
+  const quotaApplies=monthlyPublicGoalIncluded()||
+   !(a==='public'||(!a&&x.plan?.status==='public'&&!x.actual?.duties));
   const amount=x.actual?.duties?money(x.actual.meter):x.actual?.unfinished?'進行中':'—';
   return '<button type="button" class="month-day-list-item'+(x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+'">'+
    '<strong>'+safeText(x.date.slice(5).replace('-','/'))+'（'+MONTH_PLAN_WEEKDAYS[monthlyWeekday(x.date)]+'）</strong>'+
