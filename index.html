@@ -5488,6 +5488,10 @@ function renderMonthlyTargetSettings(p){
   '<div class="month-weekday-goals">'+weekdayItems+'</div>'+
   '<div class="actions"><button class="btn primary" type="button" data-action="monthlyWeekdayGoalSave" '+readonly+'>曜日別目標を保存</button></div>'+
   '<p class="caption-note">最優先：カレンダーの日付別設定 → 曜日別設定 → 基本の日別目標。月間目標とは独立した参考値です。</p>'+
+  '<label class="field"><input type="checkbox" id="monthlyPublicIncluded" '+
+  (monthlyPublicGoalIncluded()?'checked ':'')+readonly+'> 公出売上を月間目標の対象に含める</label>'+
+  '<div class="actions"><button type="button" class="btn" data-action="monthlyPublicGoalSave" '+readonly+'>公出の集計設定を保存</button></div>'+
+  '<p class="caption-note">初期値は対象外。総売上と日報原本は変わりません。給与計算はしません。</p>'+
   '<p class="caption-note">予定・目標は本人UID別の端末データ。別端末の自動同期は未対応。日報原本には書き込みません。</p></section>';
 }
 function monthlyWeekdayGoalSave(){
@@ -5530,15 +5534,21 @@ function monthlyPlanProgress(period){
  const ok=monthlySalesData?.startDate===period.startDate&&monthlySalesData?.endDate===period.endDate;
  const report=ok?monthlySalesData:null,byDay=new Map(report?.days?.map(x=>[x.date,x])||[]);
  const goal=monthlyPlanGoal(),dutyGoal=monthlyDutyGoal(),gross=report?.sum.meter??null,duties=report?.sum.duties??null;
+ const publicGross=report?report.days.reduce((n,d)=>n+(monthlyActualEntry(d.date)==='public'?(d.meter||0):0),0):null;
+ const normalGross=report?gross-publicGross:null;
+ const countedGross=report?normalGross+(monthlyPublicGoalIncluded()?publicGross:0):null;
  const days=monthlyPlanDates(period).map(date=>({date,plan:monthlyPlanEntry(date),actual:byDay.get(date)}));
  const work=days.filter(x=>x.plan?.status==='work');
- const left=work.filter(x=>x.date>=dateStamp()&&!x.actual?.duties).length;
- const avg=duties>0?gross/duties:null;
- return {report,byDay,goal,dutyGoal,gross,duties,days,planned:work.length,left,
-  pct:goal&&gross!==null?Math.round(1000*gross/goal)/10:null,
-  short:goal&&gross!==null?Math.max(0,goal-gross):null,
-  need:goal&&gross!==null&&left>0?Math.ceil(Math.max(0,goal-gross)/left):null,
-  expected:avg!==null?Math.round(gross+avg*left):null};
+ const left=work.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
+  !['absent','leave','off','after','public'].includes(monthlyActualEntry(x.date))).length;
+ const includedDuties=report?report.days.reduce((n,d)=>n+
+  (monthlyActualEntry(d.date)==='public'&&!monthlyPublicGoalIncluded()?0:(d.duties||0)),0):0;
+ const avg=includedDuties>0?countedGross/includedDuties:null;
+ return {report,byDay,goal,dutyGoal,gross,publicGross,normalGross,countedGross,duties,days,planned:work.length,left,
+  pct:goal&&countedGross!==null?Math.round(1000*countedGross/goal)/10:null,
+  short:goal&&countedGross!==null?Math.max(0,goal-countedGross):null,
+  need:goal&&countedGross!==null&&left>0?Math.ceil(Math.max(0,goal-countedGross)/left):null,
+  expected:avg!==null?Math.round(countedGross+avg*left):null};
 }
 function renderMonthlyManagement(){
  let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
@@ -5558,6 +5568,9 @@ function renderMonthlyManagement(){
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
   kpi('基本の日別目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
   kpi('確定売上（税込）',p.gross===null?'未取得':money(p.gross))+
+  kpi('通常分の確定売上',p.normalGross===null?'未取得':money(p.normalGross))+
+  kpi('公出分の確定売上',p.publicGross===null?'未取得':money(p.publicGross))+
+  kpi('月間目標の対象売上',p.countedGross===null?'未取得':money(p.countedGross))+
   kpi('目標達成率',p.pct===null?'未算出':p.pct+'%')+
   kpi('目標までの不足',p.short===null?'未算出':money(p.short))+
   kpi('入庫済み乗務',p.duties===null?'未取得':p.duties+'乗務')+
@@ -5565,23 +5578,28 @@ function renderMonthlyManagement(){
   kpi('残り出番に必要な平均売上',p.need===null?'算出不可':money(p.need),'wide')+
   kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
   '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報だけ。予測は確定済み乗務平均×残り出番予定による参考値です。未取得データは推測しません。</p>'+
+  '<p class="caption-note">総売上には公出も含みます。月間目標への算入は「目標設定」で変更できます。</p>'+
   '<div class="actions"><button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets">月間・曜日別目標を設定する</button></div>'+
   '<p class="caption-note">予定・目標は本人UID別の端末データに保存します。別端末との自動同期は未対応。日報原本は変更しません。</p></section>';
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
  for(const x of p.days){
-  const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定';
+  const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定',actualCode=monthlyActualEntry(x.date);
   const cellGoal=monthlyDateGoal(x.date);
   const showGoal=status==='work'||status==='unset'||Boolean(x.actual?.duties);
   cells+='<button type="button" class="month-plan-day '+status+(x.actual?.duties?' realized':'')+
    (x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
    '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
    '</strong><small>'+name+'</small>'+
+   (actualCode?'<small class="month-day-status '+(actualCode==='public'||actualCode==='absent'?actualCode:'')+'">実績 '+MONTH_ACTUAL_NAMES[actualCode]+'</small>':'')+
    (x.actual?.duties?'<small class="month-day-yen">'+money(x.actual.meter)+'</small>':'')+
    (showGoal&&cellGoal.value?'<small class="month-day-goal">目標 '+money(cellGoal.value)+'</small>':'')+'</button>';
  }
  const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
   '<option value="'+v+'" '+(entry?.status===v?'selected':'')+'>'+t+'</option>').join('');
  const readonly=canEditNow()?'':'disabled';
+ const actualCode=monthlyActualEntry(date);
+ const actualOptions='<option value="unset">未確定・未登録</option>'+
+  Object.entries(MONTH_ACTUAL_NAMES).map(([key,name])=>'<option value="'+key+'" '+(key===actualCode?'selected':'')+'>'+name+'</option>').join('');
  const plannedLabel=entry?.status==='work'
   ?'出番／出庫 '+(entry.start||'未設定')+'／入庫 '+(entry.end||'未設定')+
    (entry.start&&entry.end&&entry.end<=entry.start?'（翌日入庫）':'')
@@ -5599,6 +5617,7 @@ function renderMonthlyManagement(){
   '</div></div>').join('');
  const comparison='<div class="month-plan-compare"><h3 class="subsection">予定と確定実績の比較</h3>'+
   '<p class="caption-note">予定：'+safeText(plannedLabel)+'</p>'+
+  '<p class="caption-note">勤務実績：'+safeText(monthlyActualLabel(date,entry,actual))+'</p>'+
   (!p.report?'<p class="caption-note">本人Firestoreの月間実績は未取得です。</p>':
    actual?.duties?'<p class="panel-strip">確定：'+actual.duties+'乗務／'+money(actual.meter)+
      (dailyGoal.value?' ／ 日別目標との差額 '+money(actual.meter-dailyGoal.value):'')+'</p>'+
@@ -5611,7 +5630,12 @@ function renderMonthlyManagement(){
   '<label class="field"><span class="field-label">入庫予定</span><input id="monthlyPlanEnd" class="control" type="time" value="'+safeText(entry?.end||'')+'" '+readonly+'></label></div>'+
   '<p class="caption-note">入庫時刻が出庫時刻以前なら翌日入庫予定。公休・有休・明けは時刻を保存しません。</p>'+
   '<div class="actions"><button class="btn primary" data-action="monthlyPlanSave" '+readonly+'>この日の予定を保存</button></div>'+
-  '<div class="month-plan-compare"><h3 class="subsection">この日の売上目標</h3>'+
+  '<div class="month-plan-compare"><h3 class="subsection">勤務実績区分</h3>'+
+  '<p class="caption-note">出番予定はそのまま保持し、実際の区分だけ変更できます。日報がないだけでは自動欠勤にしません。</p>'+
+  '<label class="field"><span class="field-label">実際の区分</span><select id="monthlyActualStatus" class="control" '+readonly+'>'+actualOptions+'</select></label>'+
+  '<div class="actions"><button type="button" class="btn" data-action="monthlyActualSave" '+readonly+'>実績区分を保存・解除</button></div>'+
+  (actual?.duties&&['absent','off','leave','after'].includes(actualCode)?'<p class="warn">この日には入庫済みの日報があります。実績区分と記録を確認してください。</p>':'')+
+  '</div><div class="month-plan-compare"><h3 class="subsection">この日の売上目標</h3>'+
   '<p class="caption-note">現在の目標：'+(dailyGoal.value?money(dailyGoal.value):'未設定')+
    '（'+safeText(dailyGoal.source)+'）</p>'+
   '<label class="field"><span class="field-label">この日だけ変更（円）</span>'+
@@ -5622,14 +5646,16 @@ function renderMonthlyManagement(){
   comparison+
   (monthlyPlanMessage?'<p class="caption-note" role="status">'+safeText(monthlyPlanMessage)+'</p>':'')+'</section>';
  const calendar='<section class="card"><h2 class="h2">乗務予定カレンダー</h2>'+
-  '<p class="caption-note">出番・公休・有休・明けを日付ごとに保存。確定実績のある日は下線で区別します。</p>'+
+  '<p class="caption-note">予定と実際の勤務区分は別々に保存。確定実績のある日は下線で区別します。</p>'+
   '<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+
   cells+'</div>'+editor+'</section>';
  const nav='<section class="card month-target-nav" aria-label="月間営業画面の切り替え">'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
-  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button></section>';
+  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button>'+
+  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="bulk" aria-pressed="'+(monthlyManagementMode==='bulk')+'">予定の一括登録</button></section>';
  return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+
-  nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):card+calendar+renderMonthlySales());
+  nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
+   monthlyManagementMode==='bulk'?renderMonthlyBulkSettings(period):card+calendar+renderMonthlySales());
 }
 function monthlyGoalSave(){
  if(!canEditNow())return;
