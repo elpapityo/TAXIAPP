@@ -219,6 +219,44 @@ assert.throws(()=>vm.runInContext('readBase()',baseCtx),/同期を停止しま�
 baseCtx.auth.currentUser.uid='another-uid';
 assert.throws(()=>vm.runInContext('storeBase(next)',baseCtx),/本人UIDが変更された/);
 
+// ログアウト直前に最新の月間設定をサーバーと端末の両方で照合する。
+const exitStart=auto.indexOf('  async function syncBeforeSignOut(){');
+const exitEnd=auto.indexOf('  async function completeRegistration(){',exitStart);
+assert.ok(exitStart>0&&exitEnd>exitStart,'ログアウト前の月間設定照合を接続');
+assert.match(appSourcePlaceholder(),/syncBeforeSignOut/);
+function appSourcePlaceholder(){return fs.readFileSync(path.join(root,'index.html'),'utf8');}
+const exitGoals={monthlySalesGoals:{'2026-11':950000}};
+let exitReads=0;
+const exitCtx={
+ api,enabled:true,uid:'own-uid',authGeneration:4,auth:{currentUser:{uid:'own-uid'}},
+ busy:false,timer:1,deviceSession:{canWrite:()=>true},
+ deps:{isLocalSaved:()=>true,canApplyPrefs:()=>true,isEditing:()=>false},
+ navigator:{onLine:true},clearTimeout:()=>{},status:()=>{},
+ reconcile:async()=>{exitReads++;return true;},
+ stillCurrent:owner=>exitCtx.auth.currentUser.uid===owner&&exitCtx.uid===owner,
+ currentPrefs:()=>exitGoals,readBase:()=>copy(exitGoals)
+};
+vm.createContext(exitCtx);
+vm.runInContext(auto.slice(exitStart,exitEnd),exitCtx);
+(async()=>{
+ assert.equal(await vm.runInContext('syncBeforeSignOut()',exitCtx),true);
+ assert.equal(exitReads,1,'ログアウト時にFirestoreを明示的に照合');
+ exitCtx.readBase=()=>({monthlySalesGoals:{'2026-11':700000}});
+ assert.equal(await vm.runInContext('syncBeforeSignOut()',exitCtx),false,
+  '端末の基準版が違えばログアウトを止める');
+ exitCtx.readBase=()=>copy(exitGoals);
+ exitCtx.deps.isLocalSaved=()=>false;
+ assert.equal(await vm.runInContext('syncBeforeSignOut()',exitCtx),false);
+ assert.equal(exitReads,2,'端末保存前にはクラウドを読み取らない');
+ exitCtx.deps.isLocalSaved=()=>true;
+ exitCtx.reconcile=async()=>{exitReads++;return undefined;};
+ assert.equal(await vm.runInContext('syncBeforeSignOut()',exitCtx),false,
+  '競合や通信不調で保存未確認ならログアウトしない');
+ exitCtx.reconcile=async()=>{exitReads++;exitCtx.authGeneration++;return true;};
+ assert.equal(await vm.runInContext('syncBeforeSignOut()',exitCtx),false,
+  'ログアウト確認中のアカウント世代変更を検出');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+
 // クラウド設定の採用前に元の端末設定を退避し、保存失敗を握りつぶさない。
 const backupStart=auto.indexOf('  function safeBackup(');
 const backupEnd=auto.indexOf('  const ref=',backupStart);
