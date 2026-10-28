@@ -1812,7 +1812,7 @@ html[data-ui-theme="night"] .month-plan-day.realized{box-shadow:inset 0 -4px #91
 <script src="./login-core.js?v=20261024-openchat-name-1"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
-<script src="./account-auto-sync.js?v=20261029-monthly-219"></script>
+<script src="./account-auto-sync.js?v=20261029-viewer-monthly-220"></script>
 <script src="./account-diary-store.js?v=20261022-9"></script>
 <script src="./meter-confirm.js?v=20261025-174"></script>
 <script>
@@ -2324,7 +2324,7 @@ function blockViewerEdit(event){
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
- const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"]')||
+ const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"],[data-action="monthlyViewerRefresh"]')||
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
@@ -2688,6 +2688,7 @@ async function switchAccountScope(scope){
  meterConfirmCurrent=null;
  const generation=++accountScopeGeneration;
  resetMonthlySales(); // The previous UID's report must never be displayed after a login change.
+ monthlyViewerPrefs=null;monthlyViewerPrefsMessage='';
  monthlyPlanDate='';monthlyPlanMessage=''; // The next account starts with no prior UI selection.
  // Do not migrate a legacy owner's records to another user.
  writerLoadGate=true;accountScopeLoaded=false;
@@ -5228,8 +5229,12 @@ let monthlySalesOpened=false;
 const monthlySalesToday=new Date();
 let monthlySalesMonth=monthlySalesToday.getFullYear()+'-'+String(monthlySalesToday.getMonth()+1).padStart(2,'0'),monthlySalesEpoch=0;
 let monthlySalesData=null,monthlySalesBusy=false,monthlySalesMessage='';
+let monthlyViewerPrefs=null,monthlyViewerPrefsMessage='';
+function monthlyPrefs(){
+ return deviceMode==='viewer'?(monthlyViewerPrefs||{}):(model.prefs||{});
+}
 function monthlySalesClosingDay(){
- const value=String(model.prefs?.monthlySalesCloseDay||'end');
+ const value=String(monthlyPrefs()?.monthlySalesCloseDay||'end');
  return value==='end'||/^(?:[1-9]|[12]\d|3[01])$/.test(value)?value:'end';
 }
 function monthlySalesPeriod(month,closingDay){
@@ -5400,13 +5405,13 @@ function monthlyPlanDates(period){
  return result;
 }
 function monthlyPlanEntry(date){
- const entry=model.prefs?.monthlyDutyPlans?.[date];
+ const entry=monthlyPrefs()?.monthlyDutyPlans?.[date];
  if(!entry||!Object.prototype.hasOwnProperty.call(MONTH_PLAN_NAMES,entry.status))return null;
  const time=t=>typeof t==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t)?t:'';
  return {status:entry.status,start:time(entry.start),end:time(entry.end)};
 }
 function monthlyActualEntry(date){
- const code=model.prefs?.monthlyDutyActuals?.[date]?.status;
+ const code=monthlyPrefs()?.monthlyDutyActuals?.[date]?.status;
  return Object.prototype.hasOwnProperty.call(MONTH_ACTUAL_NAMES,code)?code:null;
 }
 function monthlyActualLabel(date,plan,actualDay){
@@ -5415,7 +5420,7 @@ function monthlyActualLabel(date,plan,actualDay){
  if(actualDay?.duties)return '実績区分未登録（乗務記録あり）';
  return '未確定'+(plan?.status?'（予定 '+MONTH_PLAN_NAMES[plan.status]+'）':'');
 }
-function monthlyPublicGoalIncluded(){return model.prefs?.monthlyIncludePublicSales==='on';}
+function monthlyPublicGoalIncluded(){return monthlyPrefs()?.monthlyIncludePublicSales==='on';}
 function monthlyDefaultDepartureStatus(date){
  const old=monthlyActualEntry(date);
  if(MONTH_ACTUAL_WORK.includes(old))return old;
@@ -5442,11 +5447,11 @@ function monthlyPublicGoalSave(){
  saveLater();render();toast('公出売上の集計設定を保存しました');
 }
 function monthlyPlanGoal(month=monthlySalesMonth){
- const n=model.prefs?.monthlySalesGoals?.[month];
+ const n=monthlyPrefs()?.monthlySalesGoals?.[month];
  return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
 }
 function monthlyDutyGoal(month=monthlySalesMonth){
- const n=model.prefs?.monthlyDutySalesGoals?.[month];
+ const n=monthlyPrefs()?.monthlyDutySalesGoals?.[month];
  return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
 }
 const MONTH_PLAN_WEEKDAYS=Object.freeze(['日','月','火','水','木','金','土']);
@@ -5497,10 +5502,10 @@ function renderMonthlyBulkSettings(period){
 
 function monthlyValidGoal(n){return Number.isSafeInteger(n)&&n>0&&n<=1000000000;}
 function monthlyDateGoal(date){
- const direct=model.prefs?.monthlyDateSalesGoals?.[date];
+ const direct=monthlyPrefs()?.monthlyDateSalesGoals?.[date];
  if(monthlyValidGoal(direct))return {value:direct,source:'個別設定'};
  const weekday=new Date(date+'T00:00:00Z').getUTCDay();
- const weekly=model.prefs?.monthlyWeekdaySalesGoals?.[String(weekday)];
+ const weekly=monthlyPrefs()?.monthlyWeekdaySalesGoals?.[String(weekday)];
  if(monthlyValidGoal(weekly))return {value:weekly,source:MONTH_PLAN_WEEKDAYS[weekday]+'曜日'};
  const base=monthlyDutyGoal();
  return {value:base,source:base?'基本目標':'未設定'};
@@ -5508,7 +5513,7 @@ function monthlyDateGoal(date){
 function renderMonthlyTargetSettings(p){
  const readonly=canEditNow()?'':'disabled';
  const weekdayItems=[1,2,3,4,5,6,0].map(day=>{
-  const n=model.prefs?.monthlyWeekdaySalesGoals?.[String(day)];
+  const n=monthlyPrefs()?.monthlyWeekdaySalesGoals?.[String(day)];
   return '<label class="field"><span class="field-label">'+MONTH_PLAN_WEEKDAYS[day]+'曜日の目標（円）</span>'+
    '<input class="control" id="monthlyWeekdayGoal'+day+'" type="number" min="0" max="1000000000" step="1000" inputmode="numeric" '+
    'placeholder="基本目標を使用" value="'+safeText(monthlyValidGoal(n)?n:'')+'" '+readonly+'></label>';
@@ -5711,7 +5716,7 @@ function renderMonthlyManagement(){
    '（'+safeText(dailyGoal.source)+'）</p>'+
   '<label class="field"><span class="field-label">この日だけ変更（円）</span>'+
   '<input id="monthlyDateGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" '+
-  'placeholder="空欄なら曜日別・基本の目標" value="'+safeText(monthlyValidGoal(model.prefs?.monthlyDateSalesGoals?.[date])?model.prefs.monthlyDateSalesGoals[date]:'')+'" '+readonly+'></label>'+
+  'placeholder="空欄なら曜日別・基本の目標" value="'+safeText(monthlyValidGoal(monthlyPrefs()?.monthlyDateSalesGoals?.[date])?monthlyPrefs().monthlyDateSalesGoals[date]:'')+'" '+readonly+'></label>'+
   '<p class="caption-note">空欄で保存すると個別設定が解除され、曜日別・基本目標へ戻ります。</p>'+
   '<div class="actions"><button class="btn" type="button" data-action="monthlyDateGoalSave" '+readonly+'>この日の目標を保存・解除</button></div></div>'+
   comparison+
@@ -5739,8 +5744,12 @@ function renderMonthlyManagement(){
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="bulk" aria-pressed="'+(monthlyManagementMode==='bulk')+'">予定の一括登録</button></section>';
+ const viewerBanner=deviceMode==='viewer'?
+  '<section class="card"><p class="caption-note" role="status">'+
+  safeText(monthlyViewerPrefsMessage||'本人の月間設定をFirestoreから取得していません')+
+  '</p><div class="actions"><button type="button" class="btn" data-action="monthlyViewerRefresh">月間設定を再取得</button></div></section>':'';
  return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+
-  nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
+  viewerBanner+nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
    monthlyManagementMode==='bulk'?renderMonthlyBulkSettings(period):card+calendar+renderMonthlySales());
 }
 function monthlyGoalSave(){
@@ -7558,6 +7567,10 @@ function handleAction(action,id){
   draft.raw.P=(items.some(x=>x.mode==='実')?'実':'')+(items.some(x=>x.mode==='空')?'空':'');
   saveLater();render();const fold=appEl.querySelector('[data-highway-fold]');if(fold)fold.open=true;return;
  }
+  if(action==='monthlyViewerRefresh'){
+   if(deviceMode==='viewer')void accountSettingsAuto?.refreshViewerMonthlyPrefs();
+   return;
+  }
   if(action==='viewerRefresh'){
    if(deviceMode==='viewer')syncUI.viewNow(true);
    return;
@@ -7575,7 +7588,7 @@ function handleAction(action,id){
    deviceMode==='writer'&&legacyDiary()&&!TAXIAPP_PRINT_VIEWER_MODE&&
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
    currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid;
-  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick','monthlyManagementMode','monthlyDayView'].includes(action)&&deviceMode==='viewer'&&
+  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick','monthlyManagementMode','monthlyDayView','monthlyViewerRefresh'].includes(action)&&deviceMode==='viewer'&&
    monthlyCanReadFirestore();
   if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer){
    toast('操作権がない端末では営業記録を変更できません',true);return;
@@ -9157,6 +9170,14 @@ accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
  onDeviceMode:setDeviceMode,
  isEditing:()=>Boolean(appEl.contains(document.activeElement)&&
   document.activeElement.matches('input:not([readonly]),textarea,select')),
+ onMonthlyViewPrefs:(prefs,uid,message)=>{
+  if(accountScope?.uid!==uid||currentLoginScope?.uid!==uid||
+     currentLoginScope.firebase?.auth?.currentUser?.uid!==uid||deviceMode!=='viewer')return;
+  monthlyViewerPrefs=prefs;
+  monthlyViewerPrefsMessage=String(message||'');
+  resetMonthlySales();render();
+  if(prefs&&tab==='monthly'&&monthlyCanReadFirestore())void loadMonthlySales();
+ },
  applyPrefs:async prefs=>{
   model.prefs=prefs;
   await save(true);
