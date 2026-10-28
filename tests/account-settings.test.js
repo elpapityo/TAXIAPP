@@ -23,6 +23,16 @@ const model={
   name:''}
 };
 const stored=api.extract(model);
+const monthlyOnly={version:1,shifts:[],prefs:{
+ monthlyDutyPlans:{'2026-11-02':{status:'work',start:'17:00',end:'06:00'}},
+ monthlyDutyActuals:{'2026-11-02':{status:'normal'}},
+ monthlySalesGoals:{'2026-11':1000000},
+ monthlyDutySalesGoals:{'2026-11':40000},
+ monthlyIncludePublicSales:'off'
+}};
+const recoveredMonthly=api.merge({version:1,shifts:[],prefs:{}},api.extract(monthlyOnly));
+assert.deepEqual(copy(recoveredMonthly.prefs),monthlyOnly.prefs,
+ '乗務員名・待機所が未設定でも月間予定・実績・目標がクラウド設定と往復できる');
 assert.equal(stored.format,api.FORMAT);
 assert.equal(stored.prefs.driver,'乗務員A');
 assert.equal(stored.prefs.waitPlaces.length,3);
