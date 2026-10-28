@@ -5873,10 +5873,13 @@ function historyCalendarMarkup(date){
  for(let day=1;day<=days;day++){
   const full=month+'-'+String(day).padStart(2,'0'),count=counts.get(full)||0;
   const state=count?'has':known?'empty':'unknown';
-  const label=count?count+'乗務':known?'なし':'未確認';
-  cells+='<button type="button" class="history-calendar-day '+state+(date===full?' selected':'')+
-   '" data-action="historyCalendarPick" data-id="'+safeText(full)+'" aria-label="'+safeText(full+' '+label)+
-   '" aria-pressed="'+(date===full)+'"><strong>'+day+'</strong><small>'+label+'</small></button>';
+  const label=count?count+'乗務':known?'なし':'未確認',dayInfo=monthlySalesDayLabel(full);
+  cells+='<button type="button" class="history-calendar-day '+state+' history-weekday-'+dayInfo.kind+
+   (date===full?' selected':'')+'" data-action="historyCalendarPick" data-id="'+safeText(full)+
+   '" aria-label="'+safeText(full+' '+dayInfo.weekday+'曜日'+(dayInfo.holiday?' '+dayInfo.holiday:'')+' '+label)+
+   '" aria-pressed="'+(date===full)+'" title="'+safeText(dayInfo.holiday||full+' '+dayInfo.weekday+'曜日')+'">'+
+   '<span class="history-date-line"><strong>'+day+'</strong><em class="history-date-tag">'+
+   safeText(dayInfo.holiday?'祝':dayInfo.weekday)+'</em></span><small>'+label+'</small></button>';
  }
  const message=memberDiary()?(known?'本人Firestoreの乗務一覧と端末記録の件数です。':
   'Firestoreの一覧はまだ確認していません。更新ボタンで取得してください。'):
@@ -5884,8 +5887,9 @@ function historyCalendarMarkup(date){
  return '<section class="card history-calendar"><div class="history-calendar-heading">'+
   '<button class="btn" data-action="historyCalendarPrev" type="button">〈 前月</button><strong>'+
   year+'年'+mon+'月</strong><button class="btn" data-action="historyCalendarNext" type="button">翌月 〉</button></div>'+
-  '<div class="history-calendar-grid history-calendar-weekdays">'+['月','火','水','木','金','土','日'].map(x=>'<span>'+x+'</span>').join('')+
+  '<div class="history-calendar-grid history-calendar-weekdays">'+['月','火','水','木','金','土','日'].map((x,i)=>'<span class="history-weekday-'+(i===4?'friday':i===5?'saturday':i===6?'sunday':'weekday')+'">'+x+'</span>').join('')+
   '</div><div class="history-calendar-grid">'+cells+'</div>'+
+  '<p class="caption-note">金曜：緑 ／ 土曜：青 ／ 日曜：赤 ／ 祝日：橙（「祝」表示）。乗務あり・なしは従来の表示で確認できます。</p>'+
   '<p class="caption-note">● 乗務あり（件数表示）／－ なし／? 未確認。'+safeText(message)+'</p>'+
   '<p class="caption-note">'+(selectedInMonth?'選択日：'+safeText(date):'この月の日付を選択してください')+'</p>'+
   '<button class="btn primary" type="button" data-action="historyCalendarFetchDate" '+
@@ -6408,7 +6412,7 @@ function renderMonthlyBulkSettings(period){
  const readonly=canEditNow()?'':'disabled';
  const week=[1,2,3,4,5,6,0].map(day=>'<label><input type="checkbox" id="monthlyBulkDay'+day+'" '+
   ([1,2,3,4,5].includes(day)?'checked ':'')+readonly+'>'+MONTH_PLAN_WEEKDAYS[day]+'曜</label>').join('');
- return '<section class="card"><h2 class="h2">乗務予定の一括登録</h2>'+
+ return '<section class="card month-settings-surface"><span class="month-section-label">設定項目・一括登録</span><h2 class="h2">乗務予定の一括登録</h2>'+
   '<p class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</p>'+
   '<p class="caption-note">曜日と予定区分を選びまとめて登録。初期状態では個別登録済みの予定を保護します。</p>'+
   '<div class="month-plan-bulk-days">'+week+'</div>'+
@@ -6440,7 +6444,7 @@ function renderMonthlyTargetSettings(p){
    '<input class="control" id="monthlyWeekdayGoal'+day+'" type="number" min="0" max="1000000000" step="1000" inputmode="numeric" '+
    'placeholder="基本目標を使用" value="'+safeText(monthlyValidGoal(n)?n:'')+'" '+readonly+'></label>';
  }).join('');
- return '<section class="card"><h2 class="h2">目標設定</h2>'+
+ return '<section class="card month-settings-surface"><span class="month-section-label">設定項目・月間目標</span><h2 class="h2">目標設定</h2>'+
   '<p class="caption-note">月間目標と曜日ごとの日別目標を設定します。カレンダーの日付を全部編集する必要はありません。</p>'+
   '<label class="field"><span class="field-label">対象の締め月</span>'+
   '<input id="monthlyDashboardMonth" class="control" type="month" value="'+safeText(monthlySalesMonth)+'"></label>'+
@@ -6450,7 +6454,7 @@ function renderMonthlyTargetSettings(p){
   '<input id="monthlyDutyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：40000" value="'+safeText(p.dutyGoal??'')+'" '+readonly+'></label></div>'+
   '<div class="actions"><button class="btn primary" type="button" data-action="monthlyGoalSave" '+readonly+'>月間・基本目標を保存</button></div>'+
   '<p class="caption-note">基本の日別目標は、その曜日に目標が登録されていない場合だけ使用します。</p>'+
-  '</section><section class="card"><h2 class="h2">曜日別の売上目標</h2>'+
+  '</section><section class="card month-settings-surface"><span class="month-section-label">設定項目・曜日別</span><h2 class="h2">曜日別の売上目標</h2>'+
   '<p class="caption-note">一度設定すると他の月にも共通で反映。空欄の曜日は基本の日別目標を使います。</p>'+
   '<div class="month-weekday-goals">'+weekdayItems+'</div>'+
   '<div class="actions"><button class="btn primary" type="button" data-action="monthlyWeekdayGoalSave" '+readonly+'>曜日別目標を保存</button></div>'+
@@ -6542,6 +6546,7 @@ function renderMonthlyManagement(){
  const p=monthlyPlanProgress(period),dates=p.days.map(x=>x.date);
  if(!dates.includes(monthlyPlanDate))monthlyPlanDate=dates[0];
  const date=monthlyPlanDate,entry=monthlyPlanEntry(date),actual=p.byDay.get(date),dailyGoal=monthlyDateGoal(date);
+ const selectedDayInfo=monthlySalesDayLabel(date);
  const kpi=(name,value,cls='')=>'<div class="month-goal-kpi '+cls+'"><small>'+name+'</small><strong>'+safeText(value)+'</strong></div>';
  const card='<section class="card month-plan-overview"><h2 class="h2">月間目標と営業実績</h2>'+
   '<div class="month-plan-top"><label class="field"><span class="field-label">締め月</span>'+
@@ -6577,15 +6582,17 @@ function renderMonthlyManagement(){
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
  for(const x of p.days){
   const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定',actualCode=monthlyActualEntry(x.date);
-  const cellGoal=monthlyDateGoal(x.date);
+  const cellGoal=monthlyDateGoal(x.date),dayInfo=monthlySalesDayLabel(x.date);
   const publicQuotaDay=actualCode==='public'||(!actualCode&&status==='public'&&!x.actual?.duties);
   const showGoal=(status==='work'||status==='unset'||actualCode==='normal'||
    (status==='public'&&monthlyPublicGoalIncluded())||Boolean(x.actual?.duties))&&
    !(publicQuotaDay&&!monthlyPublicGoalIncluded());
-  cells+='<button type="button" class="month-plan-day '+status+(x.actual?.duties?' realized':'')+
+  cells+='<button type="button" class="month-plan-day '+status+' month-weekday-'+dayInfo.kind+(x.actual?.duties?' realized':'')+
    (x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
-   '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
-   '</strong><small>'+name+'</small>'+
+   '" aria-label="'+safeText(x.date+' '+dayInfo.weekday+'曜日'+(dayInfo.holiday?' '+dayInfo.holiday:'')+' '+name+(x.actual?.duties?' 実績あり':''))+
+   '" title="'+safeText(dayInfo.holiday||x.date+' '+dayInfo.weekday+'曜日')+'"><span class="month-date-line"><strong>'+
+   safeText(x.date.slice(5).replace('-','/'))+'</strong><em class="month-date-tag">'+
+   safeText(dayInfo.holiday?'祝':dayInfo.weekday)+'</em></span><small>'+name+'</small>'+
    (actualCode?'<small class="month-day-status '+(actualCode==='public'||actualCode==='absent'?actualCode:'')+'">実績 '+MONTH_ACTUAL_NAMES[actualCode]+'</small>':'')+
    (x.actual?.duties?'<small class="month-day-yen" title="'+safeText(money(x.actual.meter))+'">'+monthlyCalendarMoney(x.actual.meter)+'</small>':
      x.actual?.unfinished?'<small>進行中 '+x.actual.unfinished+'件</small>':'')+
@@ -6613,7 +6620,7 @@ function renderMonthlyManagement(){
   // 日別目標は1日につき1つ。乗務別に繰り返して差し引かない。
   ''+
   '</div></div>').join('');
- const comparison='<div class="month-plan-compare"><h3 class="subsection">予定と確定実績の比較</h3>'+
+ const comparison='<div class="month-plan-compare month-readonly-panel"><h3 class="subsection">予定と確定実績の比較</h3>'+
   '<p class="caption-note">予定：'+safeText(plannedLabel)+'</p>'+
   '<p class="caption-note">勤務実績：'+safeText(monthlyActualLabel(date,entry,actual))+'</p>'+
   (!p.report?'<p class="caption-note">本人Firestoreの月間実績は未取得です。</p>':
@@ -6623,7 +6630,9 @@ function renderMonthlyManagement(){
     (dutyDetails||'<p class="caption-note">時刻の明細は取得できませんでした。</p>'):
     '<p class="caption-note">この出庫日の確定実績はありません。</p>')+
   '<p class="caption-note">実績は日報からの読取専用表示です。予定の編集で日報は変更しません。</p></div>';
- const editor='<section class="card month-plan-editor"><h2 class="h2">選択日：'+safeText(date)+'</h2>'+
+ const editor='<section class="card month-plan-editor month-settings-surface"><span class="month-section-label">設定項目・変更と保存</span>'+
+  '<h2 class="h2">選択日の設定：'+safeText(date)+'（'+selectedDayInfo.weekday+(selectedDayInfo.holiday?'・祝／'+safeText(selectedDayInfo.holiday):'')+'）</h2>'+
+  '<p class="caption-note">以下は予定・勤務区分・日別目標の設定欄です。入力後に各保存ボタンを押します。</p>'+
   '<div class="month-plan-fields"><label class="field"><span class="field-label">予定区分</span><select id="monthlyPlanStatus" class="control" '+readonly+'>'+options+'</select></label>'+
   '<label class="field"><span class="field-label">出庫予定</span><input id="monthlyPlanStart" class="control" type="time" value="'+safeText(entry?.start||'')+'" '+readonly+'></label>'+
   '<label class="field"><span class="field-label">入庫予定</span><input id="monthlyPlanEnd" class="control" type="time" value="'+safeText(entry?.end||'')+'" '+readonly+'></label></div>'+
@@ -6645,13 +6654,16 @@ function renderMonthlyManagement(){
   comparison+
   (monthlyPlanMessage?'<p class="caption-note" role="status">'+safeText(monthlyPlanMessage)+'</p>':'')+'</section>';
  const listItems=p.days.map(x=>{
-  const a=monthlyActualEntry(x.date),plan=MONTH_PLAN_NAMES[x.plan?.status]||'未設定';
+  const a=monthlyActualEntry(x.date),plan=MONTH_PLAN_NAMES[x.plan?.status]||'未設定',dayInfo=monthlySalesDayLabel(x.date);
   const d=monthlyDateGoal(x.date),actualStatus=a?MONTH_ACTUAL_NAMES[a]:'未確定';
   const quotaApplies=monthlyPublicGoalIncluded()||
    !(a==='public'||(!a&&x.plan?.status==='public'&&!x.actual?.duties));
   const amount=x.actual?.duties?money(x.actual.meter):x.actual?.unfinished?'進行中':'—';
-  return '<button type="button" class="month-day-list-item'+(x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+'">'+
-   '<strong>'+safeText(x.date.slice(5).replace('-','/'))+'（'+MONTH_PLAN_WEEKDAYS[monthlyWeekday(x.date)]+'）</strong>'+
+  return '<button type="button" class="month-day-list-item month-weekday-'+dayInfo.kind+(x.date===date?' selected':'')+
+   '" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
+   '" aria-label="'+safeText(x.date+' '+dayInfo.weekday+'曜日'+(dayInfo.holiday?' '+dayInfo.holiday:'')+'の予定と実績')+'">'+
+   '<strong>'+safeText(x.date.slice(5).replace('-','/'))+'（'+dayInfo.weekday+(dayInfo.holiday?'・祝':'')+'）'+
+   (dayInfo.holiday?'<small class="month-list-holiday">'+safeText(dayInfo.holiday)+'</small>':'')+'</strong>'+
    '<span class="day-main"><small>予定 '+safeText(plan)+' ／ 実績 '+safeText(actualStatus)+'</small>'+
    '<small>目標 '+(quotaApplies?(d.value?money(d.value):'未設定'):'対象外（公出）')+'</small></span>'+
    '<span class="day-sale">'+safeText(amount)+'</span></button>';
@@ -6661,12 +6673,23 @@ function renderMonthlyManagement(){
   '<div class="month-plan-display-switch"><span class="caption-note">表示方式：</span>'+
   '<button type="button" class="btn" data-action="monthlyDayView" data-id="calendar" aria-pressed="'+(monthlyDayView==='calendar')+'">カレンダー</button>'+
   '<button type="button" class="btn" data-action="monthlyDayView" data-id="list" aria-pressed="'+(monthlyDayView==='list')+'">日別一覧</button></div>'+
-  (monthlyDayView==='calendar'?'<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+cells+'</div>':
-   '<div class="month-day-list">'+listItems+'</div>')+editor+'</section>';
+  (monthlyDayView==='calendar'?'<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map((x,i)=>'<span class="month-plan-weekday month-weekday-'+(i===4?'friday':i===5?'saturday':i===6?'sunday':'weekday')+'">'+x+'</span>').join('')+cells+'</div>':
+   '<div class="month-day-list">'+listItems+'</div>')+
+  '<p class="caption-note">日付の識別：金曜は緑、土曜は青、日曜は赤、祝日は橙。「金・土・日・祝」の文字も表示します。勤務予定の色と実績表示は従来どおりです。</p>'+
+  editor+'</section>';
  const nav='<section class="card month-target-nav" aria-label="月間営業画面の切り替え">'+
-  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
-  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button>'+
-  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="bulk" aria-pressed="'+(monthlyManagementMode==='bulk')+'">予定の一括登録</button></section>';
+  '<strong class="month-mode-label">画面切替：確認と設定を分けています</strong>'+
+  '<button type="button" class="btn month-mode-report" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">表示・確認：カレンダー／実績</button>'+
+  '<button type="button" class="btn month-mode-settings" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">設定：売上目標</button>'+
+  '<button type="button" class="btn month-mode-settings" data-action="monthlyManagementMode" data-id="bulk" aria-pressed="'+(monthlyManagementMode==='bulk')+'">設定：予定の一括登録</button></section>';
+ const modeIsSettings=monthlyManagementMode!=='calendar';
+ const modeTitle=monthlyManagementMode==='targets'?'設定画面｜月間・曜日別の売上目標':
+  monthlyManagementMode==='bulk'?'設定画面｜勤務予定の一括登録':'表示・確認画面｜月間の予定と実績';
+ const modeDetail=monthlyManagementMode==='targets'?'ここは目標を入力して保存する画面です。変更は各「保存」ボタンで確定します。':
+  monthlyManagementMode==='bulk'?'ここは複数日の勤務予定をまとめて登録する画面です。既存予定の上書き設定にご注意ください。':
+   'カレンダーと日別一覧は予定・売上の確認用です。選択日を変更する設定欄は下部に区切って表示します。';
+ const modeIntro='<div class="month-screen-identity '+(modeIsSettings?'is-settings':'is-report')+'"><strong>'+
+  modeTitle+'</strong><span>'+modeDetail+'</span></div>';
  const writerSync=deviceMode==='writer'?
   '<section class="card"><p class="caption-note">月間設定のクラウド保存：<span data-monthly-settings-sync-status role="status">'+
   safeText(accountSettingsAuto?.status?.().message||'設定の照合待ち')+
@@ -6677,7 +6700,7 @@ function renderMonthlyManagement(){
   safeText(monthlyViewerPrefsMessage||'本人の月間設定をFirestoreから取得していません')+
   '</p><div class="actions"><button type="button" class="btn" data-action="monthlyViewerRefresh">月間設定を再取得</button></div></section>':'';
  return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+
-  (deviceMode==='writer'?writerSync:viewerBanner)+nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
+  (deviceMode==='writer'?writerSync:viewerBanner)+nav+modeIntro+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
    monthlyManagementMode==='bulk'?renderMonthlyBulkSettings(period):card+calendar+renderMonthlySales());
 }
 function monthlyGoalSave(){
