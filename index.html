@@ -9199,8 +9199,18 @@ accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
   if(prefs&&tab==='monthly'&&monthlyCanReadFirestore())void loadMonthlySales();
  },
  applyPrefs:async prefs=>{
+  // クラウドの設定を端末原本へ永続保存できない限り、設定同期の基準版を進めない。
+  // 失敗時は同期側へ伝え、既存原本・再試行可能な状態を保持する。
+  const prior=model.prefs;
   model.prefs=prefs;
-  await save(true);
+  try{
+   if(await save(true)!==true)
+    throw Error('アカウント設定を端末に保存できません。設定の同期確認を保留しました');
+  }catch(error){
+   model.prefs=prior;
+   render();
+   throw error;
+  }
   applyUi();
   render();
  }
