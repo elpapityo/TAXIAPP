@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const live=fs.readFileSync('index.html','utf8');
 const demo=fs.readFileSync('demo/index.html','utf8');
-assert.match(demo,/<title>TAXIAPP v0\.3\.216 — 公開操作デモ<\/title>/);
+assert.match(demo,/<title>TAXIAPP v0\.3\.217 — 公開操作デモ<\/title>/);
 assert.match(demo,/<html lang="ja">/,'login-free demo must start without authentication lock');
 assert.doesNotMatch(demo,/<html\b[^>]*class="[^"]*taxi-auth-locked/,'never hide the demo app behind production login CSS');
 assert.match(demo,/html\.taxi-auth-locked #accountBar,[\s\S]*?#app/,'production style is still present, so keeping auth lock would blank the demo');
