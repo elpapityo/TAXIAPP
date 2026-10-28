@@ -199,3 +199,47 @@ assert.match(live,/return titleBlock\('月間営業計画・実績'/);
 console.log('PASS: 月間画面独立・目標/予定の端末保存・夜勤時刻・既存日報原本の保護');
 
 assert.match(live,/daily\.entries\.push\(\{/,'monthly aggregation must expose duty time read-only');
+
+// 月間Firestoreの管理者読取テスト：旧Google原本への通信を行わない。
+assert.doesNotMatch(live,/function loadMonthlyFromLegacyGoogle\(/);
+assert.match(live,/mobileItem\('monthly','▦','月間'\)/);
+assert.match(live,/data-tab="monthly">▦ 月間営業計画・実績を開く/);
+const readBegin=live.indexOf('function monthlyCanReadFirestore(){');
+const readEnd=live.indexOf('// 本人UID別の端末設定にだけ保存する乗務計画',readBegin);
+assert.ok(readBegin>0&&readEnd>readBegin);
+const requests=[],binds=[];
+const readCtx={
+ Date,
+ window:{TAXIAPP_ACCOUNT_DIARY:{create:()=>({
+  bind:(user,options)=>binds.push({user,options}),
+  request:(action,period)=>{
+   requests.push({action,period});
+   return Promise.resolve({...period,shifts:[]});
+  }
+ })}},
+ accountScope:{kind:'legacy',uid:'test-admin-uid'},
+ currentLoginScope:{uid:'test-admin-uid',admin:true,firebase:{
+  auth:{currentUser:{uid:'test-admin-uid'}},f:{},db:{}
+ }},
+ accountScopeGeneration:4,monthlySalesBusy:false,monthlySalesEpoch:0,
+ monthlySalesData:null,monthlySalesMessage:'',monthlySalesMonth:'2026-11',
+ monthlySalesClosingDay:()=> 'end',
+ monthlySalesPeriod:()=>({startDate:'2026-11-01',endDate:'2026-11-30'}),
+ render:()=>{}
+};
+vm.createContext(readCtx);
+vm.runInContext(live.slice(readBegin,readEnd),readCtx);
+Promise.resolve(vm.runInContext('loadMonthlySales()',readCtx)).then(()=>{
+ assert.equal(binds.length,1);
+ assert.equal(binds[0].user.uid,'test-admin-uid');
+ assert.equal(binds[0].options.admin,true);
+ assert.equal(binds[0].options.storageBackend,'firestore');
+ assert.equal(binds[0].options.readOnly,true);
+ assert.equal(requests.length,1);
+ assert.equal(requests[0].action,'syncHistoryRange');
+ assert.equal(requests[0].period.startDate,'2026-11-01');
+ assert.equal(requests[0].period.endDate,'2026-11-30');
+ assert.equal(readCtx.monthlySalesData?.source,'firestore');
+ assert.equal(readCtx.monthlySalesData?.sum?.duties,0);
+ console.log('月間：管理者も本人UIDのFirestoreだけを読取り、スマホ直通入口を確認');
+}).catch(e=>{console.error(e);process.exitCode=1;});
