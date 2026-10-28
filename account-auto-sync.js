@@ -103,13 +103,39 @@ root.TAXIAPP_ACCOUNT_AUTO={
   }
   function currentPrefs(){return api.extract(deps.getModel()).prefs;}
   function readBase(){
-   try{const v=JSON.parse(localStorage.getItem(KEY+uid)||'null');
-    return v&&typeof v==='object'&&!Array.isArray(v)?v:null;
-   }catch{return null;}
+   // 保存済みの照合基準が壊れていても「初回端末」と誤認して上書きしない。
+   const owner=uid;
+   if(!owner)throw Error('本人UIDが未確定のため設定照合を開始できません');
+   try{
+    const raw=localStorage.getItem(KEY+owner);
+    if(raw===null)return null; // 正常な初回接続だけが未登録
+    const saved=JSON.parse(raw);
+    if(!saved||typeof saved!=='object'||Array.isArray(saved))
+     throw Error('照合基準の形式が不正です');
+    return saved;
+   }catch(error){
+    throw Error('端末の設定照合基準を読み取れません。既存設定を保護して同期を停止しました：'+
+     String(error?.message||error));
+   }
   }
   function storeBase(value){
+   // Firestoreの読戻しだけで完了とせず、次回のCAS照合に必要な端末基準も永続化する。
+   // 書込失敗時は従来の基準を残し「保存確認済み」を表示しない。
+   const owner=uid;
+   if(!owner||!enabled||auth?.currentUser?.uid!==owner)
+    throw Error('本人UIDが変更されたため設定の保存確認を停止しました');
+   try{
+    const data=JSON.stringify(value);
+    localStorage.setItem(KEY+owner,data);
+    if(localStorage.getItem(KEY+owner)!==data)
+     throw Error('照合基準を端末から読み戻せません');
+   }catch(error){
+    throw Error('端末の設定照合基準を保存できません。クラウド設定の保存確認を保留しました：'+
+     String(error?.message||error));
+   }
+   if(uid!==owner||auth?.currentUser?.uid!==owner)
+    throw Error('設定照合中に本人UIDが変更されました');
    baseline=value;
-   try{localStorage.setItem(KEY+uid,JSON.stringify(value));}catch{}
   }
   function safeBackup(model){
    // クラウドから設定を採用する前に、元の本人設定の退避を確認する。
@@ -300,7 +326,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
      await apply(selected);
      if(!sameSession())return;
      storeBase(selected);
-     status('Googleの設定を自動で反映しました');
+     status('Firestoreの設定を端末に反映し、照合基準を保存しました');
      return;
     }
     const merged=api.reconcile(base,beginning,remote);
