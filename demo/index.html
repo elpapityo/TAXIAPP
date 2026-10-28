@@ -7674,6 +7674,8 @@ function gpsMessage(err){if(err?.code===1)return '位置情報が拒否されて
 // 出典: 国土地理院 https://maps.gsi.go.jp/ および GSI muni.js
 let municipalityLookupPromise=null;
 const gsiAddressCache=new Map();
+// 同じ座標への同時GPS操作は住所問い合わせを1回だけ共有する。
+const gsiAddressPending=new Map();
 function loadMunicipalities(){
  if(!municipalityLookupPromise){
   municipalityLookupPromise=fetch('../municipalities.json',{cache:'force-cache',signal:AbortSignal.timeout(8000)})
@@ -7694,24 +7696,32 @@ async function reverseAddress(gps){
  if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw Error('GPS座標が不正です');
  const key=`${lat.toFixed(5)},${lon.toFixed(5)}`;
  if(gsiAddressCache.has(key))return gsiAddressCache.get(key);
- const url=`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
- const [resp,municipalities]=await Promise.all([
-  fetch(url,{signal:AbortSignal.timeout(8500)}),
-  loadMunicipalities()
- ]);
- if(!resp.ok)throw Error('住所検索通信エラー');
- const response=await resp.json();
- const found=response?.results;
- if(!found?.muniCd||!found?.lv01Nm)throw Error('住所データなし');
- const area=String(found.lv01Nm).trim();
- const city=municipalities[String(Number(found.muniCd))];
- if(!city||!area)throw Error('市区町村・町域の特定不可');
- // 乗務画面は町名＋丁目番号のみ。座標は従来どおり別途保存する。
- const normalized=area.normalize('NFKC').replace(/[一二三四五六七八九十]+(?=丁目)/g,kanji=>{const nums={'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};if(kanji==='十')return '10';if(kanji.includes('十')){const [left,right]=kanji.split('十');return String((left?nums[left]:1)*10+(right?nums[right]:0));}return String(nums[kanji]||kanji);}).replace(/([0-9]+)丁目.*$/,'$1');
- const address=normalized;
- gsiAddressCache.set(key,address);
- if(gsiAddressCache.size>64)gsiAddressCache.delete(gsiAddressCache.keys().next().value);
- return address;
+ // 出庫直後の自動取得と手動GPSボタンが重なっても二重送信しない。
+ // 失敗したPromiseは破棄し、次の明示操作で再取得できる。
+ if(gsiAddressPending.has(key))return gsiAddressPending.get(key);
+ const pending=(async()=>{
+  const url=`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+  const [resp,municipalities]=await Promise.all([
+   fetch(url,{signal:AbortSignal.timeout(8500)}),
+   loadMunicipalities()
+  ]);
+  if(!resp.ok)throw Error('住所検索通信エラー');
+  const response=await resp.json();
+  const found=response?.results;
+  if(!found?.muniCd||!found?.lv01Nm)throw Error('住所データなし');
+  const area=String(found.lv01Nm).trim();
+  const city=municipalities[String(Number(found.muniCd))];
+  if(!city||!area)throw Error('市区町村・町域の特定不可');
+  // 乗務画面は町名＋丁目番号のみ。座標は従来どおり別途保存する。
+  const normalized=area.normalize('NFKC').replace(/[一二三四五六七八九十]+(?=丁目)/g,kanji=>{const nums={'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};if(kanji==='十')return '10';if(kanji.includes('十')){const [left,right]=kanji.split('十');return String((left?nums[left]:1)*10+(right?nums[right]:0));}return String(nums[kanji]||kanji);}).replace(/([0-9]+)丁目.*$/,'$1');
+  const address=normalized;
+  gsiAddressCache.set(key,address);
+  if(gsiAddressCache.size>64)gsiAddressCache.delete(gsiAddressCache.keys().next().value);
+  return address;
+ })();
+ gsiAddressPending.set(key,pending);
+ try{return await pending;}
+ finally{if(gsiAddressPending.get(key)===pending)gsiAddressPending.delete(key);}
 }
 
 function waitRecord(shiftId,waitId){
