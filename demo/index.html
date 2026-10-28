@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.218 — 公開操作デモ</title>
+<title>TAXIAPP v0.3.219 — 公開操作デモ</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1067,7 +1067,7 @@ html[data-ui-theme="night"] .meter-console .meter-passenger-fields>summary{color
  .sidebar{z-index:95!important}
  .sidebar>.nav,.sidebar>.sidebar-note{display:none!important}
  .taxi-bottom-nav{
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
   align-items:stretch;gap:2px;width:100%;
   background:var(--sheet);padding:4px 2px 0}
  .taxi-bottom-nav .taxi-mobile-item,
@@ -1078,7 +1078,7 @@ html[data-ui-theme="night"] .meter-console .meter-passenger-fields>summary{color
   color:#425a70;font-weight:800;cursor:pointer;
   padding:7px 2px;text-align:center;line-height:1.1;touch-action:manipulation}
  .taxi-bottom-nav .nav-ico{font-size:clamp(18px,4.7vw,23px);min-width:0;line-height:1.1}
- .taxi-bottom-nav .nav-label{font-size:clamp(10px,2.6vw,13px);white-space:nowrap;line-height:1.2}
+ .taxi-bottom-nav .nav-label{font-size:clamp(10px,2.4vw,12px);white-space:nowrap;line-height:1.2}
  .taxi-bottom-nav>.taxi-mobile-item.selected{
   background:#e2f4ef;border-color:#86c7b8;color:#145a50;
   box-shadow:inset 0 -3px #168d7c}
@@ -3654,20 +3654,20 @@ function renderNav(){
  const desktop=buttons.map(([id,[icon,title]])=>
   `<button type="button" data-tab="${id}" class="${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('');
  const mobileItem=(id,icon,title)=>`<button type="button" data-tab="${id}" class="taxi-mobile-item ${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico" aria-hidden="true">${icon}</span><span class="nav-label">${title}</span></button>`;
- const moreSelected=['monthly','manage','cloud','files','settings'].includes(tab);
+ const moreSelected=['manage','cloud','files','settings'].includes(tab);
  return `<div class="sidebar">
  <nav class="card nav" aria-label="メインメニュー">${desktop}</nav>
  <div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div>
  <nav class="taxi-bottom-nav" aria-label="スマートフォンのメインメニュー">
   ${mobileItem('drive','🚕','乗務')}
   ${mobileItem('live','▥','集計')}
+  ${mobileItem('monthly','▦','月間')}
   ${mobileItem('history','▤','履歴')}
   ${mobileItem('shift','◷','出庫入庫')}
   <details class="taxi-mobile-more" ${moreSelected?'data-current="true"':''}>
    <summary aria-label="その他のメニューを開く"><span class="nav-ico" aria-hidden="true">☷</span><span class="nav-label">その他</span></summary>
    <div class="taxi-mobile-more-panel" role="group" aria-label="その他の画面">
     <strong>その他の画面</strong>
-    ${mobileItem('monthly','▦','月間営業計画・実績')}
     ${mobileItem('settings','⚙','設定')}
     ${mobileItem('manage','▣','管理')}
    </div>
@@ -6142,22 +6142,33 @@ function renderMonthlySales(){
   table+'</div></details>';
 }
 
+// The monthly page reads only the signed-in UID's Firestore originals.
+function monthlyCanReadFirestore(){
+ return Boolean(accountScope?.uid&&currentLoginScope?.uid===accountScope.uid&&
+  currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid&&
+  window.TAXIAPP_ACCOUNT_DIARY?.create);
+}
 async function loadMonthlySales(){
  if(monthlySalesBusy)return;
- if(legacyDiary())return loadMonthlyFromLegacyGoogle();
- if(!memberDiary()||!accountDiary.ready()){
-  monthlySalesMessage='本人Firestoreのログインを確認してください。';render();return;
+ if(!monthlyCanReadFirestore()){
+  monthlySalesMessage='本人Firestoreのログイン・読取権限を確認してください。';render();return;
  }
  const uid=accountScope.uid,generation=accountScopeGeneration;
+ const login=currentLoginScope;
+ const reader=window.TAXIAPP_ACCOUNT_DIARY.create();
+ // Read-only Firestore for all users without changing the production duty writer.
+ reader.bind({uid},{...login.firebase,admin:Boolean(login.admin),
+  storageBackend:'firestore',readOnly:true});
  let period;
  try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
  catch(error){monthlySalesMessage=String(error.message||error);render();return;}
  const epoch=++monthlySalesEpoch;
  const isCurrent=()=>epoch===monthlySalesEpoch&&generation===accountScopeGeneration&&
-  accountScope.uid===uid&&memberDiary();
+  accountScope.uid===uid&&currentLoginScope?.uid===uid&&
+  currentLoginScope.firebase?.auth?.currentUser?.uid===uid;
  monthlySalesBusy=true;monthlySalesData=null;monthlySalesMessage='本人Firestoreから指定期間だけ取得しています…';render();
  try{
-  const response=await accountDiary.request('syncHistoryRange',period);
+  const response=await reader.request('syncHistoryRange',period);
   if(!isCurrent())return;
   if(response?.startDate!==period.startDate||response?.endDate!==period.endDate||
      !Array.isArray(response.shifts))throw Error('指定期間の取得結果を照合できません');
@@ -6201,8 +6212,8 @@ async function loadMonthlySales(){
    const date=new Date(at).toISOString().slice(0,10);
    days.push(byDay.get(date)||{date,...empty()});
   }
-  monthlySalesData={...period,days,sum,unfinished};
-  monthlySalesMessage='取得完了：'+sum.duties+'乗務を集計しました。';
+  monthlySalesData={...period,days,sum,unfinished,source:'firestore'};
+  monthlySalesMessage='Firestore取得完了：'+sum.duties+'乗務を集計しました。';
  }catch(error){
   if(isCurrent()){monthlySalesData=null;
    monthlySalesMessage='月間売上を取得できません：'+String(error?.message||error);}
@@ -6212,49 +6223,6 @@ async function loadMonthlySales(){
 }
 
 
-// 管理者の正式切替前は旧Google原本を維持。既存syncList/syncGetだけで明示取得する。
-async function loadMonthlyFromLegacyGoogle(){
- if(monthlySalesBusy)return;
- if(!legacyDiary()||!googleIsConfigured()||!canEditNow()){
-  monthlySalesMessage='管理者の旧Google原本を読むには操作端末の接続設定が必要です。';render();return;
- }
- let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
- catch(e){monthlySalesMessage=String(e.message||e);render();return;}
- const uid=accountScope.uid,generation=accountScopeGeneration,epoch=++monthlySalesEpoch;
- const stable=()=>uid===accountScope.uid&&generation===accountScopeGeneration&&epoch===monthlySalesEpoch&&legacyDiary();
- monthlySalesBusy=true;monthlySalesData=null;
- monthlySalesMessage='旧Google原本を確認しています（この操作では保存・変更しません）…';render();
- try{
-  // The existing index service verifies each duty ID and revision and
-  // returns no partial results. Never treat a stale cache as a fresh read.
-  if(oldGoogleIndexBusy)throw Error('旧Google原本の一覧を別画面で取得中です');
-  oldGoogleIndexLoaded=false;oldGoogleIndexUid='';
-  await fetchOldGoogleHistoryIndex();
-  if(!stable())return;
-  if(!oldGoogleIndexLoaded||oldGoogleIndexUid!==uid)
-   throw Error(oldGoogleIndexMessage||'旧Google原本を読み戻せませんでした');
-  const days=monthlyPlanDates(period).map(date=>({date,duties:0,departures:0,unfinished:0,meter:0,entries:[]}));
-  const map=new Map(days.map(day=>[day.date,day]));
-  const sum={duties:0,departures:0,unfinished:0,meter:0};
-  for(const row of oldGoogleIndex){
-   if(!stable())return;
-   const daily=map.get(row.date);
-   if(!daily)continue;
-   if(!Number.isFinite(row.meter)||row.meter<0)throw Error('旧Google原本の確定金額を照合できません');
-   daily.departures++;sum.departures++;
-   if(!row.ended){daily.unfinished++;sum.unfinished++;continue;}
-   daily.duties++;sum.duties++;
-   daily.meter+=row.meter;sum.meter+=row.meter;
-   daily.entries.push({id:row.id,startedAt:monthlyPlanActualClock(row.startedIso,row.startedAt),
-    endedAt:monthlyPlanActualClock(row.endedIso,row.endedAt),
-    duration:Number.isFinite(row.duration)?row.duration:null,meter:row.meter});
-  }
-  monthlySalesData={...period,days,sum,unfinished:sum.unfinished,source:'legacy-google'};
-  monthlySalesMessage='旧Google原本の照合完了：'+sum.duties+'乗務（読み取りのみ）';
- }catch(error){
-  if(stable()){monthlySalesData=null;monthlySalesMessage='旧Google月間取得に失敗：'+String(error?.message||error);}
- }finally{if(stable()){monthlySalesBusy=false;render();}}
-}
 
 // 本人UID別の端末設定にだけ保存する乗務計画。日報の金額・距離・履歴原本は変更しない。
 const MONTH_PLAN_NAMES=Object.freeze({work:'出番',public:'公出予定',off:'公休',leave:'有休',after:'明け'});
@@ -6488,7 +6456,7 @@ function renderMonthlyManagement(){
   '<input id="monthlyDashboardMonth" class="control" type="month" value="'+safeText(monthlySalesMonth)+'"></label>'+
   '<span class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</span>'+
   '<button type="button" class="btn primary" data-action="loadMonthlySales" '+
-  (monthlySalesBusy?'disabled aria-busy="true"':'')+'>'+(legacyDiary()?'旧Google原本から実績を取得':'確定実績を取得・更新')+'</button></div>'+
+  (monthlySalesBusy?'disabled aria-busy="true"':'')+'>'+'Firestore実績を更新'+'</button></div>'+
   (monthlySalesMessage?'<p class="caption-note" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
   '<div class="month-goal-grid">'+
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
@@ -6511,7 +6479,7 @@ function renderMonthlyManagement(){
   kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
   '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報のみ。予測は目標対象の確定済み乗務平均×残り出番予定による参考値です。欠勤・公出は利用者が登録した件数です。</p></details>'+
   '<p class="caption-note">総売上には公出も含みます。月間目標への算入は「目標設定」で変更できます。</p>'+
-  (legacyDiary()?'<p class="caption-note">管理者の旧Google原本はボタンを押した時だけ既存の一覧・個別原本の照合を行います。原本を変更せず、取得できたデータだけ表示します。</p>':'')+
+  '<p class="caption-note">日報・売上は全利用者とも本人UIDのFirestoreから取得。印刷用シートを月間集計の取得先にしません。</p>'+
   '<div class="actions"><button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets">月間・曜日別目標を設定する</button></div>'+
   '<p class="caption-note">予定・目標・勤務区分は本人UID別の端末へ保存し、ログイン中の既存アカウント設定同期で他端末と照合します。同期完了までは端末側で保護し、日報原本は変更しません。</p></section>';
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
@@ -6658,7 +6626,8 @@ function monthlyPlanSave(){
 
 function renderOperations(shift){
  const head=titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。');
- if(!shift)return head+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
+ const monthShortcut='<div class="actions"><button type="button" class="btn" data-tab="monthly">▦ 月間営業計画・実績を開く</button></div>';
+ if(!shift)return head+monthShortcut+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
  const now=new Date(),v=liveBusinessNumbers(shift,now),t=v.t;
  const tile=(label,value,attr='')=>'<div class="operations-kpi"><small>'+label+'</small><strong '+attr+'>'+value+'</strong></div>';
  const overview='<section class="operations-overview" aria-label="主要な営業情報"><div class="operations-kpis">'
@@ -6679,7 +6648,7 @@ function renderOperations(shift){
  const panels=sections.map(([key,title,body])=>
   '<details name="operations-dashboard" class="details operations-fold" data-operation-panel="'+key+'" '
   +(key===selected?'open':'')+'><summary>'+title+'</summary><div class="inner">'+body+'</div></details>').join('');
- return head+overview+warn+panels;
+ return head+monthShortcut+overview+warn+panels;
 }
 function renderLiveStatus(shift,embedded=false){if(!shift)return `${embedded?'':titleBlock('営業状況','LIVE DASHBOARD','出庫後に現在の営業状況を表示します。')}<div class="card">現在の乗務がありません。過去の乗務は営業履歴から確認してください。</div>`;
  const v=liveBusinessNumbers(shift),elapsed=v.elapsed,avg=v.t.rides?v.t.meter/v.t.rides:0,check=meterCheckValues(v.t);
@@ -8220,7 +8189,7 @@ function handleAction(action,id){
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
    currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid;
   const monthlyReadAction=['loadMonthlySales','monthlyPlanPick','monthlyManagementMode','monthlyDayView'].includes(action)&&deviceMode==='viewer'&&
-   memberDiary()&&accountDiary.ready()&&currentLoginScope?.uid===accountScope.uid;
+   monthlyCanReadFirestore();
   if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer){
    toast('操作権がない端末では営業記録を変更できません',true);return;
   }
@@ -9646,7 +9615,7 @@ appEl.addEventListener('click',event=>{
  closeKeypad(true,true);renderAfterKeypad=false;rideSettingsJumpRequested=tabButton.hasAttribute('data-open-ride-fields');
  if(rideSettingsJumpRequested){settingsCategoryActive='display';settingsOpenState=null;}
  tab=tabButton.dataset.tab;render();
- if(tab==='monthly'&&memberDiary()&&accountDiary.ready())void loadMonthlySales();
+ if(tab==='monthly'&&monthlyCanReadFirestore())void loadMonthlySales();
  if(tab==='history')ensureHistoryCalendarIndex();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
@@ -9693,7 +9662,7 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
   const value=String(event.target.value||'');
   if(!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(value))return;
   monthlySalesMonth=value;monthlyPlanDate='';monthlyPlanMessage='';resetMonthlySales();render();
-  if(tab==='monthly'&&memberDiary()&&accountDiary.ready())void loadMonthlySales();
+  if(tab==='monthly'&&monthlyCanReadFirestore())void loadMonthlySales();
   return;
  }
  if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
