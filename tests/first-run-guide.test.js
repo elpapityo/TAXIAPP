@@ -13,8 +13,11 @@ const extract=html=>{
  return html.slice(a,b);
 };
 const source=extract(live);
-assert.match(live,/pickupDropDistance:'off',highwayDistance:'on',autoDistance:'off',gpsTripAtStart:'off'/,'新規登録者だけ距離・自動取得の初期値を設定');
-assert.match(live,/driveLayout:'meter',simpleMode:'on'/,'メーター型のシンプル表示を初期ON');
+assert.match(live,/function firstRunGuideApplyNewDefaults\(\)/,'新規登録者専用の初期値適用を維持');
+assert.match(live,/p\.pickupDropDistance='off'/,'初期の乗降距離OFF');
+assert.match(live,/p\.highwayDistance='on'/,'初期の高速距離ON');
+assert.match(live,/p\.autoDistance='off'/,'初期の自動距離OFF');
+assert.match(live,/p\.ui\.driveLayout='meter'/,'初期のメーターモードON');
 assert.match(live,/if\(key==='distanceStart'\|\|key==='distanceEnd'\)return distanceEnabled\('F'\)/,'シンプルモードの距離表示は選択した設定に従う');
 assert.equal(extract(demo),source,'公開デモと正式版の初回案内ロジックは同じ');
 assert.match(auth,/let createdHere=false;/);
@@ -34,6 +37,7 @@ const ctx={
  accountScope:{uid:'new-A'},accountScopeLoaded:true,accountScopeGeneration:2,
  tab:'drive',settingsCategoryActive:'driver',settingsOpenState:null,
  canEditNow:()=>true,getShift:()=>null,safeText:String,
+ memberDiary:()=>true,saveLater:()=>{},
  localStorage:{
   getItem:key=>memory.has(key)?memory.get(key):null,
   setItem:(key,value)=>{memory.set(key,String(value));},
