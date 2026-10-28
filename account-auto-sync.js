@@ -229,9 +229,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
      // 他端末が先に作成した設定原本は、この後のトランザクションで保護する。
      // Never overwrite a remotely-created document from another device.
      const result=await fire.runTransaction(db,async tx=>{
-       if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
-       if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
+      if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
       const doc=await tx.get(accountRef);
+      if(!sameSession()||!deviceSession.canWrite())throw Error('設定の初回保存中にログインが変更されました');
       if(doc.exists())return false;
       if(!deviceSession.canWrite())throw Error('閲覧専用端末から保存できません');
       tx.set(accountRef,{format:api.FORMAT,schemaVersion:1,
@@ -257,6 +257,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       selected=await fire.runTransaction(db,async tx=>{
        if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
        const latest=await tx.get(accountRef);
+       if(!sameSession()||!deviceSession.canWrite())throw Error('設定の初回統合中にログインが変更されました');
        if(!latest.exists())throw Error('クラウド設定が見つかりません');
        const freshest=api.extract({
         version:1,shifts:[],prefs:api.validate(latest.data())
@@ -286,7 +287,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
     let result=merged.prefs;
     if(!api.same(result,remote)){
      result=await fire.runTransaction(db,async tx=>{
+      if(!sameSession()||!deviceSession.canWrite())throw Error('設定の差分統合前にログインが変更されました');
       const fresh=await tx.get(accountRef);
+      if(!sameSession()||!deviceSession.canWrite())throw Error('設定の差分統合中にログインが変更されました');
       if(!fresh.exists())throw Error('クラウド設定が削除されました。確認が必要です');
       const current=api.extract({version:1,shifts:[],prefs:api.validate(fresh.data())}).prefs;
       const resolved=api.reconcile(base,beginning,current);
