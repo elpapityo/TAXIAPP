@@ -85,9 +85,10 @@ const call=expr=>vm.runInContext(expr,ctx);
  call("firstRunGuideRegistered('new-B')");
  ctx.canEditNow=()=>false;
  assert.equal(call('firstRunGuideActive()'),false);
+ ctx.tab='drive';ctx.settingsCategoryActive='gps';
  call('firstRunGuideActivate()');
- assert.equal(ctx.settingsCategoryActive,'driver'===ctx.settingsCategoryActive?'driver':ctx.settingsCategoryActive,
-  '閲覧専用で強制的に設定画面へ移さない');
+ assert.equal(ctx.tab,'drive','閲覧専用で強制的に設定画面へ移さない');
+ assert.equal(ctx.settingsCategoryActive,'gps','閲覧専用では設定分類を変更しない');
  ctx.canEditNow=()=>true;
  ctx.accountScope.uid='new-A';
  assert.equal(call('firstRunGuideActive()'),false,'別UIDには初期設定の表示を許可しない');
