@@ -56,5 +56,5 @@ assert.match(html,/function renderHighwayReport\(\)/);
 assert.match(html,/tab==='highway'\?renderHighwayReport\(\)/);
 assert.match(html,/id="highwayShiftSelect"/);
 assert.match(html,/data-tab="highway"/);
-assert.match(html,/const labels=\{drive:\['🚕','乗務入力'\],live:\['◴','集計'\],monthly:\['▦','月間営業管理'\],history:\['▤','営業履歴'\],print:/);
+assert.match(html,/const labels=\{drive:\['🚕','乗務入力'\],live:\['◴','集計'\],monthly:\['▦','月間営業計画・実績'\],history:\['▤','営業履歴'\],print:/);
 console.log('Highway register passed: each ride record, combined real/empty, IC route, totals, 75%, missing data, no mutation, HTML wiring.');

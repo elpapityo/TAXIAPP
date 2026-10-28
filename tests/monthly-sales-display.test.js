@@ -7,7 +7,8 @@ const src=fs.readFileSync('index.html','utf8');
 const start=src.indexOf('const MONTHLY_HOLIDAYS=');
 const end=src.indexOf('async function loadMonthlySales(){',start);
 assert.ok(start>0&&end>start,'月間売上の実働関数が見つかる');
-const ctx={Date,model:{prefs:{monthlySalesCloseDay:'end'}},
+const ctx={Date,deviceMode:'writer',model:{prefs:{monthlySalesCloseDay:'end'}},
+ monthlyPrefs:()=>ctx.model.prefs,
  safeText:String,money:value=>Number(value).toLocaleString('ja-JP')+'円',
  canEditNow:()=>true};
 vm.createContext(ctx);vm.runInContext(src.slice(start,end),ctx);
