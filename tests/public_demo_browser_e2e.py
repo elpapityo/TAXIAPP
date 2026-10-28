@@ -98,7 +98,7 @@ try:
  assert js("return localStorage.length")==0,'no real browser localStorage'
  assert js("return !document.querySelector('script[src]')"),'no external JS'
  # Independent monthly management must accept local plans and goals without editing a duty.
- js("document.querySelector('.taxi-mobile-more-panel [data-tab=monthly]').click()")
+ js("document.querySelector('.taxi-bottom-nav > [data-tab=monthly]').click()")
  wait.until(lambda _: js("return !!document.querySelector('.month-plan-calendar')"))
  initial_duty=js("return JSON.stringify(window.__TAXIAPP_DEMO__.snapshot().shifts)")
  js("document.querySelector('[data-action=monthlyManagementMode][data-id=targets]').click()")
