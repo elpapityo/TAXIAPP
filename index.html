@@ -6311,6 +6311,8 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  },
  onWriterBootstrapReady:()=>{
   writerLoadGate=false;writerLoadError='';
+  // 営業原本の取得完了後だけ、本人の月間設定をFirestore照合する。
+  accountSettingsAuto?.syncNow();
   document.body.classList.remove('taxi-viewer');
   const label=document.getElementById('deviceSessionStatus');
   if(label)label.textContent=accountScope.adminFirestorePreview?
@@ -9151,6 +9153,7 @@ model=emptyAccountModel();render();
 // Existing Google Apps Script duty sync stays unchanged.
 accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
  getModel:()=>model,
+ canApplyPrefs:()=>canEditNow(),
  beforeSignOut:async()=>{
   // アカウント切替を開始する前に、進行中の日報と未確認の原本を保護する。
   // ログイン先で別UIDを開いても、営業中の本人日報を失わない。
