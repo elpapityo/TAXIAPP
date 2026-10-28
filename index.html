@@ -6113,7 +6113,10 @@ async function googleSendShift(shift,manual=false){
 }
 function scheduleGoogleSync(){
  if(!canEditNow())return;
- if(memberDiary()){syncUI.schedule();return;}
+ // 本人Firestoreの原本は端末の文字入力/GPS保存で毎回送信しない。
+ // 出庫・ステータス変更・支払確定・入庫の既存個別イベントから送信する。
+ // 送信結果不明は端末に保持し、再接続や明示同期時に再試行する。
+ if(memberDiary())return;
  if(sheetTargetPrefs().syncMode==='on'){syncUI.schedule();return;}
  if(sheetTargetPrefs().mode!=='auto'||!googleIsConfigured())return;
  clearTimeout(cloudTimer);
