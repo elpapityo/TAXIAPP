@@ -3349,7 +3349,9 @@ async function firstRunGuideAction(action){
  if(firstRunGuideBusy||!firstRunGuideActive()||
   !['back','next','finish','skip'].includes(action))return;
  const owner=firstRunGuide.uid,generation=accountScopeGeneration;
- const valid=()=>firstRunGuideActive()&&firstRunGuide?.uid===owner&&accountScopeGeneration===generation;
+ const valid=()=>firstRunGuide?.uid===owner&&accountScopeGeneration===generation&&
+  accountScope.uid===owner&&currentLoginScope?.uid===owner&&
+  currentLoginScope.firebase?.auth?.currentUser?.uid===owner&&canEditNow();
  firstRunGuideBusy=true;
  try{
   if(await save()!==true||!valid()){
