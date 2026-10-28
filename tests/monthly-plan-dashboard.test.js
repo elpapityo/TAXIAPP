@@ -13,7 +13,7 @@ const originalDuty=JSON.stringify([{id:'duty-1',records:[{id:'ride-1',raw:{K:'10
 const model={prefs:{monthlySalesGoals:{'2026-11':50000},monthlyDutySalesGoals:{'2026-11':20000},monthlyDutyPlans:{'2026-11-12':{status:'work',start:'17:00',end:'06:00'}}},shifts:JSON.parse(originalDuty)};
 const fields={monthlyGoalInput:{value:'120000'},monthlyDutyGoalInput:{value:'26000'},monthlyPlanStatus:{value:'work'},monthlyPlanStart:{value:'18:00'},monthlyPlanEnd:{value:'07:00'}};
 let saved=0,alerts=[];
-const ctx={Date,model,monthlySalesMonth:'2026-11',monthlySalesData:{
+const ctx={Date,model,monthlySalesMonth:'2026-11',monthlySalesBusy:false,monthlySalesMessage:'',monthlySalesData:{
  startDate:'2026-11-01',endDate:'2026-11-30',
  sum:{meter:30000,duties:2},
  days:[{date:'2026-11-02',meter:10000,duties:1,entries:[{id:'duty-2',startedAt:'11/02 17:00',endedAt:'11/03 06:00',duration:46800,meter:10000}]},{date:'2026-11-04',meter:20000,duties:1}]
