@@ -1852,6 +1852,21 @@ html[data-ui-theme="night"] .month-plan-day.realized{box-shadow:inset 0 -4px #91
  .month-plan-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  .month-plan-fields .field:first-child{grid-column:span 2}
 }
+/* 初回登録ガイド。色以外でも現在の段階を示し、保存関数は既存のまま。 */
+.first-run-guide{border:2px solid #2d83a6;background:#eaf7fc;margin-bottom:14px}
+.first-run-guide .first-run-eyebrow{font-size:12px;color:#175b78;font-weight:850;margin-bottom:8px}
+.first-run-guide .h2{font-size:21px}
+.first-run-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:12px 0 16px}
+.first-run-step{border:1px solid #b6c9d7;border-radius:8px;padding:8px;font-size:12px;color:#405b70;background:#fff}
+.first-run-step.active{border:2px solid #167ba6;background:#d9f1ff;color:#135c7b;font-weight:850}
+.first-run-step.done{background:#dff3e9;border-color:#75aa93;color:#17604c}
+.first-run-guide .actions{display:flex;flex-wrap:wrap;gap:8px}
+html[data-ui-theme="night"] .first-run-guide{background:#1d4056;border-color:#72b4d4}
+html[data-ui-theme="night"] .first-run-guide .first-run-eyebrow{color:#d2efff}
+html[data-ui-theme="night"] .first-run-step{background:#2c435c;color:#e2edf8;border-color:#57738a}
+html[data-ui-theme="night"] .first-run-step.active{background:#1b617d;border-color:#9cd4f6;color:white}
+html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color:#7bb79b;color:#e2fff0}
+@media(max-width:700px){.first-run-step{font-size:11px;padding:6px}.first-run-guide{padding:14px}}
 </style>
 </head>
 <body>
@@ -7848,21 +7863,6 @@ function renderSettings(shift){const active=getShift();return `${titleBlock('設
  <option value="on" ${nativeDiaryGpsEnabled()?'selected':''}>GPS距離ラボ（Android専用アプリ）</option>
  </select></label></div>`:''}</div>`:`<div class="distance-auto-group"><p class="helper">距離の自動・手動を選ぶには、①の「乗車・降車」または「高速道路」の距離管理をONにしてください。</p></div>`}</section>${nativeDiaryGpsEnabled()?'<p class="helper">Android GPS距離ラボを使用中です。従来のブラウザGPSトリップ・中断回数・補正はこの方式には適用しません。</p>':(active?gpsTripUI?.panel(active)||'':'<p class="helper">GPSの距離テストは出庫後に操作できます。</p>')}</div></details><details class="details" data-address-settings><summary>住所取得の設定</summary><div class="inner"><section class="card gps-control"><h2 class="h2">位置情報の許可・確認</h2><div class="gps-status" data-gps-permission-status role="status">${gpsPermissionText||(!window.isSecureContext?'この開き方では位置情報を要求できません。HTTPSのURLで開いてください。':'位置情報の許可状態を確認しています…')}</div><button class="btn primary" data-action="checkGpsPermission" type="button">⌖ 位置情報を確認・許可する</button><p class="gps-help">Android設定 → アプリ → Chrome → 権限 → 位置情報 と、Chromeのサイト設定 → 位置情報を確認してください。すでに「ブロック」の場合は端末側で許可し直す必要があります。<strong>content:// のダウンロード画面では許可できない場合があり、GPSの安定利用にはHTTPS公開が必要</strong>です。</p></section><section class="card"><h2 class="h2">GPS・住所</h2><p class="helper">位置情報は許可したときだけ取得します。Androidでは位置情報設定をONにし、Chromeのサイト設定でも許可してください。端末のHTML直開きでは制限される場合があり、確実な利用にはHTTPS公開が必要です。</p><label class="field"><span class="field-label">GPS座標から町名・丁目を取得</span><select class="control" data-pref="reverseAddress"><option value="on" ${model.prefs.reverseAddress!=='off'?'selected':''}>GPS座標を国土地理院へ送信して町名・丁目に変換</option><option value="off" ${model.prefs.reverseAddress==='off'?'selected':''}>住所変換OFF（座標は内部保存・手入力）</option></select></label></section></div></details></div></details>`;}
 
-/* 初回登録ガイド。色以外でも現在の段階を示し、保存関数は既存のまま。 */
-.first-run-guide{border:2px solid #2d83a6;background:#eaf7fc;margin-bottom:14px}
-.first-run-guide .first-run-eyebrow{font-size:12px;color:#175b78;font-weight:850;margin-bottom:8px}
-.first-run-guide .h2{font-size:21px}
-.first-run-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:12px 0 16px}
-.first-run-step{border:1px solid #b6c9d7;border-radius:8px;padding:8px;font-size:12px;color:#405b70;background:#fff}
-.first-run-step.active{border:2px solid #167ba6;background:#d9f1ff;color:#135c7b;font-weight:850}
-.first-run-step.done{background:#dff3e9;border-color:#75aa93;color:#17604c}
-.first-run-guide .actions{display:flex;flex-wrap:wrap;gap:8px}
-html[data-ui-theme="night"] .first-run-guide{background:#1d4056;border-color:#72b4d4}
-html[data-ui-theme="night"] .first-run-guide .first-run-eyebrow{color:#d2efff}
-html[data-ui-theme="night"] .first-run-step{background:#2c435c;color:#e2edf8;border-color:#57738a}
-html[data-ui-theme="night"] .first-run-step.active{background:#1b617d;border-color:#9cd4f6;color:white}
-html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color:#7bb79b;color:#e2fff0}
-@media(max-width:700px){.first-run-step{font-size:11px;padding:6px}.first-run-guide{padding:14px}}
 /* 設定の分類は表示上の振分けのみ。既存の入力・保存関数は変更しない。 */
 let settingsCategoryActive='driver';
 // 設定画面に集約した低頻度のログイン操作。処理と安全確認は既存のボタンへ委譲し二重実装しない。
