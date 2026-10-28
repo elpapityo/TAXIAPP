@@ -6443,7 +6443,8 @@ function monthlyPlanProgress(period){
   return x.plan?.status==='work'||(monthlyPublicGoalIncluded()&&x.plan?.status==='public');
  });
  const left=eligible.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
-  !['absent','leave','off','after','public'].includes(monthlyActualEntry(x.date))).length;
+  !['absent','leave','off','after'].includes(monthlyActualEntry(x.date))&&
+  (monthlyActualEntry(x.date)!=='public'||monthlyPublicGoalIncluded())).length;
  const includedDuties=report?report.days.reduce((n,d)=>n+
   (monthlyActualEntry(d.date)==='public'&&!monthlyPublicGoalIncluded()?0:(d.duties||0)),0):0;
  const avg=includedDuties>0?countedGross/includedDuties:null;
