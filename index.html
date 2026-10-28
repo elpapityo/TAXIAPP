@@ -1812,7 +1812,7 @@ html[data-ui-theme="night"] .month-plan-day.realized{box-shadow:inset 0 -4px #91
 <script src="./login-core.js?v=20261024-openchat-name-1"></script>
 <script src="./account-settings.js?v=20261017-7"></script>
 <script src="./device-session.js?v=20261017-13"></script>
-<script src="./account-auto-sync.js?v=20261029-baseline-verify-220"></script>
+<script src="./account-auto-sync.js?v=20261029-signout-verify-220"></script>
 <script src="./account-diary-store.js?v=20261022-9"></script>
 <script src="./meter-confirm.js?v=20261025-174"></script>
 <script>
@@ -9187,6 +9187,12 @@ accountSettingsAuto=window.TAXIAPP_ACCOUNT_AUTO.create({
   if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
   const localOk=await save(true);
   if(localOk!==true){toast('端末への日報保存を確認できません。ログアウトを保留しました',true);return false;}
+  // 日報だけでなく月間予定・実績区分・目標のFirestore読戻しを完了してから切り替える。
+  // 入力直後にログアウトしても設定のクラウド保存予約を取り残さない。
+  if(await accountSettingsAuto?.syncBeforeSignOut?.()!==true){
+   toast('月間設定の保存確認が未完了です。ログアウトを保留しました。',true);
+   return false;
+  }
   if(!memberDiary())return true; // The legacy owner may still use manual Google sync.
   const synced=await syncUI.run(true);
   if(!synced||syncUI.status().conflicts.length||syncUI.status().lastError||
