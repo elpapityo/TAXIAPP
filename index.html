@@ -2974,7 +2974,7 @@ function renderNow(){
   }
  }
  // Picking a date must expand the selected-day editor before scrolling to it.
- if(monthlyScrollToEditor)monthlyFoldOpen.date=true;
+ if(tab==='monthly'&&monthlyScrollToEditor)monthlyFoldOpen.date=true;
  const sameSettingsGroup=settingsCategoryLastRendered===settingsCategoryActive;
  if(!sameSettingsGroup)settingsOpenState=null;
  const oldPanels=lastRenderedTab==='settings'&&sameSettingsGroup
