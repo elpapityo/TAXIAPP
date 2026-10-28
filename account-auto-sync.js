@@ -422,6 +422,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     // Existing documents may NEVER be changed through self-registration.
     const current=await fire.getDocFromServer(profileRef);
     if(!valid())return;
+    let createdHere=false;
     if(current.exists()){
      if(current.data()?.status!=='active')
       throw Error('この利用登録は停止または保留中です');
@@ -431,6 +432,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       await fire.setDoc(profileRef,{
        status:'active',openChatName:name,registeredAt:fire.serverTimestamp()
       });
+      createdHere=true;
      }catch(error){
       if(!valid())return;
       // A concurrent login might have created the profile. Read back the
@@ -449,6 +451,12 @@ root.TAXIAPP_ACCOUNT_AUTO={
      throw Error('本人の利用登録をサーバーで確認できません');
     if(!profile.openChatName)
      throw Error('オプチャネームの保存を確認できません');
+    // Show first-run guidance only for a document created by this registration.
+    // Existing users and concurrent registrations must not be treated as new.
+    if(createdHere){
+     try{deps.onInitialRegistrationVerified?.(pending.uid);}
+     catch(error){console.warn('初期設定ガイドを予約できません:',error);}
+    }
     pendingRegistration=null;displayRegistration(false);
     explicitWriterLogin=!printViewerMode;
     status('オプチャネームを登録しました');
