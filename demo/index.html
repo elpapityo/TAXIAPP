@@ -6584,12 +6584,17 @@ function renderMonthlyManagement(){
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="bulk" aria-pressed="'+(monthlyManagementMode==='bulk')+'">予定の一括登録</button></section>';
+ const writerSync=deviceMode==='writer'?
+  '<section class="card"><p class="caption-note">月間設定のクラウド保存：<span data-monthly-settings-sync-status role="status">'+
+  safeText(accountSettingsAuto?.status?.().message||'設定の照合待ち')+
+  '</span></p><button type="button" class="btn" data-action="monthlySettingsSyncNow" '+
+  (canEditNow()?'':'disabled')+'>月間設定の保存を確認</button></section>':'';
  const viewerBanner=deviceMode==='viewer'?
   '<section class="card"><p class="caption-note" role="status">'+
   safeText(monthlyViewerPrefsMessage||'本人の月間設定をFirestoreから取得していません')+
   '</p><div class="actions"><button type="button" class="btn" data-action="monthlyViewerRefresh">月間設定を再取得</button></div></section>':'';
  return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+
-  viewerBanner+nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
+  (deviceMode==='writer'?writerSync:viewerBanner)+nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):
    monthlyManagementMode==='bulk'?renderMonthlyBulkSettings(period):card+calendar+renderMonthlySales());
 }
 function monthlyGoalSave(){
