@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.217 — 公開操作デモ</title>
+<title>TAXIAPP v0.3.218 — 公開操作デモ</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1710,6 +1710,20 @@ html[data-ui-theme="night"] .preview-screen-head .drive-theme-toggle{
 .month-plan-day .month-day-status{font-size:9px;font-weight:700}
 .month-plan-day .month-day-status.public{color:#975101}
 .month-plan-day .month-day-status.absent{color:#b02f2f}
+.month-plan-day .month-day-status.public{color:#975101}
+.month-plan-display-switch{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0}
+.month-plan-display-switch button[aria-pressed="true"]{background:#eaf4ff;border-color:#1768b8;color:#164f89}
+.month-day-list{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin:12px 0}
+.month-day-list-item{width:100%;display:grid;grid-template-columns:62px minmax(0,1fr) auto;align-items:center;text-align:left;gap:8px;border:1px solid #bfcedb;border-radius:11px;background:#f7fafc;color:#214965;padding:10px 12px}
+.month-day-list-item.selected{outline:2px solid #e9912a;outline-offset:-2px}
+.month-day-list-item .day-main{display:flex;flex-direction:column;min-width:0}
+.month-day-list-item .day-main small{color:#506881;font-size:11px}
+.month-day-list-item .day-sale{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.month-plan-calendar .month-day-yen{font-variant-numeric:tabular-nums}
+.month-plan-calendar .month-day-goal{font-variant-numeric:tabular-nums}
+.month-plan-overview .month-details-fold{margin:14px 0 0}
+.month-plan-overview .month-details-fold>summary{cursor:pointer;font-weight:800}
+@media(max-width:700px){.month-day-list-item{grid-template-columns:55px minmax(0,1fr) auto;padding:10px 8px;gap:6px}.month-day-list-item .day-sale{font-size:13px}.month-plan-day{min-height:75px}.month-plan-day strong{font-size:11px}}
 @media(max-width:700px){.month-plan-bulk-days{gap:4px}.month-plan-bulk-days label{padding:5px;font-size:11px}}
 .month-target-nav{display:flex;flex-wrap:wrap;gap:8px}
 .month-target-nav button[aria-pressed="true"]{border-color:#1768b8;background:#eaf4ff;color:#145f9a}
@@ -3798,6 +3812,11 @@ function renderNow(){
   }
  }
  applyInputKeyboardMode();
+ if(tab==='monthly'&&monthlyScrollToEditor){
+  monthlyScrollToEditor=false;
+  requestAnimationFrame(()=>{if(tab==='monthly')
+   appEl.querySelector('.month-plan-editor')?.scrollIntoView({behavior:'smooth',block:'start'});});
+ }
  if(tab==='settings'){
   if(settingsOpenState){
    appEl.querySelectorAll('details.settings-advanced,details[data-ride-field-settings],details[data-cruising-summary-settings],details[data-drive-status-settings],details[data-text-size-settings],details[data-button-size-settings],details[data-help-settings],details[data-theme-settings],details[data-ui-preview-settings],details[data-driver-profile-settings],details[data-vehicle-profile-settings],details[data-cancel-settings],details[data-fee-settings],details[data-duty-plan-settings],details[data-gps-settings],details[data-address-settings]').forEach((panel,index)=>{
@@ -6193,7 +6212,7 @@ async function loadMonthlySales(){
 const MONTH_PLAN_NAMES=Object.freeze({work:'出番',off:'公休',leave:'有休',after:'明け'});
 const MONTH_ACTUAL_NAMES=Object.freeze({normal:'通常出勤',public:'公出',absent:'欠勤',off:'公休',leave:'有休',after:'明け'});
 const MONTH_ACTUAL_WORK=Object.freeze(['normal','public']);
-let monthlyPlanDate='',monthlyPlanMessage='',monthlyManagementMode='calendar';
+let monthlyPlanDate='',monthlyPlanMessage='',monthlyManagementMode='calendar',monthlyDayView='calendar',monthlyScrollToEditor=false;
 function monthlyPlanDates(period){
  const result=[];
  for(let t=Date.parse(period.startDate+'T00:00:00Z'),end=Date.parse(period.endDate+'T00:00:00Z');t<=end;t+=86400000)
@@ -6333,7 +6352,7 @@ function renderMonthlyTargetSettings(p){
   (monthlyPublicGoalIncluded()?'checked ':'')+readonly+'> 公出売上を月間目標の対象に含める</label>'+
   '<div class="actions"><button type="button" class="btn" data-action="monthlyPublicGoalSave" '+readonly+'>公出の集計設定を保存</button></div>'+
   '<p class="caption-note">初期値は対象外。総売上と日報原本は変わりません。給与計算はしません。</p>'+
-  '<p class="caption-note">予定・目標は本人UID別の端末データ。別端末の自動同期は未対応。日報原本には書き込みません。</p></section>';
+  '<p class="caption-note">設定は本人UID別の端末データに保存。ログイン中は既存の設定同期で照合します。日報原本には書き込みません。</p></section>';
 }
 function monthlyWeekdayGoalSave(){
  if(!canEditNow())return;
@@ -6371,6 +6390,13 @@ function monthlyPlanActualClock(iso,legacy){
  const raw=String(legacy||'');
  return /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(raw)?raw.slice(0,5):'記録なし';
 }
+function monthlyCalendarMoney(value){
+ const yen=Math.round(Number(value)||0);
+ if(Math.abs(yen)<10000)return safeText(money(yen));
+ const units=Math.abs(yen)>=100000?0:1;
+ const scaled=(yen/10000).toFixed(units).replace(/\.0$/,'');
+ return safeText(scaled+'万円');
+}
 function monthlyPlanProgress(period){
  const ok=monthlySalesData?.startDate===period.startDate&&monthlySalesData?.endDate===period.endDate;
  const report=ok?monthlySalesData:null,byDay=new Map(report?.days?.map(x=>[x.date,x])||[]);
@@ -6379,13 +6405,16 @@ function monthlyPlanProgress(period){
  const normalGross=report?gross-publicGross:null;
  const countedGross=report?normalGross+(monthlyPublicGoalIncluded()?publicGross:0):null;
  const days=monthlyPlanDates(period).map(date=>({date,plan:monthlyPlanEntry(date),actual:byDay.get(date)}));
+ const registeredAbsences=days.filter(x=>monthlyActualEntry(x.date)==='absent').length;
+ const registeredPublic=days.filter(x=>monthlyActualEntry(x.date)==='public').length;
+ const confirmedWorkDays=report?report.days.filter(x=>x.duties>0).length:null;
  const work=days.filter(x=>x.plan?.status==='work');
  const left=work.filter(x=>x.date>=dateStamp()&&!x.actual?.duties&&
   !['absent','leave','off','after','public'].includes(monthlyActualEntry(x.date))).length;
  const includedDuties=report?report.days.reduce((n,d)=>n+
   (monthlyActualEntry(d.date)==='public'&&!monthlyPublicGoalIncluded()?0:(d.duties||0)),0):0;
  const avg=includedDuties>0?countedGross/includedDuties:null;
- return {report,byDay,goal,dutyGoal,gross,publicGross,normalGross,countedGross,duties,days,planned:work.length,left,
+ return {report,byDay,goal,dutyGoal,gross,publicGross,normalGross,countedGross,duties,days,planned:work.length,left,registeredAbsences,registeredPublic,confirmedWorkDays,
   pct:goal&&countedGross!==null?Math.round(1000*countedGross/goal)/10:null,
   short:goal&&countedGross!==null?Math.max(0,goal-countedGross):null,
   need:goal&&countedGross!==null&&left>0?Math.ceil(Math.max(0,goal-countedGross)/left):null,
@@ -6407,21 +6436,27 @@ function renderMonthlyManagement(){
   (monthlySalesMessage?'<p class="caption-note" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
   '<div class="month-goal-grid">'+
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
-  kpi('基本の日別目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
-  kpi('確定売上（税込）',p.gross===null?'未取得':money(p.gross))+
-  kpi('通常分の確定売上',p.normalGross===null?'未取得':money(p.normalGross))+
-  kpi('公出分の確定売上',p.publicGross===null?'未取得':money(p.publicGross))+
   kpi('月間目標の対象売上',p.countedGross===null?'未取得':money(p.countedGross))+
   kpi('目標達成率',p.pct===null?'未算出':p.pct+'%')+
   kpi('目標までの不足',p.short===null?'未算出':money(p.short))+
+  kpi('確定売上（税込）',p.gross===null?'未取得':money(p.gross))+
+  kpi('残り出番に必要な平均売上',p.need===null?'算出不可':money(p.need))+
+  '</div>'+
+  '<details class="month-details-fold"><summary>出勤日数・売上内訳・月末予測を詳しく見る</summary>'+
+  '<div class="month-goal-grid">'+
+  kpi('基本の日別目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
+  kpi('公出以外の確定売上（未区分を含む）',p.normalGross===null?'未取得':money(p.normalGross))+
+  kpi('公出分の確定売上',p.publicGross===null?'未取得':money(p.publicGross))+
   kpi('入庫済み乗務',p.duties===null?'未取得':p.duties+'乗務')+
+  kpi('実際に入庫した日数',p.confirmedWorkDays===null?'未取得':p.confirmedWorkDays+'日')+
   kpi('出番予定',p.planned+'日')+kpi('残り出番予定',p.left+'日')+
-  kpi('残り出番に必要な平均売上',p.need===null?'算出不可':money(p.need),'wide')+
+  kpi('欠勤登録',p.registeredAbsences+'日')+
+  kpi('公出登録',p.registeredPublic+'日')+
   kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
-  '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報だけ。予測は確定済み乗務平均×残り出番予定による参考値です。未取得データは推測しません。</p>'+
+  '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報のみ。予測は目標対象の確定済み乗務平均×残り出番予定による参考値です。欠勤・公出は利用者が登録した件数です。</p></details>'+
   '<p class="caption-note">総売上には公出も含みます。月間目標への算入は「目標設定」で変更できます。</p>'+
   '<div class="actions"><button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets">月間・曜日別目標を設定する</button></div>'+
-  '<p class="caption-note">予定・目標は本人UID別の端末データに保存します。別端末との自動同期は未対応。日報原本は変更しません。</p></section>';
+  '<p class="caption-note">予定・目標・勤務区分は本人UID別の端末へ保存し、ログイン中の既存アカウント設定同期で他端末と照合します。同期完了までは端末側で保護し、日報原本は変更しません。</p></section>';
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
  for(const x of p.days){
   const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定',actualCode=monthlyActualEntry(x.date);
@@ -6432,7 +6467,8 @@ function renderMonthlyManagement(){
    '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
    '</strong><small>'+name+'</small>'+
    (actualCode?'<small class="month-day-status '+(actualCode==='public'||actualCode==='absent'?actualCode:'')+'">実績 '+MONTH_ACTUAL_NAMES[actualCode]+'</small>':'')+
-   (x.actual?.duties?'<small class="month-day-yen">'+money(x.actual.meter)+'</small>':'')+
+   (x.actual?.duties?'<small class="month-day-yen" title="'+safeText(money(x.actual.meter))+'">'+monthlyCalendarMoney(x.actual.meter)+'</small>':
+     x.actual?.unfinished?'<small>進行中 '+x.actual.unfinished+'件</small>':'')+
    (showGoal&&cellGoal.value?'<small class="month-day-goal">目標 '+money(cellGoal.value)+'</small>':'')+'</button>';
  }
  const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
@@ -6486,10 +6522,23 @@ function renderMonthlyManagement(){
   '<div class="actions"><button class="btn" type="button" data-action="monthlyDateGoalSave" '+readonly+'>この日の目標を保存・解除</button></div></div>'+
   comparison+
   (monthlyPlanMessage?'<p class="caption-note" role="status">'+safeText(monthlyPlanMessage)+'</p>':'')+'</section>';
- const calendar='<section class="card"><h2 class="h2">乗務予定カレンダー</h2>'+
-  '<p class="caption-note">予定と実際の勤務区分は別々に保存。確定実績のある日は下線で区別します。</p>'+
-  '<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+
-  cells+'</div>'+editor+'</section>';
+ const listItems=p.days.map(x=>{
+  const a=monthlyActualEntry(x.date),plan=MONTH_PLAN_NAMES[x.plan?.status]||'未設定';
+  const d=monthlyDateGoal(x.date),actualStatus=a?MONTH_ACTUAL_NAMES[a]:'未確定';
+  const amount=x.actual?.duties?money(x.actual.meter):x.actual?.unfinished?'進行中':'—';
+  return '<button type="button" class="month-day-list-item'+(x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+'">'+
+   '<strong>'+safeText(x.date.slice(5).replace('-','/'))+'（'+MONTH_PLAN_WEEKDAYS[monthlyWeekday(x.date)]+'）</strong>'+
+   '<span class="day-main"><small>予定 '+safeText(plan)+' ／ 実績 '+safeText(actualStatus)+'</small>'+
+   '<small>目標 '+(d.value?money(d.value):'未設定')+'</small></span>'+
+   '<span class="day-sale">'+safeText(amount)+'</span></button>';
+ }).join('');
+ const calendar='<section class="card"><h2 class="h2">日別の予定・実績</h2>'+
+  '<p class="caption-note">日付を選ぶと下で予定・勤務実績・日別目標を変更できます。売上は確定日報から取得し、出庫日でまとめます。</p>'+
+  '<div class="month-plan-display-switch"><span class="caption-note">表示方式：</span>'+
+  '<button type="button" class="btn" data-action="monthlyDayView" data-id="calendar" aria-pressed="'+(monthlyDayView==='calendar')+'">カレンダー</button>'+
+  '<button type="button" class="btn" data-action="monthlyDayView" data-id="list" aria-pressed="'+(monthlyDayView==='list')+'">日別一覧</button></div>'+
+  (monthlyDayView==='calendar'?'<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+cells+'</div>':
+   '<div class="month-day-list">'+listItems+'</div>')+editor+'</section>';
  const nav='<section class="card month-target-nav" aria-label="月間営業画面の切り替え">'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
   '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button>'+
@@ -8106,7 +8155,7 @@ function handleAction(action,id){
    deviceMode==='writer'&&legacyDiary()&&!TAXIAPP_PRINT_VIEWER_MODE&&
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
    currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid;
-  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick','monthlyManagementMode'].includes(action)&&deviceMode==='viewer'&&
+  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick','monthlyManagementMode','monthlyDayView'].includes(action)&&deviceMode==='viewer'&&
    memberDiary()&&accountDiary.ready()&&currentLoginScope?.uid===accountScope.uid;
   if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer){
    toast('操作権がない端末では営業記録を変更できません',true);return;
@@ -8203,10 +8252,14 @@ function handleAction(action,id){
   if(id==='calendar'||id==='targets'||id==='bulk'){monthlyManagementMode=id;monthlyPlanMessage='';render();}
   return;
  }
+ if(action==='monthlyDayView'){
+  if(id==='calendar'||id==='list'){monthlyDayView=id;render();}
+  return;
+ }
  if(action==='monthlyPlanSave'){monthlyPlanSave();return;}
  if(action==='monthlyPlanPick'){
   try{if(monthlyPlanDates(monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay())).includes(id)){
-   monthlyPlanDate=id;monthlyPlanMessage='';render();
+   monthlyPlanDate=id;monthlyPlanMessage='';monthlyScrollToEditor=true;render();
   }}catch{toast('日付を確認できません',true);}
   return;
  }
@@ -9528,7 +9581,9 @@ appEl.addEventListener('click',event=>{
  }
  closeKeypad(true,true);renderAfterKeypad=false;rideSettingsJumpRequested=tabButton.hasAttribute('data-open-ride-fields');
  if(rideSettingsJumpRequested){settingsCategoryActive='display';settingsOpenState=null;}
- tab=tabButton.dataset.tab;render();if(tab==='history')ensureHistoryCalendarIndex();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
+ tab=tabButton.dataset.tab;render();
+ if(tab==='monthly'&&memberDiary()&&accountDiary.ready())void loadMonthlySales();
+ if(tab==='history')ensureHistoryCalendarIndex();return;}let action=event.target.closest('[data-action]');if(action){if(action.dataset.action==='saveDraft'){
   if(skipSaveClick?.button===action&&Date.now()-skipSaveClick.at<1500){skipSaveClick=null;return;}
   skipSaveClick=null;invokeSaveDraft();return;
  }const meterBefore=meterConfirmBefore(action.dataset.action);
@@ -9573,7 +9628,9 @@ appEl.addEventListener('keydown',event=>{if(event.target.id==='newWaitPlace'&&ev
  if(event.target.id==='monthlyDashboardMonth'||event.target.id==='monthlySalesMonth'){
   const value=String(event.target.value||'');
   if(!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(value))return;
-  monthlySalesMonth=value;monthlyPlanDate='';monthlyPlanMessage='';resetMonthlySales();render();return;
+  monthlySalesMonth=value;monthlyPlanDate='';monthlyPlanMessage='';resetMonthlySales();render();
+  if(tab==='monthly'&&memberDiary()&&accountDiary.ready())void loadMonthlySales();
+  return;
  }
  if(event.target.matches?.('[data-firestore-print-setting]')){firestorePrintPcSettingChange(event.target);return;} if(event.target.id==='importFirestoreBackup'){const file=event.target.files?.[0];event.target.value='';void importFirestoreBackup(file);return;} if(event.target.id==='importBackup'){importBackup(event.target.files?.[0]);return;}
  if(event.target.matches('[data-wait-pick],[data-wait-meta-address],[data-wait-meta-radius],[data-wait-register-address]')){handleInput(event);return;}
