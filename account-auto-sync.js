@@ -120,6 +120,26 @@ root.TAXIAPP_ACCOUNT_AUTO={
    }catch{}
   }
   const ref=()=>fire.doc(db,'accountSettings',uid);
+  // 閲覧端末は操作権を取得せず、本人の月間設定だけをサーバーから読む。
+  // ローカル日報やprefsを書き換えず、ログイン変更後の遅延応答を破棄する。
+  async function loadViewerMonthlyPrefs(){
+   if(!enabled||deviceSession?.state()!=='viewer'||!auth?.currentUser)return;
+   const accountUid=uid,generation=authGeneration;
+   deps.onMonthlyViewPrefs?.(null,accountUid,'月間設定を取得しています…');
+   try{
+    const snapshot=await fire.getDocFromServer(ref());
+    if(!enabled||uid!==accountUid||authGeneration!==generation||
+       auth.currentUser?.uid!==accountUid||deviceSession?.state()!=='viewer')return;
+    const prefs=snapshot.exists()?api.validate(snapshot.data()):{};
+    deps.onMonthlyViewPrefs?.(prefs,accountUid,
+     snapshot.exists()?'月間設定をFirestoreから取得しました':'月間設定は未登録です');
+   }catch(error){
+    if(enabled&&uid===accountUid&&authGeneration===generation&&
+       auth.currentUser?.uid===accountUid&&deviceSession?.state()==='viewer')
+     deps.onMonthlyViewPrefs?.(null,accountUid,
+      '月間設定を取得できません：'+String(error.code||error.message||error));
+   }
+  }
   function schedule(ms=900){
    if(!enabled||!deviceSession?.canWrite())return;
    clearTimeout(timer);
@@ -508,7 +528,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
       // A repeated Firestore session snapshot must NOT cause another
       // settings read when the editing permission has not changed.
       if(next==='writer'&&next!==previous)schedule(0);
-      else if(next!=='writer'&&next!=='legacy')clearTimeout(timer);
+      else if(next==='viewer'&&next!==previous){
+       clearTimeout(timer);void loadViewerMonthlyPrefs();
+      }else if(next!=='writer'&&next!=='legacy')clearTimeout(timer);
      }
     });
     a.onAuthStateChanged(auth,next=>{
@@ -522,7 +544,10 @@ root.TAXIAPP_ACCOUNT_AUTO={
     gate('error','Googleログインの準備ができません：'+String(e.message||e));
     status('Googleログインの準備ができません：'+String(e.message||e));
    }
-   window.addEventListener('online',()=>schedule(0));
+   window.addEventListener('online',()=>{
+    if(deviceSession?.state()==='viewer')void loadViewerMonthlyPrefs();
+    else schedule(0);
+   });
    // No visibility/focus polling: reload settings when login obtains an
    // editing session, and on actual preference changes only.
   }
@@ -544,7 +569,8 @@ root.TAXIAPP_ACCOUNT_AUTO={
    deferredWhileEditing=false;
    schedule(200);
   }
-  return {start,localSaved,editingEnded,status:()=>({enabled,uid,mode:deviceSession?.state()})};
+  return {start,localSaved,editingEnded,refreshViewerMonthlyPrefs:loadViewerMonthlyPrefs,
+   status:()=>({enabled,uid,mode:deviceSession?.state()})};
  }
 };
 })(typeof window!=='undefined'?window:globalThis);
