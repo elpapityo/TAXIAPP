@@ -154,9 +154,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
    ?{writerSessionId:deviceSession.sessionId()}:{};
   function stillCurrent(accountUid){return enabled&&uid===accountUid&&auth.currentUser?.uid===accountUid;}
   // 書込み完了だけで保存済みとしない。本人UIDのサーバー原本と内容を照合する。
-  async function verifySavedPrefs(expected,accountUid){
+  async function verifySavedPrefs(expected,accountUid,sessionGeneration){
    const snapshot=await fire.getDocFromServer(ref());
-   if(!stillCurrent(accountUid)||!deviceSession?.canWrite())return false;
+   if(!stillCurrent(accountUid)||authGeneration!==sessionGeneration||!deviceSession?.canWrite())return false;
    if(!snapshot.exists())throw Error('設定を送信しましたがサーバー原本を読み戻せません');
    const actual=api.extract({version:1,shifts:[],prefs:api.validate(snapshot.data())}).prefs;
    if(!api.same(actual,expected))
@@ -184,14 +184,15 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(!enabled||!navigator.onLine){if(enabled)status('オフライン：設定は端末に保存中');return;}
    if(busy){again=true;return;}
    busy=true;
-   const accountUid=uid;
+   const accountUid=uid,sessionGeneration=authGeneration;
+   const sameSession=()=>stillCurrent(accountUid)&&authGeneration===sessionGeneration;
    try{
     status('設定を照合しています…');
     const beginning=currentPrefs();
     // The listener delivered a server-confirmed snapshot already.
     // Do not issue another document read for every reconciliation.
     const cloud=await fire.getDocFromServer(ref());
-    if(!stillCurrent(accountUid)||!deviceSession.canWrite())return;
+    if(!sameSession()||!deviceSession.canWrite())return;
     const remote=cloud.exists()?api.extract({
      version:1,shifts:[],prefs:api.validate(cloud.data())
     }).prefs:null;
@@ -208,9 +209,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
        prefs:beginning,...writerFields(),updatedAt:fire.serverTimestamp()});
       return true;
      });
-     if(!stillCurrent(accountUid))return;
+     if(!sameSession())return;
      if(result){
-      if(!await verifySavedPrefs(beginning,accountUid))return;
+      if(!await verifySavedPrefs(beginning,accountUid,sessionGeneration))return;
       if(!api.same(currentPrefs(),beginning)){again=true;return;}
       storeBase(beginning);status('設定はFirestore読戻し確認済み');
      }else again=true;
@@ -240,12 +241,12 @@ root.TAXIAPP_ACCOUNT_AUTO={
        return joined;
       });
      }
-     if(!stillCurrent(accountUid))return;
+     if(!sameSession())return;
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
-     if(!await verifySavedPrefs(selected,accountUid))return;
+     if(!await verifySavedPrefs(selected,accountUid,sessionGeneration))return;
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
      await apply(selected);
-     if(!stillCurrent(accountUid))return;
+     if(!sameSession())return;
      storeBase(selected);
      status('Googleの設定を自動で反映しました');
      return;
@@ -269,19 +270,19 @@ root.TAXIAPP_ACCOUNT_AUTO={
        tx.update(ref(),{prefs:resolved.prefs,...writerFields(),updatedAt:fire.serverTimestamp()});
       return resolved.prefs;
      });
-     if(!stillCurrent(accountUid))return;
+     if(!sameSession())return;
     }
     if(!api.same(currentPrefs(),beginning)){again=true;return;}
-    if(!await verifySavedPrefs(result,accountUid))return;
+    if(!await verifySavedPrefs(result,accountUid,sessionGeneration))return;
     if(!api.same(currentPrefs(),beginning)){again=true;return;}
     if(!api.same(result,beginning))await apply(result);
-    if(!stillCurrent(accountUid))return;
+    if(!sameSession())return;
     storeBase(result);
     status('設定のFirestore読戻し確認済み（日報とは別）');
    }finally{
     busy=false;
     // Applying a remote update is not a user edit.
-    if(stillCurrent(accountUid)){
+    if(sameSession()){
      try{localSignature=api.signature(currentPrefs());}catch{}
     }
     if(again){again=false;schedule(300);}
