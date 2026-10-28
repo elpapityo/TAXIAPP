@@ -6155,7 +6155,7 @@ async function loadMonthlySales(){
  }
  const uid=accountScope.uid,generation=accountScopeGeneration;
  const login=currentLoginScope;
- const reader=window.TAXIAPP_ACCOUNT_DIARY.create();
+ const reader=window.TAXIAPP_ACCOUNT_DIARY?.create?.();
  // Read-only Firestore for all users without changing the production duty writer.
  reader.bind({uid},{...login.firebase,admin:Boolean(login.admin),
   storageBackend:'firestore',readOnly:true});
