@@ -132,5 +132,55 @@ assert.match(auto,/runTransaction/);
 assert.match(auto,/onUserScope/,"scope must be selected before editing privileges");
 assert.match(auto,/settings?\.merge|api\.merge/);
 assert.match(html,/id="accountStatus"|Google/);
+// 初回接続でも別日の月間予定は統合し、同じ日の食い違いは自動採用しない。
+const firstStart=auto.indexOf('  function mergeInitialMonthlyPrefs(');
+const firstEnd=auto.indexOf('  async function reconcile(){',firstStart);
+assert.ok(firstStart>0&&firstEnd>firstStart,'月間設定の初回統合処理が存在');
+const firstCtx={api};vm.createContext(firstCtx);
+vm.runInContext(auto.slice(firstStart,firstEnd),firstCtx);
+const initialLocal={version:1,shifts:[{id:'keep-local'}],prefs:{
+ monthlyDutyPlans:{'2026-11-02':{status:'work',start:'17:00',end:'06:00'}},
+ monthlySalesGoals:{'2026-11':800000}
+}};
+const initialRemote={
+ monthlyDutyPlans:{'2026-11-03':{status:'off',start:'',end:''}},
+ monthlyDutySalesGoals:{'2026-11':40000}
+};
+firstCtx.local=initialLocal;firstCtx.remote=initialRemote;
+const firstMerged=vm.runInContext('mergeInitialMonthlyPrefs(local,remote)',firstCtx);
+assert.equal(firstMerged.monthlyDutyPlans['2026-11-02'].status,'work');
+assert.equal(firstMerged.monthlyDutyPlans['2026-11-03'].status,'off');
+assert.equal(firstMerged.monthlySalesGoals['2026-11'],800000);
+assert.equal(firstMerged.monthlyDutySalesGoals['2026-11'],40000);
+assert.equal(initialLocal.shifts[0].id,'keep-local','日報原本を変更しない');
+firstCtx.remote={monthlyDutyPlans:{
+ '2026-11-02':{status:'leave',start:'',end:''}}};
+assert.throws(()=>vm.runInContext('mergeInitialMonthlyPrefs(local,remote)',firstCtx),
+ /競合/, '同一日付の変更が異なる場合は双方を保護し停止する');
+
+// 書き込みが成功しても読戻し不一致は「保存確認済み」としない。
+const verifyStart=auto.indexOf('  async function verifySavedPrefs(');
+const verifyEnd=auto.indexOf('  async function apply(',verifyStart);
+assert.ok(verifyStart>0&&verifyEnd>verifyStart);
+const verifyCtx={
+ api,authGeneration:12,
+ stillCurrent:uid=>uid==='own-uid',
+ deviceSession:{canWrite:()=>true},
+ ref:()=>({path:'accountSettings/own-uid'}),
+ expected:{monthlySalesGoals:{'2026-11':1000000}}
+};vm.createContext(verifyCtx);
+vm.runInContext(auto.slice(verifyStart,verifyEnd),verifyCtx);
+const snap=prefs=>({exists:()=>true,data:()=>({
+ format:api.FORMAT,schemaVersion:1,prefs
+})});
+verifyCtx.fire={getDocFromServer:async()=>snap(verifyCtx.expected)};
+(async()=>{
+ assert.equal(await vm.runInContext('verifySavedPrefs(expected,"own-uid",12)',verifyCtx),true);
+ verifyCtx.fire={getDocFromServer:async()=>snap({monthlySalesGoals:{'2026-11':900000}})};
+ await assert.rejects(vm.runInContext('verifySavedPrefs(expected,"own-uid",12)',verifyCtx),/一致しません/);
+ verifyCtx.authGeneration=13;
+ verifyCtx.fire={getDocFromServer:async()=>snap(verifyCtx.expected)};
+ assert.equal(await vm.runInContext('verifySavedPrefs(expected,"own-uid",12)',verifyCtx),false);
+})().catch(error=>{console.error(error);process.exitCode=1;});
 console.log('Account settings migration passed: name, waiting places, inputs, display, fares, credentials and shift preservation.');
 console.log('Account settings automatic synchronization regression passed.');
