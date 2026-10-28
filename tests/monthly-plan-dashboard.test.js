@@ -65,7 +65,7 @@ assert.match(screen,/month-settings-surface/,'selected-day settings visually sep
 assert.match(screen,/<details class="card month-plan-editor month-settings-surface month-settings-fold" data-monthly-fold="date" >/,'the date editor starts folded');
 assert.match(screen,/選択日の設定：2026-11-01/,'the folded row identifies the selected date');
 assert.match(screen,/data-action="monthlyPlanSave"/,'the existing save action is still inside its fold');
-assert.match(live,/if\(monthlyScrollToEditor\)monthlyFoldOpen\.date=true;/,'selecting a date must open its editor');
+assert.match(live,/if\(tab==='monthly'&&monthlyScrollToEditor\)monthlyFoldOpen\.date=true;/,'selecting a date must open its editor');
 assert.match(live,/for\(const fold of appEl\.querySelectorAll\('details\[data-monthly-fold\]'\)\)/,'re-render retains manually expanded sections');
 calc('monthlyFoldOpen.date=true');
 assert.match(calc('renderMonthlyManagement()'),/data-monthly-fold="date" open/,'selected-date editor can open');
