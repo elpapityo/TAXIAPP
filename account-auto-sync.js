@@ -154,8 +154,9 @@ root.TAXIAPP_ACCOUNT_AUTO={
    ?{writerSessionId:deviceSession.sessionId()}:{};
   function stillCurrent(accountUid){return enabled&&uid===accountUid&&auth.currentUser?.uid===accountUid;}
   // 書込み完了だけで保存済みとしない。本人UIDのサーバー原本と内容を照合する。
-  async function verifySavedPrefs(expected,accountUid,sessionGeneration){
-   const snapshot=await fire.getDocFromServer(ref());
+  async function verifySavedPrefs(expected,accountUid,sessionGeneration,accountRef){
+   if(!stillCurrent(accountUid)||authGeneration!==sessionGeneration||!deviceSession?.canWrite())return false;
+   const snapshot=await fire.getDocFromServer(accountRef);
    if(!stillCurrent(accountUid)||authGeneration!==sessionGeneration||!deviceSession?.canWrite())return false;
    if(!snapshot.exists())throw Error('設定を送信しましたがサーバー原本を読み戻せません');
    const actual=api.extract({version:1,shifts:[],prefs:api.validate(snapshot.data())}).prefs;
@@ -208,14 +209,14 @@ root.TAXIAPP_ACCOUNT_AUTO={
    if(!enabled||!navigator.onLine){if(enabled)status('オフライン：設定は端末に保存中');return;}
    if(busy){again=true;return;}
    busy=true;
-   const accountUid=uid,sessionGeneration=authGeneration;
+   const accountUid=uid,sessionGeneration=authGeneration,accountRef=ref();
    const sameSession=()=>stillCurrent(accountUid)&&authGeneration===sessionGeneration;
    try{
     status('設定を照合しています…');
     const beginning=currentPrefs();
     // The listener delivered a server-confirmed snapshot already.
     // Do not issue another document read for every reconciliation.
-    const cloud=await fire.getDocFromServer(ref());
+    const cloud=await fire.getDocFromServer(accountRef);
     if(!sameSession()||!deviceSession.canWrite())return;
     const remote=cloud.exists()?api.extract({
      version:1,shifts:[],prefs:api.validate(cloud.data())
@@ -228,16 +229,18 @@ root.TAXIAPP_ACCOUNT_AUTO={
      // 他端末が先に作成した設定原本は、この後のトランザクションで保護する。
      // Never overwrite a remotely-created document from another device.
      const result=await fire.runTransaction(db,async tx=>{
-      const doc=await tx.get(ref());
+       if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
+       if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
+      const doc=await tx.get(accountRef);
       if(doc.exists())return false;
       if(!deviceSession.canWrite())throw Error('閲覧専用端末から保存できません');
-      tx.set(ref(),{format:api.FORMAT,schemaVersion:1,
+      tx.set(accountRef,{format:api.FORMAT,schemaVersion:1,
        prefs:beginning,...writerFields(),updatedAt:fire.serverTimestamp()});
       return true;
      });
      if(!sameSession())return;
      if(result){
-      if(!await verifySavedPrefs(beginning,accountUid,sessionGeneration))return;
+      if(!await verifySavedPrefs(beginning,accountUid,sessionGeneration,accountRef))return;
       if(!api.same(currentPrefs(),beginning)){again=true;return;}
       storeBase(beginning);status('設定はFirestore読戻し確認済み');
      }else again=true;
@@ -252,20 +255,21 @@ root.TAXIAPP_ACCOUNT_AUTO={
      let selected=adopted;
      if(!api.same(adopted,remote)){
       selected=await fire.runTransaction(db,async tx=>{
-       const latest=await tx.get(ref());
+       if(!sameSession()||!deviceSession.canWrite())throw Error('ログインまたは端末操作権が変わりました。設定を保護して停止しました');
+       const latest=await tx.get(accountRef);
        if(!latest.exists())throw Error('クラウド設定が見つかりません');
        const freshest=api.extract({
         version:1,shifts:[],prefs:api.validate(latest.data())
        }).prefs;
        const joined=mergeInitialMonthlyPrefs(model,freshest);
        if(!api.same(joined,freshest))
-        tx.update(ref(),{prefs:joined,...writerFields(),updatedAt:fire.serverTimestamp()});
+        tx.update(accountRef,{prefs:joined,...writerFields(),updatedAt:fire.serverTimestamp()});
        return joined;
       });
      }
      if(!sameSession())return;
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
-     if(!await verifySavedPrefs(selected,accountUid,sessionGeneration))return;
+     if(!await verifySavedPrefs(selected,accountUid,sessionGeneration,accountRef))return;
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
      await apply(selected);
      if(!sameSession())return;
@@ -282,20 +286,20 @@ root.TAXIAPP_ACCOUNT_AUTO={
     let result=merged.prefs;
     if(!api.same(result,remote)){
      result=await fire.runTransaction(db,async tx=>{
-      const fresh=await tx.get(ref());
+      const fresh=await tx.get(accountRef);
       if(!fresh.exists())throw Error('クラウド設定が削除されました。確認が必要です');
       const current=api.extract({version:1,shifts:[],prefs:api.validate(fresh.data())}).prefs;
       const resolved=api.reconcile(base,beginning,current);
       if(resolved.conflicts.length)
        throw Error('別端末と同じ項目が同時変更されました。設定を保護するため停止しました');
       if(!api.same(current,resolved.prefs))
-       tx.update(ref(),{prefs:resolved.prefs,...writerFields(),updatedAt:fire.serverTimestamp()});
+       tx.update(accountRef,{prefs:resolved.prefs,...writerFields(),updatedAt:fire.serverTimestamp()});
       return resolved.prefs;
      });
      if(!sameSession())return;
     }
     if(!api.same(currentPrefs(),beginning)){again=true;return;}
-    if(!await verifySavedPrefs(result,accountUid,sessionGeneration))return;
+    if(!await verifySavedPrefs(result,accountUid,sessionGeneration,accountRef))return;
     if(!api.same(currentPrefs(),beginning)){again=true;return;}
     if(!api.same(result,beginning))await apply(result);
     if(!sameSession())return;
