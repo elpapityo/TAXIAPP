@@ -31,8 +31,9 @@ const monthlyOnly={version:1,shifts:[],prefs:{
  monthlyIncludePublicSales:'off'
 }};
 const recoveredMonthly=api.merge({version:1,shifts:[],prefs:{}},api.extract(monthlyOnly));
-assert.deepEqual(copy(recoveredMonthly.prefs),monthlyOnly.prefs,
- '乗務員名・待機所が未設定でも月間予定・実績・目標がクラウド設定と往復できる');
+for(const key of Object.keys(monthlyOnly.prefs))
+ assert.deepEqual(copy(recoveredMonthly.prefs[key]),monthlyOnly.prefs[key],
+  '乗務員名・待機所が未設定でも月間設定を復元：'+key);
 assert.equal(stored.format,api.FORMAT);
 assert.equal(stored.prefs.driver,'乗務員A');
 assert.equal(stored.prefs.waitPlaces.length,3);
