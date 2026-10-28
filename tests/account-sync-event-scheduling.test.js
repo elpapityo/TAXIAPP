@@ -27,15 +27,15 @@ const preflight=between('  async function reconcile(){','   busy=true;')+'   bus
 const settingsContext={TextEncoder};vm.createContext(settingsContext);
 vm.runInContext(fs.readFileSync(path.join(root,'account-settings.js'),'utf8'),settingsContext);
 const api=settingsContext.TAXIAPP_ACCOUNT_SETTINGS;
-const tasks=new Map();let sequence=0,editing=false,writerReady=true;
+const tasks=new Map();let sequence=0,editing=false,writerReady=true,durable=true;
 const prefs={driver:'既存の乗務員名',waitPlaces:['伊丹駅']};
 const context={
  enabled:true,uid:'same-uid',
  deviceSession:{canWrite:()=>true},
- deps:{isEditing:()=>editing,canApplyPrefs:()=>writerReady},navigator:{onLine:true},
+ deps:{isEditing:()=>editing,canApplyPrefs:()=>writerReady,isLocalSaved:()=>durable},navigator:{onLine:true},
  busy:false,again:false,timer:null,localSignature:api.signature(prefs),
  api,
- deferredWhileEditing:false,reads:0,
+ deferredWhileEditing:false,deferredWhileLocalSave:false,reads:0,
  currentPrefs:()=>prefs,status:()=>{},
  setTimeout(fn){const id=++sequence;tasks.set(id,fn);return id;},
  clearTimeout(id){tasks.delete(id);}
@@ -88,4 +88,32 @@ firePending();
 assert.equal(context.reads,3,'原本読込完了の通知で保留した設定を照合する');
 assert.match(main,/onWriterBootstrapReady:\(\)=>\{[\s\S]*?accountSettingsAuto\?\.syncNow\(\)/);
 assert.match(main,/canApplyPrefs:\(\)=>canEditNow\(\)/);
-console.log('Account settings sync scheduling passed: change-only reads, no focus polling, one blur resume.');
+// 入力中の変更は端末保存完了までFirestoreへ送らない。
+durable=false;
+prefs.driver='未保存の月間設定';
+evaluate('localSaved()');
+assert.equal(tasks.size,0,'未保存の変更では送信予約を作らない');
+assert.equal(context.reads,3);
+assert.equal(context.deferredWhileLocalSave,true);
+durable=true;
+evaluate('localSaved()');
+assert.equal(tasks.size,1,'端末保存後に保留した同期を再開');
+firePending();
+assert.equal(context.reads,4);
+durable=true;
+prefs.driver='保存待ち中の更新';
+evaluate('localSaved()');
+assert.equal(tasks.size,1);
+durable=false;
+firePending();
+assert.equal(context.reads,4,'既存タイマーが発火しても保存待機中は送らない');
+assert.equal(context.deferredWhileLocalSave,true);
+durable=true;
+evaluate('localSaved()');
+assert.equal(tasks.size,1);
+firePending();
+assert.equal(context.reads,5,'保存完了イベントで保留していた変更を送信');
+assert.match(main,/isLocalSaved:\(\)=>!localSavePending&&!persistTimer/);
+assert.doesNotMatch(main,/appEl\.addEventListener\('focusout',[\s\S]{0,90}accountSettingsAuto\?\.localSaved\(\)/,
+ 'フォーカス終了を端末保存成功の通知に使わない');
+console.log('Account settings sync scheduling passed: durable local save before cloud reads.');
