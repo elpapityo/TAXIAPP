@@ -186,6 +186,39 @@ console.log('Account settings migration passed: name, waiting places, inputs, di
 console.log('Account settings automatic synchronization regression passed.');
 
 
+// 設定のCAS照合基準は端末への永続保存・読戻しが必須。破損を初回接続と誤認しない。
+const baseStart=auto.indexOf('  function readBase(){');
+const baseEnd=auto.indexOf('  function safeBackup(',baseStart);
+assert.ok(baseStart>0&&baseEnd>baseStart);
+const baseState=new Map();
+const priorBase={monthlySalesGoals:{'2026-11':700000}};
+const baseCtx={
+ uid:'own-uid',enabled:true,auth:{currentUser:{uid:'own-uid'}},
+ KEY:'taxiapp-account-pref-base-v1-',baseline:priorBase,
+ next:{monthlySalesGoals:{'2026-11':950000}},
+ localStorage:{
+  getItem:key=>baseState.has(key)?baseState.get(key):null,
+  setItem:(key,value)=>baseState.set(key,value)
+ }
+};
+vm.createContext(baseCtx);
+vm.runInContext(auto.slice(baseStart,baseEnd),baseCtx);
+assert.equal(vm.runInContext('readBase()',baseCtx),null,'初回未登録と破損を区別');
+vm.runInContext('storeBase(next)',baseCtx);
+assert.equal(JSON.parse(baseState.get(baseCtx.KEY+'own-uid')).monthlySalesGoals['2026-11'],950000);
+assert.equal(vm.runInContext('readBase().monthlySalesGoals["2026-11"]',baseCtx),950000);
+assert.equal(baseCtx.baseline,baseCtx.next,'読戻し成功後だけ基準版を進める');
+baseCtx.baseline=priorBase;
+baseCtx.localStorage={getItem:()=>null,setItem:()=>{}};
+assert.throws(()=>vm.runInContext('storeBase(next)',baseCtx),/保存できません/);
+assert.equal(baseCtx.baseline,priorBase,'書込を確認できない場合は旧基準版を維持');
+baseCtx.localStorage={getItem:()=>{throw Error('storage denied');},setItem:()=>{}};
+assert.throws(()=>vm.runInContext('readBase()',baseCtx),/同期を停止しました/);
+baseCtx.localStorage={getItem:()=>'{broken',setItem:()=>{}};
+assert.throws(()=>vm.runInContext('readBase()',baseCtx),/同期を停止しました/);
+baseCtx.auth.currentUser.uid='another-uid';
+assert.throws(()=>vm.runInContext('storeBase(next)',baseCtx),/本人UIDが変更された/);
+
 // クラウド設定の採用前に元の端末設定を退避し、保存失敗を握りつぶさない。
 const backupStart=auto.indexOf('  function safeBackup(');
 const backupEnd=auto.indexOf('  const ref=',backupStart);
