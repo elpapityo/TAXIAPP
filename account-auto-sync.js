@@ -9,7 +9,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
   const api=root.TAXIAPP_ACCOUNT_SETTINGS,conf=root.TAXIAPP_FIREBASE_CONFIG;
   let auth=null,fb=null,fire=null,db=null,user=null,enabled=false,uid='',baseline=null;
   let deviceSession=null,viewerLogin=false,explicitWriterLogin=false;
-  let pendingRegistration=null,registrationBusy=false,authGeneration=0,adminAuthorized=false;
+  let pendingRegistration=null,registrationBusy=false,authGeneration=0,adminAuthorized=false,viewerPrefsReadEpoch=0;
   let accountSwitchBusy=false;
   // A dedicated print session may READ its own duties but never take over
   // the Galaxy's last-login-wins writerSessionId.
@@ -124,17 +124,17 @@ root.TAXIAPP_ACCOUNT_AUTO={
   // ローカル日報やprefsを書き換えず、ログイン変更後の遅延応答を破棄する。
   async function loadViewerMonthlyPrefs(){
    if(!enabled||deviceSession?.state()!=='viewer'||!auth?.currentUser)return;
-   const accountUid=uid,generation=authGeneration;
+   const accountUid=uid,generation=authGeneration,readEpoch=++viewerPrefsReadEpoch;
    deps.onMonthlyViewPrefs?.(null,accountUid,'月間設定を取得しています…');
    try{
     const snapshot=await fire.getDocFromServer(ref());
-    if(!enabled||uid!==accountUid||authGeneration!==generation||
+    if(!enabled||readEpoch!==viewerPrefsReadEpoch||uid!==accountUid||authGeneration!==generation||
        auth.currentUser?.uid!==accountUid||deviceSession?.state()!=='viewer')return;
     const prefs=snapshot.exists()?api.validate(snapshot.data()):{};
     deps.onMonthlyViewPrefs?.(prefs,accountUid,
      snapshot.exists()?'月間設定をFirestoreから取得しました':'月間設定は未登録です');
    }catch(error){
-    if(enabled&&uid===accountUid&&authGeneration===generation&&
+    if(enabled&&readEpoch===viewerPrefsReadEpoch&&uid===accountUid&&authGeneration===generation&&
        auth.currentUser?.uid===accountUid&&deviceSession?.state()==='viewer')
      deps.onMonthlyViewPrefs?.(null,accountUid,
       '月間設定を取得できません：'+String(error.code||error.message||error));
