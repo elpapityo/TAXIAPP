@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.214 — 乗務日報</title>
+<title>TAXIAPP v0.3.215 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1675,7 +1675,7 @@ html[data-ui-theme="night"] .preview-screen-head .drive-theme-toggle{
  .preview-screen-head .drive-head-actions .drive-field-shortcut{max-width:none;white-space:nowrap}
 }
 
-/* 月間営業管理：目標、出番予定、実績は独立した画面内で明確に区別する。 */
+/* 月間営業計画・実績：目標、出番予定、実績は独立した画面内で明確に区別する。 */
 .month-plan-top{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
 .month-plan-top .field{width:min(230px,100%)}
 .month-goal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
@@ -1696,6 +1696,9 @@ html[data-ui-theme="night"] .preview-screen-head .drive-theme-toggle{
 .month-plan-day.after{background:#e8ecf9;border-color:#aebbe0;color:#344c82}
 .month-plan-day.realized{box-shadow:inset 0 -4px #3483b3}
 .month-plan-day.selected{outline:3px solid #e9912a;outline-offset:-3px}
+.month-plan-compare{margin-top:14px}
+.month-plan-duty-result{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:9px}
+.month-plan-duty-result>strong{font-size:13px}
 .month-plan-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .month-plan-fields .field{min-width:0}
 html[data-ui-theme="night"] .month-goal-kpi{background:#253e57;border-color:#52758f}
@@ -2186,7 +2189,7 @@ function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
 const appEl=document.getElementById('app'), noticeEl=document.getElementById('notice');
-const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業管理'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],settings:['⚙','設定']};
+const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],settings:['⚙','設定']};
 const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE','AF','AG','AH','AI','AJ','AK','AN','AO','AP','AQ','AR']);
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
 let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab='drive',db=null,persistTimer=0,toastTimer=0;
@@ -2781,7 +2784,7 @@ function renderNav(){
    <summary aria-label="その他のメニューを開く"><span class="nav-ico" aria-hidden="true">☷</span><span class="nav-label">その他</span></summary>
    <div class="taxi-mobile-more-panel" role="group" aria-label="その他の画面">
     <strong>その他の画面</strong>
-    ${mobileItem('monthly','▦','月間営業管理')}
+    ${mobileItem('monthly','▦','月間営業計画・実績')}
     ${mobileItem('settings','⚙','設定')}
     ${mobileItem('manage','▣','管理')}
    </div>
@@ -5302,6 +5305,16 @@ async function loadMonthlySales(){
     if(!Number.isFinite(t[key]))throw Error('正式計算の数値が不正です：'+id);
     daily[key]+=t[key];sum[key]+=t[key];
    }
+   // 日報原本を変更せず、入庫済みの各乗務について画面表示に必要な情報だけ保持。
+   const duration=shift.startedIso&&shift.endedIso&&
+    Number.isFinite(Date.parse(shift.startedIso))&&Number.isFinite(Date.parse(shift.endedIso))
+    ?shiftElapsed(shift,new Date(shift.endedIso)):null;
+   daily.entries??=[];
+   daily.entries.push({
+    id,startedAt:monthlyPlanActualClock(shift.startedIso,shift.startedAt),
+    endedAt:monthlyPlanActualClock(shift.endedIso,shift.endedAt),
+    duration:Number.isFinite(duration)?duration:null,meter:t.meter
+   });
    byDay.set(date,daily);
   }
   if(!isCurrent())return;
@@ -5341,15 +5354,28 @@ function monthlyPlanGoal(month=monthlySalesMonth){
  const n=model.prefs?.monthlySalesGoals?.[month];
  return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
 }
+function monthlyDutyGoal(month=monthlySalesMonth){
+ const n=model.prefs?.monthlyDutySalesGoals?.[month];
+ return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
+}
+function monthlyPlanActualClock(iso,legacy){
+ const at=typeof iso==='string'&&iso?new Date(iso):null;
+ if(at&&Number.isFinite(at.getTime()))return new Intl.DateTimeFormat('ja-JP',{
+  timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',
+  minute:'2-digit',hourCycle:'h23'
+ }).format(at);
+ const raw=String(legacy||'');
+ return /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(raw)?raw.slice(0,5):'記録なし';
+}
 function monthlyPlanProgress(period){
  const ok=monthlySalesData?.startDate===period.startDate&&monthlySalesData?.endDate===period.endDate;
  const report=ok?monthlySalesData:null,byDay=new Map(report?.days?.map(x=>[x.date,x])||[]);
- const goal=monthlyPlanGoal(),gross=report?.sum.meter??null,duties=report?.sum.duties??null;
+ const goal=monthlyPlanGoal(),dutyGoal=monthlyDutyGoal(),gross=report?.sum.meter??null,duties=report?.sum.duties??null;
  const days=monthlyPlanDates(period).map(date=>({date,plan:monthlyPlanEntry(date),actual:byDay.get(date)}));
  const work=days.filter(x=>x.plan?.status==='work');
  const left=work.filter(x=>x.date>=dateStamp()&&!x.actual?.duties).length;
  const avg=duties>0?gross/duties:null;
- return {report,byDay,goal,gross,duties,days,planned:work.length,left,
+ return {report,byDay,goal,dutyGoal,gross,duties,days,planned:work.length,left,
   pct:goal&&gross!==null?Math.round(1000*gross/goal)/10:null,
   short:goal&&gross!==null?Math.max(0,goal-gross):null,
   need:goal&&gross!==null&&left>0?Math.ceil(Math.max(0,goal-gross)/left):null,
@@ -5357,7 +5383,7 @@ function monthlyPlanProgress(period){
 }
 function renderMonthlyManagement(){
  let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
- catch{return titleBlock('月間営業管理','MONTHLY PLAN','締め月を確認してください。')+'<p class="warn">集計期間が不正です。</p>';}
+ catch{return titleBlock('月間営業計画・実績','MONTHLY PLAN','締め月を確認してください。')+'<p class="warn">集計期間が不正です。</p>';}
  const p=monthlyPlanProgress(period),dates=p.days.map(x=>x.date);
  if(!dates.includes(monthlyPlanDate))monthlyPlanDate=dates[0];
  const date=monthlyPlanDate,entry=monthlyPlanEntry(date),actual=p.byDay.get(date);
@@ -5368,6 +5394,7 @@ function renderMonthlyManagement(){
   '<span class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</span></div>'+
   '<div class="month-goal-grid">'+
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
+  kpi('1乗務の売上目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
   kpi('確定売上（税込）',p.gross===null?'未取得':money(p.gross))+
   kpi('目標達成率',p.pct===null?'未算出':p.pct+'%')+
   kpi('目標までの不足',p.short===null?'未算出':money(p.short))+
@@ -5378,7 +5405,9 @@ function renderMonthlyManagement(){
   '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報だけ。予測は確定済み乗務平均×残り出番予定による参考値です。未取得データは推測しません。</p>'+
   '<div class="month-plan-top"><label class="field"><span class="field-label">月間売上目標（円）</span>'+
   '<input id="monthlyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：1000000" value="'+safeText(p.goal??'')+'" '+(canEditNow()?'':'disabled')+'></label>'+
-  '<button type="button" class="btn primary" data-action="monthlyGoalSave" '+(canEditNow()?'':'disabled')+'>目標を保存</button></div>'+
+  '<label class="field"><span class="field-label">1乗務の売上目標（円）</span>'+
+  '<input id="monthlyDutyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：50000" value="'+safeText(p.dutyGoal??'')+'" '+(canEditNow()?'':'disabled')+'></label>'+
+  '<button type="button" class="btn primary" data-action="monthlyGoalSave" '+(canEditNow()?'':'disabled')+'>両方の目標を保存</button></div>'+
   '<p class="caption-note">予定・目標は本人UID別の端末データに保存します。別端末との自動同期は未対応。日報原本は変更しません。</p></section>';
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
  for(const x of p.days){
@@ -5391,31 +5420,67 @@ function renderMonthlyManagement(){
  const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
   '<option value="'+v+'" '+(entry?.status===v?'selected':'')+'>'+t+'</option>').join('');
  const readonly=canEditNow()?'':'disabled';
+ const plannedLabel=entry?.status==='work'
+  ?'出番／出庫 '+(entry.start||'未設定')+'／入庫 '+(entry.end||'未設定')+
+   (entry.start&&entry.end&&entry.end<=entry.start?'（翌日入庫）':'')
+  :(MONTH_PLAN_NAMES[entry?.status]||'未設定');
+ const entries=Array.isArray(actual?.entries)?actual.entries:[];
+ const dutyDetails=entries.map((item,index)=>'<div class="month-plan-duty-result">'+
+  '<strong>確定した'+(index+1)+'乗務目</strong><div class="history-fact-grid">'+
+  '<div class="history-fact"><span>実際の出庫</span><strong>'+safeText(item.startedAt||'記録なし')+'</strong></div>'+
+  '<div class="history-fact"><span>実際の入庫</span><strong>'+safeText(item.endedAt||'記録なし')+'</strong></div>'+
+  '<div class="history-fact"><span>乗務時間</span><strong>'+
+   (item.duration===null?'算出不可':safeText(durationHms(item.duration)))+'</strong></div>'+
+  '<div class="history-fact"><span>売上（税込）</span><strong>'+money(item.meter)+'</strong></div>'+
+  (p.dutyGoal?'<div class="history-fact"><span>1乗務目標との差額</span><strong>'+
+   money(item.meter-p.dutyGoal)+'</strong></div>':'')+
+  '</div></div>').join('');
+ const comparison='<div class="month-plan-compare"><h3 class="subsection">予定と確定実績の比較</h3>'+
+  '<p class="caption-note">予定：'+safeText(plannedLabel)+'</p>'+
+  (!p.report?'<p class="caption-note">本人Firestoreの月間実績は未取得です。</p>':
+   actual?.duties?'<p class="panel-strip">確定：'+actual.duties+'乗務／'+money(actual.meter)+'</p>'+
+    (dutyDetails||'<p class="caption-note">時刻の明細は取得できませんでした。</p>'):
+    '<p class="caption-note">この出庫日の確定実績はありません。</p>')+
+  '<p class="caption-note">実績は日報からの読取専用表示です。予定の編集で日報は変更しません。</p></div>';
  const editor='<section class="card month-plan-editor"><h2 class="h2">選択日：'+safeText(date)+'</h2>'+
   '<div class="month-plan-fields"><label class="field"><span class="field-label">予定区分</span><select id="monthlyPlanStatus" class="control" '+readonly+'>'+options+'</select></label>'+
   '<label class="field"><span class="field-label">出庫予定</span><input id="monthlyPlanStart" class="control" type="time" value="'+safeText(entry?.start||'')+'" '+readonly+'></label>'+
   '<label class="field"><span class="field-label">入庫予定</span><input id="monthlyPlanEnd" class="control" type="time" value="'+safeText(entry?.end||'')+'" '+readonly+'></label></div>'+
   '<p class="caption-note">入庫時刻が出庫時刻以前なら翌日入庫予定。公休・有休・明けは時刻を保存しません。</p>'+
   '<div class="actions"><button class="btn primary" data-action="monthlyPlanSave" '+readonly+'>この日の予定を保存</button></div>'+
-  (actual?.duties?'<p class="panel-strip">確定実績：'+actual.duties+'乗務／'+money(actual.meter)+'</p>':
-   p.report?'<p class="caption-note">この日の確定実績はありません。</p>':'<p class="caption-note">実績はまだ取得していません。</p>')+
+  comparison+
   (monthlyPlanMessage?'<p class="caption-note" role="status">'+safeText(monthlyPlanMessage)+'</p>':'')+'</section>';
  const calendar='<section class="card"><h2 class="h2">乗務予定カレンダー</h2>'+
   '<p class="caption-note">出番・公休・有休・明けを日付ごとに保存。確定実績のある日は下線で区別します。</p>'+
   '<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+
   cells+'</div>'+editor+'</section>';
- return titleBlock('月間営業管理','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+card+calendar+renderMonthlySales();
+ return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+card+calendar+renderMonthlySales();
 }
 function monthlyGoalSave(){
  if(!canEditNow())return;
- const value=String(document.getElementById('monthlyGoalInput')?.value??'').trim();
- if(value&&!/^\d{1,10}$/.test(value)){toast('目標は0～10億円の整数で入力してください',true);return;}
+ const field=document.getElementById('monthlyGoalInput');
+ const dutyField=document.getElementById('monthlyDutyGoalInput');
+ const value=String(field?.value??'').trim();
+ const dutyValue=dutyField?String(dutyField.value??'').trim():null;
+ const valid=text=>text===''||/^\d{1,10}$/.test(text);
+ if(!valid(value)||(dutyValue!==null&&!valid(dutyValue))){
+  toast('月間・1乗務目標は0～10億円の整数で入力してください',true);return;
+ }
  const n=value?Number(value):0;
- if(!Number.isSafeInteger(n)||n>1000000000){toast('目標金額が不正です',true);return;}
+ const duty=dutyValue===null?null:(dutyValue?Number(dutyValue):0);
+ if(!Number.isSafeInteger(n)||n>1000000000||
+    (duty!==null&&(!Number.isSafeInteger(duty)||duty>1000000000))){
+  toast('目標金額が不正です',true);return;
+ }
  model.prefs??={};model.prefs.monthlySalesGoals??={};
  if(n===0)delete model.prefs.monthlySalesGoals[monthlySalesMonth];
  else model.prefs.monthlySalesGoals[monthlySalesMonth]=n;
- saveLater();render();toast(n?'月間目標を端末へ保存しました':'目標を未設定にしました');
+ if(duty!==null){
+  model.prefs.monthlyDutySalesGoals??={};
+  if(duty===0)delete model.prefs.monthlyDutySalesGoals[monthlySalesMonth];
+  else model.prefs.monthlyDutySalesGoals[monthlySalesMonth]=duty;
+ }
+ saveLater();render();toast('月間・1乗務目標を端末へ保存しました');
 }
 function monthlyPlanSave(){
  if(!canEditNow())return;
