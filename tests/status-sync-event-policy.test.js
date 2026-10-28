@@ -39,4 +39,41 @@ const blankToll=copy(initial);blankToll.draft.meta.highwaySections=[{entryIC:'�
 assert.equal(p.dutyState(blankToll),baseline,'unpriced toll route alone is deferred');
 blankToll.draft.meta.highwaySections[0].fee='530';
 assert.notEqual(p.dutyState(blankToll),baseline,'entered toll fee triggers sync');
+
+// 本人Firestoreの実働配線：通常入力・GPSの端末保存では通信せず、決定済みイベントだけを送る。
+const fs=require('node:fs'),vm=require('node:vm'),source=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8');
+const scheduleBegin=source.indexOf('function scheduleGoogleSync(){');
+const scheduleEnd=source.indexOf('// Vehicle status changes are Firestore sync events',scheduleBegin);
+assert.ok(scheduleBegin>0&&scheduleEnd>scheduleBegin);
+let scheduled=0;
+const scheduleCtx={canEditNow:()=>true,memberDiary:()=>true,
+ syncUI:{schedule:()=>{scheduled++;}},sheetTargetPrefs:()=>({syncMode:'on'})};
+vm.createContext(scheduleCtx);
+vm.runInContext(source.slice(scheduleBegin,scheduleEnd),scheduleCtx);
+vm.runInContext('scheduleGoogleSync()',scheduleCtx);
+assert.equal(scheduled,0,'文字入力・GPS保存から本人Firestoreの日報を送信しない');
+const eventBegin=source.indexOf('function saveOperationalEvent(shift){');
+const eventEnd=source.indexOf('async function googleSendAllShifts()',eventBegin);
+assert.ok(eventBegin>scheduleEnd&&eventEnd>eventBegin);
+const transmitted=[];
+const eventCtx={
+ accountScope:{uid:'uid-confirmed'},accountScopeGeneration:2,
+ canEditNow:()=>true,memberDiary:()=>true,save:async()=>true,
+ syncUI:{run:async(manual,ids)=>{transmitted.push({manual,ids:[...ids]});return true;}},
+ console
+};
+vm.createContext(eventCtx);
+vm.runInContext(source.slice(eventBegin,eventEnd),eventCtx);
+(async()=>{
+ await vm.runInContext('saveOperationalEvent({id:"shift-200-a"})',eventCtx);
+ assert.equal(transmitted.length,1,'操作状態変更時に対象乗務1件を同期する');
+ assert.equal(transmitted[0].manual,false);
+ assert.deepEqual(transmitted[0].ids,['shift-200-a']);
+})().catch(e=>{console.error(e);process.exitCode=1;});
+for(const pattern of [
+ /if\(action==='undoEndShift'\)[\s\S]*?saveOperationalEvent\(target\)/,
+ /if\(action==='discardDraft'\)[^\n]*saveOperationalEvent\(shift\)/,
+ /if\(action==='deleteRecord'\)[^\n]*saveOperationalEvent\(shift\)/
+])assert.match(source,pattern,'入庫取消・編集中止・支払記録削除を状態変更として同期');
+
 console.log('Status and money sync policy passed (irrelevant fields deferred).');
