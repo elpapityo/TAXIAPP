@@ -13,7 +13,9 @@ const originalDuty=JSON.stringify([{id:'duty-1',records:[{id:'ride-1',raw:{K:'10
 const model={prefs:{monthlySalesGoals:{'2026-11':50000},monthlyDutySalesGoals:{'2026-11':20000},monthlyDutyPlans:{'2026-11-12':{status:'work',start:'17:00',end:'06:00'}}},shifts:JSON.parse(originalDuty)};
 const fields={monthlyGoalInput:{value:'120000'},monthlyDutyGoalInput:{value:'26000'},monthlyPlanStatus:{value:'work'},monthlyPlanStart:{value:'18:00'},monthlyPlanEnd:{value:'07:00'}};
 let saved=0,alerts=[];
-const ctx={Date,model,monthlySalesMonth:'2026-11',monthlySalesBusy:false,monthlySalesMessage:'',monthlySalesData:{
+const ctx={Date,model,deviceMode:'writer',monthlyPrefs:()=>model.prefs,
+ monthlyViewerPrefs:null,monthlyViewerPrefsMessage:'',
+ monthlySalesMonth:'2026-11',monthlySalesBusy:false,monthlySalesMessage:'',monthlySalesData:{
  startDate:'2026-11-01',endDate:'2026-11-30',
  sum:{meter:30000,duties:2},
  days:[{date:'2026-11-02',meter:10000,duties:1,entries:[{id:'duty-2',startedAt:'11/02 17:00',endedAt:'11/03 06:00',duration:46800,meter:10000}]},{date:'2026-11-04',meter:20000,duties:1}]
@@ -197,6 +199,29 @@ assert.match(live,/tab==='monthly'\?renderMonthlyManagement\(\)/);
 assert.doesNotMatch(live,/return head\+overview\+renderMonthlySales\(\)/);
 assert.match(live,/return titleBlock\('月間営業計画・実績'/);
 console.log('PASS: 月間画面独立・目標/予定の端末保存・夜勤時刻・既存日報原本の保護');
+
+
+// 閲覧専用PCはクラウドから取得した目標・予定を表示するが端末原本を書き換えない。
+const beforeReadOnly=JSON.stringify(model);
+ctx.deviceMode='viewer';
+ctx.monthlyViewerPrefs={
+ monthlySalesGoals:{'2026-11':850000},
+ monthlyDutySalesGoals:{'2026-11':35000},
+ monthlyDutyPlans:{'2026-11-12':{status:'public',start:'18:00',end:'07:00'}},
+ monthlyDutyActuals:{'2026-11-02':{status:'public'}},
+ monthlyIncludePublicSales:'on'
+};
+ctx.monthlyViewerPrefsMessage='月間設定をFirestoreから取得しました';
+ctx.monthlyPrefs=()=>ctx.monthlyViewerPrefs;
+assert.equal(calc('monthlyPlanGoal()'),850000);
+assert.equal(calc('monthlyDutyGoal()'),35000);
+assert.equal(calc('monthlyPlanEntry("2026-11-12").status'),'public');
+assert.equal(calc('monthlyActualEntry("2026-11-02")'),'public');
+assert.equal(calc('monthlyPublicGoalIncluded()'),true);
+assert.match(calc('renderMonthlyManagement()'),/月間設定を再取得/);
+assert.equal(JSON.stringify(model),beforeReadOnly,'閲覧用クラウド設定で端末日報と設定は変更しない');
+ctx.deviceMode='writer';
+ctx.monthlyPrefs=()=>model.prefs;
 
 assert.match(live,/daily\.entries\.push\(\{/,'monthly aggregation must expose duty time read-only');
 
