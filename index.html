@@ -5314,10 +5314,15 @@ async function loadMonthlySales(){
  }
  const uid=accountScope.uid,generation=accountScopeGeneration;
  const login=currentLoginScope;
- const reader=window.TAXIAPP_ACCOUNT_DIARY?.create?.();
- // Read-only Firestore for all users without changing the production duty writer.
- reader.bind({uid},{...login.firebase,admin:Boolean(login.admin),
-  storageBackend:'firestore',readOnly:true});
+ let reader;
+ try{
+  reader=window.TAXIAPP_ACCOUNT_DIARY?.create?.();
+  // A separate read-only client must not alter the production duty writer.
+  reader.bind({uid},{...login.firebase,admin:Boolean(login.admin),
+   storageBackend:'firestore',readOnly:true});
+ }catch(error){
+  monthlySalesMessage='Firestore読取準備に失敗：'+String(error?.message||error);render();return;
+ }
  let period;
  try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
  catch(error){monthlySalesMessage=String(error.message||error);render();return;}
