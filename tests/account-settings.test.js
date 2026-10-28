@@ -185,6 +185,39 @@ verifyCtx.fire={getDocFromServer:async()=>snap(verifyCtx.expected)};
 console.log('Account settings migration passed: name, waiting places, inputs, display, fares, credentials and shift preservation.');
 console.log('Account settings automatic synchronization regression passed.');
 
+
+// クラウド設定の採用前に元の端末設定を退避し、保存失敗を握りつぶさない。
+const backupStart=auto.indexOf('  function safeBackup(');
+const backupEnd=auto.indexOf('  const ref=',backupStart);
+assert.ok(backupStart>0&&backupEnd>backupStart);
+const backupState=new Map();
+const backupCtx={
+ uid:'own-uid',enabled:true,auth:{currentUser:{uid:'own-uid'}},
+ BACKUP:'taxiapp-account-pref-backup-v1-',
+ model:{prefs:{monthlySalesGoals:{'2026-11':800000}}},
+ localStorage:{
+  getItem:key=>backupState.get(key)||null,
+  setItem:(key,value)=>backupState.set(key,value)
+ }
+};
+vm.createContext(backupCtx);
+vm.runInContext(auto.slice(backupStart,backupEnd),backupCtx);
+const backupKey=backupCtx.BACKUP+'own-uid';
+vm.runInContext('safeBackup(model)',backupCtx);
+const originalBackup=backupState.get(backupKey);
+assert.equal(JSON.parse(originalBackup).uid,'own-uid');
+assert.equal(JSON.parse(originalBackup).prefs.monthlySalesGoals['2026-11'],800000);
+backupCtx.model.prefs.monthlySalesGoals['2026-11']=950000;
+vm.runInContext('safeBackup(model)',backupCtx);
+assert.equal(backupState.get(backupKey),originalBackup,'既存の退避原本を上書きしない');
+backupState.set(backupKey,'破損した設定');
+assert.throws(()=>vm.runInContext('safeBackup(model)',backupCtx),/バックアップを保護できない/);
+backupState.delete(backupKey);
+backupCtx.localStorage={getItem:()=>null,setItem:()=>{}};
+assert.throws(()=>vm.runInContext('safeBackup(model)',backupCtx),/読み戻し確認できません/);
+backupCtx.auth.currentUser.uid='other-uid';
+assert.throws(()=>vm.runInContext('safeBackup(model)',backupCtx),/ログインが変更されました/);
+
 const appSource=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const applyBegin=appSource.indexOf(' applyPrefs:async prefs=>{');
 const applyEnd=appSource.indexOf('\n }\n});',applyBegin);
