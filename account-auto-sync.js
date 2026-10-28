@@ -112,14 +112,32 @@ root.TAXIAPP_ACCOUNT_AUTO={
    try{localStorage.setItem(KEY+uid,JSON.stringify(value));}catch{}
   }
   function safeBackup(model){
-   // Preserve prior local preferences before adopting changes from the cloud.
-   // Keep only a per-account single rollback; do not duplicate sales data.
+   // クラウドから設定を採用する前に、元の本人設定の退避を確認する。
+   // 退避に失敗しても黙って採用すると、復旧可能な原本を失う。
+   const owner=uid;
+   if(!owner||!enabled||auth?.currentUser?.uid!==owner)
+    throw Error('本人の設定退避中にログインが変更されました');
+   const key=BACKUP+owner;
    try{
-    if(!localStorage.getItem(BACKUP+uid))
-     localStorage.setItem(BACKUP+uid,JSON.stringify({
-      createdAt:new Date().toISOString(),prefs:model.prefs
-     }));
-   }catch{}
+    const existing=localStorage.getItem(key);
+    if(existing){
+     const saved=JSON.parse(existing);
+     if(!saved||typeof saved!=='object'||!saved.prefs||
+        typeof saved.prefs!=='object'||Array.isArray(saved.prefs)||
+        saved.uid&&saved.uid!==owner)
+      throw Error('設定の退避データが不正です');
+     return;
+    }
+    const snapshot=JSON.stringify({
+     uid:owner,createdAt:new Date().toISOString(),prefs:model.prefs
+    });
+    localStorage.setItem(key,snapshot);
+    if(localStorage.getItem(key)!==snapshot)
+     throw Error('退避データの保存を読み戻し確認できません');
+   }catch(error){
+    throw Error('端末設定のバックアップを保護できないためクラウド反映を停止しました：'+
+     String(error?.message||error));
+   }
   }
   const ref=()=>fire.doc(db,'accountSettings',uid);
   // 閲覧端末は操作権を取得せず、本人の月間設定だけをサーバーから読む。
