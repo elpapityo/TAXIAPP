@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172d47">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.215 — 乗務日報</title>
+<title>TAXIAPP v0.3.216 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1699,6 +1699,13 @@ html[data-ui-theme="night"] .preview-screen-head .drive-theme-toggle{
 .month-plan-compare{margin-top:14px}
 .month-plan-duty-result{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:9px}
 .month-plan-duty-result>strong{font-size:13px}
+.month-target-nav{display:flex;flex-wrap:wrap;gap:8px}
+.month-target-nav button[aria-pressed="true"]{border-color:#1768b8;background:#eaf4ff;color:#145f9a}
+.month-weekday-goals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.month-plan-day .month-day-yen{font-size:10px;font-weight:800;white-space:normal}
+.month-plan-day .month-day-goal{font-size:9px;white-space:normal}
+html[data-ui-theme="night"] .month-target-nav button[aria-pressed="true"]{background:#254e72;color:#f5fbff}
+@media(max-width:700px){.month-weekday-goals{gap:7px}.month-plan-day .month-day-yen{font-size:9px}.month-plan-day .month-day-goal{font-size:8px}}
 .month-plan-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .month-plan-fields .field{min-width:0}
 html[data-ui-theme="night"] .month-goal-kpi{background:#253e57;border-color:#52758f}
@@ -5337,7 +5344,7 @@ async function loadMonthlySales(){
 
 // 本人UID別の端末設定にだけ保存する乗務計画。日報の金額・距離・履歴原本は変更しない。
 const MONTH_PLAN_NAMES=Object.freeze({work:'出番',off:'公休',leave:'有休',after:'明け'});
-let monthlyPlanDate='',monthlyPlanMessage='';
+let monthlyPlanDate='',monthlyPlanMessage='',monthlyManagementMode='calendar';
 function monthlyPlanDates(period){
  const result=[];
  for(let t=Date.parse(period.startDate+'T00:00:00Z'),end=Date.parse(period.endDate+'T00:00:00Z');t<=end;t+=86400000)
@@ -5357,6 +5364,69 @@ function monthlyPlanGoal(month=monthlySalesMonth){
 function monthlyDutyGoal(month=monthlySalesMonth){
  const n=model.prefs?.monthlyDutySalesGoals?.[month];
  return Number.isSafeInteger(n)&&n>0&&n<=1000000000?n:null;
+}
+const MONTH_PLAN_WEEKDAYS=Object.freeze(['日','月','火','水','木','金','土']);
+function monthlyValidGoal(n){return Number.isSafeInteger(n)&&n>0&&n<=1000000000;}
+function monthlyDateGoal(date){
+ const direct=model.prefs?.monthlyDateSalesGoals?.[date];
+ if(monthlyValidGoal(direct))return {value:direct,source:'個別設定'};
+ const weekday=new Date(date+'T00:00:00Z').getUTCDay();
+ const weekly=model.prefs?.monthlyWeekdaySalesGoals?.[String(weekday)];
+ if(monthlyValidGoal(weekly))return {value:weekly,source:MONTH_PLAN_WEEKDAYS[weekday]+'曜日'};
+ const base=monthlyDutyGoal();
+ return {value:base,source:base?'基本目標':'未設定'};
+}
+function renderMonthlyTargetSettings(p){
+ const readonly=canEditNow()?'':'disabled';
+ const weekdayItems=[1,2,3,4,5,6,0].map(day=>{
+  const n=model.prefs?.monthlyWeekdaySalesGoals?.[String(day)];
+  return '<label class="field"><span class="field-label">'+MONTH_PLAN_WEEKDAYS[day]+'曜日の目標（円）</span>'+
+   '<input class="control" id="monthlyWeekdayGoal'+day+'" type="number" min="0" max="1000000000" step="1000" inputmode="numeric" '+
+   'placeholder="基本目標を使用" value="'+safeText(monthlyValidGoal(n)?n:'')+'" '+readonly+'></label>';
+ }).join('');
+ return '<section class="card"><h2 class="h2">目標設定</h2>'+
+  '<p class="caption-note">月間目標と曜日ごとの日別目標を設定します。カレンダーの日付を全部編集する必要はありません。</p>'+
+  '<label class="field"><span class="field-label">対象の締め月</span>'+
+  '<input id="monthlyDashboardMonth" class="control" type="month" value="'+safeText(monthlySalesMonth)+'"></label>'+
+  '<div class="month-plan-top"><label class="field"><span class="field-label">月間売上目標（円）</span>'+
+  '<input id="monthlyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：1000000" value="'+safeText(p.goal??'')+'" '+readonly+'></label>'+
+  '<label class="field"><span class="field-label">基本の日別目標（円）</span>'+
+  '<input id="monthlyDutyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：40000" value="'+safeText(p.dutyGoal??'')+'" '+readonly+'></label></div>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="monthlyGoalSave" '+readonly+'>月間・基本目標を保存</button></div>'+
+  '<p class="caption-note">基本の日別目標は、その曜日に目標が登録されていない場合だけ使用します。</p>'+
+  '</section><section class="card"><h2 class="h2">曜日別の売上目標</h2>'+
+  '<p class="caption-note">一度設定すると他の月にも共通で反映。空欄の曜日は基本の日別目標を使います。</p>'+
+  '<div class="month-weekday-goals">'+weekdayItems+'</div>'+
+  '<div class="actions"><button class="btn primary" type="button" data-action="monthlyWeekdayGoalSave" '+readonly+'>曜日別目標を保存</button></div>'+
+  '<p class="caption-note">最優先：カレンダーの日付別設定 → 曜日別設定 → 基本の日別目標。月間目標とは独立した参考値です。</p>'+
+  '<p class="caption-note">予定・目標は本人UID別の端末データ。別端末の自動同期は未対応。日報原本には書き込みません。</p></section>';
+}
+function monthlyWeekdayGoalSave(){
+ if(!canEditNow())return;
+ const next={...(model.prefs?.monthlyWeekdaySalesGoals||{})};
+ for(let weekday=0;weekday<7;weekday++){
+  const raw=String(document.getElementById('monthlyWeekdayGoal'+weekday)?.value??'').trim();
+  if(raw&&!/^\d{1,10}$/.test(raw)){toast('曜日別目標は0～10億円の整数で入力してください',true);return;}
+  const n=raw?Number(raw):0;
+  if(!Number.isSafeInteger(n)||n>1000000000){toast('曜日別目標の金額が不正です',true);return;}
+  if(n===0)delete next[String(weekday)];else next[String(weekday)]=n;
+ }
+ model.prefs??={};model.prefs.monthlyWeekdaySalesGoals=next;
+ saveLater();render();toast('曜日別目標を端末へ保存しました');
+}
+function monthlyDateGoalSave(){
+ if(!canEditNow())return;
+ let period;try{period=monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay());}
+ catch{toast('締め期間が不正です',true);return;}
+ if(!monthlyPlanDates(period).includes(monthlyPlanDate)){toast('対象の日付を選択してください',true);return;}
+ const raw=String(document.getElementById('monthlyDateGoalInput')?.value??'').trim();
+ if(raw&&!/^\d{1,10}$/.test(raw)){toast('日付別目標は0～10億円の整数で入力してください',true);return;}
+ const value=raw?Number(raw):0;
+ if(!Number.isSafeInteger(value)||value>1000000000){toast('日付別目標の金額が不正です',true);return;}
+ model.prefs??={};model.prefs.monthlyDateSalesGoals??={};
+ if(value===0)delete model.prefs.monthlyDateSalesGoals[monthlyPlanDate];
+ else model.prefs.monthlyDateSalesGoals[monthlyPlanDate]=value;
+ saveLater();render();toast(value?'この日だけの目標を保存しました':'曜日別または基本の日別目標に戻しました');
 }
 function monthlyPlanActualClock(iso,legacy){
  const at=typeof iso==='string'&&iso?new Date(iso):null;
@@ -5386,7 +5456,7 @@ function renderMonthlyManagement(){
  catch{return titleBlock('月間営業計画・実績','MONTHLY PLAN','締め月を確認してください。')+'<p class="warn">集計期間が不正です。</p>';}
  const p=monthlyPlanProgress(period),dates=p.days.map(x=>x.date);
  if(!dates.includes(monthlyPlanDate))monthlyPlanDate=dates[0];
- const date=monthlyPlanDate,entry=monthlyPlanEntry(date),actual=p.byDay.get(date);
+ const date=monthlyPlanDate,entry=monthlyPlanEntry(date),actual=p.byDay.get(date),dailyGoal=monthlyDateGoal(date);
  const kpi=(name,value,cls='')=>'<div class="month-goal-kpi '+cls+'"><small>'+name+'</small><strong>'+safeText(value)+'</strong></div>';
  const card='<section class="card month-plan-overview"><h2 class="h2">月間目標と営業実績</h2>'+
   '<div class="month-plan-top"><label class="field"><span class="field-label">締め月</span>'+
@@ -5397,7 +5467,7 @@ function renderMonthlyManagement(){
   (monthlySalesMessage?'<p class="caption-note" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
   '<div class="month-goal-grid">'+
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
-  kpi('1乗務の売上目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
+  kpi('基本の日別目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
   kpi('確定売上（税込）',p.gross===null?'未取得':money(p.gross))+
   kpi('目標達成率',p.pct===null?'未算出':p.pct+'%')+
   kpi('目標までの不足',p.short===null?'未算出':money(p.short))+
@@ -5406,19 +5476,19 @@ function renderMonthlyManagement(){
   kpi('残り出番に必要な平均売上',p.need===null?'算出不可':money(p.need),'wide')+
   kpi('月末着地予測（参考）',p.expected===null?'算出不可':money(p.expected),'wide')+
   '</div><p class="caption-note">実績は本人Firestoreの入庫済み日報だけ。予測は確定済み乗務平均×残り出番予定による参考値です。未取得データは推測しません。</p>'+
-  '<div class="month-plan-top"><label class="field"><span class="field-label">月間売上目標（円）</span>'+
-  '<input id="monthlyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：1000000" value="'+safeText(p.goal??'')+'" '+(canEditNow()?'':'disabled')+'></label>'+
-  '<label class="field"><span class="field-label">1乗務の売上目標（円）</span>'+
-  '<input id="monthlyDutyGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" placeholder="例：50000" value="'+safeText(p.dutyGoal??'')+'" '+(canEditNow()?'':'disabled')+'></label>'+
-  '<button type="button" class="btn primary" data-action="monthlyGoalSave" '+(canEditNow()?'':'disabled')+'>両方の目標を保存</button></div>'+
+  '<div class="actions"><button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets">月間・曜日別目標を設定する</button></div>'+
   '<p class="caption-note">予定・目標は本人UID別の端末データに保存します。別端末との自動同期は未対応。日報原本は変更しません。</p></section>';
  let cells='<span aria-hidden="true"></span>'.repeat((new Date(period.startDate+'T00:00:00Z').getUTCDay()+6)%7);
  for(const x of p.days){
   const status=x.plan?.status||'unset',name=MONTH_PLAN_NAMES[status]||'未設定';
+  const cellGoal=monthlyDateGoal(x.date);
+  const showGoal=status==='work'||status==='unset'||Boolean(x.actual?.duties);
   cells+='<button type="button" class="month-plan-day '+status+(x.actual?.duties?' realized':'')+
    (x.date===date?' selected':'')+'" data-action="monthlyPlanPick" data-id="'+safeText(x.date)+'" aria-pressed="'+(x.date===date)+
    '" aria-label="'+safeText(x.date+' '+name+(x.actual?.duties?' 実績あり':''))+'"><strong>'+safeText(x.date.slice(5).replace('-','/'))+
-   '</strong><small>'+name+'</small>'+(x.actual?.duties?'<small>実績 '+x.actual.duties+'乗務</small>':'')+'</button>';
+   '</strong><small>'+name+'</small>'+
+   (x.actual?.duties?'<small class="month-day-yen">'+money(x.actual.meter)+'</small>':'')+
+   (showGoal&&cellGoal.value?'<small class="month-day-goal">目標 '+money(cellGoal.value)+'</small>':'')+'</button>';
  }
  const options='<option value="unset">未設定</option>'+Object.entries(MONTH_PLAN_NAMES).map(([v,t])=>
   '<option value="'+v+'" '+(entry?.status===v?'selected':'')+'>'+t+'</option>').join('');
@@ -5435,13 +5505,14 @@ function renderMonthlyManagement(){
   '<div class="history-fact"><span>乗務時間</span><strong>'+
    (item.duration===null?'算出不可':safeText(durationHms(item.duration)))+'</strong></div>'+
   '<div class="history-fact"><span>売上（税込）</span><strong>'+money(item.meter)+'</strong></div>'+
-  (p.dutyGoal?'<div class="history-fact"><span>1乗務目標との差額</span><strong>'+
-   money(item.meter-p.dutyGoal)+'</strong></div>':'')+
+  // 日別目標は1日につき1つ。乗務別に繰り返して差し引かない。
+  ''+
   '</div></div>').join('');
  const comparison='<div class="month-plan-compare"><h3 class="subsection">予定と確定実績の比較</h3>'+
   '<p class="caption-note">予定：'+safeText(plannedLabel)+'</p>'+
   (!p.report?'<p class="caption-note">本人Firestoreの月間実績は未取得です。</p>':
-   actual?.duties?'<p class="panel-strip">確定：'+actual.duties+'乗務／'+money(actual.meter)+'</p>'+
+   actual?.duties?'<p class="panel-strip">確定：'+actual.duties+'乗務／'+money(actual.meter)+
+     (dailyGoal.value?' ／ 日別目標との差額 '+money(actual.meter-dailyGoal.value):'')+'</p>'+
     (dutyDetails||'<p class="caption-note">時刻の明細は取得できませんでした。</p>'):
     '<p class="caption-note">この出庫日の確定実績はありません。</p>')+
   '<p class="caption-note">実績は日報からの読取専用表示です。予定の編集で日報は変更しません。</p></div>';
@@ -5451,13 +5522,25 @@ function renderMonthlyManagement(){
   '<label class="field"><span class="field-label">入庫予定</span><input id="monthlyPlanEnd" class="control" type="time" value="'+safeText(entry?.end||'')+'" '+readonly+'></label></div>'+
   '<p class="caption-note">入庫時刻が出庫時刻以前なら翌日入庫予定。公休・有休・明けは時刻を保存しません。</p>'+
   '<div class="actions"><button class="btn primary" data-action="monthlyPlanSave" '+readonly+'>この日の予定を保存</button></div>'+
+  '<div class="month-plan-compare"><h3 class="subsection">この日の売上目標</h3>'+
+  '<p class="caption-note">現在の目標：'+(dailyGoal.value?money(dailyGoal.value):'未設定')+
+   '（'+safeText(dailyGoal.source)+'）</p>'+
+  '<label class="field"><span class="field-label">この日だけ変更（円）</span>'+
+  '<input id="monthlyDateGoalInput" class="control" type="number" inputmode="numeric" min="0" max="1000000000" step="1000" '+
+  'placeholder="空欄なら曜日別・基本の目標" value="'+safeText(monthlyValidGoal(model.prefs?.monthlyDateSalesGoals?.[date])?model.prefs.monthlyDateSalesGoals[date]:'')+'" '+readonly+'></label>'+
+  '<p class="caption-note">空欄で保存すると個別設定が解除され、曜日別・基本目標へ戻ります。</p>'+
+  '<div class="actions"><button class="btn" type="button" data-action="monthlyDateGoalSave" '+readonly+'>この日の目標を保存・解除</button></div></div>'+
   comparison+
   (monthlyPlanMessage?'<p class="caption-note" role="status">'+safeText(monthlyPlanMessage)+'</p>':'')+'</section>';
  const calendar='<section class="card"><h2 class="h2">乗務予定カレンダー</h2>'+
   '<p class="caption-note">出番・公休・有休・明けを日付ごとに保存。確定実績のある日は下線で区別します。</p>'+
   '<div class="month-plan-calendar">'+['月','火','水','木','金','土','日'].map(x=>'<span class="month-plan-weekday">'+x+'</span>').join('')+
   cells+'</div>'+editor+'</section>';
- return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+card+calendar+renderMonthlySales();
+ const nav='<section class="card month-target-nav" aria-label="月間営業画面の切り替え">'+
+  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="calendar" aria-pressed="'+(monthlyManagementMode==='calendar')+'">カレンダー・実績</button>'+
+  '<button type="button" class="btn" data-action="monthlyManagementMode" data-id="targets" aria-pressed="'+(monthlyManagementMode==='targets')+'">目標設定</button></section>';
+ return titleBlock('月間営業計画・実績','MONTHLY PLAN','乗務予定・目標と月間実績を確認できます。')+
+  nav+(monthlyManagementMode==='targets'?renderMonthlyTargetSettings(p):card+calendar+renderMonthlySales());
 }
 function monthlyGoalSave(){
  if(!canEditNow())return;
@@ -7288,7 +7371,7 @@ function handleAction(action,id){
    deviceMode==='writer'&&legacyDiary()&&!TAXIAPP_PRINT_VIEWER_MODE&&
    currentLoginScope?.admin&&currentLoginScope.uid===accountScope.uid&&
    currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid;
-  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick'].includes(action)&&deviceMode==='viewer'&&
+  const monthlyReadAction=['loadMonthlySales','monthlyPlanPick','monthlyManagementMode'].includes(action)&&deviceMode==='viewer'&&
    memberDiary()&&accountDiary.ready()&&currentLoginScope?.uid===accountScope.uid;
   if(!canEditNow()&&action!=='bidirectionalSyncNow'&&!printReadAction&&!monthlyReadAction&&!verifiedOctoberTransfer){
    toast('操作権がない端末では営業記録を変更できません',true);return;
@@ -7376,6 +7459,12 @@ function handleAction(action,id){
   return;
  }
  if(action==='monthlyGoalSave'){monthlyGoalSave();return;}
+ if(action==='monthlyWeekdayGoalSave'){monthlyWeekdayGoalSave();return;}
+ if(action==='monthlyDateGoalSave'){monthlyDateGoalSave();return;}
+ if(action==='monthlyManagementMode'){
+  if(id==='calendar'||id==='targets'){monthlyManagementMode=id;monthlyPlanMessage='';render();}
+  return;
+ }
  if(action==='monthlyPlanSave'){monthlyPlanSave();return;}
  if(action==='monthlyPlanPick'){
   try{if(monthlyPlanDates(monthlySalesPeriod(monthlySalesMonth,monthlySalesClosingDay())).includes(id)){
