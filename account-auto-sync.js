@@ -295,7 +295,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
       if(!api.same(currentPrefs(),beginning)){again=true;return;}
       storeBase(beginning);status('設定はFirestore読戻し確認済み');
      }else again=true;
-     return;
+     return result===true;
     }
     if(!base){
      // First login on a device: adopt the account profile but retain waiting
@@ -327,7 +327,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
      if(!sameSession())return;
      storeBase(selected);
      status('Firestoreの設定を端末に反映し、照合基準を保存しました');
-     return;
+     return true;
     }
     const merged=api.reconcile(base,beginning,remote);
     if(merged.conflicts.length){
@@ -359,6 +359,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
     if(!sameSession())return;
     storeBase(result);
     status('設定のFirestore読戻し確認済み（日報とは別）');
+    return true;
    }finally{
     busy=false;
     // Applying a remote update is not a user edit.
@@ -366,6 +367,34 @@ root.TAXIAPP_ACCOUNT_AUTO={
      try{localSignature=api.signature(currentPrefs());}catch{}
     }
     if(again){again=false;schedule(300);}
+   }
+  }
+  // ログアウト直前に月間予定・実績区分・目標を本人Firestoreへ確定させる。
+  // タイマー送信を待たず、サーバー読戻しと端末側CAS基準の保存を両方確認する。
+  // 競合・保存待機・通信失敗時はログアウトを止め、本人設定を保持する。
+  async function syncBeforeSignOut(){
+   const accountUid=uid,generation=authGeneration;
+   if(!enabled||!accountUid||auth?.currentUser?.uid!==accountUid||
+      !deviceSession?.canWrite())return false;
+   if(busy||deps.isLocalSaved?.()===false||deps.canApplyPrefs?.()===false||
+      deps.isEditing?.()||!navigator.onLine){
+    status('月間設定の端末保存またはFirestore照合が未完了です。ログアウトを保留します');
+    return false;
+   }
+   clearTimeout(timer);timer=null;
+   try{
+    const confirmed=await reconcile();
+    if(confirmed!==true||!stillCurrent(accountUid)||authGeneration!==generation||
+       !deviceSession?.canWrite())return false;
+    const saved=readBase();
+    if(!saved||!api.same(saved,currentPrefs())){
+     status('月間設定の保存内容が一致しません。ログアウトを保留します');
+     return false;
+    }
+    return true;
+   }catch(error){
+    status('月間設定の保存確認に失敗：'+String(error?.message||error));
+    return false;
    }
   }
   async function completeRegistration(){
@@ -675,7 +704,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
    deferredWhileEditing=false;
    schedule(200);
   }
-  return {start,localSaved,editingEnded,refreshViewerMonthlyPrefs:loadViewerMonthlyPrefs,
+  return {start,localSaved,editingEnded,syncBeforeSignOut,refreshViewerMonthlyPrefs:loadViewerMonthlyPrefs,
    syncNow:()=>{if(enabled&&deviceSession?.canWrite())schedule(0);},
    status:()=>({enabled,uid,mode:deviceSession?.state(),message:settingsMessage})};
  }
