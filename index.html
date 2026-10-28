@@ -5314,6 +5314,12 @@ function monthlyCanReadFirestore(){
 }
 async function loadMonthlySales(){
  if(monthlySalesBusy)return;
+ // 閲覧専用PCは本人の締め日設定を取得するまで、仮の月末締めで実績を照会しない。
+ // 月間設定の取得完了時に onMonthlyViewPrefs から対象期間だけ再取得する。
+ if(deviceMode==='viewer'&&monthlyViewerPrefs===null){
+  monthlySalesMessage='本人の月間設定（締め日）を確認後に実績を取得します。';
+  render();return;
+ }
  if(!monthlyCanReadFirestore()){
   monthlySalesMessage='本人Firestoreのログイン・読取権限を確認してください。';render();return;
  }
