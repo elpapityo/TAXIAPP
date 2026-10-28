@@ -184,3 +184,31 @@ verifyCtx.fire={getDocFromServer:async()=>snap(verifyCtx.expected)};
 })().catch(error=>{console.error(error);process.exitCode=1;});
 console.log('Account settings migration passed: name, waiting places, inputs, display, fares, credentials and shift preservation.');
 console.log('Account settings automatic synchronization regression passed.');
+
+const appSource=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const applyBegin=appSource.indexOf(' applyPrefs:async prefs=>{');
+const applyEnd=appSource.indexOf('\n }\n});',applyBegin);
+assert.ok(applyBegin>0&&applyEnd>applyBegin,'同期から呼ぶ端末設定保存関数が存在');
+const applyCallback=appSource.slice(applyBegin+' applyPrefs:'.length,applyEnd+3);
+const applyCtx={model:{prefs:{monthlySalesGoals:{'2026-11':800000}}},
+ accountScope:{uid:'own-uid'},save:async()=>false,render:()=>{},applyUi:()=>{}};
+vm.createContext(applyCtx);
+vm.runInContext('transfer='+applyCallback,applyCtx);
+(async()=>{
+ const old=applyCtx.model.prefs;
+ await assert.rejects(applyCtx.transfer({monthlySalesGoals:{'2026-11':1000000}}),
+  /端末に保存できません/);
+ assert.equal(applyCtx.model.prefs,old,'端末保存失敗時は以前の設定を維持');
+ let release;
+ applyCtx.save=()=>new Promise(resolve=>{release=resolve;});
+ const revised={monthlySalesGoals:{'2026-11':1000000}};
+ const pending=applyCtx.transfer(revised);
+ revised.monthlySalesGoals['2026-11']=1100000;
+ release(false);
+ await assert.rejects(pending,/端末に保存できません/);
+ assert.equal(applyCtx.model.prefs,revised,'保存待機中の新しい入力を巻き戻さない');
+ applyCtx.save=async()=>true;
+ await applyCtx.transfer({monthlySalesGoals:{'2026-11':1200000}});
+ assert.equal(applyCtx.model.prefs.monthlySalesGoals['2026-11'],1200000);
+})().catch(error=>{console.error(error);process.exitCode=1;});
+
