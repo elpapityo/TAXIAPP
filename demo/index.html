@@ -6154,6 +6154,11 @@ function monthlyCanReadFirestore(){
 }
 async function loadMonthlySales(){
  if(monthlySalesBusy)return;
+ // 閲覧専用端末では本人の締め日設定確認後に実績を取得する。
+ if(deviceMode==='viewer'&&monthlyViewerPrefs===null){
+  monthlySalesMessage='本人の月間設定（締め日）を確認後に実績を取得します。';
+  render();return;
+ }
  if(!monthlyCanReadFirestore()){
   monthlySalesMessage='本人Firestoreのログイン・読取権限を確認してください。';render();return;
  }
