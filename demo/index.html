@@ -6232,7 +6232,10 @@ function renderMonthlyManagement(){
  const card='<section class="card month-plan-overview"><h2 class="h2">月間目標と営業実績</h2>'+
   '<div class="month-plan-top"><label class="field"><span class="field-label">締め月</span>'+
   '<input id="monthlyDashboardMonth" class="control" type="month" value="'+safeText(monthlySalesMonth)+'"></label>'+
-  '<span class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</span></div>'+
+  '<span class="caption-note">対象：'+safeText(period.startDate)+' ～ '+safeText(period.endDate)+'</span>'+
+  '<button type="button" class="btn primary" data-action="loadMonthlySales" '+
+  (monthlySalesBusy?'disabled aria-busy="true"':'')+'>確定実績を取得・更新</button></div>'+
+  (monthlySalesMessage?'<p class="caption-note" role="status">'+safeText(monthlySalesMessage)+'</p>':'')+
   '<div class="month-goal-grid">'+
   kpi('月間売上目標',p.goal?money(p.goal):'未設定','goal')+
   kpi('1乗務の売上目標',p.dutyGoal?money(p.dutyGoal):'未設定','goal')+
