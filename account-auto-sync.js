@@ -171,6 +171,24 @@ root.TAXIAPP_ACCOUNT_AUTO={
    safeBackup(model);
    await deps.applyPrefs(newModel.prefs);
   }
+  // 初回連携でベースラインがない端末の月間設定を保護する。
+  // 別の日付・別の目標は統合し、同じ項目の変更が食い違えば双方を保持して保留。
+  function mergeInitialMonthlyPrefs(model,remote){
+   const adopted=api.extract(api.merge(model,{
+    format:api.FORMAT,schemaVersion:1,prefs:remote
+   },{preserveLocalWaiting:true})).prefs;
+   const local=api.extract(model).prefs;
+   const fields=['monthlyDutyPlans','monthlyDutyActuals','monthlySalesGoals',
+    'monthlyDutySalesGoals','monthlyWeekdaySalesGoals','monthlyDateSalesGoals',
+    'monthlyIncludePublicSales','monthlySalesCloseDay'];
+   const subset=prefs=>Object.fromEntries(fields.filter(key=>Object.prototype.hasOwnProperty.call(prefs,key))
+    .map(key=>[key,prefs[key]]));
+   const joined=api.reconcile({},subset(local),subset(remote));
+   if(joined.conflicts.length)throw Error(
+    '初回の月間設定に端末とクラウドの競合があります：'+joined.conflicts.slice(0,3).join('、')+
+    '。双方を保持して上書きを保留しました');
+   return api.extract({version:1,shifts:[],prefs:{...adopted,...joined.prefs}}).prefs;
+  }
   async function reconcile(){
    if(!deviceSession?.canWrite())return;
    if(enabled&&deps.isEditing?.()){
@@ -222,9 +240,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
      // locations that were registered here before this device was linked.
      if(!api.same(currentPrefs(),beginning)){again=true;return;}
      const model=deps.getModel();
-     const adopted=api.extract(api.merge(model,{
-      format:api.FORMAT,schemaVersion:1,prefs:remote
-     },{preserveLocalWaiting:true})).prefs;
+     const adopted=mergeInitialMonthlyPrefs(model,remote);
      let selected=adopted;
      if(!api.same(adopted,remote)){
       selected=await fire.runTransaction(db,async tx=>{
@@ -233,9 +249,7 @@ root.TAXIAPP_ACCOUNT_AUTO={
        const freshest=api.extract({
         version:1,shifts:[],prefs:api.validate(latest.data())
        }).prefs;
-       const joined=api.extract(api.merge(model,{
-        format:api.FORMAT,schemaVersion:1,prefs:freshest
-       },{preserveLocalWaiting:true})).prefs;
+       const joined=mergeInitialMonthlyPrefs(model,freshest);
        if(!api.same(joined,freshest))
         tx.update(ref(),{prefs:joined,...writerFields(),updatedAt:fire.serverTimestamp()});
        return joined;
