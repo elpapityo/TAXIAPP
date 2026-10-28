@@ -246,7 +246,7 @@ const readEnd=live.indexOf('// 本人UID別の端末設定にだけ保存する�
 assert.ok(readBegin>0&&readEnd>readBegin);
 const requests=[],binds=[];
 const readCtx={
- Date,
+ Date,deviceMode:'viewer',monthlyViewerPrefs:null,
  window:{TAXIAPP_ACCOUNT_DIARY:{create:()=>({
   bind:(user,options)=>binds.push({user,options}),
   request:(action,period)=>{
@@ -266,7 +266,12 @@ const readCtx={
 };
 vm.createContext(readCtx);
 vm.runInContext(live.slice(readBegin,readEnd),readCtx);
+// 月間の締め日設定がまだ届かない閲覧専用PCは、仮の期間で読取を始めない。
 Promise.resolve(vm.runInContext('loadMonthlySales()',readCtx)).then(()=>{
+ assert.equal(requests.length,0,'本人締め日未取得の月間集計は停止');
+ readCtx.monthlyViewerPrefs={monthlySalesCloseDay:'end'};
+ return vm.runInContext('loadMonthlySales()',readCtx);
+}).then(()=>{
  assert.equal(binds.length,1);
  assert.equal(binds[0].user.uid,'test-admin-uid');
  assert.equal(binds[0].options.admin,true);
