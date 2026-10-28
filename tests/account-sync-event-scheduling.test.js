@@ -27,12 +27,12 @@ const preflight=between('  async function reconcile(){','   busy=true;')+'   bus
 const settingsContext={TextEncoder};vm.createContext(settingsContext);
 vm.runInContext(fs.readFileSync(path.join(root,'account-settings.js'),'utf8'),settingsContext);
 const api=settingsContext.TAXIAPP_ACCOUNT_SETTINGS;
-const tasks=new Map();let sequence=0,editing=false;
+const tasks=new Map();let sequence=0,editing=false,writerReady=true;
 const prefs={driver:'既存の乗務員名',waitPlaces:['伊丹駅']};
 const context={
  enabled:true,uid:'same-uid',
  deviceSession:{canWrite:()=>true},
- deps:{isEditing:()=>editing},navigator:{onLine:true},
+ deps:{isEditing:()=>editing,canApplyPrefs:()=>writerReady},navigator:{onLine:true},
  busy:false,again:false,timer:null,localSignature:api.signature(prefs),
  api,
  deferredWhileEditing:false,reads:0,
@@ -76,4 +76,16 @@ assert.equal(context.deferredWhileEditing,false);
 assert.equal(tasks.size,0,'no more reads without an actual new change');
 evaluate('editingEnded()');
 assert.equal(tasks.size,0,'repeated blur must not generate reads');
+writerReady=false;
+prefs.driver='原本復元待ちの設定変更';
+evaluate('localSaved()');
+firePending();
+assert.equal(context.reads,2,'原本読込が完了するまではクラウド照合を開始しない');
+assert.equal(tasks.size,0,'原本未復元中に繰り返し読取を行わない');
+writerReady=true;
+evaluate('schedule(0)');
+firePending();
+assert.equal(context.reads,3,'原本読込完了の通知で保留した設定を照合する');
+assert.match(main,/onWriterBootstrapReady:\(\)=>\{[\s\S]*?accountSettingsAuto\?\.syncNow\(\)/);
+assert.match(main,/canApplyPrefs:\(\)=>canEditNow\(\)/);
 console.log('Account settings sync scheduling passed: change-only reads, no focus polling, one blur resume.');
