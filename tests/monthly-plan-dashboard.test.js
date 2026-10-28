@@ -54,9 +54,20 @@ assert.equal(calc('monthlyPlanActualClock("","18:45")'),'18:45');
 assert.equal(calc('monthlyPlanActualClock("","")'),'記録なし');
 const screen=calc('renderMonthlyManagement()');
 assert.match(screen,/月間目標と営業実績/);
+assert.match(screen,/<details class="card month-plan-overview month-report-fold" data-monthly-fold="overview" >/,'monthly overview is collapsed initially');
+assert.match(screen,/<details class="card month-report-fold" data-monthly-fold="calendar" >/,'daily calendar is collapsed initially');
+assert.match(screen,/タップで詳細を表示/,'closed overview has a readable sales summary');
+assert.match(screen,/data-action="loadMonthlySales"/,'the cloud refresh button remains inside the overview');
+assert.match(screen,/data-monthly-fold="overviewMore" /,'the existing attendance and sales breakdown also stays collapsible');
+calc('monthlyFoldOpen.overview=true;monthlyFoldOpen.calendar=true;monthlyFoldOpen.overviewMore=true');
+const openedReport=calc('renderMonthlyManagement()');
+for(const section of ['overview','calendar','overviewMore'])
+ assert.match(openedReport,new RegExp('data-monthly-fold="'+section+'" open'),'the '+section+' section can open');
+calc('monthlyFoldOpen.overview=false;monthlyFoldOpen.calendar=false;monthlyFoldOpen.overviewMore=false');
 assert.match(screen,/月間設定の保存を確認/,'writer can request a server readback');
 assert.match(screen,/設定の読戻し確認済み/,'monthly page exposes the settings confirmation status');
 assert.match(screen,/日別の予定・実績/);
+assert.match(screen,/data-monthly-fold="calendar"/,'calendar remains accessible');
 assert.match(screen,/表示・確認画面｜月間の予定と実績/,'calendar identifies report view');
 for(const weekday of ['friday','saturday','sunday','holiday'])
  assert.match(screen,new RegExp('month-plan-day [^"]*month-weekday-'+weekday),'calendar has weekday/holiday visual category');
@@ -65,7 +76,7 @@ assert.match(screen,/month-settings-surface/,'selected-day settings visually sep
 assert.match(screen,/<details class="card month-plan-editor month-settings-surface month-settings-fold" data-monthly-fold="date" >/,'the date editor starts folded');
 assert.match(screen,/選択日の設定：2026-11-01/,'the folded row identifies the selected date');
 assert.match(screen,/data-action="monthlyPlanSave"/,'the existing save action is still inside its fold');
-assert.match(live,/if\(tab==='monthly'&&monthlyScrollToEditor\)monthlyFoldOpen\.date=true;/,'selecting a date must open its editor');
+assert.match(live,/if\(tab==='monthly'&&monthlyScrollToEditor\)\{[\s\S]*?monthlyFoldOpen\.calendar=true;[\s\S]*?monthlyFoldOpen\.date=true;/,'selecting a date must expand both calendar and editor');
 assert.match(live,/for\(const fold of appEl\.querySelectorAll\('details\[data-monthly-fold\]'\)\)/,'re-render retains manually expanded sections');
 calc('monthlyFoldOpen.date=true');
 assert.match(calc('renderMonthlyManagement()'),/data-monthly-fold="date" open/,'selected-date editor can open');
