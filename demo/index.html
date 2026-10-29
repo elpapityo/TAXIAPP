@@ -3357,7 +3357,9 @@ function renderFirstRunGuideFields(){
    '<button type="button" class="chip '+(!meter?'active':'')+'" data-initial-meter-choice="off" aria-pressed="'+(!meter)+'">OFF：既存入力方式</button>'+
    '</div><p class="caption-note">後からいつでも切り替えできます。営業記録や計算内容は変えません。</p></section>';
  }
- if(step===1)return '<p class="caption-note">待機所の登録は初期設定に含めません。必要なら後から変更できます。</p>'+renderDriverDefaults();
+ if(step===1)return '<p class="caption-note">待機所の登録は初期設定に含めません。必要なら後から変更できます。</p>'+
+  renderDriverDefaults().replace('data-driver-profile-settings>','data-driver-profile-settings open>')
+   .replace('data-vehicle-profile-settings>','data-vehicle-profile-settings open>');
  if(step===2){
   const enabled=key=>model.prefs?.[key]!=='off';
   return '<section class="card"><h3 class="h2">距離の設定</h3>'+
@@ -3458,10 +3460,14 @@ async function firstRunGuideAction(action){
    firstRunGuide={uid:owner,step};
    if(!firstRunGuideStore(owner,step))
     toast('端末に進捗を保存できません。次回は先頭からの再開となる場合があります。',true);
-   settingsCategoryActive=FIRST_RUN_STEPS[step].id;settingsOpenState=null;render();
+   settingsCategoryActive=FIRST_RUN_STEPS[step].id;settingsOpenState=null;
   }
  }catch(error){if(valid())toast('初回設定の保存に失敗しました：'+String(error.message||error),true);}
- finally{firstRunGuideBusy=false;}
+ finally{
+  // 保存中に無効化した操作を必ず復帰。旧コードは保存後の再描画がbusy=trueのままだった。
+  firstRunGuideBusy=false;
+  if(firstRunGuideActive()&&tab==='settings')render();
+ }
 }
 
 function setDeviceMode(next,previous='',detail=''){
