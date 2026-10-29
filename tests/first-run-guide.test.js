@@ -49,6 +49,11 @@ const ctx={
 vm.createContext(ctx);
 vm.runInContext(source,ctx);
 const call=expr=>vm.runInContext(expr,ctx);
+let lastRenderedGuide='';
+ctx.render=()=>{lastRenderedGuide=call('renderFirstRunGuide()');};
+ctx.renderDriverDefaults=()=>'<details data-driver-profile-settings><summary>乗務員情報</summary></details>'+
+ '<details data-vehicle-profile-settings><summary>車両情報</summary></details>';
+
 (async()=>{
  assert.equal(call('firstRunGuideActive()'),false,'既存利用者は登録がなくても初回扱いしない');
  call('firstRunGuideActivate()');
@@ -69,6 +74,10 @@ const call=expr=>vm.runInContext(expr,ctx);
  assert.equal(call('firstRunGuide.step'),1);
  assert.equal(ctx.settingsCategoryActive,'driver');
  assert.equal(JSON.parse(memory.get('taxiapp-initial-guide-v1-new-A')).step,1);
+ assert.match(lastRenderedGuide,/data-first-run-action="next"[^>]*>保存して次へ/,'次へボタンを表示');
+ assert.doesNotMatch(lastRenderedGuide,/data-first-run-action="next"[^>]*disabled/,'保存後の次へボタンを無効のままにしない');
+ assert.match(call('renderFirstRunGuideFields()'),/data-driver-profile-settings open>/,'乗務員情報の入力欄を最初から開く');
+ assert.match(call('renderFirstRunGuideFields()'),/data-vehicle-profile-settings open>/,'車両情報の入力欄を最初から開く');
  // 同一UIDで再ログインした場合だけ中断時の段階を復元する。
  call("firstRunGuide=null;tab='drive';firstRunGuideActivate()");
  assert.equal(call('firstRunGuide.step'),1);
