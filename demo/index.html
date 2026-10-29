@@ -3283,7 +3283,41 @@ const FIRST_RUN_STEPS=Object.freeze([
  {id:'display',title:'入力項目の選択',text:'シンプル表示に必要な項目と決済方法を選びます。'},
  {id:'monthly',title:'月間売上目標',text:'目標額を入力します。詳細な予定は後から登録できます。'}
 ]);
-let firstRunGuide=null,firstRunGuideBusy=false;
+const FIRST_RUN_REPLAY_PREFIX='taxiapp-initial-guide-replay-v1-';
+let firstRunGuide=null,firstRunGuideBusy=false,firstRunGuideReplay=false;
+function firstRunGuideReplayPending(uid){
+ if(!uid)return false;
+ try{return localStorage.getItem(FIRST_RUN_REPLAY_PREFIX+uid)===uid;}catch{return false;}
+}
+function firstRunGuideRestart(){
+ const uid=accountScope.uid;
+ if(!uid||!accountScopeLoaded||!canEditNow()||
+    currentLoginScope?.uid!==uid||
+    currentLoginScope.firebase?.auth?.currentUser?.uid!==uid){
+  toast('本人の操作端末でログイン後に初期設定を開いてください。',true);return;
+ }
+ const shift=getShift();
+ if(shift&&!shift.endedAt&&!shift.endedIso){
+  toast('進行中の乗務を終了してから初期設定を開いてください。',true);return;
+ }
+ if(firstRunGuideBusy)return;
+ if(!window.confirm('初期設定ガイドを最初から表示します。現在の設定値・日報・ログイン情報は削除しません。続けますか？'))return;
+ // 本人の既存設定は変更せず、再案内の進捗のみ端末に記録する。
+ if(!firstRunGuideStore(uid,0)){
+  toast('端末に開始位置を保存できません。初期設定は開始しません。',true);return;
+ }
+ try{
+  localStorage.setItem(FIRST_RUN_REPLAY_PREFIX+uid,uid);
+  if(localStorage.getItem(FIRST_RUN_REPLAY_PREFIX+uid)!==uid)throw Error('記録の照合失敗');
+ }catch{
+  toast('端末に再案内の状態を保存できません。初期設定は開始しません。',true);return;
+ }
+ firstRunGuide={uid,step:0};firstRunGuideReplay=true;
+ settingsCategoryActive=FIRST_RUN_STEPS[0].id;settingsOpenState=null;tab='settings';
+ render();
+ toast('現在の設定を保持したまま、初期設定ガイドを最初から表示しました。');
+}
+
 function firstRunGuideStore(uid,step){
  if(!uid||!Number.isInteger(step)||step<0||step>=FIRST_RUN_STEPS.length)return false;
  const data=JSON.stringify({uid,step});
@@ -3321,12 +3355,13 @@ function firstRunGuideActive(){
  return Boolean(firstRunGuide?.uid&&accountScopeLoaded&&canEditNow()&&
   currentLoginScope?.uid===firstRunGuide.uid&&
   currentLoginScope?.firebase?.auth?.currentUser?.uid===firstRunGuide.uid&&
-  accountScope.uid===firstRunGuide.uid&&model.prefs?.initialGuideCompleted!==true);
+  accountScope.uid===firstRunGuide.uid&&
+  (firstRunGuideReplay||model.prefs?.initialGuideCompleted!==true));
 }
 function firstRunGuideApplyNewDefaults(){
  // 新規登録の本人ガイドが存在する場合だけ初期値を与える。
  // 値が登録済みの項目は上書きしない。通常の空アカウントや管理者は対象外。
- if(!firstRunGuide?.uid||accountScope.uid!==firstRunGuide.uid||!memberDiary()||!canEditNow())return;
+ if(firstRunGuideReplay||!firstRunGuide?.uid||accountScope.uid!==firstRunGuide.uid||!memberDiary()||!canEditNow())return;
  model.prefs??={};
  const p=model.prefs;
  if(p.initialGuideDefaultsApplied===true)return;
@@ -3344,10 +3379,11 @@ function firstRunGuideActivate(){
  if(!accountScopeLoaded||!canEditNow()||!accountScope.uid||!currentLoginScope?.uid||
     accountScope.uid!==currentLoginScope.uid||
     currentLoginScope.firebase?.auth?.currentUser?.uid!==accountScope.uid)return;
- if(model.prefs?.initialGuideCompleted===true){firstRunGuide=null;return;}
+ firstRunGuideReplay=firstRunGuideReplayPending(accountScope.uid);
+ if(model.prefs?.initialGuideCompleted===true&&!firstRunGuideReplay){firstRunGuide=null;return;}
  firstRunGuide=firstRunGuide?.uid===accountScope.uid?firstRunGuide:firstRunGuideRead(accountScope.uid);
- if(!firstRunGuide)return;
- firstRunGuideApplyNewDefaults();
+ if(!firstRunGuide){firstRunGuideReplay=false;return;}
+ if(!firstRunGuideReplay)firstRunGuideApplyNewDefaults();
  const active=getShift();
  if(active&&!active.endedAt&&!active.endedIso)return; // Do not interrupt live duty entry.
  tab='settings';
@@ -3402,7 +3438,7 @@ function renderFirstRunGuide(){
   '<span class="first-run-step'+(k===i?' active':k<i?' done':'')+'">'+
   safeText((k+3)+' '+item.title)+'</span>').join('');
  return '<section class="card first-run-guide" aria-label="初回ログインの設定ガイド">'+
-  '<div class="first-run-eyebrow">初回登録 ／ '+(i+3)+' / 7（Google認証・オプチャ名登録済み）</div>'+
+  '<div class="first-run-eyebrow">'+(firstRunGuideReplay?'初期設定のやり直し':'初回登録')+' ／ '+(i+3)+' / 7（Google認証・オプチャ名登録済み）</div>'+
   '<h2 class="h2">'+safeText(step.title)+'</h2><p class="helper">'+safeText(step.text)+'</p>'+
   '<p class="caption-note">設定は後から変更できます。端末保存を確認してから次へ進みます。</p>'+
   '<div class="first-run-steps" aria-label="設定の進行状況">'+progress+'</div>'+
@@ -3445,7 +3481,7 @@ async function firstRunGuideAction(action){
   }
   if(action==='skip'){
    // 中断は「完了」ではない。次の本人ログイン時に同じ項目から再開。
-   firstRunGuide=null;tab='drive';render();
+   firstRunGuide=null;firstRunGuideReplay=false;tab='drive';render();
    toast('設定を中断しました。次回ログイン時に続きから再開します。');
    return;
   }
@@ -3461,8 +3497,11 @@ async function firstRunGuideAction(action){
     }
     return;
    }
-   try{localStorage.removeItem(FIRST_RUN_GUIDE_PREFIX+owner);}catch{}
-   firstRunGuide=null;settingsCategoryActive='driver';tab='drive';render();
+   try{
+    localStorage.removeItem(FIRST_RUN_GUIDE_PREFIX+owner);
+    localStorage.removeItem(FIRST_RUN_REPLAY_PREFIX+owner);
+   }catch{}
+   firstRunGuide=null;firstRunGuideReplay=false;settingsCategoryActive='driver';tab='drive';render();
    toast('初期設定を保存しました。乗務画面を開きます。');
   }else{
    const step=Math.max(0,Math.min(FIRST_RUN_STEPS.length-1,firstRunGuide.step+(action==='next'?1:-1)));
@@ -7980,6 +8019,12 @@ document.addEventListener('click',event=>{
  render();
 },true);
 document.addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-restart-initial-guide]');
+ if(!button)return;
+ event.preventDefault();event.stopPropagation();
+ if(!button.disabled)firstRunGuideRestart();
+},true);
+document.addEventListener('click',event=>{
  const control=event.target.closest?.('[data-first-run-action]');
  if(!control)return;
  event.preventDefault();event.stopPropagation();
@@ -8041,6 +8086,11 @@ function renderSettingsCategorized(shift){
   '<span class="settings-group-icon" aria-hidden="true">'+item.icon+'</span>'+
   '<span class="settings-group-text"><strong>'+item.title+'</strong><small>'+item.description+'</small></span>'+
   '</button>').join('');
+ const guideRestart=chosen.id==='data'?
+  '<div class="card settings-data-shortcut"><strong>初期設定を最初からやり直す</strong>'+
+  '<p class="caption-note">保存済みの設定・日報・売上・ログイン情報を消さずに、初回の設定案内だけ再表示します。</p>'+
+  '<button type="button" class="btn" data-restart-initial-guide '+(!canEditNow()||!accountScopeLoaded?'disabled':'')+'>初期設定ガイドを最初から開く</button>'+
+  '<p class="caption-note">本人の操作端末へのログインが必要です。乗務中は開始できません。</p></div>':'';
  const shortcut=chosen.id==='data'?
   '<div class="card settings-data-shortcut"><strong>バックアップ・データ管理</strong>'+
   '<p class="caption-note">日報の保存状況やバックアップは「管理」画面で確認します。</p>'+
@@ -8051,7 +8101,7 @@ function renderSettingsCategorized(shift){
   '</section>')+
   '<section class="settings-category-content" aria-label="'+chosen.title+'">'+
    '<h2 class="settings-category-heading">'+chosen.title+'</h2>'+
-   selected.map(el=>el.outerHTML).join('')+shortcut+
+   selected.map(el=>el.outerHTML).join('')+guideRestart+shortcut+
   '</section>';
 }
 
