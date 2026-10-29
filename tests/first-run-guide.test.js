@@ -13,6 +13,12 @@ const extract=html=>{
  return html.slice(a,b);
 };
 const source=extract(live);
+assert.match(live,/function firstRunGuideApplyNewDefaults\(\)/,'新規登録者専用の初期値適用を維持');
+assert.match(live,/p\.pickupDropDistance='off'/,'初期の乗降距離OFF');
+assert.match(live,/p\.highwayDistance='on'/,'初期の高速距離ON');
+assert.match(live,/p\.autoDistance='off'/,'初期の自動距離OFF');
+assert.match(live,/p\.ui\.driveLayout='meter'/,'初期のメーターモードON');
+assert.match(live,/if\(key==='distanceStart'\|\|key==='distanceEnd'\)return distanceEnabled\('F'\)/,'シンプルモードの距離表示は選択した設定に従う');
 assert.equal(extract(demo),source,'公開デモと正式版の初回案内ロジックは同じ');
 assert.match(auth,/let createdHere=false;/);
 assert.match(auth,/await fire\.setDoc\(profileRef,[\s\S]*?createdHere=true;/);
@@ -20,7 +26,7 @@ assert.match(auth,/if\(createdHere\)\{\s*try\{deps\.onInitialRegistrationVerifie
  '新規作成とサーバー検証を完了した本人だけ初回案内する');
 assert.match(live,/onInitialRegistrationVerified:firstRunGuideRegistered/);
 assert.match(live,/onWriterBootstrapReady:\(\)=>\{[\s\S]*?firstRunGuideActivate\(\)/);
-assert.match(live,/selected\.map\(el=>el\.outerHTML\)\.join\(''\)/,'既存の正式設定入力欄を再利用する');
+assert.match(live,/renderFirstRunGuideFields\(\)/,'初回専用の入力フォームを利用する');
 assert.match(live,/if\(isGuide&&FIRST_RUN_STEPS\[firstRunGuide\.step\]\.id===chosen\.id\)/);
 assert.match(live,/data-first-run-action="skip"/);
 assert.match(live,/\.first-run-step\.active/,'色と文字で段階を示す');
@@ -31,27 +37,34 @@ const ctx={
  accountScope:{uid:'new-A'},accountScopeLoaded:true,accountScopeGeneration:2,
  tab:'drive',settingsCategoryActive:'driver',settingsOpenState:null,
  canEditNow:()=>true,getShift:()=>null,safeText:String,
+ memberDiary:()=>true,saveLater:()=>{},
  localStorage:{
   getItem:key=>memory.has(key)?memory.get(key):null,
   setItem:(key,value)=>{memory.set(key,String(value));},
   removeItem:key=>{memory.delete(key);}
  },
- save:async()=>true,render:()=>{},toast:(msg)=>notice.push(msg)
+ save:async()=>true,render:()=>{},toast:(msg)=>notice.push(msg),
+ monthlyGoalInputRaw:()=>'',document:{getElementById:()=>({value:''})}
 };
 vm.createContext(ctx);
 vm.runInContext(source,ctx);
 const call=expr=>vm.runInContext(expr,ctx);
+let lastRenderedGuide='';
+ctx.render=()=>{lastRenderedGuide=call('renderFirstRunGuide()');};
+ctx.renderDriverDefaults=()=>'<details data-driver-profile-settings><summary>乗務員情報</summary></details>'+
+ '<details data-vehicle-profile-settings><summary>車両情報</summary></details>';
+
 (async()=>{
  assert.equal(call('firstRunGuideActive()'),false,'既存利用者は登録がなくても初回扱いしない');
  call('firstRunGuideActivate()');
  assert.equal(ctx.tab,'drive','既存利用者の画面を勝手に変更しない');
  call("firstRunGuideRegistered('new-A')");
- assert.deepEqual(JSON.parse(memory.get('taxiapp-initial-guide-v1-new-A')),{uid:'new-A',step:0});
+ assert.deepEqual(JSON.parse(memory.get('taxiapp-initial-guide-v2-new-A')),{uid:'new-A',step:0});
  call('firstRunGuideActivate()');
  assert.equal(ctx.tab,'settings');
  assert.equal(call('firstRunGuideActive()'),true);
- assert.match(call('renderFirstRunGuide()'),/1 \/ 4/);
- assert.match(call('renderFirstRunGuide()'),/乗務員・車両/);
+ assert.match(call('renderFirstRunGuide()'),/3 \/ 7/);
+ assert.match(call('renderFirstRunGuide()'),/メーターモード/);
  let saves=0;
  ctx.save=async()=>{saves++;return false;};
  await call("firstRunGuideAction('next')");
@@ -59,8 +72,12 @@ const call=expr=>vm.runInContext(expr,ctx);
  ctx.save=async()=>{saves++;return true;};
  await call("firstRunGuideAction('next')");
  assert.equal(call('firstRunGuide.step'),1);
- assert.equal(ctx.settingsCategoryActive,'display');
- assert.equal(JSON.parse(memory.get('taxiapp-initial-guide-v1-new-A')).step,1);
+ assert.equal(ctx.settingsCategoryActive,'driver');
+ assert.equal(JSON.parse(memory.get('taxiapp-initial-guide-v2-new-A')).step,1);
+ assert.match(lastRenderedGuide,/data-first-run-action="next"[^>]*>保存して次へ/,'次へボタンを表示');
+ assert.doesNotMatch(lastRenderedGuide,/data-first-run-action="next"[^>]*disabled/,'保存後の次へボタンを無効のままにしない');
+ assert.match(call('renderFirstRunGuideFields()'),/data-driver-profile-settings open>/,'乗務員情報の入力欄を最初から開く');
+ assert.match(call('renderFirstRunGuideFields()'),/data-vehicle-profile-settings open>/,'車両情報の入力欄を最初から開く');
  // 同一UIDで再ログインした場合だけ中断時の段階を復元する。
  call("firstRunGuide=null;tab='drive';firstRunGuideActivate()");
  assert.equal(call('firstRunGuide.step'),1);
@@ -68,12 +85,14 @@ const call=expr=>vm.runInContext(expr,ctx);
  await call("firstRunGuideAction('next')");
  assert.equal(ctx.settingsCategoryActive,'gps');
  await call("firstRunGuideAction('next')");
- assert.equal(ctx.settingsCategoryActive,'data');
- assert.match(call('renderFirstRunGuide()'),/初期設定を完了/);
+ assert.equal(ctx.settingsCategoryActive,'display');
+ await call("firstRunGuideAction('next')");
+ assert.equal(ctx.settingsCategoryActive,'monthly');
+ assert.match(call('renderFirstRunGuide()'),/保存して利用開始/);
  await call("firstRunGuideAction('finish')");
  assert.equal(ctx.model.prefs.initialGuideCompleted,true);
  assert.equal(call('firstRunGuideActive()'),false);
- assert.equal(memory.has('taxiapp-initial-guide-v1-new-A'),false);
+ assert.equal(memory.has('taxiapp-initial-guide-v2-new-A'),false);
  call('firstRunGuideActivate()');
  assert.equal(call('firstRunGuideActive()'),false,'完了した初期設定を再開しない');
  assert.ok(saves>=5,'保存確認後に進んだ');
@@ -94,9 +113,21 @@ const call=expr=>vm.runInContext(expr,ctx);
  assert.equal(call('firstRunGuideActive()'),false,'別UIDには初期設定の表示を許可しない');
  ctx.accountScope.uid='new-B';
  await call("firstRunGuideAction('skip')");
- assert.equal(ctx.model.prefs.initialGuideCompleted,true,'今回は終了でも完了扱いにする');
- assert.equal(memory.has('taxiapp-initial-guide-v1-new-B'),false);
- console.log('PASS: 新規登録UID限定・4段階設定・保存失敗保護・再ログイン再開・UID分離・初回終了');
+ assert.equal(ctx.model.prefs.initialGuideCompleted,undefined,'中断しても完了扱いにしない');
+ assert.equal(memory.has('taxiapp-initial-guide-v2-new-B'),true,'本人の再開位置を残す');
+ call('firstRunGuideActivate()');
+ assert.equal(call('firstRunGuideActive()'),true,'次回は中断位置から再開する');
+ // 旧4段階の途中状態は同じ番号でも意味が違うため、入力済み設定を保護して最初から再案内する。
+ memory.set('taxiapp-initial-guide-v1-legacy-C',JSON.stringify({uid:'legacy-C',step:3}));
+ ctx.model.prefs={company:'既存入力'};
+ ctx.accountScope.uid='legacy-C';ctx.currentLoginScope.uid='legacy-C';
+ ctx.currentLoginScope.firebase.auth.currentUser.uid='legacy-C';
+ call('firstRunGuide=null;firstRunGuideActivate()');
+ assert.equal(call('firstRunGuide.step'),0,'旧版step3を月間目標へ誤適用しない');
+ assert.equal(ctx.model.prefs.company,'既存入力','旧ガイドで入力した設定を保持');
+ assert.equal(memory.has('taxiapp-initial-guide-v1-legacy-C'),false,'移行成功後だけ旧記録を解放');
+ assert.equal(memory.has('taxiapp-initial-guide-v2-legacy-C'),true,'新5段階の先頭から再開');
+ console.log('PASS: 新規登録UID限定・7項目登録・保存失敗保護・再ログイン再開・UID分離');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 
 
