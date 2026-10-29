@@ -46,6 +46,7 @@ function validSelectedDuty(allowBusy=false){
   (selectedDuty.shift?.endedAt||selectedDuty.shift?.endedIso);
 }
 function buttons(){
+ sparkGuideButtons();
  const ok=!!selected&&!busy&&selectedIsValid();
  const activeTarget=!!selected&&!['deleted','deleting'].includes(selected.status);
  $('openNameEdit').disabled=busy||!activeTarget;
@@ -100,6 +101,7 @@ function clearDutyPanel(){
  $('trashConfirmAck').checked=false;
 }
 function selectUser(user){
+ sparkGuideReset();
  clearDutyPanel();
  selected=user;preview=null;
  $('selectedPanel').hidden=false;
@@ -221,7 +223,7 @@ async function loadList(){
  })).sort((a,b)=>
   (a.uid===ownUid?-1:b.uid===ownUid?1:0)||
   String(a.openChatName||'').localeCompare(String(b.openChatName||''),'ja'));
- selected=null;preview=null;clearDutyPanel();$('selectedPanel').hidden=true;
+ selected=null;preview=null;clearDutyPanel();sparkGuideReset();$('selectedPanel').hidden=true;
  renderList();
  notice('管理者を含む登録一覧を更新しました。');
 }
@@ -264,7 +266,7 @@ async function recentAdminLogin(){
 }
 onAuthStateChanged(auth,async user=>{
  const myEpoch=++epoch;adminUid='';users=[];selected=null;preview=null;
- clearDutyPanel();
+ sparkGuideReset();clearDutyPanel();
  $('workspace').hidden=true;$('selectedPanel').hidden=true;
  $('signIn').hidden=!!user;$('signOut').hidden=!user;
  $('loginState').textContent=user?'管理者権限を確認しています…':'未ログイン';
@@ -760,4 +762,77 @@ $('deleteAccount').addEventListener('click',()=>execute(async()=>{
  });
  notice(r.data?.message||'対象アカウントの削除が終了しました。');
  await loadList();
+}));
+
+// Spark: Firebase Consoleでの手動削除のみ。ブラウザからAuth/Firestoreは削除しない。
+const SPARK_GUIDE_PROJECT='taxiapp-2b6bd';
+function sparkGuideUrl(path){
+ const parts=path.split('/');
+ if(!['users','privateDuties','accountSettings','deviceSessions'].includes(parts[0])||
+    parts.length<2||parts.some(p=>!/^[A-Za-z0-9_-]+$/.test(p)))throw Error('不正なパスです');
+ return 'https://console.firebase.google.com/project/'+SPARK_GUIDE_PROJECT+
+  '/firestore/databases/-default-/data/~2F'+parts.map(encodeURIComponent).join('~2F');
+}
+function sparkGuideReset(){
+ $('sparkGuidePanel').hidden=true;$('sparkGuideSteps').hidden=true;
+ $('sparkGuideUid').value='';$('sparkGuideAck').checked=false;
+ $('sparkGuideSelected').textContent='';
+}
+function sparkGuideAllowed(){
+ return !!selected&&!selected.isAdmin&&!!adminUid&&auth.currentUser?.uid===adminUid;
+}
+function sparkGuideReady(){
+ return !busy&&sparkGuideAllowed()&&$('sparkGuideUid').value.trim()===selected.uid&&
+  $('sparkGuideAck').checked;
+}
+function sparkGuideButtons(){
+ $('sparkGuideOpen').hidden=!sparkGuideAllowed();
+ $('sparkGuideOpen').disabled=busy||!sparkGuideAllowed();
+ $('sparkGuidePrepare').disabled=!sparkGuideReady();
+ $('sparkGuideCopy').disabled=busy||!sparkGuideAllowed();
+}
+$('sparkGuideOpen').addEventListener('click',()=>{
+ if(busy||!sparkGuideAllowed())return;
+ $('accountActionsFold').open=true;
+ $('sparkGuidePanel').hidden=false;$('sparkGuideSteps').hidden=true;
+ $('sparkGuideUid').value='';$('sparkGuideAck').checked=false;
+ $('sparkGuideSelected').textContent='対象：'+(selected.openChatName||'未登録')+' ／ UID：'+selected.uid;
+ sparkGuideButtons();
+ $('sparkGuidePanel').scrollIntoView?.({behavior:'smooth',block:'nearest'});
+});
+$('sparkGuideClose').addEventListener('click',sparkGuideReset);
+for(const [id,event] of [['sparkGuideUid','input'],['sparkGuideAck','change']])
+ $(id).addEventListener(event,()=>{$('sparkGuideSteps').hidden=true;sparkGuideButtons();});
+$('sparkGuideCopy').addEventListener('click',async()=>{
+ if(!sparkGuideAllowed())return;
+ const uid=selected.uid;
+ try{await navigator.clipboard.writeText(uid);
+  if(selected?.uid===uid)notice('UIDをコピーしました。');}
+ catch{if(selected?.uid===uid)notice('UIDのコピーに失敗しました。手動でコピーしてください。',true);}
+});
+$('sparkGuidePrepare').addEventListener('click',()=>execute(async()=>{
+ if(!sparkGuideReady())return;
+ const target=selected,uid=target.uid,sessionEpoch=epoch;
+ const [profile,adminRecord]=await Promise.all([
+  getDocFromServer(doc(db,'users',uid)),
+  getDocFromServer(doc(db,'admins',uid))
+ ]);
+ if(epoch!==sessionEpoch||target!==selected||!sparkGuideReady()||
+    auth.currentUser?.uid!==adminUid)throw Error('確認中に対象が変わりました');
+ if(adminRecord.exists())throw Error('管理者登録履歴のあるUIDは操作できません');
+ if(!profile.exists()||profile.data()?.openChatName!==target.storedOpenChatName)
+  throw Error('登録情報が変更されています。登録一覧を更新してください');
+ const paths={
+  sparkGuideShifts:'privateDuties/'+uid+'/shifts',
+  sparkGuideParent:'privateDuties/'+uid,
+  sparkGuideSettings:'accountSettings/'+uid,
+  sparkGuideSession:'deviceSessions/'+uid,
+  sparkGuideUser:'users/'+uid
+ };
+ for(const [id,path] of Object.entries(paths))$(id).href=sparkGuideUrl(path);
+ $('sparkGuideAuth').href='https://console.firebase.google.com/project/'+
+  SPARK_GUIDE_PROJECT+'/authentication/users';
+ $('sparkGuideVerified').textContent=uid;
+ $('sparkGuideSteps').hidden=false;
+ notice('管理者ではないことと登録名を照合しました。各リンク先で手動削除してください。');
 }));
