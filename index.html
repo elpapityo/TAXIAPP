@@ -3157,7 +3157,8 @@ function renderNav(){
  const selected=id=>tab===id||(id==='manage'&&['cloud','files'].includes(tab));
  const buttons=Object.entries(labels).filter(([name])=>name!=='print'||legacyDiary());
  const desktop=buttons.map(([id,[icon,title]])=>
-  `<button type="button" data-tab="${id}" class="${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('');
+  `<button type="button" data-tab="${id}" class="${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('')+
+  '<a href="./help/index.html" target="_blank" rel="noopener" class="taxi-help-link" style="display:flex;align-items:center;gap:12px;padding:14px 15px;color:#165ca7;text-decoration:none;font-weight:750;border-radius:11px"><span class="nav-ico" aria-hidden="true">📖</span><span class="nav-label">ヘルプ・操作説明</span></a>';
  const mobileItem=(id,icon,title)=>`<button type="button" data-tab="${id}" class="taxi-mobile-item ${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico" aria-hidden="true">${icon}</span><span class="nav-label">${title}</span></button>`;
  const moreSelected=['manage','cloud','files','settings'].includes(tab);
  return `<div class="sidebar">
@@ -3175,6 +3176,7 @@ function renderNav(){
     <strong>その他の画面</strong>
     ${mobileItem('settings','⚙','設定')}
     ${mobileItem('manage','▣','管理')}
+    <a href="./help/index.html" target="_blank" rel="noopener" class="taxi-help-link" style="display:block;padding:12px 14px;color:#165ca7;text-decoration:none;font-weight:750">📖 ヘルプ・操作説明</a>
    </div>
   </details>
  </nav></div>`;
