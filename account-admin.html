@@ -95,7 +95,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="actions"><button id="signIn" class="primary">Googleで管理者ログイン</button><button id="signOut" hidden>ログアウト</button></div>
 </section>
 <section id="workspace" hidden>
-<div class="warning">現在はSpark（無料）プランです。オプチャネームはFirebase管理画面で編集できます。Cloud Functions未配信のため、管理者PCからの完全削除や他人の日報変更は行えません。<strong>Firestoreの営業原本やGoogle原本を直接削除しないでください。</strong></div>
+<div class="warning">現在はSpark（無料）プランです。オプチャネームはFirebase管理画面で編集できます。Cloud Functions未配信のため、一括自動削除は行えません。<strong>テストアカウントだけ、このページからFirebase管理画面の削除先へ案内します。営業原本・Google原本は削除しないでください。</strong></div>
 <section class="panel">
 <h2>登録アカウント一覧（管理者を含む）</h2>
 <p class="muted">一般利用者はオプチャネーム、管理者は「管理者」と表示します。Firestoreの登録ユーザーと管理者登録を統合表示します。</p>
@@ -111,6 +111,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <div class="admin-fold-controls actions">
 <button id="expandAdminSections" type="button">各項目をすべて開く</button>
 <button id="collapseAdminSections" type="button">各項目をすべて閉じる</button>
+<button id="sparkGuideOpen" class="danger" type="button" hidden>テストアカウントを削除（無料）</button>
 </div>
 <details id="accountInfoFold" class="admin-fold">
 <summary>登録情報 <span class="admin-fold-hint">UID・状態・登録日時</span></summary>
@@ -119,7 +120,7 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 </div>
 </details>
 <details id="accountActionsFold" class="admin-fold">
-<summary>アカウントの操作 <span class="admin-fold-hint">無料プランでの名前変更</span></summary>
+<summary>アカウントの操作 <span class="admin-fold-hint">名前変更・テスト削除</span></summary>
 <div class="admin-fold-body">
 <div class="admin-account-actions">
 <strong>オプチャネームの編集</strong>
@@ -131,7 +132,26 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p class="muted">編集フィールド：<code>openChatName</code>／タイプ：<code>string</code>／値：変更後の名前。保存後はこの画面で「登録一覧を更新」を押してください。<strong>UID・enabled・statusなど他の項目は変更しないでください。</strong></p>
 <p class="muted">名前を変更できるのはFirebaseプロジェクトの管理権限を持つ担当者だけです。一般利用者本人は初回登録後に変更できません。</p>
 </div>
-<p class="admin-info-note">Cloud Functionsは未配信です。アカウント完全削除や、管理者PCからの日報編集・ゴミ箱移動・復元は現在利用できません。営業原本をFirebase管理画面から直接削除しないでください。</p>
+<p class="admin-info-note">管理者PCからの自動削除は利用できません。テスト用アカウントは上のボタンから手動削除を案内します。営業原本・Google原本は削除しないでください。</p>
+<div id="sparkGuidePanel" class="admin-account-actions" hidden>
+<h3>テストアカウント削除（無料・手動）</h3>
+<p id="sparkGuideSelected"></p>
+<p class="warning"><strong>このボタンは自動削除しません。</strong> Firebase管理画面で対象の登録・日報・認証を削除するための案内です。管理者や営業アカウントに使用しないでください。</p>
+<label for="sparkGuideUid">削除対象のUIDを正確に入力</label>
+<div class="actions"><input type="text" id="sparkGuideUid" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="選択したUID"><button type="button" id="sparkGuideCopy">UIDをコピー</button></div>
+<label><input type="checkbox" id="sparkGuideAck">テスト用と確認し、日報・設定・ログイン情報の削除が取り消せないことを理解しています</label>
+<div class="actions"><button type="button" id="sparkGuidePrepare" class="danger" disabled>本人登録を再確認して削除手順を表示</button><button type="button" id="sparkGuideClose">閉じる</button></div>
+<div id="sparkGuideSteps" hidden>
+<p class="warning">対象UID：<strong id="sparkGuideVerified"></strong>。リンク先のFirebase管理画面で<strong>手動削除</strong>してください。削除完了はこの画面では自動確認できません。</p>
+<ol>
+<li><a id="sparkGuideShifts" target="_blank" rel="noopener noreferrer">日報（privateDuties/UID/shifts）</a>：子の乗務ドキュメントを全件削除。親だけ削除しても子は残ります。</li>
+<li><a id="sparkGuideParent" target="_blank" rel="noopener noreferrer">日報の親（privateDuties/UID）</a>：子をすべて削除した後、親が存在すれば削除。</li>
+<li><a id="sparkGuideSettings" target="_blank" rel="noopener noreferrer">本人設定（accountSettings/UID）</a>：存在すれば削除。</li>
+<li><a id="sparkGuideSession" target="_blank" rel="noopener noreferrer">端末登録（deviceSessions/UID）</a>：存在すれば削除。</li>
+<li><a id="sparkGuideUser" target="_blank" rel="noopener noreferrer">利用者登録（users/UID）</a>：本人の登録を削除。</li>
+<li><a id="sparkGuideAuth" target="_blank" rel="noopener noreferrer">Firebase Authenticationのユーザー一覧</a>：同じUIDを検索して認証アカウントを削除。</li>
+</ol><p class="muted">端末の原本や旧Google原本はこの案内の対象外です。削除後は「登録一覧を更新」を押してください。</p>
+</div></div>
 <!-- 未配信のCallable操作は誤操作を避けるため画面から隠す。将来の正式配信までAPI実装と確認条件は保持する。 -->
 <div id="cloudNicknameControls" hidden>
 <div class="admin-account-actions">
@@ -235,6 +255,6 @@ th{background:#f0f5f9}td.code{font:13px ui-monospace,monospace;word-break:break-
 <p id="message" role="status" aria-live="polite"></p>
 </main>
 <script src="./account-admin-duty-view.js?v=20261025-readable-1"></script>
-<script type="module" src="./account-admin.js?v=20261025-spark-console-1"></script>
+<script type="module" src="./account-admin.js?v=20261029-spark-delete-guide-1"></script>
 </body>
 </html>
