@@ -3274,7 +3274,8 @@ function canWriteBootstrapConflict(id){return Boolean(bootstrapConflictResolutio
 // Only a verified server-side editor session can modify duty data.
  function canEditNow(){return deviceMode==='writer'&&!writerLoadGate;}
 // 初回の利用登録を自分で完了したUIDだけ案内する。既存利用者の欠損設定を「初回」と推定しない。
-const FIRST_RUN_GUIDE_PREFIX='taxiapp-initial-guide-v1-';
+const FIRST_RUN_GUIDE_PREFIX='taxiapp-initial-guide-v2-';
+const FIRST_RUN_PREVIOUS_GUIDE_PREFIX='taxiapp-initial-guide-v1-';
 const FIRST_RUN_STEPS=Object.freeze([
  {id:'display',title:'メーターモード',text:'初期値はメーター型のシンプル表示ONです。'},
  {id:'driver',title:'乗務員設定',text:'会社名・乗務員名・社員番号・車番・売上締め日を入力します。'},
@@ -3295,7 +3296,15 @@ function firstRunGuideRead(uid){
  if(!uid)return null;
  try{
   const raw=localStorage.getItem(FIRST_RUN_GUIDE_PREFIX+uid);
-  if(!raw)return null;
+  if(!raw){
+   // 旧4段階のstepを新5段階として読み替えることは禁止。初回のみ先頭から再案内する。
+   const older=localStorage.getItem(FIRST_RUN_PREVIOUS_GUIDE_PREFIX+uid);
+   if(!older)return null;
+   const previous=JSON.parse(older);
+   if(previous?.uid!==uid||!Number.isInteger(previous.step)||previous.step<0||previous.step>3)return null;
+   if(firstRunGuideStore(uid,0))localStorage.removeItem(FIRST_RUN_PREVIOUS_GUIDE_PREFIX+uid);
+   return {uid,step:0};
+  }
   const data=JSON.parse(raw);
   if(data?.uid!==uid||!Number.isInteger(data.step)||data.step<0||data.step>=FIRST_RUN_STEPS.length)return null;
   return {uid,step:data.step};
