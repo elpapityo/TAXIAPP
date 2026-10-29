@@ -59,7 +59,7 @@ ctx.renderDriverDefaults=()=>'<details data-driver-profile-settings><summary>乗
  call('firstRunGuideActivate()');
  assert.equal(ctx.tab,'drive','既存利用者の画面を勝手に変更しない');
  call("firstRunGuideRegistered('new-A')");
- assert.deepEqual(JSON.parse(memory.get('taxiapp-initial-guide-v1-new-A')),{uid:'new-A',step:0});
+ assert.deepEqual(JSON.parse(memory.get('taxiapp-initial-guide-v2-new-A')),{uid:'new-A',step:0});
  call('firstRunGuideActivate()');
  assert.equal(ctx.tab,'settings');
  assert.equal(call('firstRunGuideActive()'),true);
@@ -73,7 +73,7 @@ ctx.renderDriverDefaults=()=>'<details data-driver-profile-settings><summary>乗
  await call("firstRunGuideAction('next')");
  assert.equal(call('firstRunGuide.step'),1);
  assert.equal(ctx.settingsCategoryActive,'driver');
- assert.equal(JSON.parse(memory.get('taxiapp-initial-guide-v1-new-A')).step,1);
+ assert.equal(JSON.parse(memory.get('taxiapp-initial-guide-v2-new-A')).step,1);
  assert.match(lastRenderedGuide,/data-first-run-action="next"[^>]*>保存して次へ/,'次へボタンを表示');
  assert.doesNotMatch(lastRenderedGuide,/data-first-run-action="next"[^>]*disabled/,'保存後の次へボタンを無効のままにしない');
  assert.match(call('renderFirstRunGuideFields()'),/data-driver-profile-settings open>/,'乗務員情報の入力欄を最初から開く');
@@ -92,7 +92,7 @@ ctx.renderDriverDefaults=()=>'<details data-driver-profile-settings><summary>乗
  await call("firstRunGuideAction('finish')");
  assert.equal(ctx.model.prefs.initialGuideCompleted,true);
  assert.equal(call('firstRunGuideActive()'),false);
- assert.equal(memory.has('taxiapp-initial-guide-v1-new-A'),false);
+ assert.equal(memory.has('taxiapp-initial-guide-v2-new-A'),false);
  call('firstRunGuideActivate()');
  assert.equal(call('firstRunGuideActive()'),false,'完了した初期設定を再開しない');
  assert.ok(saves>=5,'保存確認後に進んだ');
@@ -114,9 +114,19 @@ ctx.renderDriverDefaults=()=>'<details data-driver-profile-settings><summary>乗
  ctx.accountScope.uid='new-B';
  await call("firstRunGuideAction('skip')");
  assert.equal(ctx.model.prefs.initialGuideCompleted,undefined,'中断しても完了扱いにしない');
- assert.equal(memory.has('taxiapp-initial-guide-v1-new-B'),true,'本人の再開位置を残す');
+ assert.equal(memory.has('taxiapp-initial-guide-v2-new-B'),true,'本人の再開位置を残す');
  call('firstRunGuideActivate()');
  assert.equal(call('firstRunGuideActive()'),true,'次回は中断位置から再開する');
+ // 旧4段階の途中状態は同じ番号でも意味が違うため、入力済み設定を保護して最初から再案内する。
+ memory.set('taxiapp-initial-guide-v1-legacy-C',JSON.stringify({uid:'legacy-C',step:3}));
+ ctx.model.prefs={company:'既存入力'};
+ ctx.accountScope.uid='legacy-C';ctx.currentLoginScope.uid='legacy-C';
+ ctx.currentLoginScope.firebase.auth.currentUser.uid='legacy-C';
+ call('firstRunGuide=null;firstRunGuideActivate()');
+ assert.equal(call('firstRunGuide.step'),0,'旧版step3を月間目標へ誤適用しない');
+ assert.equal(ctx.model.prefs.company,'既存入力','旧ガイドで入力した設定を保持');
+ assert.equal(memory.has('taxiapp-initial-guide-v1-legacy-C'),false,'移行成功後だけ旧記録を解放');
+ assert.equal(memory.has('taxiapp-initial-guide-v2-legacy-C'),true,'新5段階の先頭から再開');
  console.log('PASS: 新規登録UID限定・7項目登録・保存失敗保護・再ログイン再開・UID分離');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 
