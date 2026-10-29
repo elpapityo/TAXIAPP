@@ -781,8 +781,8 @@ function sparkGuideReset(){
 function sparkGuideAllowed(){
  return !!selected&&!selected.isAdmin&&!!adminUid&&auth.currentUser?.uid===adminUid;
 }
-function sparkGuideReady(){
- return !busy&&sparkGuideAllowed()&&$('sparkGuideUid').value.trim()===selected.uid&&
+function sparkGuideReady(allowBusy=false){
+ return (allowBusy||!busy)&&sparkGuideAllowed()&&$('sparkGuideUid').value.trim()===selected.uid&&
   $('sparkGuideAck').checked;
 }
 function sparkGuideButtons(){
@@ -811,16 +811,17 @@ $('sparkGuideCopy').addEventListener('click',async()=>{
  catch{if(selected?.uid===uid)notice('UIDのコピーに失敗しました。手動でコピーしてください。',true);}
 });
 $('sparkGuidePrepare').addEventListener('click',()=>execute(async()=>{
- if(!sparkGuideReady())return;
+ if(!sparkGuideReady(true))return;
  const target=selected,uid=target.uid,sessionEpoch=epoch;
  const [profile,adminRecord]=await Promise.all([
   getDocFromServer(doc(db,'users',uid)),
   getDocFromServer(doc(db,'admins',uid))
  ]);
- if(epoch!==sessionEpoch||target!==selected||!sparkGuideReady()||
+ if(epoch!==sessionEpoch||target!==selected||!sparkGuideReady(true)||
     auth.currentUser?.uid!==adminUid)throw Error('確認中に対象が変わりました');
  if(adminRecord.exists())throw Error('管理者登録履歴のあるUIDは操作できません');
- if(!profile.exists()||profile.data()?.openChatName!==target.storedOpenChatName)
+ if(!profile.exists()||profile.data()?.openChatName!==target.storedOpenChatName||
+    profile.data()?.status!==target.status)
   throw Error('登録情報が変更されています。登録一覧を更新してください');
  const paths={
   sparkGuideShifts:'privateDuties/'+uid+'/shifts',
