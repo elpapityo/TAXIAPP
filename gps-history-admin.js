@@ -8,10 +8,10 @@ if(window.TAXIAPP_GPS_CLOUD_POLICY?.enabled!==true){
  txt('status',window.TAXIAPP_GPS_CLOUD_POLICY?.message||'日報優先：GPSクラウド通信は停止しています');
  return;
 }
-const core=window.TAXIAPP_GPS_SHARING_CORE,config=window.TAXIAPP_FIREBASE_CONFIG;
+const core=window.TAXIAPP_GPS_SHARING_CORE;
 let auth=null,users=[],map=null,layer=null,functions=null,httpsCallable=null;
 let currentUser=null,currentTarget='',currentShift='',serverResult=null,selectionEpoch=0;
-if(!config||!core){txt('status','TAXIAPPの設定を確認できません');return;}
+if(!core){txt('status','TAXIAPPの設定を確認できません');return;}
 const version='12.4.0';
 function makeMap(){
  if(!window.L){txt('status','地図を表示できません');return;}
@@ -167,6 +167,9 @@ async function refreshAudit(){
  }catch(error){txt('status','監査ログを取得できません：'+String(error.message||error));}
 }
 async function init(){
+ const project=window.TAXIAPP_GPS_FIREBASE_PROJECT;
+ if(!project)throw Error('GPS専用接続の基盤がありません');
+ const config=project.configFor(window.TAXIAPP_GPS_FIREBASE_CONFIG,window.TAXIAPP_FIREBASE_CONFIG);
  makeMap();
  $('target').addEventListener('change',selectTarget);
  $('shift').addEventListener('change',()=>{selectionEpoch++;currentShift=$('shift').value;
@@ -176,12 +179,12 @@ async function init(){
  $('delete').addEventListener('click',deleteSelected);
  $('fit').addEventListener('click',fitRoute);
  $('auditRefresh').addEventListener('click',refreshAudit);
- const [{initializeApp,getApp,getApps},a,f,fn]=await Promise.all([
+ const [{initializeApp,getApps},a,f,fn]=await Promise.all([
   import('https://www.gstatic.com/firebasejs/'+version+'/firebase-app.js'),
   import('https://www.gstatic.com/firebasejs/'+version+'/firebase-auth.js'),
   import('https://www.gstatic.com/firebasejs/'+version+'/firebase-firestore.js'),
   import('https://www.gstatic.com/firebasejs/'+version+'/firebase-functions.js')]);
- const app=getApps().length?getApp():initializeApp(config);
+ const app=project.initialize({initializeApp,getApps},config,window.TAXIAPP_FIREBASE_CONFIG);
  auth=a.getAuth(app);const db=f.getFirestore(app);
  functions=fn.getFunctions(app,'asia-northeast1');httpsCallable=fn.httpsCallable;
  a.onAuthStateChanged(auth,async user=>{

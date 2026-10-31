@@ -33,7 +33,10 @@ test('実HTTP認証・複数画面送信排他・操作端末切替・保存/管
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost');let file;
   if(url.pathname==='/__login.html'){res.setHeader('Content-Type','text/html');return res.end('<!doctype html><html lang="ja"><body>ローカル認証試験</body></html>');}
-  if(url.pathname==='/firebase-config.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.TAXIAPP_FIREBASE_CONFIG='+JSON.stringify({apiKey:'demo-local-key',authDomain:'localhost',projectId})+';');}
+  if(url.pathname==='/firebase-config.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.TAXIAPP_FIREBASE_CONFIG={projectId:"demo-diary-do-not-contact"};');}
+  if(url.pathname==='/gps-firebase-config.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.TAXIAPP_GPS_FIREBASE_CONFIG='+JSON.stringify({apiKey:'demo-local-key',appId:'1:demo:web:local',authDomain:projectId+'.firebaseapp.com',projectId})+';');}
+  // Emulator専用の固定接続先に置換。配布版にはdemo接続や解除機能を追加しない。
+  if(url.pathname==='/gps-firebase-project.js'){res.setHeader('Content-Type','text/javascript');return res.end(fs.readFileSync(path.join(root,'gps-firebase-project.js'),'utf8').replaceAll('taxigps-9f82e',projectId).replaceAll('1:330658753332:web:','1:demo:web:'));}
   file=path.resolve(root,'.'+url.pathname);
   if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
   try{res.setHeader('Content-Type',file.endsWith('.html')?'text/html':file.endsWith('.css')?'text/css':'text/javascript');res.end(fs.readFileSync(file));}catch{res.writeHead(404).end();}
@@ -81,7 +84,8 @@ test('実HTTP認証・複数画面送信排他・操作端末切替・保存/管
    await page.evaluate(async({name,password})=>{
     const a=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js');
     const login=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js');
-    const app=a.initializeApp({apiKey:'demo-local-key',authDomain:'localhost',projectId:'demo-taxiapp-gps'});
+    a.initializeApp({projectId:'demo-diary-do-not-contact'});
+    const app=a.initializeApp({apiKey:'demo-local-key',appId:'1:demo:web:local',authDomain:'demo-taxiapp-gps.firebaseapp.com',projectId:'demo-taxiapp-gps'},'TAXIAPP_GPS');
     await login.signInWithEmailAndPassword(login.getAuth(app),name+'@example.invalid',password);
    },{name,password});
    await page.goto(origin+(adminPage?'/gps-history-admin.html':'/gps-sharing-test.html'));
@@ -166,12 +170,12 @@ test('実HTTP認証・複数画面送信排他・操作端末切替・保存/管
   const forbidden=await other.page.evaluate(async({uid,shiftId})=>{
    const a=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js'),f=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-functions.js');
    let roleDenied=false,actorDenied=false;
-   const instance=f.getFunctions(a.getApp(),'asia-northeast1');
+   const instance=f.getFunctions(a.getApp('TAXIAPP_GPS'),'asia-northeast1');
    try{await f.httpsCallable(instance,'adminViewGpsHistory')({actorUid:'net-other-12345678',targetUid:uid,shiftId});}catch(e){roleDenied=e.code==='functions/permission-denied';}
    try{await f.httpsCallable(instance,'recordOwnGpsCsvAudit')({actorUid:uid});}catch(e){actorDenied=e.code==='functions/failed-precondition';}
    return {roleDenied,actorDenied};
   },{uid,shiftId:fixtureShift.id});assert.deepEqual(forbidden,{roleDenied:true,actorDenied:true});
-  await adminUi.page.evaluate(async()=>{const a=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js'),auth=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js');await auth.signOut(auth.getAuth(a.getApp()));});
+  await adminUi.page.evaluate(async()=>{const a=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js'),auth=await import('https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js');await auth.signOut(auth.getAuth(a.getApp('TAXIAPP_GPS')));});
   await adminUi.page.waitForFunction(()=>document.getElementById('adminPanel').hidden);
   assert.equal(await adminUi.page.locator('.leaflet-interactive').count(),0);
   assert.deepEqual(errors,[]);

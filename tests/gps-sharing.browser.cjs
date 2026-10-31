@@ -48,7 +48,7 @@ const {chromium}=require('playwright');
    if(!localStorage.getItem('taxiapp-account-state-v1-driver-12345678'))localStorage.setItem('taxiapp-account-state-v1-driver-12345678',JSON.stringify({version:1,activeId:'shift-100',shifts:[{id:'shift-100',startedIso:new Date(Date.now()-60000).toISOString(),draft:null}]}));
   });
   const modules={
-   app:`export const getApps=()=>[];export const initializeApp=()=>({});export const getApp=()=>({});`,
+   app:`export const getApps=()=>[{name:'[DEFAULT]',options:{projectId:'taxiapp-2b6bd'}}];export const initializeApp=(options,name)=>{if(name!=='TAXIAPP_GPS'||options.projectId!=='taxigps-9f82e')throw Error('GPS接続先不一致');window.__gpsApp={options,name};return window.__gpsApp;};`,
    auth:`const user={uid:'driver-12345678',displayName:'合成テスト'};export const getAuth=()=>({currentUser:user});export const onAuthStateChanged=(auth,fn)=>{window.__authChanged=fn;setTimeout(()=>fn(user),0);};`,
    functions:`export const getFunctions=()=>({});export const httpsCallable=(_f,name)=>async data=>{
      const result={targetUid:data.targetUid,shiftId:data.shiftId,startedAtMs:Date.now()-60000,endedAtMs:Date.now(),points:[{lat:34,lon:135,accuracy:5,segmentNo:1,capturedAtMs:Date.now()-30000}]};

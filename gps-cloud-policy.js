@@ -5,6 +5,6 @@
 (function(root){'use strict';
 root.TAXIAPP_GPS_CLOUD_POLICY=Object.freeze({
  enabled:false,
- message:'日報の保存を優先するため、GPS共有・クラウド履歴は停止しています。課金プランへは変更しません。端末の保存データは削除していません。'
+ message:'日報の保存を優先し、GPS専用プロジェクトへの認証・権限連携が整うまでGPS共有・クラウド履歴は停止しています。課金プランへは変更しません。端末の保存データは削除していません。'
 });
 })(typeof window!=='undefined'?window:globalThis);

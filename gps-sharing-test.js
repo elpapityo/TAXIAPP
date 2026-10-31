@@ -546,16 +546,17 @@ function bindEvents(){
  });
 }
 async function boot(){
+ const project=window.TAXIAPP_GPS_FIREBASE_PROJECT;
+ if(!project)throw Error('GPS専用接続の基盤がありません');
+ const config=project.configFor(window.TAXIAPP_GPS_FIREBASE_CONFIG,window.TAXIAPP_FIREBASE_CONFIG);
  initializeMap();bindEvents();set('historyState','ログイン後にGPS履歴を確認できます');
- const config=window.TAXIAPP_FIREBASE_CONFIG;
- if(!config||!config.projectId){notify('TAXIAPPのFirebase設定が見つかりません');return;}
  const v='12.4.0';
- const [{initializeApp,getApps,getApp},a,f,fn]=await Promise.all([
+ const [{initializeApp,getApps},a,f,fn]=await Promise.all([
   import('https://www.gstatic.com/firebasejs/'+v+'/firebase-app.js'),
   import('https://www.gstatic.com/firebasejs/'+v+'/firebase-auth.js'),
   import('https://www.gstatic.com/firebasejs/'+v+'/firebase-firestore.js'),
   import('https://www.gstatic.com/firebasejs/'+v+'/firebase-functions.js')]);
- fx=f;app=getApps().length?getApp():initializeApp(config);auth=a.getAuth(app);db=f.getFirestore(app);
+ fx=f;app=project.initialize({initializeApp,getApps},config,window.TAXIAPP_FIREBASE_CONFIG);auth=a.getAuth(app);db=f.getFirestore(app);
  firebaseFunctions=fn.getFunctions(app,'asia-northeast1');callFirebase=fn.httpsCallable;
  a.onAuthStateChanged(auth,async nextUser=>{
   const epoch=++authEpoch;lastLocalFinalizationMs=0;
