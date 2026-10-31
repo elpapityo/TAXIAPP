@@ -97,6 +97,17 @@ exports.adminListGpsHistory=onCall(opts,async request=>{
  }).map(d=>({shiftId:d.get('shiftId'),startedAtMs:d.get('startedAtMs'),
   endedAtMs:d.get('endedAtMs')}))};
 });
+exports.adminListGpsHistoryAudit=onCall(opts,async request=>{
+ const actor=identity(request);
+ await adminOnly(actor);
+ const snap=await db.collection('gpsHistoryAudit').orderBy('at','desc').limit(100).get();
+ return {entries:snap.docs.map(doc=>{
+  const row=doc.data();
+  return {actorUid:String(row.actorUid||''),targetUid:String(row.targetUid||''),
+   shiftId:String(row.shiftId||''),action:String(row.action||''),
+   atMs:row.at?.toMillis?.()??null};
+ })};
+});
 exports.deleteGpsHistory=onCall(opts,async request=>{
  const actor=identity(request),{targetUid,shiftId}=argumentsFor(request);
  if(request.data?.confirmationShiftId!==shiftId)
