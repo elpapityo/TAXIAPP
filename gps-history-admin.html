@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>TAXIAPP｜GPS履歴 管理者画面（試験版）</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Meiryo",sans-serif;color:#203b53;background:#edf3f8}
+*{box-sizing:border-box}body{margin:0}.top{background:#173753;color:#fff;padding:16px}
+.top strong{font-size:19px}.top a{color:#fff;float:right}
+main{max-width:1050px;margin:0 auto;padding:12px}
+.card{background:white;border:1px solid #d1dde6;border-radius:12px;padding:15px;margin:10px 0}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+select{padding:12px;font:inherit;border:1px solid #adc1d0;border-radius:9px;max-width:100%}
+button{font:inherit;background:#1768b8;color:#fff;border:none;border-radius:9px;padding:12px;cursor:pointer}
+button:disabled{background:#a3aeb8;cursor:not-allowed}
+button.delete{background:#a63b3b}#historyMap{height:min(66vh,570px);min-height:350px}
+#status{line-height:1.7;color:#34516c;font-size:14px}
+.note{color:#5f7485;font-size:12px;line-height:1.7}
+</style>
+</head>
+<body>
+<header class="top"><a href="./gps-sharing-test.html">現在地共有へ戻る</a>
+<strong>🚕 TAXIAPP｜GPS走行履歴（管理者用）</strong>
+</header>
+<main>
+<section class="card">
+ <p id="status" role="status">TAXIAPPの管理者登録を確認しています…</p>
+ <p class="note">GPS履歴だけの管理画面です。営業日報・売上・料金計算・印刷データは変更しません。
+ 他者履歴の閲覧とCSV出力はサーバーに監査ログを保存してから実行します。</p>
+</section>
+<section id="adminPanel" class="card" hidden>
+ <div class="controls">
+  <label>利用者
+   <select id="target"><option value="">選択してください</option></select>
+  </label>
+  <label>記録された乗務
+   <select id="shift" disabled></select>
+  </label>
+ </div>
+ <div class="controls">
+  <button id="view" disabled>履歴を開く</button>
+  <button id="fit">経路全体を表示</button>
+  <button id="export" disabled>GPS履歴をCSV保存</button>
+  <button id="delete" class="delete" disabled>この乗務のGPS履歴を削除</button>
+ </div>
+ <div id="historyMap" aria-label="管理者用GPS履歴地図"></div>
+ <p><button type="button" id="auditRefresh">GPS閲覧・CSV・削除の監査ログを確認</button></p>
+ <div id="auditList" class="note"></div>
+ <p class="note">地図の経路はGPSで取得できた地点のみを使用します。位置飛び疑いの地点は線に含めず、CSVには判定とともに記録します。</p>
+</section>
+<p class="note">試験版：バックエンドの管理者用GPS履歴関数と権限ルールは本番未配置です。現時点で実データの表示・削除は動作しません。</p>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="./firebase-config.js"></script>
+<script src="./gps-firebase-config.js"></script>
+<script src="./gps-firebase-project.js"></script>
+<script src="./gps-cloud-policy.js"></script>
+<script src="./gps-sharing-core.js"></script>
+<script src="./gps-history-admin.js"></script>
+</body>
+</html>
