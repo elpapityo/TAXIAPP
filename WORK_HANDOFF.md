@@ -241,3 +241,6 @@ Notionの全プロジェクト共通・開発共通・TAXIAPP現行指示・既�
 - 最初のブラウザ試験は既知の/tmp/fonts chown EINVALで失敗。試験へGPS_CHROMIUM_EXECUTABLE指定を追加し、既に取得済み/tmp/chromiumで成功。TLS/ブラウザの保護を解除していない。
 - main直前5721c144とfeature直前c154404をls-remoteで確認し、mainにはgps-account-ui.jsだけをコミットda57b8fdb16233e2ebb262937f85839d729e7ac2で反映。本体index.html/日報config/device-session/営業原本/計算/印刷/本番ルール/GAS/課金設定は変更なし。PR全体は未マージ・Draft継続。
 - 次は公開ページの連携成功を確認し、ログアウトからの段階別実Google認証は未検証として記録する。2名/複数端末・無料バックエンド・本体統合の残作業は第16節を継承。
+
+
+第17節の配信確認補足：公開JSの実HTTP 200でsessionReady入り修正版を確認。Cache-Control=max-age=600により既存ブラウザでは旧JSが残り、通常再読込後も旧ボタン表示だった。gps-sharing-test.htmlの認証UI読込へ `?v=20261101-staged` を追加し、mainコミット363e275aef8d89bf809fbe91543a999bd64a038dで反映。変更後の実DOM合成試験も再成功。旧版画面での再連携成功は新しい段階別認証の検証として扱わない。
