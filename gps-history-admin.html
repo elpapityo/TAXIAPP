@@ -47,6 +47,8 @@ button.delete{background:#a63b3b}#historyMap{height:min(66vh,570px);min-height:3
   <button id="delete" class="delete" disabled>この乗務のGPS履歴を削除</button>
  </div>
  <div id="historyMap" aria-label="管理者用GPS履歴地図"></div>
+ <p><button type="button" id="auditRefresh">GPS閲覧・CSV・削除の監査ログを確認</button></p>
+ <div id="auditList" class="note"></div>
  <p class="note">地図の経路はGPSで取得できた地点のみを使用します。位置飛び疑いの地点は線に含めず、CSVには判定とともに記録します。</p>
 </section>
 <p class="note">試験版：バックエンドの管理者用GPS履歴関数と権限ルールは本番未配置です。現時点で実データの表示・削除は動作しません。</p>
