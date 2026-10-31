@@ -57,6 +57,8 @@ test('実HTTP認証・複数画面送信排他・操作端末切替・保存/管
     // 可視/不可視切替のみ試験から制御。GPSはChromiumのGeolocationエミュレーション。
     window.__visible='visible';Object.defineProperty(document,'visibilityState',{get:()=>window.__visible});
    },{uid,token,shift:fixtureShift});
+   // Emulator結合試験だけで旧通信経路を検証。本番設定は停止を維持。
+   await context.route('**/gps-cloud-policy.js',route=>route.fulfill({contentType:'text/javascript',body:'window.TAXIAPP_GPS_CLOUD_POLICY={enabled:true};'}));
    await context.route('https://www.gstatic.com/firebasejs/**',async route=>{
     const filename=path.basename(new URL(route.request().url()).pathname),module=filename.replace('firebase-','').replace('.js','');
     const realPath=origin+'/__sdk/'+filename;

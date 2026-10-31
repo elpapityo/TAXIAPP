@@ -2,6 +2,12 @@
 (async()=>{
 'use strict';
 const $=id=>document.getElementById(id),txt=(id,value)=>{$(id).textContent=String(value)};
+if(window.TAXIAPP_GPS_CLOUD_POLICY?.enabled!==true){
+ $('adminPanel').hidden=true;
+ document.querySelectorAll('main button,main input,main select').forEach(el=>{el.disabled=true;});
+ txt('status',window.TAXIAPP_GPS_CLOUD_POLICY?.message||'日報優先：GPSクラウド通信は停止しています');
+ return;
+}
 const core=window.TAXIAPP_GPS_SHARING_CORE,config=window.TAXIAPP_FIREBASE_CONFIG;
 let auth=null,users=[],map=null,layer=null,functions=null,httpsCallable=null;
 let currentUser=null,currentTarget='',currentShift='',serverResult=null,selectionEpoch=0;

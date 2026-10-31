@@ -6,6 +6,16 @@ const core=window.TAXIAPP_GPS_SHARING_CORE;
 const history=window.TAXIAPP_GPS_HISTORY_STORE;
 const cloudHistory=window.TAXIAPP_GPS_HISTORY_SYNC;
 const set=(id,value)=>{const el=$(id);if(el){el.textContent=String(value);el.classList.toggle('error',/失敗|不可|同期待ち|切替待ち/.test(String(value)));}};
+// Firebaseのimport・認証・購読・履歴送信・地図初期化より前に止める。
+// 設定欠落時も停止。URL/端末設定で解除しない。
+if(window.TAXIAPP_GPS_CLOUD_POLICY?.enabled!==true){
+ document.querySelectorAll('main button,main input,main select').forEach(el=>{el.disabled=true;});
+ set('connection',window.TAXIAPP_GPS_CLOUD_POLICY?.message||'日報優先：GPSクラウド通信は停止しています');
+ for(const id of ['privacyState','senderState','gpsState','sendState','historyState','cloudStatus'])set(id,'日報優先のため停止中');
+ set('authState','GPS認証・通信は開始していません');
+ $('adminGpsHistoryLink').hidden=true;
+ return;
+}
 if(!core){set('connection','位置共有の基盤が読み込めません');return;}
 const paint={空車:'#171717',迎車:'#e7b900',実車:'#1874d1',支払い:'#d52b38',待機:'#7a8490'};
 let app=null,auth=null,db=null,fx=null,user=null,uid='',displayName='',isAdmin=false;

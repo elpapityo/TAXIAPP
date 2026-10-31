@@ -16,7 +16,26 @@ const {chromium}=require('playwright');
    const chromiumPackage=require('@sparticuz/chromium');const binary=chromiumPackage.default||chromiumPackage;options.executablePath=await binary.executablePath();options.args=binary.args;
   }
   browser=await chromium.launch(options);
+  const stopped=await browser.newContext();let firebaseRequests=0;
+  await stopped.route('https://**',route=>{if(route.request().url().includes('gstatic.com/firebasejs/'))firebaseRequests++;return route.abort();});
+  await stopped.addInitScript(()=>{
+   localStorage.setItem('taxiapp-cost-stop-sentinel','未送信の既存データ');
+   navigator.geolocation.watchPosition=()=>{throw Error('GPS停止中に測位を開始');};
+  });
+  for(const file of ['gps-sharing-test.html','gps-history-admin.html']){
+   const stoppedPage=await stopped.newPage(),stoppedErrors=[];
+   stoppedPage.on('pageerror',e=>stoppedErrors.push(e.message));
+   await stoppedPage.goto('http://127.0.0.1:'+server.address().port+'/'+file);
+   await stoppedPage.waitForFunction(()=>document.getElementById('connection')?.textContent.includes('日報の保存を優先')||document.getElementById('status')?.textContent.includes('日報の保存を優先'));
+   assert.equal(await stoppedPage.locator('main button:enabled,main input:enabled,main select:enabled').count(),0);
+   assert.equal(await stoppedPage.evaluate(()=>localStorage.getItem('taxiapp-cost-stop-sentinel')),'未送信の既存データ');
+   assert.deepEqual(stoppedErrors,[]);await stoppedPage.close();
+  }
+  assert.equal(firebaseRequests,0); // single-process Chromiumではcontext.closeでブラウザごと終了するため最後に閉じる。
+  console.log('日報優先停止：2画面でFirebase通信0・操作停止・保存データ維持を確認');
   const context=await browser.newContext({viewport:{width:390,height:844},acceptDownloads:true});
+  // 旧機能の合成試験専用。本番の停止方針を解除するコードは配布しない。
+  await context.route('**/gps-cloud-policy.js',route=>route.fulfill({contentType:'text/javascript',body:'window.TAXIAPP_GPS_CLOUD_POLICY={enabled:true};'}));
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await context.addInitScript(()=>{
