@@ -39,12 +39,15 @@ test('削除済みマーカーのある履歴は再作成拒否',async()=>{
 });
 test('位置共有の公開Query・非公開・未登録・管理者を認可',async()=>{
  const db=dbFor(uid),p={public:true,onDuty:true,status:'空車',name:'合成テスト',lat:34,lon:135,accuracy:5,speed:null,heading:null,shiftId:'shift-100',capturedAtMs:Date.now(),updatedAt:serverTimestamp()};
+ await assertSucceeds(setDoc(doc(db,'gpsSharePrefs',uid),{public:true,updatedAt:serverTimestamp()}));
  await assertSucceeds(setDoc(doc(db,'gpsPresence',uid),p));
  await assertSucceeds(getDocs(query(collection(dbFor(other),'gpsPresence'),where('public','==',true),where('onDuty','==',true))));
  await assertFails(getDocs(collection(dbFor(other),'gpsPresence')));
  await assertFails(getDoc(doc(dbFor('unregistered-123'),'gpsPresence',uid)));
  await assertSucceeds(setDoc(doc(db,'gpsPresence',uid),{...p,public:false,onDuty:false,lat:null,lon:null,accuracy:null,shiftId:'',capturedAtMs:null}));
  for(const id of [other,admin])await assertFails(getDoc(doc(dbFor(id),'gpsPresence',uid)));
+ await assertSucceeds(setDoc(doc(db,'gpsSharePrefs',uid),{public:false,updatedAt:serverTimestamp()}));
+ await assertFails(setDoc(doc(db,'gpsPresence',uid),p));
 });
 test('既存の営業原本・編集セッション・UID分離を保護',async()=>{
  const db=dbFor(uid),session='s'.repeat(32);

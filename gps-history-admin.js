@@ -4,7 +4,7 @@
 const $=id=>document.getElementById(id),txt=(id,value)=>{$(id).textContent=String(value)};
 const core=window.TAXIAPP_GPS_SHARING_CORE,config=window.TAXIAPP_FIREBASE_CONFIG;
 let auth=null,users=[],map=null,layer=null,functions=null,httpsCallable=null;
-let currentUser=null,currentTarget='',currentShift='',serverResult=null;
+let currentUser=null,currentTarget='',currentShift='',serverResult=null,selectionEpoch=0;
 if(!config||!core){txt('status','TAXIAPPの設定を確認できません');return;}
 const version='12.4.0';
 function makeMap(){
@@ -72,6 +72,7 @@ async function call(name,data){
  return result.data;
 }
 async function selectTarget(){
+ const epoch=++selectionEpoch;
  const target=$('target').value;currentTarget=target;
  currentShift='';serverResult=null;layer?.clearLayers();
  $('shift').replaceChildren();$('shift').disabled=true;
@@ -80,7 +81,7 @@ async function selectTarget(){
  txt('status','選択利用者の保存済みGPS履歴を確認中');
  try{
   const result=await call('adminListGpsHistory',{targetUid:target});
-  if(currentTarget!==target)return;
+  if(currentTarget!==target||epoch!==selectionEpoch)return;
   for(const item of result.shifts||[]){
    const option=document.createElement('option');option.value=item.shiftId;
    option.textContent=new Date(item.startedAtMs).toLocaleString('ja-JP')+
@@ -94,20 +95,20 @@ async function selectTarget(){
  }catch(error){txt('status','履歴一覧の確認に失敗：'+String(error.message||error));}
 }
 async function viewSelected(){
- const target=currentTarget,id=$('shift').value;
+ const target=currentTarget,id=$('shift').value,epoch=selectionEpoch;
  if(!target||!id)return;
  txt('status','管理者権限と監査ログ保存を確認中');
- $('view').disabled=true;serverResult=null;layer?.clearLayers();
+ $('view').disabled=true;$('export').disabled=true;$('delete').disabled=true;serverResult=null;layer?.clearLayers();
  try{
   // Server logs actor/time/target/shift before returning coordinates.
   const result=await call('adminViewGpsHistory',{targetUid:target,shiftId:id});
-  if(currentTarget!==target||$('shift').value!==id)return;
+  if(currentTarget!==target||$('shift').value!==id||epoch!==selectionEpoch)return;
   serverResult=result;currentShift=id;drawRoute();
   $('export').disabled=false;$('delete').disabled=false;
   txt('status','履歴を表示：GPS '+result.points.length+'点（閲覧監査済み）');
  }catch(error){
   txt('status','閲覧不可（監査ログ・権限・通信を確認）：'+String(error.message||error));
- }finally{$('view').disabled=false;}
+ }finally{if(epoch===selectionEpoch)$('view').disabled=!currentUser||!currentTarget||!$('shift').value;}
 }
 async function exportSelected(){
  const target=currentTarget,id=currentShift;
@@ -161,7 +162,7 @@ async function refreshAudit(){
 async function init(){
  makeMap();
  $('target').addEventListener('change',selectTarget);
- $('shift').addEventListener('change',()=>{currentShift=$('shift').value;
+ $('shift').addEventListener('change',()=>{selectionEpoch++;currentShift=$('shift').value;
   serverResult=null;layer?.clearLayers();$('export').disabled=true;$('delete').disabled=true;});
  $('view').addEventListener('click',viewSelected);
  $('export').addEventListener('click',exportSelected);
@@ -177,7 +178,7 @@ async function init(){
  auth=a.getAuth(app);const db=f.getFirestore(app);
  functions=fn.getFunctions(app,'asia-northeast1');httpsCallable=fn.httpsCallable;
  a.onAuthStateChanged(auth,async user=>{
-  $('adminPanel').hidden=true;currentUser=user;currentTarget='';currentShift='';serverResult=null;
+  selectionEpoch++;$('adminPanel').hidden=true;currentUser=user;currentTarget='';currentShift='';serverResult=null;
   layer?.clearLayers();$('auditList').replaceChildren();$('target').replaceChildren();$('shift').replaceChildren();
   $('view').disabled=true;$('export').disabled=true;$('delete').disabled=true;
   if(!user){txt('status','TAXIAPP本体でログインしてください');return;}

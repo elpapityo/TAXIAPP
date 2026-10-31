@@ -13,7 +13,7 @@ let privacyPublic=true,privacyConfirmed=false,watchId=null,latestFix=null,lastAc
 let localModel=null,shift=null,shiftId='',currentStatus='',lastPublishedMs=0,lastPublishedFix=null;
 let map=null,vehicleLayer=null,selfLayer=null,vehicles=new Map(),unsubscribe=null,intervalId=null;
 let userBusy=false,serverBusy=false,pendingHide=false,lastDutyChecked=false;
-let preferences=null,privacySyncing=false;
+let preferences=null,privacySyncing=false,unsubscribePreferences=null;
 let presenceWriteTail=Promise.resolve();
 function enqueuePresence(write){
  const done=presenceWriteTail.then(write,write);
@@ -525,6 +525,7 @@ async function boot(){
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
   cloudSession?.dispose();cloudSession=null;remoteHistoryRows=[];
   preferences?.dispose();preferences=null;privacyConfirmed=false;pendingHide=false;
+  if(unsubscribePreferences){unsubscribePreferences();unsubscribePreferences=null;}
   latestFix=null;lastAccepted=null;lastPublishedMs=0;lastPublishedFix=null;
   if(intervalId){clearInterval(intervalId);intervalId=null;}
   if(vehicleLayer)vehicleLayer.clearLayers();if(selfLayer)selfLayer.clearLayers();
@@ -572,6 +573,15 @@ async function boot(){
      });
     }});
    applyPrivacyState();await syncPrivacy();
+   const currentPreferences=preferences;
+   unsubscribePreferences=f.onSnapshot(f.doc(db,'gpsSharePrefs',owner),{includeMetadataChanges:true},snap=>{
+    if(uid!==owner||preferences!==currentPreferences||snap.metadata?.fromCache||snap.metadata?.hasPendingWrites)return;
+    if(!snap.exists()||typeof snap.data().public!=='boolean')return;
+    currentPreferences.receive(snap.data().public);applyPrivacyState();
+    if(!privacyPublic)stopGps();ensureGps();draw();
+   },error=>{
+    if(uid===owner)notify('公開設定の他端末同期を確認できません：'+String(error.message||error));
+   });
    $('privacyToggle').checked=privacyPublic;
    $('privacyToggle').disabled=false;set('privacyState',statusText());
    try{historyOn=localStorage.getItem(historyPrefKey())==='1';}catch{historyOn=false;}

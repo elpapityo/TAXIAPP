@@ -19,7 +19,7 @@ const {chromium}=require('playwright');
   const context=await browser.newContext({viewport:{width:390,height:844},acceptDownloads:true});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>{
+  await context.addInitScript(()=>{
    window.__online=true;Object.defineProperty(navigator,'onLine',{get:()=>window.__online});
    window.__writes=[];window.__cloud={};
    window.__fix=(offset=0)=>window.__gps?.({timestamp:Date.now()+offset,coords:{latitude:34.7,longitude:135.4,accuracy:8,speed:0,heading:0}});
@@ -29,29 +29,39 @@ const {chromium}=require('playwright');
   });
   const modules={
    app:`export const getApps=()=>[];export const initializeApp=()=>({});export const getApp=()=>({});`,
-   auth:`const user={uid:'driver-12345678',displayName:'合成テスト'};export const getAuth=()=>({currentUser:user});export const onAuthStateChanged=(auth,fn)=>{setTimeout(()=>fn(user),0);};`,
-   functions:`export const getFunctions=()=>({});export const httpsCallable=(_f,name)=>async data=>({data:{status:'saved',operationId:data.operationId}});`,
+   auth:`const user={uid:'driver-12345678',displayName:'合成テスト'};export const getAuth=()=>({currentUser:user});export const onAuthStateChanged=(auth,fn)=>{window.__authChanged=fn;setTimeout(()=>fn(user),0);};`,
+   functions:`export const getFunctions=()=>({});export const httpsCallable=(_f,name)=>async data=>{
+     const result={targetUid:data.targetUid,shiftId:data.shiftId,startedAtMs:Date.now()-60000,endedAtMs:Date.now(),points:[{lat:34,lon:135,accuracy:5,segmentNo:1,capturedAtMs:Date.now()-30000}]};
+     window.__calls=(window.__calls||[]).concat(name);
+     if(name==='adminListGpsHistory')return {data:{shifts:[{shiftId:'shift-900',startedAtMs:result.startedAtMs,endedAtMs:result.endedAtMs}]}};
+     if(name==='adminViewGpsHistory'){if(window.__denyAudit)throw Error('合成：監査保存失敗');return {data:result};}
+     if(name==='adminExportGpsHistory')return {data:result};
+     if(name==='deleteGpsHistory')return {data:{status:'deleted'}};
+     if(name==='adminListGpsHistoryAudit')return {data:{entries:[]}};
+     return {data:{status:'saved',operationId:data.operationId}};
+    };`,
    firestore:`export const getFirestore=()=>({});export const doc=(_db,...p)=>p.join('/');export const collection=doc;export const query=(...p)=>p;export const where=(...p)=>p;export const orderBy=(...p)=>p;export const limit=x=>x;
     export const serverTimestamp=()=>Date.now();export const Timestamp={fromMillis:n=>({millis:n})};
     export async function getDocFromServer(p){if(!navigator.onLine)throw Error('offline');let value=window.__cloud[p];
+     if(p.startsWith('admins/')&&window.__admin)value={enabled:true};
      if(p.startsWith('users/'))value={status:'active',openChatName:'合成テスト'};
      if(p.startsWith('gpsSharePrefs/'))value={public:localStorage.getItem('__serverPrefs')!=='0'};
      return {exists:()=>!!value,data:()=>value};}
     export const getDoc=getDocFromServer;
     export async function setDoc(p,value){if(!navigator.onLine)throw Error('offline');window.__cloud[p]=value;window.__writes.push({p,value});if(p.startsWith('gpsSharePrefs/'))localStorage.setItem('__serverPrefs',value.public?'1':'0');}
     export const writeBatch=()=>{const work=[];return {set:(p,v)=>work.push([p,v]),commit:async()=>{for(const [p,v] of work)await setDoc(p,v);}};};
-    export const getDocsFromServer=async()=>({forEach(){}});
-    export const onSnapshot=(_q,fn)=>{fn({forEach(){}});return ()=>{};};`
+    export const getDocsFromServer=async()=>({docs:[{id:'other-12345678',data:()=>({openChatName:'合成対象'})}],forEach(){}});
+    export const onSnapshot=(q,options,callback)=>{const fn=callback||options;if(typeof q==='string'){window.__remotePrivacy=value=>{localStorage.setItem('__serverPrefs',value?'1':'0');fn({exists:()=>true,data:()=>({public:value}),metadata:{fromCache:false,hasPendingWrites:false}});};}else fn({forEach(){}});return ()=>{};};`
   };
-  await page.route('https://www.gstatic.com/firebasejs/**',route=>{
+  await context.route('https://www.gstatic.com/firebasejs/**',route=>{
    const name=route.request().url().match(/firebase-(app|auth|firestore|functions)\.js/)[1];
    return route.fulfill({contentType:'text/javascript',body:modules[name]});
   });
-  await page.route('https://unpkg.com/leaflet@1.9.4/dist/**',route=>{
+  await context.route('https://unpkg.com/leaflet@1.9.4/dist/**',route=>{
    const basename=path.basename(new URL(route.request().url()).pathname);
    return route.fulfill({contentType:basename.endsWith('.css')?'text/css':'text/javascript',body:fs.readFileSync(path.join(path.dirname(require.resolve('leaflet')),basename))});
   });
-  await page.route('https://cyberjapandata.gsi.go.jp/**',route=>route.abort());
+  await context.route('https://cyberjapandata.gsi.go.jp/**',route=>route.abort());
   const url='http://127.0.0.1:'+server.address().port+'/gps-sharing-test.html';
   await page.goto(url);await page.waitForFunction(()=>!document.getElementById('historyToggle').disabled);
   await page.waitForFunction(()=>window.__gps);
@@ -75,7 +85,41 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>document.getElementById('auditState').textContent.includes('同期待ち'));
   const queued=await page.evaluate(()=>TAXIAPP_GPS_HISTORY_STORE.pendingAudits('driver-12345678'));
   assert.equal(queued.length,1);
+  await page.evaluate(()=>{window.__remotePrivacy(true);});
+  await page.waitForFunction(()=>document.getElementById('privacyToggle').checked===true);
+  await page.evaluate(()=>{window.__remotePrivacy(false);});
+  await page.waitForFunction(()=>document.getElementById('privacyToggle').checked===false);
   assert.deepEqual(errors,[]);
-  console.log('成功：390px実DOM・Leaflet・IndexedDB点列・BOM CSV・非公開切替/再起動再送・オフラインCSV監査。Firebase/GPSは合成。');
+  const adminPage=await context.newPage();adminPage.on('pageerror',e=>errors.push(e.message));
+  await adminPage.addInitScript(()=>{window.__admin=true;});
+  await adminPage.goto(url.replace('gps-sharing-test.html','gps-history-admin.html'));
+  await adminPage.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
+  await adminPage.locator('#target').selectOption('other-12345678');
+  await adminPage.waitForFunction(()=>!document.getElementById('view').disabled);
+  await adminPage.locator('#view').click();
+  await adminPage.waitForFunction(()=>document.getElementById('status').textContent.includes('閲覧監査済み'));
+  assert.equal(await adminPage.locator('#export').isDisabled(),false);
+  await adminPage.evaluate(()=>{window.__denyAudit=true;});
+  await adminPage.locator('#view').click();
+  await adminPage.waitForFunction(()=>document.getElementById('status').textContent.includes('閲覧不可'));
+  assert.equal(await adminPage.locator('#export').isDisabled(),true);
+  assert.equal(await adminPage.locator('#delete').isDisabled(),true);
+  assert.equal(await adminPage.locator('.leaflet-interactive').count(),0);
+  await adminPage.evaluate(()=>{window.__denyAudit=false;});
+  await adminPage.locator('#view').click();
+  await adminPage.waitForFunction(()=>document.getElementById('status').textContent.includes('閲覧監査済み'));
+  adminPage.once('dialog',dialog=>dialog.accept());
+  const adminDownload=adminPage.waitForEvent('download');await adminPage.locator('#export').click();
+  const adminCsv=await adminDownload;assert.ok(fs.readFileSync(await adminCsv.path(),'utf8').startsWith('\ufeff'));
+  adminPage.once('dialog',dialog=>dialog.accept());await adminPage.locator('#delete').click();
+  await adminPage.waitForFunction(()=>document.getElementById('status').textContent.includes('履歴 1乗務'));
+  assert.equal(await adminPage.locator('#export').isDisabled(),true);
+  assert.ok((await adminPage.evaluate(()=>window.__calls)).includes('deleteGpsHistory'));
+  await adminPage.locator('#auditRefresh').click();
+  await adminPage.waitForFunction(()=>document.getElementById('status').textContent.includes('監査ログ 0件'));
+  await adminPage.evaluate(()=>window.__authChanged(null));
+  assert.equal(await adminPage.locator('#adminPanel').isVisible(),false);
+  assert.deepEqual(errors,[]);
+  console.log('成功：390px実DOM・Leaflet・IndexedDB点列・BOM CSV・非公開切替/再起動再送・オフラインCSV監査・他端末設定受信・管理者閲覧/監査失敗/CSV/削除/ログアウト。Firebase/GPSは合成。');
  }finally{await browser?.close();await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

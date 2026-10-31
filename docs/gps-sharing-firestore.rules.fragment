@@ -34,6 +34,7 @@ match /gpsPresence/{uid} {
     request.resource.data.updatedAt == request.time &&
     (
       (request.resource.data.public == true &&
+       getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == true &&
        request.resource.data.onDuty == true &&
        request.resource.data.status in ['空車','迎車','実車','支払い','待機'] &&
        request.resource.data.shiftId is string &&

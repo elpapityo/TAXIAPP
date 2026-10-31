@@ -32,8 +32,12 @@ function create({uid,storage,read,write,online=()=>true}){
   }
   return state();
  }
+ function receive(value){
+  if(disposed||pending||typeof value!=='boolean')return state();
+  publicValue=value;confirmed=true;storage.setItem(legacy,value?'1':'0');return state();
+ }
  function sync(){const result=tail.then(synchronize);tail=result.catch(()=>{});return result;}
- return Object.freeze({state,choose,sync,dispose(){disposed=true;}});
+ return Object.freeze({state,choose,sync,receive,dispose(){disposed=true;}});
 }
 const api=Object.freeze({create});
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

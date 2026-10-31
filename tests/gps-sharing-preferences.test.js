@@ -18,3 +18,9 @@ test('切替中の逆操作を古い送信完了で確認済みにしない',asy
  assert.equal(c.state().pending,true);assert.equal(c.state().confirmed,false);
  const next=c.sync();await new Promise(setImmediate);release();await next;assert.equal(c.state().confirmed,true);
 });
+
+test('他端末のサーバー確定設定を受信し、手元の未同期操作は上書きしない',async()=>{
+ const f=fixture(),c=f.newClient();await c.sync();c.receive(false);
+ assert.equal(c.state().public,false);assert.equal(c.state().confirmed,true);
+ c.choose(true);c.receive(false);assert.equal(c.state().public,true);assert.equal(c.state().confirmed,false);
+});
