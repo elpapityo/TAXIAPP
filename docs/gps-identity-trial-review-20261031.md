@@ -1,13 +1,13 @@
-# 次に適用するGPSログイン許可と同一オリジン認証試験
+# 承認済みGPSログイン許可と同一オリジン認証試験
 
 ## 確認済みの現況
 
 - 既存公開先 https://elpapityo.github.io/TAXIAPP/ はTAXIAPP v0.3.227のログイン画面とブラウザで確認。READMEの条件付きURLを現況の証拠にしない。
-- TAXIGPSの承認済みドメインはlocalhost / taxigps-9f82e.firebaseapp.com / taxigps-9f82e.web.appの3件。elpapityo.github.ioは未登録。
+- TAXIGPSの承認済みドメインはlocalhost / taxigps-9f82e.firebaseapp.com / taxigps-9f82e.web.appの既存3件。`elpapityo.github.io` は本人承認後に追加済み（計4件を実画面確認）。
 - GPS専用GASは2スコープ付与・バージョン1公開・実GET応答・未認証/未対応/不正JSONの拒否まで確認。有効な実Google tokenでの本人連携・対応表作成は未実施。
-- 既存GPS試験画面へ明示操作の本人連携ボタンを実装・合成検証。位置共有/履歴送信の停止は維持。main/本体index.html/日報設定・原本への反映なし。
+- 既存GPS試験画面へ明示操作の本人連携ボタンを実装・合成検証。位置共有/履歴送信の停止は維持。試験ページと13依存ファイルをmainの5721c144で公開済み。本体index.html/日報設定・原本は未変更。
 
-## 今回だけ承認が必要な具体的変更
+## 本人承認後に適用済みの具体的変更
 
 1. **TAXIGPS側Authenticationの承認済みドメインへelpapityo.github.ioを1件追加。** 既存3件は維持。ホスト単位であり、/TAXIAPP/というパス単位の設定ではない。任意のgithub.io全体を指定するものではない。日報側のAuthentication設定は変更しない。
 2. **既存公開先にGPS認証試験ページと依存ファイルだけを公開。** URLは `/TAXIAPP/gps-sharing-test.html`。本体index.htmlや通常の日報UIへリンクを追加せず、PR #223全体を完成扱いして有効化しない。
@@ -43,3 +43,10 @@ gps-sharing-test.htmlと以下13依存ファイル。既存firebase-config.js / 
 課金プラン・請求先・有料Functions/Schedulerを有効化せず、GPS側SparkとGAS利用枠で試験。資格確認では日報側の本人資格を少量読み、日報利用枠の消費が完全に0になる保証ではない。
 
 切戻しは新規試験ページ/連携設定を無効化し、追加GPSドメイン1件を外す。既存ドメイン・本体UI・日報・印刷・実営業原本の切替は不要。GPS対応表ができても自動削除しない。GASは必要に応じデプロイ無効化可能。
+
+
+## 適用結果と再開点（2026-11-01 JST）
+
+上記2項目は承認済み・反映済み。mainコミットは `5721c14474d94be764c318e431e782b6aa5f1ff8`。公開ページ https://elpapityo.github.io/TAXIAPP/gps-sharing-test.html で連携ボタンとGPS停止を実確認。PR全体は未マージ。
+
+前回の実認証はGPSアカウント選択まで進んだが、次の観測が利用上限による自動承認レビュー失敗で未実行。連携成功/CORS/対応表保存は未確認。本日再開時は前回タブがなくGoogleもログアウト済みで、本人の再認証待ち。承認の再取得は不要。詳細はWORK_HANDOFF第15節。

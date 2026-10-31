@@ -12,7 +12,7 @@ https://script.google.com/home/projects/1K9U4UY-OcbjAuQg9D5iMRtl3_yTof-tXYR0qWRY
 
 公開URL： https://script.google.com/macros/s/AKfycbyk2Hlh70tzGrU8vBw2Aqp2nrqvjEtjE-RUr3TD9JUCqs_zb2o2slAdPJ4D2JT6R6kp/exec
 
-実GETのサービス応答、未認証POST/未対応操作/不正JSONの拒否を確認済み。**有効な実Google tokenでの本人照合・Firestore成功書込は未検証**。既存GPS試験画面の明示連携ボタンは実装したが、画面の公開/ドメイン許可は未実施。GPS位置/履歴送信enabled:falseを維持する。
+実GETのサービス応答、未認証POST/未対応操作/不正JSONの拒否を確認済み。**有効な実Google tokenでの本人照合・Firestore成功書込は未検証**。既存GPS試験画面の明示連携ボタンを実装し、本人承認後に画面公開/ドメイン許可を適用済み。GPS位置/履歴送信enabled:falseを維持する。
 
 ## 確認と書込の順序
 
@@ -43,7 +43,7 @@ https://script.google.com/home/projects/1K9U4UY-OcbjAuQg9D5iMRtl3_yTof-tXYR0qWRY
 - 日報UIDの端末履歴をGPS UIDのクラウドと結び付ける画面統合・操作端末の即時連動は未実装。2つのAuthと本人連携だけ、既存試験画面の明示ボタンへ実装した。日報default Authをログイン/ログアウトせず、別名TAXIAPP_GPS_DIARY_IDENTITYで同じ日報プロジェクトへ認証する。日報の別タブが認証変化で操作権を取得する副作用を避ける。GPS側も別名App。
 - 権限は照合時点のスナップショット。日報側の停止/管理者資格変更の即時失効・再確認/有効期限のサーバー強制は今後実装が必要。現在のGPS側ルールは全拒否のままにし、この対応表だけで既存ルールを開放しない。
 - 実OAuth付与・公開は完了。実Google tokenでのAPI/Firestore成功・ブラウザCORS・2人/複数端末・実認証は未検証。ローカルChromiumの実通信は既定プロキシ経由で証明書エラーとなり、TLS検証を解除していない。サーバー間の実拒否応答と、合成UI成功を混同しない。
-- クラウド公開/本体UI/実GPSは未完了。登録資料・参照範囲はWORK_HANDOFF第7節と第12節を継承。
+- 認証試験ページと依存13ファイルだけはmain `5721c144` で公開済み。GPS側の許可ドメインも本人承認後に追加済み。本体UI/実GPSは未完了。登録資料・参照範囲はWORK_HANDOFF第7節と第12節を継承。
 
 ## ローカル確認
 
@@ -55,6 +55,6 @@ Apps Script APIとFirestoreを合成したVM試験。署名検証と実Google通
 
 UI試験は `tests/gps-account-ui.browser.cjs`。合成時はボタン前SDK読込0・連携後もGPS停止・失敗表示・日報default Authを開始しないことを確認。`GPS_LIVE_BROKER=1` は不正な合成tokenだけで実公開窓口のCORSを調べる。現環境は証明書エラーで未成功。
 
-次の承認対象は [既存公開先での認証試験](../../docs/gps-identity-trial-review-20261031.md)。GAS権限付与と公開の再承認は不要。
+[既存公開先での認証試験](../../docs/gps-identity-trial-review-20261031.md)のドメイン追加/試験公開も承認・適用済み。GAS権限付与・公開・token送信の再承認は不要。2026-11-01 JSTの再開はGoogle再認証待ちで、実連携/CORS/対応表保存の成功は未確認。WORK_HANDOFF第15節を参照。
 
 参考（公式）：[Firebase Auth REST](https://firebase.google.com/docs/reference/rest/auth)、[ID token検証](https://firebase.google.com/docs/auth/admin/verify-id-tokens)、[Apps Script OAuth token](https://developers.google.com/apps-script/reference/script/script-app#getoauthtoken)、[ContentService](https://developers.google.com/apps-script/guides/content)、[Apps Script利用枠](https://developers.google.com/apps-script/guides/services/quotas)。
