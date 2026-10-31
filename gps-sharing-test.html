@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#152e48">
+<meta name="robots" content="noindex,nofollow">
+<title>TAXIAPP｜位置共有・独立試験</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Meiryo",sans-serif;color:#18324a;background:#eff4f8}
+*{box-sizing:border-box}body{margin:0}.top{background:#16334f;color:white;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.top strong{font-size:18px}.top a{color:#fff;font-size:13px}
+.main{max-width:1180px;margin:auto;padding:12px}.card{background:#fff;border:1px solid #d4e0e8;border-radius:12px;margin-bottom:10px;padding:13px}.card h2{font-size:16px;margin:0 0 10px}
+.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.toggle{display:flex;align-items:center;gap:9px;font-weight:700;min-height:40px}.toggle input{width:22px;height:22px}
+.muted{color:#5b7080;font-size:12px}.status{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 0}.chip{border-radius:8px;padding:6px 9px;background:#e8f2f8;font-size:12px;font-weight:700}
+#map{height:min(65vh,620px);min-height:330px;border-radius:10px;overflow:hidden}
+#historyMap{height:350px;min-height:280px;margin-top:9px;border-radius:10px;overflow:hidden}
+#historyShiftSelect{max-width:100%;padding:9px;border:1px solid #9eb8ca;border-radius:8px}
+.error{color:#a11524!important;background:#fff0f1;font-weight:700}.error[role="status"]{border-left:3px solid #a11524;padding-left:6px}
+button{background:#fff;border:1px solid #9eb8ca;border-radius:8px;padding:9px 12px;min-height:38px;cursor:pointer;color:#20445c;font-weight:700}
+#vehicleList:not([hidden]){display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
+legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 0;font-size:12px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;border:1px solid #999}
+.help{line-height:1.65;color:#536c80;font-size:12px}
+</style>
+</head>
+<body>
+<header class="top">
+ <div><strong>🚕 TAXIAPP｜位置共有</strong><div style="font-size:12px">既存TAXIAPPと共通ログイン・試験画面</div></div>
+ <div><a id="adminGpsHistoryLink" href="./gps-history-admin.html" hidden>管理者用GPS履歴</a>　<a href="./index.html">日報入力へ戻る</a></div>
+</header>
+<section class="main" id="gpsAccountPanel" aria-label="GPSの利用者連携" hidden>
+ <div class="card">
+  <h2>GPSの利用者連携</h2>
+  <p class="muted">日報で使うGoogleアカウントをGPSでも確認します。日報は変更せず、位置共有・走行履歴の送信は開始しません。</p>
+  <button type="button" id="gpsAccountLink">Googleで利用者を連携する</button>
+  <p id="gpsAccountStatus" class="muted" role="status">ボタンを押すとGoogleの本人確認を開始します。</p>
+ </div>
+</section>
+<main class="main">
+ <section class="card">
+  <h2>位置共有の設定</h2>
+  <div class="controls">
+   <label class="toggle"><input type="checkbox" id="privacyToggle" checked disabled>現在地を公開する</label>
+   <strong id="privacyState">確認中</strong>
+  </div>
+  <p class="muted">営業中に公開した現在地は登録利用者に共有されます。非公開にすると共有を停止します。</p>
+  <div class="status">
+   <span class="chip" id="authState">TAXIAPP認証確認中</span>
+   <span class="chip" id="dutyState">営業状態確認中</span>
+   <span class="chip" id="senderState">位置送信元の確認中</span>
+   <span class="chip" id="gpsState">GPS未取得</span>
+   <span class="chip" id="sendState">位置未送信</span>
+  </div>
+ </section>
+ <section class="card">
+  <div class="controls" style="justify-content:space-between">
+   <h2 style="margin:0">共有中の車両 <span id="vehicleCount"></span></h2>
+   <button type="button" id="recenter">◎ 現在地</button>
+  </div>
+  <div class="legend">
+   <span><i class="dot" style="background:#171717"></i>空車</span>
+   <span><i class="dot" style="background:#e7b900"></i>迎車</span>
+   <span><i class="dot" style="background:#1874d1"></i>実車</span>
+   <span><i class="dot" style="background:#d52b38"></i>支払い</span>
+   <span><i class="dot" style="background:#7a8490"></i>待機</span>
+  </div>
+  <div id="map" role="application" aria-label="営業中の公開車両地図"></div>
+  <p><button type="button" id="vehicleHeading" aria-expanded="false">車両一覧を表示・非表示</button></p>
+  <div id="vehicleList" hidden></div>
+  <p id="connection" role="status" class="muted">位置共有を確認中…</p>
+ </section>
+ <section class="card">
+  <h2>GPS走行履歴（端末内保存）</h2>
+  <label class="toggle"><input id="historyToggle" type="checkbox" disabled>乗務ごとに履歴を記録する（初期OFF）</label>
+  <p class="muted">保存先：ブラウザ内 IndexedDB（taxiapp-gps-history-v1）。GPS履歴専用の保存領域です。</p>
+  <p id="storageSummary" class="muted"></p>
+  <p id="auditState" class="muted" role="status"></p>
+  <p id="historyState" class="muted">GPS履歴を確認中</p>
+  <div class="controls">
+   <select id="historyShiftSelect" aria-label="記録された乗務を選択" disabled></select>
+   <button type="button" id="historyFit">経路全体を表示</button>
+   <button type="button" id="historyExport">GPS履歴をCSV保存</button>
+   <button type="button" id="historyResend">この乗務を再送</button>
+   <button type="button" id="historyResendAll">未送信をすべて再送</button>
+   <button type="button" id="historyFetchCloud">クラウド保存済み履歴を取得</button>
+   <button type="button" id="historyDeleteConfirmed">保存確認済みの端末コピーを一括削除</button>
+   <button type="button" id="historyDelete">端末内履歴を削除</button>
+   <button type="button" id="historyDeleteCloud">クラウド履歴を削除</button>
+  </div>
+  <p id="cloudStatus" class="muted" role="status">クラウド保存は未確認</p>
+  <p id="csvDownloadInfo" class="muted" role="status"></p>
+  <p class="help">CSVはブラウザのダウンロード一覧から開けます。Androidは「マイファイル」等、iPhoneは「ファイル」から保存先を確認・削除してください。保存先は端末設定により変わります。CSVは端末内履歴の整理対象外です。</p>
+  <p id="historyDetail" class="muted">記録した乗務を選択してください。</p>
+  <div id="historyMap" aria-label="過去のGPS走行経路地図"></div>
+  <p class="help">記録は約30秒間隔、取得したGPS地点を使用します。端末内で未送信の履歴も確認・CSV保存できます。クラウドへの保存・再送は試験実装中です（本番権限未適用のため保存不可）。端末の保存領域が削除されると履歴も失われる可能性があります。</p>
+ </section>
+ <p class="help">このページは位置共有の独立試験版で、日報・売上・料金計算・印刷データは変更しません。<br>
+  ブラウザ表示中だけGPS測位を開始します。バックグラウンド中の送信は保証できません。
+  Firestoreに位置共有専用の権限設定が未反映の場合、複数人のクラウド位置共有は動作しません。履歴は現在端末内のみ保存します。</p>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="./firebase-config.js"></script>
+<script src="./gps-firebase-config.js"></script>
+<script src="./gps-firebase-project.js"></script>
+<script src="./gps-account-config.js"></script>
+<script src="./gps-account-bridge.js"></script>
+<script src="./gps-account-ui.js"></script>
+<script src="./gps-cloud-policy.js"></script>
+<script src="./gps-sharing-core.js"></script>
+<script src="./gps-history-store.js"></script>
+<script src="./functions/gps-history-validation.js"></script>
+<script src="./gps-history-sync.js"></script>
+<script src="./device-session.js"></script>
+<script src="./gps-presence-sender.js"></script>
+<script src="./gps-sharing-preferences.js"></script>
+<script src="./gps-sharing-test.js"></script>
+</body>
+</html>
