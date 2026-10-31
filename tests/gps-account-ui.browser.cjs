@@ -12,7 +12,7 @@ const {chromium}=require('playwright');
  await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
  try{
   const binaryModule=require('@sparticuz/chromium'),binary=binaryModule.default||binaryModule;
-  const options={headless:true,executablePath:await binary.executablePath(),args:binary.args};
+  const options={headless:true,executablePath:process.env.GPS_CHROMIUM_EXECUTABLE||await binary.executablePath(),args:binary.args};
   // 実通信では実行環境に指定された既定プロキシを使う。TLS検証は解除しない。
   if(live&&(process.env.HTTPS_PROXY||process.env.HTTP_PROXY)){
    const proxy=new URL(process.env.HTTPS_PROXY||process.env.HTTP_PROXY);
@@ -34,11 +34,11 @@ const {chromium}=require('playwright');
    if(route.request().url().endsWith('firebase-app.js'))return route.fulfill({contentType:'text/javascript',body:`
     const apps=[{name:'[DEFAULT]',options:{projectId:'taxiapp-2b6bd'}}];window.__createdAuthApps=[];export const getApps=()=>apps;export const initializeApp=(options,name='[DEFAULT]')=>{window.__createdAuthApps.push(name);const app={name,options};apps.push(app);return app;};`});
    if(route.request().url().endsWith('firebase-auth.js'))return route.fulfill({contentType:'text/javascript',body:`
-    const auths=new Map();const user=uid=>({uid,emailVerified:true,email:'synthetic@example.invalid',providerData:[{providerId:'google.com',uid:'same-google-subject'}],getIdToken:async()=>uid+'-invalid-synthetic-token'});
-    export function getAuth(app){if(app.name==='[DEFAULT]')throw Error('日報本体のAuthを開始してはいけない');if(!auths.has(app.name))auths.set(app.name,{app,currentUser:user(app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user'),authStateReady:async()=>{}});return auths.get(app.name);}
+    const auths=new Map();window.__popupCalls=[];const user=uid=>({uid,emailVerified:true,email:'synthetic@example.invalid',providerData:[{providerId:'google.com',uid:'same-google-subject'}],getIdToken:async()=>uid+'-invalid-synthetic-token'});
+    export function getAuth(app){if(app.name==='[DEFAULT]')throw Error('日報本体のAuthを開始してはいけない');if(!auths.has(app.name))auths.set(app.name,{app,currentUser:window.__testSignedOut?null:user(app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user'),authStateReady:async()=>{}});return auths.get(app.name);}
     export function onAuthStateChanged(auth,fn){fn(auth.currentUser);return()=>{};}
     export class GoogleAuthProvider{setCustomParameters(){}}
-    export async function signInWithPopup(){throw Error('この試験はログイン操作を合成済み');}`});
+    export async function signInWithPopup(auth){if(!navigator.userActivation.isActive)throw Error('popupは明示クリック内だけ');window.__popupCalls.push(auth.app.name);auth.currentUser=user(auth.app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user');}`});
    return route.abort();
   });
   if(!live)await context.route('https://script.google.com/macros/s/**/exec',route=>{
@@ -67,7 +67,18 @@ const {chromium}=require('playwright');
    mode='reject';await page.locator('#gpsAccountLink').click();
    await page.waitForFunction(()=>document.getElementById('gpsAccountStatus').textContent.includes('unauthenticated'));
    assert.equal(requests.length,2);assert.match(await page.locator('#gpsAccountStatus').innerText(),/完了できません/);
-   console.log('実DOM＋合成認証：明示ボタン後だけ認証連携・別UIDの照合・失敗表示・GPS停止・日報保持を確認。');
+   // 初回ログアウト状態：SDK準備→日報→GPSは各々別クリック。
+   mode='success';await page.addInitScript(()=>{window.__testSignedOut=true;});await page.reload();
+   await page.locator('#gpsAccountLink').click();
+   await page.waitForFunction(()=>document.getElementById('gpsAccountLink').textContent==='日報のGoogleアカウントを確認する');
+   assert.deepEqual(await page.evaluate(()=>window.__popupCalls),[]);assert.equal(requests.length,2);
+   await page.locator('#gpsAccountLink').click();
+   await page.waitForFunction(()=>document.getElementById('gpsAccountLink').textContent.includes('GPSでも確認'));
+   assert.deepEqual(await page.evaluate(()=>window.__popupCalls),['TAXIAPP_GPS_DIARY_IDENTITY']);assert.equal(requests.length,2);
+   await page.locator('#gpsAccountLink').click();
+   await page.waitForFunction(()=>document.getElementById('gpsAccountStatus').textContent.includes('連携を確認しました'));
+   assert.deepEqual(await page.evaluate(()=>window.__popupCalls),['TAXIAPP_GPS_DIARY_IDENTITY','TAXIAPP_GPS']);assert.equal(requests.length,3);
+   console.log('実DOM＋合成認証：ログアウト時の段階別クリックとpopup操作権、別UID連携・失敗表示・GPS停止・日報保持を確認。');
   }
   assert.equal(await page.evaluate(()=>localStorage.getItem('taxiapp-diary-protection-sentinel')),'未同期の日報を保持');
   assert.equal(await page.locator('main button:enabled,main input:enabled').count(),0);

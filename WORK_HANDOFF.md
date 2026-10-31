@@ -231,3 +231,13 @@ Notionの全プロジェクト共通・開発共通・TAXIAPP現行指示・既�
 - 証跡：taxigps-identity-success-20261101.jpg（個人アカウントを含まない試験ページの成功/停止表示）。本番コードの追加変更や再配置は今回なし。文書だけ更新のため既存テストを再実行していない。
 - GPS位置/履歴送信停止、GPS全拒否ルール、無料Spark、日報本体/営業原本/計算/印刷の保護は継続。本人連携の成功はGPS全機能完成ではない。
 - 残作業：実2名/複数端末、日報UIDの端末履歴とGPS UIDの統合、資格/操作端末切替の即時連動、履歴/監査/CSV/削除/期限の無料バックエンド、実GPS受入、本体統合。PR #223はDraft継続。既承認の本人連携/試験公開は再承認不要。
+
+
+## 17. 2段階Google認証のpopupブロックを修正（2026-11-01 JST）
+
+- 実本人連携で再現した「日報認証後、GPSのpopupが自動起動されてブロック」を修正。gps-account-ui.jsは初回SDK準備後、未認証なら日報確認ボタンを表示して待機。日報確認後もGPS確認ボタンで待機し、各クリック直後にpopupを1個だけ開く。既に両Authが一致する場合は従来どおり連携を直接確認する。
+- 位置/履歴送信停止・日報default Authの分離・token/GAS検証・操作端末を取得しない条件は維持。初回前SDK読込0も維持。
+- tests/gps-account-ui.browser.cjsに実DOMのログアウト開始→準備→日報クリック→GPSクリック→成功を追加。各段階のpopup数、途中のGAS要求0、クリック内のuserActivation、成功/拒否、日報保持/GPS停止を確認して成功。Firebase/GASは合成であり、実Google popupブロック解消の実機確認とは区別する。Nodeの連携/分離/停止28件も成功。
+- 最初のブラウザ試験は既知の/tmp/fonts chown EINVALで失敗。試験へGPS_CHROMIUM_EXECUTABLE指定を追加し、既に取得済み/tmp/chromiumで成功。TLS/ブラウザの保護を解除していない。
+- main直前5721c144とfeature直前c154404をls-remoteで確認し、mainにはgps-account-ui.jsだけをコミットda57b8fdb16233e2ebb262937f85839d729e7ac2で反映。本体index.html/日報config/device-session/営業原本/計算/印刷/本番ルール/GAS/課金設定は変更なし。PR全体は未マージ・Draft継続。
+- 次は公開ページの連携成功を確認し、ログアウトからの段階別実Google認証は未検証として記録する。2名/複数端末・無料バックエンド・本体統合の残作業は第16節を継承。
