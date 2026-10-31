@@ -33,7 +33,15 @@ function fixture(){
    cloud.set(path,data);writes++;
   },
   serverTimestamp(){return {server:true};},
-  Timestamp:{fromMillis(value){return {millis:value};}}
+  query(...args){return args;},
+  collection(_db,...args){return args.join('/');},
+  orderBy(key,dir){return {key,dir};},
+  limit(n){return n;},
+  async getDocsFromServer(){
+   const docs=[...cloud.entries()].filter(([name])=>name.startsWith('gpsHistory/'+uid+'/shifts/'));
+   return {forEach(callback){for(const [,data] of docs)callback({data:()=>data});}};
+  },
+  Timestamp:{fromMillis(value){return {millis:value,toMillis(){return value;}};}}
  };
  const auth={currentUser:{uid}},client=syncApi.create({
   auth,db:{},f,store,subtle:webcrypto.subtle
@@ -85,4 +93,15 @@ test('削除済み乗務を他端末が再送しない',async()=>{
 test('他UIDへの切替後は送信不可',async()=>{
  const f=fixture();f.auth.currentUser.uid='other';
  await assert.rejects(f.client.one(f.uid,f.shiftId),/別のログイン利用者/);
+});
+
+test('7日後の端末コピー整理後もクラウド履歴の取得を想定',async()=>{
+ const f=fixture();
+ assert.equal((await f.client.one(f.uid,f.shiftId)).status,'saved');
+ const rows=await f.client.listRemote(f.uid);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].points.length,1);
+ const entry=await f.client.readRemote(f.uid,f.shiftId);
+ assert.equal(entry.shiftId,f.shiftId);
+ assert.equal(entry.serverStatus,'保存済み');
 });
