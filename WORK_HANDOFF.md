@@ -194,3 +194,16 @@ Notionの全プロジェクト共通・開発共通・TAXIAPP現行指示・既�
 - 新規連携19件＋分離/停止の既存9件＝Node28件成功。Google/Firestore/Apps Script APIは合成。既存の実Emulator/Chromium回帰は第12節の結果を継承し、今回は変更していない部分を再実行していない。
 - 次に必要な個別承認：新規スクリプトへの external_request/datastore のOAuth付与、GPS管理アカウントとして実行するWebアプリの「全員アクセス」配置、専用GASへの本人の短期token送信/UID対応表の実作成。URL自体は公開になるが、本人確認なしに利用者情報を返さない。課金設定は変更しない。
 - **未完了**：GAS実行権限/公開/実token/API/CORS、GPS画面へのAuth統合、日報UIDの端末データとの対応、日報資格変更/操作端末切替の即時失効、既決の監査/履歴/期限等の7機能を守る無料バックエンド。GASは現状linkのみで、旧7 Callableを移植済みとは報告しない。GPSクラウド停止と全拒否ルールを維持し、本体UIへ未統合。
+
+## 14. 認証窓口を承認後に公開・既存試験画面へ連携操作を実装（2026-10-31）
+
+本人は専用GASの権限付与/窓口公開/本人token送信/GPS対応表作成を承認。第13節のこの承認待ちは解消済みで、再承認は求めない。
+
+- GPS管理アカウントの要求OAuthがdatastore/external_requestだけであることを確認して許可。本人所有アプリのGoogle未確認警告も確認。バージョン1を公開（画面16:44）。Code.gsは変更なし。自動追加されたwebapp executeAs=USER_DEPLOYING/access=ANYONE_ANONYMOUSを実エディタで確認し、local manifestへ同期。
+- `gps-account-config.js` に公開済み窓口URLを固定。URL/版/実行権限/切戻しはgoogle-apps-script/gps-account-broker/README.md。GASはlinkのみで、未認証にサービス名以外の利用者データを返さない。
+- 実GETでservice=TAXIAPP_GPS_IDENTITY_V1、無認証の実HTTP POST3件でmissing token→unauthenticated、未対応操作/不正JSON→invalid-argumentを確認。署名検証/API成功/Firestore成功書込/対応表作成の成功ではない。
+- `gps-account-ui.js` と既存gps-sharing-test.htmlへ、明示ボタン後だけFirebase Authを開始する本人連携パネルを追加。GPS送受信・履歴送信停止は解除しない。日報default Authを変更せず、TAXIAPP_GPS_DIARY_IDENTITY Appで日報本人を別認証し、別タブの日報が認証変化で操作権を取得する副作用を避ける。GPSもTAXIAPP_GPS App、UIDは区別。まずclient.link(null)で資格だけ照合し、操作端末は取得/変更しない。
+- Node28件成功。新UIの390px合成ブラウザ試験で、ボタン前SDK0、2 UID連携、拒否表示、日報default Auth未開始、GPS停止と既存データ保持を確認。既存GPS/管理者UIのChromium回帰も成功。新しい実公開GASのブラウザCORS試験は未成功：直接通信ERR_EMPTY_RESPONSE→環境既定プロキシを設定→localhost除外を修正→ERR_CERT_AUTHORITY_INVALID。TLS検証は解除せず停止。別途、上記のサーバー間HTTP拒否3件は成功。最初のChromium展開も/tmp/fontsのchown EINVALで失敗し、既存binaryを使う次回に成功。アプリ不具合とは混同しない。
+- 実公開先 https://elpapityo.github.io/TAXIAPP/ を開きv0.3.227のログイン画面を確認。main最新54a3013をls-remoteで照合。GPS側承認済みドメインはlocalhost/専用firebaseapp.com/専用web.appの3件で、elpapityo.github.ioがないことを実画面確認。
+- **次の個別承認**：GPS側だけにelpapityo.github.ioを追加（保存前の入力まで準備）、同じ既存公開先へgps-sharing-test.htmlと13依存ファイルだけを試験公開。本体index.html/日報config/device-session.jsは上書きしない。対象/権限/送る情報/切戻しはdocs/gps-identity-trial-review-20261031.md。GASの公開承認を再質問しない。
+- **未完了**：上記ドメイン保存/試験画面公開/有効実Google tokenとFirestore保存/CORS/実2名、日報UIDローカルデータ・操作端末の本統合、資格失効の即時連動、履歴/監査/削除/期限の無料バックエンド、本体UI/実GPS。GPSの送受信・全拒否ルール・無料プランを維持。日報側本番・営業原本・計算・印刷は未変更。

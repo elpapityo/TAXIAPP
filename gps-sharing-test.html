@@ -29,6 +29,14 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
  <div><strong>🚕 TAXIAPP｜位置共有</strong><div style="font-size:12px">既存TAXIAPPと共通ログイン・試験画面</div></div>
  <div><a id="adminGpsHistoryLink" href="./gps-history-admin.html" hidden>管理者用GPS履歴</a>　<a href="./index.html">日報入力へ戻る</a></div>
 </header>
+<section class="main" id="gpsAccountPanel" aria-label="GPSの利用者連携" hidden>
+ <div class="card">
+  <h2>GPSの利用者連携</h2>
+  <p class="muted">日報で使うGoogleアカウントをGPSでも確認します。日報は変更せず、位置共有・走行履歴の送信は開始しません。</p>
+  <button type="button" id="gpsAccountLink">Googleで利用者を連携する</button>
+  <p id="gpsAccountStatus" class="muted" role="status">ボタンを押すとGoogleの本人確認を開始します。</p>
+ </div>
+</section>
 <main class="main">
  <section class="card">
   <h2>位置共有の設定</h2>
@@ -95,6 +103,9 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
 <script src="./firebase-config.js"></script>
 <script src="./gps-firebase-config.js"></script>
 <script src="./gps-firebase-project.js"></script>
+<script src="./gps-account-config.js"></script>
+<script src="./gps-account-bridge.js"></script>
+<script src="./gps-account-ui.js"></script>
 <script src="./gps-cloud-policy.js"></script>
 <script src="./gps-sharing-core.js"></script>
 <script src="./gps-history-store.js"></script>

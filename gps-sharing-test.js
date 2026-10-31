@@ -12,7 +12,7 @@ if(window.TAXIAPP_GPS_CLOUD_POLICY?.enabled!==true){
  document.querySelectorAll('main button,main input,main select').forEach(el=>{el.disabled=true;});
  set('connection',window.TAXIAPP_GPS_CLOUD_POLICY?.message||'日報優先：GPSクラウド通信は停止しています');
  for(const id of ['privacyState','senderState','gpsState','sendState','historyState','cloudStatus'])set(id,'日報優先のため停止中');
- set('authState','GPS認証・通信は開始していません');
+ set('authState',window.TAXIAPP_GPS_ACCOUNT_CONFIG?.enabled===true?'位置送信用の認証・通信は停止中':'GPS認証・通信は開始していません');
  $('adminGpsHistoryLink').hidden=true;
  return;
 }
