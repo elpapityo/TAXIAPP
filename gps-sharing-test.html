@@ -68,11 +68,14 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
    <select id="historyShiftSelect" aria-label="記録された乗務を選択" disabled></select>
    <button type="button" id="historyFit">経路全体を表示</button>
    <button type="button" id="historyExport">GPS履歴をCSV保存</button>
+   <button type="button" id="historyResend">この乗務を再送</button>
+   <button type="button" id="historyResendAll">未送信をすべて再送</button>
    <button type="button" id="historyDelete">端末内履歴を削除</button>
   </div>
+  <p id="cloudStatus" class="muted" role="status">クラウド保存は未確認</p>
   <p id="historyDetail" class="muted">記録した乗務を選択してください。</p>
   <div id="historyMap" aria-label="過去のGPS走行経路地図"></div>
-  <p class="help">記録は約30秒間隔、取得したGPS地点を使用します。端末内で未送信の履歴も確認・CSV保存できます。クラウドへの同期は未実装です。端末の保存領域が削除されると履歴も失われる可能性があります。</p>
+  <p class="help">記録は約30秒間隔、取得したGPS地点を使用します。端末内で未送信の履歴も確認・CSV保存できます。クラウドへの保存・再送は試験実装中です（本番権限未適用のため保存不可）。端末の保存領域が削除されると履歴も失われる可能性があります。</p>
  </section>
  <p class="help">このページは位置共有の独立試験版で、日報・売上・料金計算・印刷データは変更しません。<br>
   ブラウザ表示中だけGPS測位を開始します。バックグラウンド中の送信は保証できません。
@@ -82,6 +85,7 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
 <script src="./firebase-config.js"></script>
 <script src="./gps-sharing-core.js"></script>
 <script src="./gps-history-store.js"></script>
+<script src="./gps-history-sync.js"></script>
 <script src="./gps-sharing-test.js"></script>
 </body>
 </html>
