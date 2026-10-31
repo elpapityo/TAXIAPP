@@ -20,7 +20,7 @@ function enqueuePresence(write){
  return done;
 }
 let historyOn=false,historyQueue=Promise.resolve(),historyMap=null,historyLayer=null,historyRows=[];
-let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0;
+let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0,remoteHistoryRows=[];
 const STORE='taxiapp-store-v1', STORE_OBJECT='state';
 const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
@@ -145,7 +145,10 @@ function markHistoryGap(owner=uid,id=shiftId){
 }
 async function refreshHistory(){
  if(!history||!uid)return;
- historyRows=await history.list(uid);
+ const localRows=await history.list(uid);
+ const localIds=new Set(localRows.map(row=>row.shiftId));
+ historyRows=[...localRows,...remoteHistoryRows.filter(row=>!localIds.has(row.shiftId))]
+  .sort((a,b)=>(b.startedAtMs||0)-(a.startedAtMs||0));
  const select=$('historyShiftSelect'),prior=select.value;
  select.replaceChildren();
  for(const row of historyRows){
@@ -212,7 +215,7 @@ async function displayHistory(id){
  if(!row){set('historyDetail','履歴を選択してください');return;}
  historyMapInit();
  const pts=(row.points||[]).filter(p=>!p.suspectedJump);
- set('historyDetail','端末保存 '+row.points.length+'地点／表示 '+pts.length+
+ set('historyDetail',(row.source==='cloud'?'クラウド保存':'端末保存')+' '+row.points.length+'地点／表示 '+pts.length+
   '地点／'+(row.serverStatus||'未送信'));
  if(!historyMap)return;
  historyLayer.clearLayers();
@@ -245,7 +248,8 @@ async function displayHistory(id){
 }
 async function historyExport(){
  const select=$('historyShiftSelect');if(!select.value)return;
- const row=await history.fetchOne(uid,select.value);
+ const row=await history.fetchOne(uid,select.value) ||
+  remoteHistoryRows.find(item=>item.shiftId===select.value);
  if(!row||!row.points.length)return;
  const csv=core.historyCsv(row.points);
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
@@ -259,6 +263,8 @@ async function historyExport(){
 }
 async function historyDelete(){
  const id=$('historyShiftSelect').value;if(!id)return;
+ const local=await history.fetchOne(uid,id);
+ if(!local){set('historyState','この履歴はクラウド保存のみ。端末内の削除対象はありません');return;}
  if(!confirm('この乗務の端末内GPS履歴を削除します。未送信の履歴は復元できません。削除しますか？'))return;
  await history.remove(uid,id);await refreshHistory();
  if(historyLayer)historyLayer.clearLayers();
@@ -396,6 +402,18 @@ function bindEvents(){
  $('historyShiftSelect').addEventListener('change',event=>displayHistory(event.target.value));
  $('historyResend').addEventListener('click',()=>attemptCloudSync($('historyShiftSelect').value));
  $('historyResendAll').addEventListener('click',()=>attemptCloudSync());
+ $('historyFetchCloud').addEventListener('click',async()=>{
+  if(!cloudSession)return;
+  const ownUid=uid;
+  set('cloudStatus','保存済みのGPS履歴を取得中…');
+  try{
+   const remote=await cloudSession.listRemote(ownUid);
+   if(uid!==ownUid)return;
+   remoteHistoryRows=remote;
+   await refreshHistory();
+   set('cloudStatus','クラウド履歴を'+remote.length+'乗務取得');
+  }catch(error){set('cloudStatus','サーバー履歴を取得できません：'+String(error.message||error));}
+ });
  $('historyExport').addEventListener('click',()=>historyExport().catch(error=>set('historyState','CSV出力失敗：'+error.message)));
  $('historyDelete').addEventListener('click',()=>historyDelete().catch(error=>set('historyState','履歴削除失敗：'+error.message)));
  $('historyFit').addEventListener('click',()=>displayHistory($('historyShiftSelect').value));
@@ -423,7 +441,7 @@ async function boot(){
  fx=f;app=getApps().length?getApp():initializeApp(config);auth=a.getAuth(app);db=f.getFirestore(app);
  a.onAuthStateChanged(auth,async nextUser=>{
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
-  cloudSession?.dispose();cloudSession=null;
+  cloudSession?.dispose();cloudSession=null;remoteHistoryRows=[];
   user=nextUser;uid=nextUser?.uid||'';shift=null;shiftId='';vehicles.clear();
   if(!user){$('privacyToggle').disabled=true;$('historyToggle').disabled=true;
    notify('TAXIAPP本体でGoogleログインしてください');set('authState','未ログイン');return;}
