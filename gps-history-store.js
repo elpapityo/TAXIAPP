@@ -84,7 +84,56 @@ async function remove(uid,shiftId){
  await transaction('delete','readwrite',s=>s.delete(keyFor(uid,shiftId)));
  return true;
 }
-const api=Object.freeze({DB_NAME,keyFor,list,fetchOne,nextPoint,record,markGap,finish,remove});
+
+async function setSyncState(uid,shiftId,serverStatus,details={}){
+ const allowed=['未送信','送信中','保存済み','エラー','削除済み'];
+ if(!allowed.includes(serverStatus))throw Error('GPS履歴の送信状態が不正');
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  let updated=null;
+  const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE);
+  const req=st.get(keyFor(uid,shiftId));
+  req.onsuccess=()=>{
+   const row=req.result;
+   if(!row){return;}
+   // Never allow an old async upload callback to resurrect a deleted record.
+   const safe={...row,serverStatus};
+   if(serverStatus==='保存済み'){
+     safe.savedAtMs=Number(details.savedAtMs)||Date.now();
+     safe.serverHash=String(details.serverHash||'');
+     safe.lastSyncError='';
+   }else if(serverStatus==='エラー'){
+     safe.lastSyncError=String(details.error||'送信できませんでした').slice(0,180);
+   }
+   updated=safe;st.put(safe);
+  };
+  tx.oncomplete=()=>{db.close();resolve(updated);};
+  tx.onerror=()=>{db.close();reject(tx.error||Error('履歴の送信状態を保存できません'));};
+  tx.onabort=()=>{db.close();reject(tx.error||Error('履歴の送信状態保存が中断'));};
+ });
+}
+async function cleanupConfirmed(uid,now=Date.now()){
+ const days=7*24*60*60*1000,db=await openDb();
+ return new Promise((resolve,reject)=>{
+  let count=0;
+  const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE);
+  const req=st.openCursor();
+  req.onsuccess=()=>{
+   const cursor=req.result;if(!cursor)return;
+   const row=cursor.value;
+   if(row.uid===uid&&row.serverStatus==='保存済み'&&
+      Number.isFinite(row.savedAtMs)&&now-row.savedAtMs>=days){
+     cursor.delete();count++;
+   }
+   cursor.continue();
+  };
+  tx.oncomplete=()=>{db.close();resolve(count);};
+  tx.onerror=()=>{db.close();reject(tx.error||Error('GPS端末保存の整理に失敗'));};
+  tx.onabort=()=>{db.close();reject(tx.error||Error('GPS端末保存の整理が中断'));};
+ });
+}
+
+const api=Object.freeze({DB_NAME,keyFor,list,fetchOne,nextPoint,record,markGap,finish,remove,setSyncState,cleanupConfirmed});
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.TAXIAPP_GPS_HISTORY_STORE=api;
 })(typeof window!=='undefined'?window:globalThis);
