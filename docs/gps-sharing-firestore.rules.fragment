@@ -74,36 +74,12 @@ match /gpsPresence/{uid} {
 // 他人の履歴は管理者であっても、監査ログ同時記録を強制する
 // サーバー処理を実装するまで直接アクセスを許可しない。
 match /gpsHistory/{uid}/shifts/{shiftId} {
-  allow get, list: if ownerEnabled(uid);
-  allow create: if ownerEnabled(uid) &&
-    !exists(/databases/$(database)/documents/gpsHistoryTombstones/$(uid)/shifts/$(shiftId)) &&
-    request.resource.data.keys().hasOnly([
-      'format','uid','shiftId','startedAtMs','endedAtMs',
-      'points','contentHash','expiresAt','uploadedAt'
-    ]) &&
-    request.resource.data.keys().hasAll([
-      'format','uid','shiftId','startedAtMs','endedAtMs',
-      'points','contentHash','expiresAt','uploadedAt'
-    ]) &&
-    request.resource.data.format == 'TAXIAPP_GPS_HISTORY_V1' &&
-    request.resource.data.uid == uid &&
-    request.resource.data.shiftId == shiftId &&
-    shiftId.matches('^shift-[0-9]+(-[a-zA-Z0-9]+)? is currently client-side only, not server verified.
-// Rules are an unapproved draft and must not be deployed without authorization.
-) &&
-    request.resource.data.startedAtMs is int &&
-    request.resource.data.endedAtMs is int &&
-    request.resource.data.endedAtMs >= request.resource.data.startedAtMs &&
-    request.resource.data.points is list &&
-    request.resource.data.points.size() > 0 &&
-    request.resource.data.points.size() <= 2500 &&
-    request.resource.data.contentHash is string &&
-    request.resource.data.contentHash.matches('^[0-9a-f]{64} is currently client-side only, not server verified.
-// Rules are an unapproved draft and must not be deployed without authorization.
-) &&
-    request.resource.data.expiresAt is timestamp &&
-    request.resource.data.expiresAt > request.time &&
-    request.resource.data.uploadedAt == request.time;
+  allow get: if ownerEnabled(uid) &&
+    (!exists(/databases/$(database)/documents/gpsHistory/$(uid)/shifts/$(shiftId)) ||
+     resource.data.expiresAt > request.time);
+  allow list: if ownerEnabled(uid) && resource.data.expiresAt > request.time;
+  // saveOwnGpsHistoryがハッシュ・期限・削除済みを検証。直接作成を許可しない。
+  allow create: if false;
   allow update, delete: if false;
 }
 // Server-side deletion tombstone to prevent an offline device re-uploading

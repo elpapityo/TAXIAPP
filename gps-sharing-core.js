@@ -16,7 +16,8 @@ function businessStatus(shift) {
   if (d && d.kind === 'ride') {
     return d.status === 'alighted' || Boolean(d.raw && d.raw.M) ? '支払い' : '実車';
   }
-  if (shift.waiting || shift.breakActive) return '待機';
+  if (shift.breakActive || (d && ['empty','cancel'].includes(d.kind))) return '空車';
+  if (shift.waiting) return '待機';
   return '空車';
 }
 
@@ -59,7 +60,7 @@ function presenceView(doc, nowMs) {
   const updatedAtMs = ts && typeof ts.toMillis === 'function' ? ts.toMillis() : Number(ts);
   if (!Number.isFinite(updatedAtMs) || updatedAtMs <= 0) return {show:false};
   const age = nowMs - updatedAtMs;
-  if (age < -30000 || age > 300000) return {show:false};
+  if (age < -30000 || age >= 300000) return {show:false};
   if (!Number.isFinite(doc.lat) || !Number.isFinite(doc.lon) ||
       Math.abs(doc.lat) > 90 || Math.abs(doc.lon) > 180) return {show:false};
   return {show:true, stale:age > 90000, ageMs:age};

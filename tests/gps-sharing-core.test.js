@@ -51,3 +51,8 @@ test('CSVはBOM付きUTF-8で速度km/h、北方位0度を保持',()=>{
   assert.match(csv,/"0"/);
   assert.match(csv,/"2026-10-31 09:00:00"/);
 });
+test('休憩・キャンセル・空車高速は空車、5分経過時点で非表示',()=>{
+ for(const s of [{breakActive:{}},{draft:{kind:'cancel'},waiting:{}},{draft:{kind:'empty'},waiting:{}}])
+  assert.equal(core.businessStatus(s),'空車');
+ assert.equal(core.presenceView({public:true,onDuty:true,lat:34,lon:135,updatedAt:100000},400000).show,false);
+});

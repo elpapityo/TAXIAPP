@@ -51,3 +51,11 @@
 - Firebase Emulatorでの認証・データ権限・Cloud Functions結合試験と、Galaxy/iPhone実GPS・2アカウント・オフライン・画面OFFの受入検証。
 - 本番Firestoreルール／Cloud Functions／スケジューラの反映には、本人の明示承認が別途必要。
 - 実機受入後にTAXIAPP本体の位置共有メニューへ統合。
+
+## Workによる現況訂正（2026-10-31）
+
+上記の旧「Node/Emulator/ブラウザ未検証」は、今回の作業についてはWORK_HANDOFF.md第7節を優先する。Node 22のGPS27ケース、Firestore Emulatorの7ケース、Chromium実DOM/IndexedDB/CSV（Firebase/GPSは合成）を実行し成功。全体回帰には変更前から存在するdriver-duty-planの失敗1ファイルが残る。
+
+新規GPS履歴保存は `saveOwnGpsHistory` Callable経由とし、サーバーで内容ハッシュ・期限・削除済みを検証する。直接Firestore createは未適用ルール案でも禁止した。本人CSVの監査は端末に未同期保存して `recordOwnGpsCsvAudit` へ冪等再送する。端末DBはv2へ昇格しshiftsを保ったままauditストアを追加する。未同期監査はGPS端末コピーの個別/一括/7日整理の対象外。
+
+詳細な変更・検証・既存不具合・残課題・参照できなかった範囲はWORK_HANDOFF.md第7節、再実行はtests/gps-tools/README.md。本番適用、実機成功、本体統合は未実施。次のローカル作業は多端末の送信/設定競合と管理者画面の結合確認。

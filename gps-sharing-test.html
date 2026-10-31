@@ -16,8 +16,9 @@
 #map{height:min(65vh,620px);min-height:330px;border-radius:10px;overflow:hidden}
 #historyMap{height:350px;min-height:280px;margin-top:9px;border-radius:10px;overflow:hidden}
 #historyShiftSelect{max-width:100%;padding:9px;border:1px solid #9eb8ca;border-radius:8px}
+.error{color:#a11524!important;background:#fff0f1;font-weight:700}.error[role="status"]{border-left:3px solid #a11524;padding-left:6px}
 button{background:#fff;border:1px solid #9eb8ca;border-radius:8px;padding:9px 12px;min-height:38px;cursor:pointer;color:#20445c;font-weight:700}
-#vehicleList{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
+#vehicleList:not([hidden]){display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
 legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 0;font-size:12px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;border:1px solid #999}
 .help{line-height:1.65;color:#536c80;font-size:12px}
@@ -63,6 +64,9 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
  <section class="card">
   <h2>GPS走行履歴（端末内保存）</h2>
   <label class="toggle"><input id="historyToggle" type="checkbox" disabled>乗務ごとに履歴を記録する（初期OFF）</label>
+  <p class="muted">保存先：ブラウザ内 IndexedDB（taxiapp-gps-history-v1）。GPS履歴専用の保存領域です。</p>
+  <p id="storageSummary" class="muted"></p>
+  <p id="auditState" class="muted" role="status"></p>
   <p id="historyState" class="muted">GPS履歴を確認中</p>
   <div class="controls">
    <select id="historyShiftSelect" aria-label="記録された乗務を選択" disabled></select>
@@ -71,10 +75,13 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
    <button type="button" id="historyResend">この乗務を再送</button>
    <button type="button" id="historyResendAll">未送信をすべて再送</button>
    <button type="button" id="historyFetchCloud">クラウド保存済み履歴を取得</button>
+   <button type="button" id="historyDeleteConfirmed">保存確認済みの端末コピーを一括削除</button>
    <button type="button" id="historyDelete">端末内履歴を削除</button>
    <button type="button" id="historyDeleteCloud">クラウド履歴を削除</button>
   </div>
   <p id="cloudStatus" class="muted" role="status">クラウド保存は未確認</p>
+  <p id="csvDownloadInfo" class="muted" role="status"></p>
+  <p class="help">CSVはブラウザのダウンロード一覧から開けます。Androidは「マイファイル」等、iPhoneは「ファイル」から保存先を確認・削除してください。保存先は端末設定により変わります。CSVは端末内履歴の整理対象外です。</p>
   <p id="historyDetail" class="muted">記録した乗務を選択してください。</p>
   <div id="historyMap" aria-label="過去のGPS走行経路地図"></div>
   <p class="help">記録は約30秒間隔、取得したGPS地点を使用します。端末内で未送信の履歴も確認・CSV保存できます。クラウドへの保存・再送は試験実装中です（本番権限未適用のため保存不可）。端末の保存領域が削除されると履歴も失われる可能性があります。</p>
@@ -87,7 +94,9 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
 <script src="./firebase-config.js"></script>
 <script src="./gps-sharing-core.js"></script>
 <script src="./gps-history-store.js"></script>
+<script src="./functions/gps-history-validation.js"></script>
 <script src="./gps-history-sync.js"></script>
+<script src="./gps-sharing-preferences.js"></script>
 <script src="./gps-sharing-test.js"></script>
 </body>
 </html>

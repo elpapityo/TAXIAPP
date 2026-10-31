@@ -1,7 +1,7 @@
 /* TAXIAPP location-history IndexedDB (separate from duty originals). */
 (function(root){
 'use strict';
-const DB_NAME='taxiapp-gps-history-v1', DB_VERSION=1, STORE='shifts';
+const DB_NAME='taxiapp-gps-history-v1', DB_VERSION=2, STORE='shifts', AUDIT='audit';
 function keyFor(uid,shiftId){return String(uid)+':'+String(shiftId);}
 function openDb(){
  return new Promise((resolve,reject)=>{
@@ -10,8 +10,9 @@ function openDb(){
   req.onupgradeneeded=()=>{
    const db=req.result;
    if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'key'});
+   if(!db.objectStoreNames.contains(AUDIT))db.createObjectStore(AUDIT,{keyPath:'key'});
   };
-  req.onsuccess=()=>resolve(req.result);
+  req.onsuccess=()=>{req.result.onversionchange=()=>req.result.close();resolve(req.result);};
   req.onerror=()=>reject(req.error||Error('GPS履歴保存領域を開けません'));
   req.onblocked=()=>reject(Error('GPS履歴の保存領域が他の画面で使用中です'));
  });
@@ -58,25 +59,36 @@ function nextPoint(row,fix,suspectedJump=false){
  return {changed:true,row:{...row,points:[...points,point],breakBeforeNext:false,
   lastCapturedAtMs:fix.capturedAtMs,updatedAtMs:Date.now(),serverStatus:'未送信'}};
 }
+// Read and write share one transaction, including across tabs.
+async function mutate(uid,shiftId,change){
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  let result=null;
+  const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE);
+  const req=st.get(keyFor(uid,shiftId));
+  req.onsuccess=()=>{
+   try{result=change(req.result);if(result)st.put(result);}catch(error){tx.abort();reject(error);}
+  };
+  tx.oncomplete=()=>{db.close();resolve(result);};
+  tx.onerror=tx.onabort=()=>{db.close();reject(tx.error||Error('GPS履歴の保存が中断'));};
+ });
+}
 async function record(uid,shiftId,startedAtMs,fix,suspectedJump=false){
  if(!uid||!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(shiftId))throw Error('GPS履歴の乗務情報が不正');
- const existing=await fetchOne(uid,shiftId);
- const row=existing||{key:keyFor(uid,shiftId),uid,shiftId,startedAtMs,
-  points:[],breakBeforeNext:false,createdAtMs:Date.now(),serverStatus:'未送信'};
- const result=nextPoint(row,fix,suspectedJump);
- if(!result.changed)return false;
- await transaction('put','readwrite',store=>store.put(result.row));
- return true;
+ const updated=await mutate(uid,shiftId,existing=>{
+  if(existing&&(Number.isFinite(existing.endedAtMs)||existing.serverStatus==='削除済み'))return null;
+  const row=existing||{key:keyFor(uid,shiftId),uid,shiftId,startedAtMs,
+   points:[],breakBeforeNext:false,createdAtMs:Date.now(),serverStatus:'未送信'};
+  const result=nextPoint(row,fix,suspectedJump);
+  return result.changed?result.row:null;
+ });
+ return Boolean(updated);
 }
 async function markGap(uid,shiftId){
- if(!uid||!shiftId)return;
- const row=await fetchOne(uid,shiftId);
- if(row){await transaction('put','readwrite',store=>store.put({...row,breakBeforeNext:true}));}
+ if(uid&&shiftId)await mutate(uid,shiftId,row=>row?{...row,breakBeforeNext:true}:null);
 }
 async function finish(uid,shiftId,endedAtMs){
- if(!uid||!shiftId)return;
- const row=await fetchOne(uid,shiftId);
- if(row){await transaction('put','readwrite',s=>s.put({...row,endedAtMs,updatedAtMs:Date.now()}));}
+ if(uid&&shiftId)await mutate(uid,shiftId,row=>row?{...row,endedAtMs,updatedAtMs:Date.now()}:null);
 }
 async function remove(uid,shiftId){
  const row=await fetchOne(uid,shiftId);
@@ -133,7 +145,37 @@ async function cleanupConfirmed(uid,now=Date.now()){
  });
 }
 
-const api=Object.freeze({DB_NAME,keyFor,list,fetchOne,nextPoint,record,markGap,finish,remove,setSyncState,cleanupConfirmed});
+async function auditTransaction(mode,operation){
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(AUDIT,mode);const req=operation(tx.objectStore(AUDIT));let result;
+  req.onsuccess=()=>{result=req.result;};
+  tx.oncomplete=()=>{db.close();resolve(result);};
+  tx.onerror=tx.onabort=()=>{db.close();reject(tx.error||Error('CSV監査ログを端末に保存できません'));};
+ });
+}
+async function queueCsvAudit(uid,shiftId){
+ const operationId=root.crypto.randomUUID(),atMs=Date.now();
+ const row={key:keyFor(uid,operationId),uid,operationId,shiftId,atMs,action:'csv_export'};
+ await auditTransaction('readwrite',s=>s.add(row));return row;
+}
+async function pendingAudits(uid){
+ return (await auditTransaction('readonly',s=>s.getAll())).filter(x=>x.uid===uid);
+}
+async function confirmAudit(uid,operationId){
+ await auditTransaction('readwrite',s=>s.delete(keyFor(uid,operationId)));
+}
+async function removeConfirmed(uid){
+ // GPS履歴だけを削除。未送信履歴と監査ログは対象外。
+ const db=await openDb();return new Promise((resolve,reject)=>{
+  let count=0;const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE),req=st.openCursor();
+  req.onsuccess=()=>{const c=req.result;if(!c)return;
+   if(c.value.uid===uid&&c.value.serverStatus==='保存済み'&&Number.isFinite(c.value.savedAtMs)){c.delete();count++;}c.continue();};
+  tx.oncomplete=()=>{db.close();resolve(count);};
+  tx.onerror=tx.onabort=()=>{db.close();reject(tx.error||Error('保存済み端末コピーを削除できません'));};
+ });
+}
+const api=Object.freeze({DB_NAME,keyFor,list,fetchOne,nextPoint,record,markGap,finish,remove,setSyncState,cleanupConfirmed,queueCsvAudit,pendingAudits,confirmAudit,removeConfirmed});
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.TAXIAPP_GPS_HISTORY_STORE=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -177,7 +177,9 @@ async function init(){
  auth=a.getAuth(app);const db=f.getFirestore(app);
  functions=fn.getFunctions(app,'asia-northeast1');httpsCallable=fn.httpsCallable;
  a.onAuthStateChanged(auth,async user=>{
-  $('adminPanel').hidden=true;currentUser=user;currentTarget='';serverResult=null;
+  $('adminPanel').hidden=true;currentUser=user;currentTarget='';currentShift='';serverResult=null;
+  layer?.clearLayers();$('auditList').replaceChildren();$('target').replaceChildren();$('shift').replaceChildren();
+  $('view').disabled=true;$('export').disabled=true;$('delete').disabled=true;
   if(!user){txt('status','TAXIAPP本体でログインしてください');return;}
   try{
    const admin=await f.getDocFromServer(f.doc(db,'admins',user.uid));

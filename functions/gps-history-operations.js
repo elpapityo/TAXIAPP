@@ -101,7 +101,7 @@ exports.adminListGpsHistoryAudit=onCall(opts,async request=>{
  const actor=identity(request);
  await adminOnly(actor);
  const snap=await db.collection('gpsHistoryAudit').orderBy('at','desc').limit(100).get();
- return {entries:snap.docs.map(doc=>{
+ return {entries:snap.docs.filter(doc=>archiveDeadline(doc.data().expiresAt)>Date.now()).map(doc=>{
   const row=doc.data();
   return {actorUid:String(row.actorUid||''),targetUid:String(row.targetUid||''),
    shiftId:String(row.shiftId||''),action:String(row.action||''),
@@ -127,6 +127,48 @@ exports.deleteGpsHistory=onCall(opts,async request=>{
   return {status:'deleted'};
  });
  return {targetUid,shiftId,...result};
+});
+// 履歴作成は信頼されたサーバーで内容・期限・削除済みを検証して行う。
+exports.saveOwnGpsHistory=onCall(opts,async request=>{
+ const actor=identity(request);await activeOrAdmin(actor);
+ const {prepare,retentionDeadlineMs}=require('./gps-history-validation');
+ let payload;try{payload=prepare({...request.data?.payload,uid:actor});}
+ catch(e){error('invalid-argument',e.message);}
+ const expires=retentionDeadlineMs(payload.endedAtMs);
+ if(payload.endedAtMs>Date.now()||expires<=Date.now())error('failed-precondition','GPS履歴の入庫日時・保存期限が不正です');
+ const hash=require('node:crypto').createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+ if(hash!==request.data?.contentHash)error('invalid-argument','GPS履歴の内容ハッシュが一致しません');
+ const ref=historyRef(actor,payload.shiftId),tomb=tombRef(actor,payload.shiftId);
+ await db.runTransaction(async tx=>{
+  const [old,deleted]=await Promise.all([tx.get(ref),tx.get(tomb)]);
+  if(deleted.exists)error('failed-precondition','削除済みのGPS履歴です');
+  if(old.exists){if(old.get('contentHash')!==hash)error('already-exists','異なるGPS履歴を上書きできません');return;}
+  tx.create(ref,{...payload,uid:actor,contentHash:hash,expiresAt:Timestamp.fromMillis(expires),uploadedAt:FieldValue.serverTimestamp()});
+ });
+ return {shiftId:payload.shiftId,contentHash:hash,status:'saved'};
+});
+// 本人CSV監査はオフライン操作IDで冪等化。座標・本文を受け取らない。
+exports.recordOwnGpsCsvAudit=onCall(opts,async request=>{
+ const actor=identity(request);await activeOrAdmin(actor);
+ const {operationId,shiftId,atMs}=request.data||{};
+ if(typeof operationId!=='string'||!/^[a-f0-9-]{36}$/.test(operationId)||
+    typeof shiftId!=='string'||!SHIFT.test(shiftId)||!Number.isSafeInteger(atMs)||
+    atMs<=0||atMs>Date.now()+60000)
+  error('invalid-argument','CSV監査操作の形式が不正です');
+ const ref=db.doc('gpsHistoryAudit/'+actor+'_'+operationId);
+ await db.runTransaction(async tx=>{
+  const existing=await tx.get(ref);
+  if(existing.exists){
+   const row=existing.data();
+   if(row.actorUid!==actor||row.targetUid!==actor||row.shiftId!==shiftId||row.atMs!==atMs)
+    error('already-exists','同じ監査IDに異なる記録があります');
+   return;
+  }
+  tx.create(ref,{actorUid:actor,targetUid:actor,shiftId,action:'csv_export',atMs,
+   at:Timestamp.fromMillis(atMs),receivedAt:FieldValue.serverTimestamp(),
+   expiresAt:Timestamp.fromMillis(atMs+RETENTION_MS)});
+ });
+ return {operationId,status:'saved'};
 });
 // Schedule is not enabled or deployed merely by committing code.
 exports.cleanupGpsHistoryAndAudit=onSchedule({

@@ -35,6 +35,7 @@ function fixture(){
   serverTimestamp(){return {server:true};},
   query(...args){return args;},
   collection(_db,...args){return args.join('/');},
+  where(...args){return args;},
   orderBy(key,dir){return {key,dir};},
   limit(n){return n;},
   async getDocsFromServer(){
@@ -104,4 +105,12 @@ test('7日後の端末コピー整理後もクラウド履歴の取得を想定'
  const entry=await f.client.readRemote(f.uid,f.shiftId);
  assert.equal(entry.shiftId,f.shiftId);
  assert.equal(entry.serverStatus,'保存済み');
+});
+test('同じハッシュ・点数でも読戻しの実データが違えば保存済みにしない',async()=>{
+ const f=fixture();await f.client.one(f.uid,f.shiftId);
+ const path='gpsHistory/'+f.uid+'/shifts/'+f.shiftId;
+ const doc=f.cloud.get(path);doc.points[0].lat=1;
+ f.local.set(f.shiftId,{...f.row,points:[{...f.row.points[0],lat:34.7}],serverStatus:'未送信'});
+ assert.equal((await f.client.one(f.uid,f.shiftId)).status,'error');
+ assert.equal(f.local.get(f.shiftId).serverStatus,'エラー');
 });

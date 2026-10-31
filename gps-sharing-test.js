@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const core=window.TAXIAPP_GPS_SHARING_CORE;
 const history=window.TAXIAPP_GPS_HISTORY_STORE;
 const cloudHistory=window.TAXIAPP_GPS_HISTORY_SYNC;
-const set=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
+const set=(id,value)=>{const el=$(id);if(el){el.textContent=String(value);el.classList.toggle('error',/失敗|不可|同期待ち|切替待ち/.test(String(value)));}};
 if(!core){set('connection','位置共有の基盤が読み込めません');return;}
 const paint={空車:'#171717',迎車:'#e7b900',実車:'#1874d1',支払い:'#d52b38',待機:'#7a8490'};
 let app=null,auth=null,db=null,fx=null,user=null,uid='',displayName='',isAdmin=false;
@@ -13,6 +13,7 @@ let privacyPublic=true,privacyConfirmed=false,watchId=null,latestFix=null,lastAc
 let localModel=null,shift=null,shiftId='',currentStatus='',lastPublishedMs=0,lastPublishedFix=null;
 let map=null,vehicleLayer=null,selfLayer=null,vehicles=new Map(),unsubscribe=null,intervalId=null;
 let userBusy=false,serverBusy=false,pendingHide=false,lastDutyChecked=false;
+let preferences=null,privacySyncing=false;
 let presenceWriteTail=Promise.resolve();
 function enqueuePresence(write){
  const done=presenceWriteTail.then(write,write);
@@ -21,7 +22,7 @@ function enqueuePresence(write){
 }
 let historyOn=false,historyQueue=Promise.resolve(),historyMap=null,historyLayer=null,historyRows=[];
 let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0,remoteHistoryRows=[];
-let firebaseFunctions=null,callFirebase=null;
+let firebaseFunctions=null,callFirebase=null,auditRunning=false;
 const STORE='taxiapp-store-v1', STORE_OBJECT='state';
 const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
@@ -34,14 +35,14 @@ const notify=message=>set('connection',message);
 function readLegacy(){
  return new Promise(resolve=>{ 
   if(!uid)return resolve(null);
-  let finished=false;const finish=x=>{if(finished)return;finished=true;resolve(x);};
-  const fallback=()=>{let selected=null;for(const key of dutyKeys()){
-  try{const value=JSON.parse(localStorage.getItem(key)||'null');
-   if(value?.version===1&&Array.isArray(value.shifts)){
-    if(!selected)selected=value;if(core.activeDuty(value)){finish(value);return;}
-   }
-  }catch{}
- }finish(selected);};
+  const owner=uid;
+  let finished=false;const timer=setTimeout(()=>finish(null),3000);
+  const finish=x=>{if(finished)return;finished=true;clearTimeout(timer);resolve(uid===owner?x:null);};
+  const fallback=()=>{for(const key of dutyKeys()){
+   try{const value=JSON.parse(localStorage.getItem(key)||'null');
+    if(value?.version===1&&Array.isArray(value.shifts)){finish(value);return;}
+   }catch{}
+  }finish(null);};
   if(!window.indexedDB)return fallback();
   try{
    const req=indexedDB.open(STORE);
@@ -52,13 +53,19 @@ function readLegacy(){
     const database=req.result;
     if(!database.objectStoreNames.contains(STORE_OBJECT)){database.close();return fallback();}
     const tx=database.transaction(STORE_OBJECT,'readonly');
-    const keys=dutyKeys();let found=null,any=null,pending=keys.length;
+    tx.onerror=tx.onabort=()=>{database.close();finish(null);};
+    const keys=dutyKeys(),results=new Map();let pending=keys.length;
+    const done=()=>{if(--pending!==0)return;
+     database.close();
+     // UID別の正式状態が入庫済みなら、旧管理者キーの営業中状態を採用しない。
+     for(const key of keys){const row=results.get(key);
+      if(row?.version===1&&Array.isArray(row.shifts)){finish(row);return;}}
+     fallback();
+    };
     for(const key of keys){
      const request=tx.objectStore(STORE_OBJECT).get(key);
-     request.onsuccess=()=>{if(!any&&request.result?.version===1&&Array.isArray(request.result.shifts))any=request.result;
-       if(!found&&core.activeDuty(request.result))found=request.result;
-       if(--pending===0){database.close();finish(found||any);}};
-     request.onerror=()=>{if(--pending===0){database.close();finish(found||any);}};
+     request.onsuccess=()=>{results.set(key,request.result);done();};
+     request.onerror=done;
     }
    };
   }catch{fallback();}
@@ -70,10 +77,11 @@ function initializeMap(){
  L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{
   minZoom:5,maxZoom:18,attribution:'© 国土地理院'
  }).addTo(map);
+ map.on('moveend',()=>{if(uid)try{localStorage.setItem('taxiapp-location-map-v1-'+uid,JSON.stringify({lat:map.getCenter().lat,lon:map.getCenter().lng,zoom:map.getZoom()}));}catch{}});
  vehicleLayer=L.layerGroup().addTo(map);
  selfLayer=L.layerGroup().addTo(map);
 }
-function makeMarker(p,label,status,own=false,accuracy=null){
+function makeMarker(p,label,status,own=false,accuracy=null,updatedAtMs=null){
  if(!map)return;
  const layer=own?selfLayer:vehicleLayer;
  const marker=L.circleMarker([p.lat,p.lon],{radius:own?10:9,color:'#fff',weight:2,
@@ -83,6 +91,8 @@ function makeMarker(p,label,status,own=false,accuracy=null){
  name.append(title,document.createElement('br'),document.createTextNode(status));
  if(Number.isFinite(accuracy))name.append(document.createElement('br'),
   document.createTextNode('測位精度 ±'+Math.round(accuracy)+'m'));
+ if(Number.isFinite(updatedAtMs))name.append(document.createElement('br'),document.createTextNode('最終更新 '+new Date(updatedAtMs).toLocaleTimeString('ja-JP')));
+ if(accuracy>100)name.append(document.createElement('br'),document.createTextNode('位置精度低下中'));
  marker.bindPopup(name);
  if(Number.isFinite(accuracy)&&accuracy>100){
   marker.on('click',()=>{
@@ -100,7 +110,7 @@ function draw(){
   const state=core.presenceView(data,now);
   if(!state.show)continue;
   visiblePeers.push({id,...data,view:state});
-  makeMarker(data,data.name||'登録利用者',data.status||'空車',false,data.accuracy);
+  makeMarker(data,data.name||'登録利用者',data.status||'空車',false,data.accuracy,now-state.ageMs);
  }
  visiblePeers.sort((a,b)=>{
   if(latestFix){
@@ -110,7 +120,7 @@ function draw(){
  });
  const list=$('vehicleList');list.replaceChildren();
  const local=document.createElement('button');
- local.type='button';local.textContent='自分'+(shift?'（'+currentStatus+'）':'（営業外）');
+ local.type='button';local.textContent='自分'+(shift?'（'+currentStatus+'）':'（入庫済み）')+(!shift||!privacyPublic?'｜共有停止中':'');
  local.addEventListener('click',()=>{if(latestFix)map.setView([latestFix.lat,latestFix.lon],15);});
  list.append(local);
  for(const peer of visiblePeers){
@@ -120,18 +130,24 @@ function draw(){
    Math.round(core.distanceMeters(latestFix,peer))+'m':
    (core.distanceMeters(latestFix,peer)/1000).toFixed(1)+'km';
   button.textContent=(peer.name||'登録利用者')+'｜'+peer.status+'｜'+distance+
+   '｜最終更新 '+new Date(now-peer.view.ageMs).toLocaleTimeString('ja-JP')+
    (peer.view.stale?'｜通信停止中':'');
-  button.addEventListener('click',()=>map.setView([peer.lat,peer.lon],15));
+  button.addEventListener('click',()=>{map.setView([peer.lat,peer.lon],15);
+   const popup=document.createElement('div');popup.textContent=button.textContent;
+   L.popup().setLatLng([peer.lat,peer.lon]).setContent(popup).openOn(map);});
   list.append(button);
  }
- if(latestFix){
+ if(uid&&latestFix){
   makeMarker(latestFix,'自分',currentStatus||'空車',true,latestFix.accuracy);
+ }
+ if(map&&!map._taxiInitialCentered&&!map._taxiFallbackFitted&&visiblePeers.length){
+  map.fitBounds(L.latLngBounds(visiblePeers.map(p=>[p.lat,p.lon])).pad(.12),{maxZoom:15});map._taxiFallbackFitted=true;
  }
  set('vehicleCount','共有車両 '+visiblePeers.length+'台');
 }
 
 function startHistoryWrite(fix,suspectedJump){
- if(!historyOn||!shift||!history)return;
+ if(!historyOn||!shift||!history||!visible())return;
  const owner=uid,id=shiftId;
  const start=Date.parse(shift.startedIso||'');
  if(!Number.isFinite(start)){
@@ -152,21 +168,25 @@ async function refreshHistory(){
  if(!history||!uid)return;
  const localRows=await history.list(uid);
  const localIds=new Set(localRows.map(row=>row.shiftId));
- historyRows=[...localRows,...remoteHistoryRows.filter(row=>!localIds.has(row.shiftId))]
+ const bytes=new TextEncoder().encode(JSON.stringify(localRows)).length;
+ set('storageSummary','端末内 '+localRows.length+'乗務／概算 '+(bytes/1024).toFixed(1)+' KB');
+ set('auditState','CSV監査の未同期 '+(await history.pendingAudits(uid)).length+'件');
+ historyRows=[...localRows,...remoteHistoryRows.filter(row=>!localIds.has(row.shiftId))].filter(row=>row.points?.length&&
+  (!Number.isFinite(row.endedAtMs)||cloudHistory.retentionDeadlineMs(row.endedAtMs)>=Date.now()))
   .sort((a,b)=>(b.startedAtMs||0)-(a.startedAtMs||0));
  const select=$('historyShiftSelect'),prior=select.value;
  select.replaceChildren();
  for(const row of historyRows){
   const option=document.createElement('option');option.value=row.shiftId;
   option.textContent=new Date(row.startedAtMs).toLocaleString('ja-JP')+'｜'+row.points.length+
-   '点｜'+(row.serverStatus||'未送信');
+   '点｜'+(Number.isFinite(row.endedAtMs)?new Date(row.endedAtMs).toLocaleString('ja-JP'):'営業中')+'｜'+(row.serverStatus||'未送信');
   select.append(option);
  }
  select.disabled=historyRows.length===0;
  if(prior&&historyRows.some(row=>row.shiftId===prior))select.value=prior;
  const counts=historyRows.reduce((m,row)=>{const s=row.serverStatus||'未送信';m[s]=(m[s]||0)+1;return m;},{});
  set('historyState',(historyOn?'走行履歴：記録ON':'走行履歴：記録OFF')+
- '｜端末内 '+historyRows.length+'乗務｜保存済み '+(counts['保存済み']||0)+
+ '｜履歴 '+historyRows.length+'乗務｜保存済み '+(counts['保存済み']||0)+
  '／未送信 '+(counts['未送信']||0)+'／エラー '+(counts['エラー']||0));
  if(select.value)await displayHistory(select.value);
 }
@@ -251,11 +271,36 @@ async function displayHistory(id){
   else historyMap.fitBounds(bounds.pad(.12),{maxZoom:16});
  }
 }
+async function syncCsvAudits(){
+ if(auditRunning||!uid||!firebaseFunctions||navigator.onLine===false)return;
+ const owner=uid;auditRunning=true;
+ try{
+  for(const row of await history.pendingAudits(owner)){
+   if(uid!==owner)return;
+   const response=await callFirebase(firebaseFunctions,'recordOwnGpsCsvAudit')({
+    operationId:row.operationId,shiftId:row.shiftId,atMs:row.atMs});
+   if(response.data?.operationId!==row.operationId||response.data?.status!=='saved')throw Error('CSV監査の保存応答が一致しません');
+   await history.confirmAudit(owner,row.operationId);
+  }
+  if(uid===owner)set('auditState','CSV監査の未同期 '+(await history.pendingAudits(owner)).length+'件');
+ }catch(error){if(uid===owner)set('auditState','CSV監査の同期待ち：'+error.message);}
+ finally{auditRunning=false;}
+}
+async function deleteConfirmedCopies(){
+ if(!uid||!history)return;
+ const owner=uid,rows=(await history.list(owner)).filter(r=>r.serverStatus==='保存済み'&&Number.isFinite(r.savedAtMs));
+ if(!rows.length)return;
+ if(!confirm('サーバー保存確認済みの端末GPSコピー '+rows.length+'乗務を削除します。未送信GPS・監査ログ・クラウド履歴は対象外です。削除しますか？'))return;
+ await historyQueue;
+ await history.removeConfirmed(owner);if(uid===owner)await refreshHistory();
+}
 async function historyExport(){
  const select=$('historyShiftSelect');if(!select.value)return;
  const row=await history.fetchOne(uid,select.value) ||
   remoteHistoryRows.find(item=>item.shiftId===select.value);
  if(!row||!row.points.length)return;
+ if(Number.isFinite(row.endedAtMs)&&cloudHistory.retentionDeadlineMs(row.endedAtMs)<Date.now())throw Error('GPS履歴の保存期限を過ぎています');
+ await history.queueCsvAudit(uid,row.shiftId);
  const csv=core.historyCsv(row.points);
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob);
@@ -264,6 +309,8 @@ async function historyExport(){
  const filename=jstName+'_'+row.shiftId+'_gps.csv';
  const a=document.createElement('a');a.href=url;a.download=filename;
  document.body.append(a);a.click();a.remove();
+ set('csvDownloadInfo','CSVファイル名：'+filename+'（保存先はブラウザのダウンロード一覧で確認）');
+ set('auditState','CSV監査は端末に記録済み・サーバー同期待ち');syncCsvAudits();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function deleteCloudHistory(){
@@ -303,6 +350,7 @@ function ensureGps(){
  if(watchId!==null)return;
  if(!navigator.geolocation){notify('このブラウザでは位置情報を利用できません');return;}
  watchId=navigator.geolocation.watchPosition(position=>{
+  if(!shouldTrack())return;
   const fix=core.fixFromPosition(position);
   if(!fix){set('gpsState','GPS測位不正');return;}
   const decision=core.fixDecision(lastAccepted,fix);
@@ -333,11 +381,12 @@ async function publish(fix){
  serverBusy=true;
  try{
   // This is a NEW GPS-only collection; never write privateDuties or taxiapp-store-v1.
-  const targetUid=uid;
-  await enqueuePresence(async()=>{
-   if(uid!==targetUid||!privacyPublic||!privacyConfirmed||!shift||!visible())return;
-   await fx.setDoc(fx.doc(db,'gpsPresence',targetUid),presenceDoc(fix));
+  const targetUid=uid,targetShift=shiftId,payload=presenceDoc(fix);
+  const sent=await enqueuePresence(async()=>{
+   if(uid!==targetUid||shiftId!==targetShift||!privacyPublic||!privacyConfirmed||!shift||!visible())return false;
+   await fx.setDoc(fx.doc(db,'gpsPresence',targetUid),payload);return true;
   });
+  if(!sent||uid!==targetUid||shiftId!==targetShift)return;
   lastPublishedMs=Date.now();lastPublishedFix=fix;
   set('sendState','送信済み '+new Date(lastPublishedMs).toLocaleTimeString('ja-JP'));
  }finally{serverBusy=false;}
@@ -345,6 +394,7 @@ async function publish(fix){
 async function hidePresence(reason){
  if(!uid||!db||!fx)return;
  pendingHide=true;
+ if(navigator.onLine===false){set('sendState','共有停止の反映待ち：最終位置が最大5分残る場合があります');return;}
  try{
   const targetUid=uid;
   await enqueuePresence(async()=>{
@@ -355,22 +405,29 @@ async function hidePresence(reason){
     capturedAtMs:null,updatedAt:fx.serverTimestamp()
    });
   });
-  pendingHide=false;privacyConfirmed=true;
+  pendingHide=false;
   set('sendState','共有停止：'+reason);
  }catch(error){notify('共有停止のサーバー反映待ち：'+String(error.code||error.message));}
 }
+function applyPrivacyState(){
+ if(!preferences)return;
+ const state=preferences.state();privacyPublic=state.public;privacyConfirmed=state.confirmed;
+ $('privacyToggle').checked=privacyPublic;set('privacyState',statusText());
+}
+async function syncPrivacy(){
+ if(!preferences||privacySyncing)return;
+ const current=preferences;privacySyncing=true;
+ try{await current.sync();if(preferences!==current)return;applyPrivacyState();
+  if(privacyPublic&&shift&&latestFix&&Date.now()-latestFix.capturedAtMs<30000)await publish(latestFix);
+ }catch(error){notify('公開設定の同期待ち：'+String(error.message||error));}
+ finally{privacySyncing=false;if(preferences===current){applyPrivacyState();ensureGps();}}
+}
 async function savePrivacy(requested){
- if(!uid||userBusy)return;
- userBusy=true;privacyPublic=requested;privacyConfirmed=false;
- try{localStorage.setItem(prefKey(),requested?'1':'0');}catch{}
- set('privacyState',statusText());
- if(!requested){stopGps();await hidePresence('本人の非公開操作');}
- try{
-  await fx.setDoc(fx.doc(db,'gpsSharePrefs',uid),{public:requested,updatedAt:fx.serverTimestamp()});
-  privacyConfirmed=!pendingHide;
-  if(requested&&shift&&latestFix)await publish(latestFix);
- }catch(error){notify('公開設定の同期待ち：'+String(error.code||error.message));}
- set('privacyState',statusText());userBusy=false;ensureGps();
+ if(!preferences)return;
+ try{preferences.choose(requested);}catch(error){notify('公開設定の端末保存失敗：'+error.message);}
+ applyPrivacyState();
+ if(!requested){stopGps();pendingHide=true;hidePresence('本人の非公開操作');}
+ ensureGps();await syncPrivacy();
 }
 async function reconcileDuty(){
  if(!user||!uid)return;
@@ -400,7 +457,7 @@ async function reconcileDuty(){
   await hidePresence('入庫または乗務切替');}
  lastDutyChecked=true;
  ensureGps();
- if(shift&&privacyPublic&&latestFix&&!lastPublishedMs)await publish(latestFix);
+ if(shift&&privacyPublic&&latestFix&&!lastPublishedMs&&Date.now()-latestFix.capturedAtMs<30000)await publish(latestFix);
  draw();
 }
 function subscribe(){
@@ -436,6 +493,7 @@ function bindEvents(){
   }catch(error){set('cloudStatus','サーバー履歴を取得できません：'+String(error.message||error));}
  });
  $('historyExport').addEventListener('click',()=>historyExport().catch(error=>set('historyState','CSV出力失敗：'+error.message)));
+ $('historyDeleteConfirmed').addEventListener('click',()=>deleteConfirmedCopies().catch(error=>set('historyState','端末コピーの削除失敗：'+error.message)));
  $('historyDelete').addEventListener('click',()=>historyDelete().catch(error=>set('historyState','履歴削除失敗：'+error.message)));
  $('historyDeleteCloud').addEventListener('click',()=>deleteCloudHistory());
  $('historyFit').addEventListener('click',()=>displayHistory($('historyShiftSelect').value));
@@ -445,10 +503,10 @@ function bindEvents(){
   const open=panel.hidden;panel.hidden=!open;
   $('vehicleHeading').setAttribute('aria-expanded',String(open));
  });
- window.addEventListener('online',()=>attemptCloudSync());
+ window.addEventListener('online',()=>{syncPrivacy();syncCsvAudits();attemptCloudSync();});
  document.addEventListener('visibilitychange',()=>{
-  if(!visible())stopGps();
-  else reconcileDuty().catch(error=>notify('営業状態確認エラー：'+error.message));
+  if(!visible()){stopGps();markHistoryGap();}
+  else {syncCsvAudits();history?.cleanupConfirmed(uid).then(()=>refreshHistory()).catch(error=>set('historyState','端末整理失敗：'+error.message));reconcileDuty().catch(error=>notify('営業状態確認エラー：'+error.message));}
  });
 }
 async function boot(){
@@ -466,6 +524,11 @@ async function boot(){
  a.onAuthStateChanged(auth,async nextUser=>{
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
   cloudSession?.dispose();cloudSession=null;remoteHistoryRows=[];
+  preferences?.dispose();preferences=null;privacyConfirmed=false;pendingHide=false;
+  latestFix=null;lastAccepted=null;lastPublishedMs=0;lastPublishedFix=null;
+  if(intervalId){clearInterval(intervalId);intervalId=null;}
+  if(vehicleLayer)vehicleLayer.clearLayers();if(selfLayer)selfLayer.clearLayers();
+  if(historyLayer)historyLayer.clearLayers();$('historyShiftSelect').replaceChildren();
   $('adminGpsHistoryLink').hidden=true;
   user=nextUser;uid=nextUser?.uid||'';shift=null;shiftId='';vehicles.clear();
   if(!user){$('privacyToggle').disabled=true;$('historyToggle').disabled=true;
@@ -481,35 +544,51 @@ async function boot(){
    displayName=own.exists()?String(own.data().openChatName||user.displayName||'登録利用者'):
     String(user.displayName||'登録利用者');
    set('authState',displayName+'（既存TAXIAPPログイン）');
-   let local=null;try{local=localStorage.getItem(prefKey());}catch{}
-   privacyPublic=local!=='0';privacyConfirmed=false;
-   try{
-    const setting=await f.getDocFromServer(f.doc(db,'gpsSharePrefs',uid));
-    if(setting.exists()&&typeof setting.data().public==='boolean'){
-     privacyPublic=setting.data().public;privacyConfirmed=true;
-     try{localStorage.setItem(prefKey(),privacyPublic?'1':'0');}catch{}
-    } else if(!setting.exists()){
-     // Initial default is public, but do not publish before server acknowledgement.
-     privacyPublic=true;
-     await f.setDoc(f.doc(db,'gpsSharePrefs',uid),{public:true,updatedAt:f.serverTimestamp()});
-     privacyConfirmed=true;
-    }
-   }catch{notify('位置共有の設定は端末値で仮表示中（サーバー未確認）');}
+   if(map){map._taxiInitialCentered=false;map._taxiFallbackFitted=false;
+    try{const saved=JSON.parse(localStorage.getItem('taxiapp-location-map-v1-'+uid)||'null');
+     if(saved&&Number.isFinite(saved.lat)&&Math.abs(saved.lat)<=90&&Number.isFinite(saved.lon)&&Math.abs(saved.lon)<=180&&Number.isFinite(saved.zoom)){
+      map.setView([saved.lat,saved.lon],saved.zoom);map._taxiFallbackFitted=true;
+     }}catch{}
+   }
+   const owner=uid;
+   preferences=window.TAXIAPP_GPS_SHARING_PREFERENCES.create({uid:owner,storage:localStorage,
+    online:()=>navigator.onLine!==false,
+    read:async()=>{
+     const saved=await f.getDocFromServer(f.doc(db,'gpsSharePrefs',owner));
+     return saved.exists()?saved.data().public:null;
+    },
+    write:async value=>{
+     if(uid!==owner)throw Error('利用者が切り替わりました');
+     await enqueuePresence(async()=>{
+      if(uid!==owner)throw Error('利用者が切り替わりました');
+      const batch=f.writeBatch(db);
+      batch.set(f.doc(db,'gpsSharePrefs',owner),{public:value,updatedAt:f.serverTimestamp()});
+      if(!value)batch.set(f.doc(db,'gpsPresence',owner),{
+       public:false,onDuty:false,status:'',name:displayName||'登録利用者',
+       lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',
+       capturedAtMs:null,updatedAt:f.serverTimestamp()
+      });
+      await batch.commit();
+     });
+    }});
+   applyPrivacyState();await syncPrivacy();
    $('privacyToggle').checked=privacyPublic;
    $('privacyToggle').disabled=false;set('privacyState',statusText());
    try{historyOn=localStorage.getItem(historyPrefKey())==='1';}catch{historyOn=false;}
    $('historyToggle').checked=historyOn;$('historyToggle').disabled=!history;
    await history.cleanupConfirmed(uid).catch(error=>set('cloudStatus','保存済みGPS履歴の端末整理に失敗：'+error.message));
-   cloudSession=cloudHistory&&history?cloudHistory.create({auth,db,f,store:history}):null;
+   cloudSession=cloudHistory&&history?cloudHistory.create({auth,db,f,store:history,
+    upload:data=>callFirebase(firebaseFunctions,'saveOwnGpsHistory')(data)}):null;
    await refreshHistory();
    subscribe();
    await reconcileDuty();
-   attemptCloudSync();
+   attemptCloudSync();syncCsvAudits();
    if(!privacyPublic)await hidePresence('既存の非公開設定');
    if(!intervalId)intervalId=setInterval(()=>{
     reconcileDuty().catch(error=>notify('営業状態の照合に失敗：'+String(error.message)));
     draw();
-    if(pendingHide)hidePresence('未反映操作の再送');
+    if(pendingHide&&navigator.onLine!==false)hidePresence('未反映操作の再送');
+    if(preferences&&!preferences.state().confirmed)syncPrivacy();
    },5000);
   }catch(error){notify('TAXIAPP登録の確認に失敗：'+String(error.code||error.message));}
  });

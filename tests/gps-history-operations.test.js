@@ -47,6 +47,8 @@ function fixture(){
   }
  };
  function fakeRequire(name){
+  if(name==='./gps-history-validation')return require('../functions/gps-history-validation');
+  if(name==='node:crypto')return require('node:crypto');
   if(name==='firebase-functions/v2/https')return {onCall:(_options,fn)=>fn,
    HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}}};
   if(name==='firebase-functions/v2/scheduler')return {onSchedule:(_options,fn)=>fn};
@@ -95,4 +97,12 @@ test('管理者以外の履歴閲覧を拒否',async()=>{
  const f=fixture();
  await assert.rejects(f.fn.adminViewGpsHistory({auth:{uid:'outsider-123'},
   data:{targetUid:f.target,shiftId:f.shiftId}}),/管理者権限/);
+});
+test('本人CSV監査は再送時に重複せず、内容違いと未登録を拒否',async()=>{
+ const f=fixture(),q={auth:{uid:f.target},data:{operationId:'12345678-1234-1234-1234-123456789abc',shiftId:f.shiftId,atMs:Date.now()}};
+ assert.equal((await f.fn.recordOwnGpsCsvAudit(q)).status,'saved');
+ assert.equal((await f.fn.recordOwnGpsCsvAudit(q)).status,'saved');
+ assert.equal(f.writes.filter(w=>w.value?.action==='csv_export').length,1);
+ await assert.rejects(f.fn.recordOwnGpsCsvAudit({...q,data:{...q.data,shiftId:'shift-200'}}),/異なる記録/);
+ await assert.rejects(f.fn.recordOwnGpsCsvAudit({...q,auth:{uid:'outsider-123'}}),/利用資格/);
 });
