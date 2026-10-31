@@ -66,3 +66,8 @@ UI試験は `tests/gps-account-ui.browser.cjs`。合成時はボタン前SDK読�
 [既存公開先での認証試験](../../docs/gps-identity-trial-review-20261031.md)のドメイン追加/試験公開も承認・適用済み。GAS権限付与・公開・token送信の再承認は不要。2026-11-01 JSTのGoogle再認証後、公開ページの実連携成功表示とGPS停止を確認。GASは対応表保存/読戻し一致後だけ成功。WORK_HANDOFF第16節を参照。
 
 参考（公式）：[Firebase Auth REST](https://firebase.google.com/docs/reference/rest/auth)、[ID token検証](https://firebase.google.com/docs/auth/admin/verify-id-tokens)、[Apps Script OAuth token](https://developers.google.com/apps-script/reference/script/script-app#getoauthtoken)、[ContentService](https://developers.google.com/apps-script/guides/content)、[Apps Script利用枠](https://developers.google.com/apps-script/guides/services/quotas)。
+
+
+## 次の未公開候補：合成履歴API
+
+公開中の本人連携版2を保ったまま、[history/README.md](history/README.md)に無料履歴バックエンドと生成候補を用意した。実REST Emulator8件・Node41件・実DOM合成試験に成功。公開候補は固定1地点の合成データにサーバー側で限定し、実履歴の保存/取得と期限整理実行を拒否する。新しいGAS版と試験HTML/3JSの限定公開、合成試験1件の作成/照合/削除は [合成公開レビュー](../../docs/gps-history-gas-trial-review-20261101.md)の次の承認対象。版2更新は承認/反映済みで再承認不要。実GPS停止・全拒否ルール・Sparkを維持。

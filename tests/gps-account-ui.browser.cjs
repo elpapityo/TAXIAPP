@@ -23,11 +23,13 @@ const {chromium}=require('playwright');
   browser=await chromium.launch(options);
   const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[],requests=[],failures=[];
   page.on('requestfailed',r=>failures.push({host:new URL(r.url()).hostname,error:r.failure()?.errorText}));
-  let firebaseImports=0,mode='success';page.on('pageerror',e=>errors.push(e.message));
+  let firebaseImports=0,mode='success',trialEnabled=false;const trialRows=new Map(),trialTombs=new Set();page.on('pageerror',e=>errors.push(e.message));
   await context.addInitScript(()=>{
+   navigator.geolocation.getCurrentPosition=()=>{throw Error('合成試験で実GPSを取得してはいけない');};
    navigator.geolocation.watchPosition=()=>{throw Error('本人連携中に測位を開始してはいけない');};
    localStorage.setItem('taxiapp-diary-protection-sentinel','未同期の日報を保持');
   });
+  await context.route('**/gps-account-config.js*',route=>route.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(root,'gps-account-config.js'),'utf8').replace(/historyTrialEnabled:(true|false)/,'historyTrialEnabled:'+trialEnabled)}));
   await context.route('https://unpkg.com/**',route=>route.abort());
   await context.route('https://www.gstatic.com/firebasejs/**',route=>{
    firebaseImports++;
@@ -35,7 +37,7 @@ const {chromium}=require('playwright');
     const apps=[{name:'[DEFAULT]',options:{projectId:'taxiapp-2b6bd'}}];window.__createdAuthApps=[];export const getApps=()=>apps;export const initializeApp=(options,name='[DEFAULT]')=>{window.__createdAuthApps.push(name);const app={name,options};apps.push(app);return app;};`});
    if(route.request().url().endsWith('firebase-auth.js'))return route.fulfill({contentType:'text/javascript',body:`
     const auths=new Map();window.__popupCalls=[];const user=uid=>({uid,emailVerified:true,email:'synthetic@example.invalid',providerData:[{providerId:'google.com',uid:'same-google-subject'}],getIdToken:async()=>uid+'-invalid-synthetic-token'});
-    export function getAuth(app){if(app.name==='[DEFAULT]')throw Error('日報本体のAuthを開始してはいけない');if(!auths.has(app.name))auths.set(app.name,{app,currentUser:window.__testSignedOut?null:user(app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user'),authStateReady:async()=>{}});return auths.get(app.name);}
+    export function getAuth(app){if(app.name==='[DEFAULT]')throw Error('日報本体のAuthを開始してはいけない');if(!auths.has(app.name))auths.set(app.name,{app,currentUser:window.__testSignedOut&&!window.__testTrial?null:user(app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user'),authStateReady:async()=>{}});return auths.get(app.name);}
     export function onAuthStateChanged(auth,fn){fn(auth.currentUser);return()=>{};}
     export class GoogleAuthProvider{setCustomParameters(){}}
     export async function signInWithPopup(auth){if(!navigator.userActivation.isActive)throw Error('popupは明示クリック内だけ');window.__popupCalls.push(auth.app.name);auth.currentUser=user(auth.app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user');}`});
@@ -43,7 +45,17 @@ const {chromium}=require('playwright');
   });
   if(!live)await context.route('https://script.google.com/macros/s/**/exec',route=>{
    const body=route.request().postDataJSON();requests.push(body);
-   const response=mode==='success'?{ok:true,data:{diaryUid:'diary-ui-user',gpsUid:'gps-ui-user',writerSessionId:null,validUntilMs:Date.now()+300000}}:{ok:false,code:'unauthenticated'};
+   let response;
+   if(mode!=='success')response={ok:false,code:'unauthenticated'};
+   else if(body.action==='link')response={ok:true,data:{diaryUid:'diary-ui-user',gpsUid:'gps-ui-user',writerSessionId:null,validUntilMs:Date.now()+300000}};
+   else{
+    assert.equal(body.actorUid,'gps-ui-user');const d=body.data;
+    if(body.action==='saveOwnGpsHistory'){trialRows.set(d.payload.shiftId,{...d.payload,uid:'gps-ui-user',contentHash:d.contentHash});response={ok:true,data:{status:'saved',shiftId:d.payload.shiftId,contentHash:d.contentHash}};}
+    else if(body.action==='getOwnGpsHistory')response={ok:true,data:{history:trialRows.get(d.shiftId)}};
+    else if(body.action==='deleteGpsHistory'){trialRows.delete(d.shiftId);trialTombs.add(d.shiftId);response={ok:true,data:{targetUid:'gps-ui-user',shiftId:d.shiftId,status:'deleted'}};}
+    else if(body.action==='getOwnGpsHistoryTombstone')response={ok:true,data:{deleted:trialTombs.has(d.shiftId)}};
+    else throw Error('予期しない合成履歴操作');
+   }
    return route.fulfill({contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(response)});
   });
   await page.goto('http://127.0.0.1:'+server.address().port+'/gps-sharing-test.html');
@@ -78,7 +90,14 @@ const {chromium}=require('playwright');
    await page.locator('#gpsAccountLink').click();
    await page.waitForFunction(()=>document.getElementById('gpsAccountStatus').textContent.includes('連携を確認しました'));
    assert.deepEqual(await page.evaluate(()=>window.__popupCalls),['TAXIAPP_GPS_DIARY_IDENTITY','TAXIAPP_GPS']);assert.equal(requests.length,3);
-   console.log('実DOM＋合成認証：ログアウト時の段階別クリックとpopup操作権、別UID連携・失敗表示・GPS停止・日報保持を確認。');
+   trialEnabled=true;await page.addInitScript(()=>{window.__testTrial=true;});await page.reload();
+   await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>document.getElementById('gpsAccountStatus').textContent.includes('連携を確認しました'));
+   const beforeTrial=requests.length;await page.locator('#gpsHistoryBackendTrial').click();
+   await page.waitForFunction(()=>document.getElementById('gpsHistoryBackendStatus').textContent.includes('削除確認に成功'));
+   assert.deepEqual(requests.slice(beforeTrial).map(r=>r.action),['saveOwnGpsHistory','getOwnGpsHistory','deleteGpsHistory','getOwnGpsHistoryTombstone']);
+   assert.equal(trialRows.size,0);assert.equal(trialTombs.size,1);
+   assert.deepEqual(requests[beforeTrial].data.payload.points.map(p=>[p.lat,p.lon]),[[0,0]]);
+   console.log('実DOM＋合成認証：段階別クリック・別UID連携・拒否表示と、実GPSを使わない合成履歴の保存/照合/削除を確認。');
   }
   assert.equal(await page.evaluate(()=>localStorage.getItem('taxiapp-diary-protection-sentinel')),'未同期の日報を保持');
   assert.equal(await page.locator('main button:enabled,main input:enabled').count(),0);

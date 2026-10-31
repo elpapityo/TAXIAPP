@@ -57,3 +57,15 @@ GPS_ACCESS_RULES_TEST=1 node scripts/run-gps-emulator-tests.js
 ```
 
 同じローカルEmulatorで `docs/gps-identity-access.rules.candidate` と `tests/gps-identity-access.emulator.cjs` を使用。日報ルールを継ぎ足した旧GPS候補とは別の、GPS専用の本人資格だけの候補。4件成功。期限切れ/旧形式/過大期限/未来時刻/管理者降格/本人分離/自己更新拒否と位置等の全拒否を実ルールで検証する。HTTP/GPS/Google認証の成功ではなく、本番未適用。既存の通常Emulator9件も回帰成功。
+
+
+## 無料GAS履歴候補の実REST検証（未公開）
+
+```sh
+node scripts/build-gps-history-gas.js
+GPS_HISTORY_GAS_TEST=1 node scripts/run-gps-emulator-tests.js
+```
+
+同じローカルFirestore Emulatorで8件成功。VM内のGoogle本人認証/日報資格だけは合成し、GASの同期UrlFetchAppをlocalhostへのcurlに対応させる。GPS固定プロジェクト以外へアクセスしないことを検査し、試験時のURL/リソース名だけdemoプロジェクトへ置換する。実GAS/IAM/本番の成功ではない。通常データ回帰はVMで合成限定を解除し、公開候補と同じ合成限定trueの拒否/固定1点保存も別ケースで検証する。
+
+curlの実ローカル通信は`--noproxy '*'`、8秒上限。最初のtransaction付き単件GETは20秒上限とプロキシ除外後の8秒上限でいずれも失敗。公式batchGetでのtransaction読取へ変更後に8件成功。ルールやTLS検証を緩めた成功ではない。Node41件・既存実DOMの合成履歴確認も成功。公開候補/適用対象/未完了はgoogle-apps-script/gps-account-broker/history/README.mdとレビュー文書を参照。

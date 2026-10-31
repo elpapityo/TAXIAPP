@@ -198,3 +198,16 @@ test('GAS操作端末：別の対応表に結び付いたGPSセッションを�
  assert.equal(f.post({writerSessionId:'t'.repeat(32)}).code,'link-conflict');
  assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'deviceSessions/gps-user')).fields.accessExpiresAt,undefined);
 });
+
+test('ブラウザ履歴：最初だけ資格更新してGPS本人IDと2tokenを本文へ送る',async()=>{
+ const f=clientFixture();await f.client.call('listOwnGpsHistory',{targetUid:'gps-user'});
+ assert.equal(f.calls.length,2);const link=JSON.parse(f.calls[0].options.body),history=JSON.parse(f.calls[1].options.body);
+ assert.equal(link.action,'link');assert.equal(link.writerSessionId,null);assert.equal(history.actorUid,'gps-user');
+ assert.equal(history.action,'listOwnGpsHistory');assert.equal(history.data.targetUid,'gps-user');
+ await f.client.call('listOwnGpsHistory');assert.equal(f.calls.length,3);
+ await assert.rejects(f.client.call('cleanupGpsHistoryAndAudit'));assert.equal(f.calls.length,3);
+});
+test('ブラウザ履歴：認証待ち中の本人切替では履歴要求を送らない',async()=>{
+ const f=clientFixture({pendingTokens:true}),p=f.client.call('getOwnGpsHistory',{shiftId:'shift-1'});
+ await Promise.resolve();f.diaryAuth.currentUser=null;f.release('synthetic');await assert.rejects(p);assert.equal(f.calls.length,0);
+});
