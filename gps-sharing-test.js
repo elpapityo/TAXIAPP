@@ -132,7 +132,11 @@ function draw(){
 function startHistoryWrite(fix,suspectedJump){
  if(!historyOn||!shift||!history)return;
  const owner=uid,id=shiftId;
- const start=Date.parse(shift.startedIso||'')||Date.now();
+ const start=Date.parse(shift.startedIso||'');
+ if(!Number.isFinite(start)){
+  set('historyState','出庫日時の原データを確認できないため履歴を保存しません');
+  return;
+ }
  historyQueue=historyQueue.then(async()=>{
   const didWrite=await history.record(owner,id,start,fix,suspectedJump);
   if(didWrite)await refreshHistory();
