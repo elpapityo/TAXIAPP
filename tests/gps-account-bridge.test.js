@@ -5,7 +5,8 @@ const bridge=require('../gps-account-bridge');
 const source=fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/Code.gs'),'utf8');
 const writer='s'.repeat(32),endpoint='https://script.google.com/macros/s/mock-deployment/exec';
 function fixture(options={}){
- const calls=[],db=new Map(),now=Math.floor(Date.now()/1000);
+ const calls=[],db=new Map(),now=Math.floor(Date.now()/1000);let timeOffset=0;
+ class FixtureDate extends Date{static now(){return Date.now()+timeOffset;}}
  const name=(project,p)=>'projects/'+project+'/databases/(default)/documents/'+p;
  const field=x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k,typeof v==='boolean'?{booleanValue:v}:{stringValue:v}]));
  const put=(project,p,x)=>db.set(name(project,p),{name:name(project,p),fields:field(x),updateTime:'2026-10-31T00:00:00.000001Z'});
@@ -23,7 +24,7 @@ function fixture(options={}){
  for(const [key,user]of accounts){const claims=JSON.parse(Buffer.from(key.split('.')[1],'base64url'));Object.assign(user,{email:claims.email,emailVerified:true,validSince:String(now-100),providerUserInfo:[{providerId:'google.com',rawId:claims.firebase.identities['google.com'][0]}]});}
  let committed=false,lockReleased=false;
  const response=(status,body)=>({getResponseCode:()=>status,getContentText:()=>JSON.stringify(body)});
- const context=vm.createContext({console:{log(){throw Error('認証情報をログ出力してはいけない');}},
+ const context=vm.createContext({Date:FixtureDate,console:{log(){throw Error('認証情報をログ出力してはいけない');}},
   ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})},
   Utilities:{base64DecodeWebSafe:s=>Buffer.from(s,'base64url'),newBlob:bytes=>({getDataAsString:()=>Buffer.from(bytes).toString('utf8')})},
   ScriptApp:{getOAuthToken:()=> 'mock-owner'},
@@ -40,10 +41,14 @@ function fixture(options={}){
    }
    assert.ok(url.startsWith('https://firestore.googleapis.com/v1/projects/'));
    const resource=url.slice('https://firestore.googleapis.com/v1/'.length),primary=resource.includes('/'+bridge.DIARY_PROJECT+'/');
-   if(primary){assert.equal(req.headers.Authorization,'Bearer '+day);assert.match(resource,/\/documents\/(users|admins|deviceSessions)\/diary-user$/);}
+   if(primary){if(options.slowSource)timeOffset=301000;assert.equal(req.headers.Authorization,'Bearer '+day);assert.match(resource,/\/documents\/(users|admins|deviceSessions)\/diary-user$/);}
    else assert.equal(req.headers.Authorization,'Bearer mock-owner');
    if(req.method==='get'){
-    const doc=db.get(resource);if(!doc)return response(404,{});
+    let doc=db.get(resource);if(!doc)return response(404,{});
+    if(committed&&options.suspendAfterCommit&&primary&&resource.endsWith('/users/diary-user'))doc={...doc,fields:field({status:'suspended'})};
+    if(committed&&options.demoteAfterCommit&&primary&&resource.endsWith('/admins/diary-user'))doc={...doc,fields:field({enabled:false})};
+    if(committed&&options.editorAfterCommit&&primary&&resource.endsWith('/deviceSessions/diary-user'))doc={...doc,fields:field({sessionId:'n'.repeat(32)})};
+    if(options.sourceUnavailable&&primary)return response(503,{});
     if(committed&&options.badReadback&&resource.endsWith('/users/gps-user'))return response(200,{...doc,fields:field({status:'active',diaryUid:'wrong',googleSubject:'google-identity'})});
     return response(200,doc);
    }
@@ -133,4 +138,63 @@ test('ブラウザ連携：応答待ち/待ち行列中に切り替わった利�
  for(let n=0;n<10&&!f.calls.length;n++)await Promise.resolve();
  f.client.invalidate();f.release();await assert.rejects(p,/切り替わりました/);await assert.rejects(queued,/切り替わりました/);
  assert.equal(f.calls.length,1);
+});
+
+test('GAS資格期限：クライアント指定を採用せずDB期限と応答が一致',()=>{
+ const f=fixture({admin:true}),before=Date.now(),r=f.post({validUntilMs:Date.now()+86400000});
+ assert.equal(r.ok,true);assert.ok(r.data.validUntilMs>=before+300000&&r.data.validUntilMs<=Date.now()+300000);
+ for(const p of ['users/gps-user','admins/gps-user','deviceSessions/gps-user']){
+  const doc=f.db.get(f.name(bridge.GPS_PROJECT,p));assert.equal(Date.parse(doc.fields.accessExpiresAt.timestampValue),r.data.validUntilMs);
+ }
+ assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'users/gps-user')).fields.isAdmin.booleanValue,true);
+});
+test('GAS資格期限：停止した本人の既存資格と管理者コピーを失効',()=>{
+ const f=fixture();assert.equal(f.post().ok,true);
+ f.put(bridge.DIARY_PROJECT,'users/diary-user',{status:'suspended'});
+ assert.equal(f.post().code,'permission-denied');
+ const user=f.db.get(f.name(bridge.GPS_PROJECT,'users/gps-user')),admin=f.db.get(f.name(bridge.GPS_PROJECT,'admins/gps-user'));
+ assert.equal(user.fields.status.stringValue,'suspended');assert.equal(admin.fields.enabled.booleanValue,false);
+ assert.equal(Date.parse(user.fields.accessExpiresAt.timestampValue),0);
+});
+for(const options of [{suspendAfterCommit:true},{admin:true,demoteAfterCommit:true}])
+ test('GAS資格期限：保存中の資格変更で成功せず対応済み資格を失効 '+JSON.stringify(options),()=>{
+  const f=fixture(options);assert.equal(f.post().code,'permission-denied');
+  assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'users/gps-user')).fields.status.stringValue,'suspended');
+ });
+test('GAS資格期限：日報読取失敗で期限を更新しない',()=>{
+ const f=fixture({sourceUnavailable:true});assert.equal(f.post().ok,false);
+ assert.equal(f.calls.some(c=>c.url.endsWith('/documents:commit')),false);
+});
+test('GAS操作端末：保存中の切替で古いGPSセッションを失効',()=>{
+ const f=fixture({editorAfterCommit:true});assert.equal(f.post().code,'not-editor');
+ assert.equal(Date.parse(f.db.get(f.name(bridge.GPS_PROJECT,'deviceSessions/gps-user')).fields.accessExpiresAt.timestampValue),0);
+});
+test('GAS操作端末：古い端末の失敗で新しいGPSセッションを失効させない',()=>{
+ const f=fixture();f.put(bridge.GPS_PROJECT,'deviceSessions/gps-user',{sessionId:'n'.repeat(32)});
+ assert.equal(f.post({writerSessionId:'t'.repeat(32)}).code,'not-editor');
+ assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'deviceSessions/gps-user')).fields.sessionId.stringValue,'n'.repeat(32));
+});
+test('GAS失効：資格停止を口実に他人の対応表を失効できない',()=>{
+ const f=fixture({suspended:true});f.put(bridge.GPS_PROJECT,'users/gps-user',{diaryUid:'other',googleSubject:'other',status:'active'});
+ assert.equal(f.post().code,'link-conflict');
+ assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'users/gps-user')).fields.status.stringValue,'active');
+});
+
+test('GAS資格期限：日報確認の通信遅延で5分を延長せず、期限切れなら保存しない',()=>{
+ const f=fixture({slowSource:true}),r=f.post();assert.equal(r.ok,false);assert.equal(r.code,'permission-denied');
+ assert.equal(f.calls.some(c=>c.url.endsWith('/documents:commit')),false);
+});
+test('GAS管理者：次回要求で日報の降格を反映し、一般利用資格は維持',()=>{
+ const f=fixture({admin:true});assert.equal(f.post().ok,true);
+ f.put(bridge.DIARY_PROJECT,'admins/diary-user',{enabled:false});assert.equal(f.post({writerSessionId:null}).ok,true);
+ const user=f.db.get(f.name(bridge.GPS_PROJECT,'users/gps-user'));
+ assert.equal(user.fields.status.stringValue,'active');assert.equal(user.fields.isAdmin.booleanValue,false);
+ assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'admins/gps-user')).fields.enabled.booleanValue,false);
+});
+
+test('GAS操作端末：別の対応表に結び付いたGPSセッションを失効できない',()=>{
+ const f=fixture();f.put(bridge.GPS_PROJECT,'users/gps-user',{diaryUid:'other',googleSubject:'other',status:'active'});
+ f.put(bridge.GPS_PROJECT,'deviceSessions/gps-user',{sessionId:'t'.repeat(32)});
+ assert.equal(f.post({writerSessionId:'t'.repeat(32)}).code,'link-conflict');
+ assert.equal(f.db.get(f.name(bridge.GPS_PROJECT,'deviceSessions/gps-user')).fields.accessExpiresAt,undefined);
 });

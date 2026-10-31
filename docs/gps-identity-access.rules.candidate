@@ -1,0 +1,35 @@
+// GPS専用・未適用。本人連携結果の確認だけ。位置/履歴は開放しない。
+// 日報プロジェクトへの配置禁止。現在のGPS本番は全read/write拒否のまま。
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function freshLease(data) {
+   return data.status == 'active' && data.diaryUid is string &&
+    data.googleSubject is string && data.isAdmin is bool &&
+    data.updatedAt is timestamp && data.accessExpiresAt is timestamp &&
+    data.updatedAt <= request.time && data.accessExpiresAt > request.time &&
+    data.accessExpiresAt <= data.updatedAt + duration.value(300, 's');
+  }
+  function ownFreshLease(uid) {
+   return request.auth != null && request.auth.uid == uid &&
+    exists(/databases/$(database)/documents/users/$(uid)) &&
+    freshLease(get(/databases/$(database)/documents/users/$(uid)).data);
+  }
+  match /users/{uid} {
+   allow get: if request.auth != null && request.auth.uid == uid && freshLease(resource.data);
+   allow list, write: if false;
+  }
+  match /admins/{uid} {
+   allow get: if ownFreshLease(uid) &&
+    get(/databases/$(database)/documents/users/$(uid)).data.isAdmin == true &&
+    resource.data.enabled == true &&
+    resource.data.diaryUid == get(/databases/$(database)/documents/users/$(uid)).data.diaryUid &&
+    resource.data.accessExpiresAt is timestamp && resource.data.accessExpiresAt > request.time &&
+    resource.data.updatedAt is timestamp && resource.data.updatedAt <= request.time &&
+    resource.data.accessExpiresAt <= resource.data.updatedAt + duration.value(300, 's');
+   allow list, write: if false;
+  }
+  // 操作端末・対応表・位置・履歴・監査・日報は直接開放しない。
+  match /{document=**} { allow read, write: if false; }
+ }
+}

@@ -48,3 +48,12 @@ GPS_RULES_BASE=docs/firestore-production-observed-20261031.rules node scripts/ru
 ```
 
 NodeとNODE_PATHは下記と同じ環境を使用。本番ベースで9ケース成功。生成/試験は本番へ変更しない。本番の最新ルールは公開直前にも照合する。
+
+
+## 期限付き本人資格のGPS専用ルール候補（2026-11-01）
+
+```sh
+GPS_ACCESS_RULES_TEST=1 node scripts/run-gps-emulator-tests.js
+```
+
+同じローカルEmulatorで `docs/gps-identity-access.rules.candidate` と `tests/gps-identity-access.emulator.cjs` を使用。日報ルールを継ぎ足した旧GPS候補とは別の、GPS専用の本人資格だけの候補。4件成功。期限切れ/旧形式/過大期限/未来時刻/管理者降格/本人分離/自己更新拒否と位置等の全拒否を実ルールで検証する。HTTP/GPS/Google認証の成功ではなく、本番未適用。既存の通常Emulator9件も回帰成功。
