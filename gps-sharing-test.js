@@ -15,7 +15,8 @@ const STORE='taxiapp-store-v1', STORE_OBJECT='state';
 const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
 const visible=()=>document.visibilityState==='visible';
-const statusText=()=>privacyPublic?'公開中':privacyConfirmed?'非公開中':'非公開切替待ち';
+const statusText=()=>privacyPublic?(privacyConfirmed?'公開中':'公開設定確認中'):
+  (privacyConfirmed?'非公開中':'非公開切替待ち');
 const notify=message=>set('connection',message);
 
 function readLegacy(){
@@ -146,7 +147,7 @@ function presenceDoc(fix){
  };
 }
 async function publish(fix){
- if(!db||!fx||!uid||!privacyPublic||!shift||!visible()||serverBusy)return;
+ if(!db||!fx||!uid||!privacyPublic||!privacyConfirmed||!shift||!visible()||serverBusy)return;
  const interval=core.sendIntervalMs(fix,lastPublishedFix);
  if(lastPublishedMs&&Date.now()-lastPublishedMs<interval)return;
  serverBusy=true;
@@ -173,7 +174,7 @@ async function hidePresence(reason){
 async function savePrivacy(requested){
  if(!uid||userBusy)return;
  userBusy=true;privacyPublic=requested;privacyConfirmed=false;
- localStorage.setItem(prefKey(),requested?'1':'0');
+ try{localStorage.setItem(prefKey(),requested?'1':'0');}catch{}
  set('privacyState',statusText());
  if(!requested){stopGps();await hidePresence('本人の非公開操作');}
  try{
@@ -240,7 +241,7 @@ async function boot(){
  a.onAuthStateChanged(auth,async nextUser=>{
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
   user=nextUser;uid=nextUser?.uid||'';shift=null;shiftId='';vehicles.clear();
-  if(!user){notify('TAXIAPP本体でGoogleログインしてください');set('authState','未ログイン');return;}
+  if(!user){$('privacyToggle').disabled=true;notify('TAXIAPP本体でGoogleログインしてください');set('authState','未ログイン');return;}
   try{
    const [own,admin]=await Promise.all([
     f.getDoc(f.doc(db,'users',uid)),f.getDoc(f.doc(db,'admins',uid))
@@ -254,13 +255,19 @@ async function boot(){
    let local=null;try{local=localStorage.getItem(prefKey());}catch{}
    privacyPublic=local!=='0';privacyConfirmed=false;
    try{
-    const setting=await f.getDoc(f.doc(db,'gpsSharePrefs',uid));
+    const setting=await f.getDocFromServer(f.doc(db,'gpsSharePrefs',uid));
     if(setting.exists()&&typeof setting.data().public==='boolean'){
      privacyPublic=setting.data().public;privacyConfirmed=true;
      try{localStorage.setItem(prefKey(),privacyPublic?'1':'0');}catch{}
+    } else if(!setting.exists()){
+     // Initial default is public, but do not publish before server acknowledgement.
+     privacyPublic=true;
+     await f.setDoc(f.doc(db,'gpsSharePrefs',uid),{public:true,updatedAt:f.serverTimestamp()});
+     privacyConfirmed=true;
     }
    }catch{notify('位置共有の設定は端末値で仮表示中（サーバー未確認）');}
-   $('privacyToggle').checked=privacyPublic;set('privacyState',statusText());
+   $('privacyToggle').checked=privacyPublic;
+   $('privacyToggle').disabled=false;set('privacyState',statusText());
    subscribe();
    await reconcileDuty();
    if(!privacyPublic)await hidePresence('既存の非公開設定');
