@@ -156,6 +156,44 @@ async function refreshHistory(){
  '／未送信 '+(counts['未送信']||0)+'／エラー '+(counts['エラー']||0));
  if(select.value)await displayHistory(select.value);
 }
+
+async function finalizeStoredShifts(model){
+ if(!history||!model||!Array.isArray(model.shifts)||!uid)return;
+ if(Date.now()-lastLocalFinalizationMs<60000)return;
+ lastLocalFinalizationMs=Date.now();
+ const rows=await history.list(uid);
+ for(const row of rows){
+  if(Number.isFinite(row.endedAtMs)||!row.points?.length)continue;
+  const matching=model.shifts.find(s=>s.id===row.shiftId);
+  if(!matching?.endedIso)continue;
+  const endedAtMs=Date.parse(matching.endedIso);
+  if(Number.isFinite(endedAtMs))await history.finish(uid,row.shiftId,endedAtMs);
+ }
+}
+async function attemptCloudSync(singleId){
+ if(!cloudSession||!uid||!history||cloudRunning)return;
+ if(navigator.onLine===false){set('cloudStatus','オフライン：GPS履歴は端末に保持');return;}
+ cloudRunning=true;
+ const currentUid=uid;
+ set('cloudStatus','GPS履歴を送信・保存照合中');
+ try{
+  await historyQueue;
+  const rows=singleId?[{shiftId:singleId}]:await history.list(currentUid);
+  let success=0,errors=0;
+  for(const row of rows){
+   if(uid!==currentUid)break;
+   const result=await cloudSession.one(currentUid,row.shiftId);
+   if(result.status==='saved')success++;
+   if(result.status==='error')errors++;
+  }
+  set('cloudStatus',errors?
+   'GPS履歴：'+errors+'乗務を送信できません。端末に保持':
+   'GPS履歴：保存確認 '+success+'乗務');
+  await refreshHistory();
+ }catch(error){set('cloudStatus','GPS履歴の同期に失敗：'+String(error.message||error));}
+ finally{cloudRunning=false;}
+}
+
 function historyMapInit(){
  if(historyMap||!window.L)return;
  historyMap=L.map('historyMap',{zoomControl:true}).setView([34.75,135.4],10);
@@ -298,14 +336,24 @@ async function reconcileDuty(){
  const next=core.activeDuty(nextModel);
  const old=shiftId;
  localModel=nextModel;
+ await finalizeStoredShifts(nextModel);
  shift=next;
  shiftId=next?next.id:'';
  currentStatus=next?core.businessStatus(next):'';
  set('dutyState',next?('営業中：'+currentStatus):'営業状態確認中／入庫後');
  if(old&&old!==shiftId){
-  if(history){const capturedOld=old,completed=Date.now();
-   historyQueue=historyQueue.then(()=>history.finish(uid,capturedOld,completed))
-    .then(refreshHistory).catch(error=>set('historyState','履歴終了保存失敗：'+error.message));}
+  if(history){const capturedOld=old;
+   const endIso=(nextModel?.shifts||[]).find(s=>s.id===capturedOld)?.endedIso;
+   const endedAtMs=endIso?Date.parse(endIso):NaN;
+   if(Number.isFinite(endedAtMs)){
+    historyQueue=historyQueue.then(()=>history.finish(uid,capturedOld,endedAtMs))
+     .then(()=>refreshHistory())
+     .catch(error=>set('historyState','GPS履歴終了記録の失敗：'+error.message));
+    historyQueue.then(()=>attemptCloudSync(capturedOld));
+   }else{
+    markHistoryGap(uid,capturedOld);
+   }
+  }
   lastPublishedMs=0;lastPublishedFix=null;lastAccepted=null;latestFix=null;
   await hidePresence('入庫または乗務切替');}
  lastDutyChecked=true;
@@ -331,6 +379,8 @@ function bindEvents(){
   ensureGps();refreshHistory().catch(error=>set('historyState','履歴更新失敗：'+error.message));
  });
  $('historyShiftSelect').addEventListener('change',event=>displayHistory(event.target.value));
+ $('historyResend').addEventListener('click',()=>attemptCloudSync($('historyShiftSelect').value));
+ $('historyResendAll').addEventListener('click',()=>attemptCloudSync());
  $('historyExport').addEventListener('click',()=>historyExport().catch(error=>set('historyState','CSV出力失敗：'+error.message)));
  $('historyDelete').addEventListener('click',()=>historyDelete().catch(error=>set('historyState','履歴削除失敗：'+error.message)));
  $('historyFit').addEventListener('click',()=>displayHistory($('historyShiftSelect').value));
@@ -340,6 +390,7 @@ function bindEvents(){
   const open=panel.hidden;panel.hidden=!open;
   $('vehicleHeading').setAttribute('aria-expanded',String(open));
  });
+ window.addEventListener('online',()=>attemptCloudSync());
  document.addEventListener('visibilitychange',()=>{
   if(!visible())stopGps();
   else reconcileDuty().catch(error=>notify('営業状態確認エラー：'+error.message));
@@ -357,6 +408,7 @@ async function boot(){
  fx=f;app=getApps().length?getApp():initializeApp(config);auth=a.getAuth(app);db=f.getFirestore(app);
  a.onAuthStateChanged(auth,async nextUser=>{
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
+  cloudSession?.dispose();cloudSession=null;
   user=nextUser;uid=nextUser?.uid||'';shift=null;shiftId='';vehicles.clear();
   if(!user){$('privacyToggle').disabled=true;$('historyToggle').disabled=true;
    notify('TAXIAPP本体でGoogleログインしてください');set('authState','未ログイン');return;}
@@ -388,9 +440,12 @@ async function boot(){
    $('privacyToggle').disabled=false;set('privacyState',statusText());
    try{historyOn=localStorage.getItem(historyPrefKey())==='1';}catch{historyOn=false;}
    $('historyToggle').checked=historyOn;$('historyToggle').disabled=!history;
+   await history.cleanupConfirmed(uid).catch(error=>set('cloudStatus','保存済みGPS履歴の端末整理に失敗：'+error.message));
+   cloudSession=cloudHistory&&history?cloudHistory.create({auth,db,f,store:history}):null;
    await refreshHistory();
    subscribe();
    await reconcileDuty();
+   attemptCloudSync();
    if(!privacyPublic)await hidePresence('既存の非公開設定');
    if(!intervalId)intervalId=setInterval(()=>{
     reconcileDuty().catch(error=>notify('営業状態の照合に失敗：'+String(error.message)));
