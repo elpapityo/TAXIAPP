@@ -446,6 +446,7 @@ async function boot(){
  a.onAuthStateChanged(auth,async nextUser=>{
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
   cloudSession?.dispose();cloudSession=null;remoteHistoryRows=[];
+  $('adminGpsHistoryLink').hidden=true;
   user=nextUser;uid=nextUser?.uid||'';shift=null;shiftId='';vehicles.clear();
   if(!user){$('privacyToggle').disabled=true;$('historyToggle').disabled=true;
    notify('TAXIAPP本体でGoogleログインしてください');set('authState','未ログイン');return;}
@@ -455,6 +456,7 @@ async function boot(){
    ]);
    const active=own.exists()&&own.data().status==='active';
    isAdmin=admin.exists()&&admin.data().enabled===true;
+   $('adminGpsHistoryLink').hidden=!isAdmin;
    if(!active&&!isAdmin){notify('TAXIAPPの利用登録が確認できません');return;}
    displayName=own.exists()?String(own.data().openChatName||user.displayName||'登録利用者'):
     String(user.displayName||'登録利用者');
