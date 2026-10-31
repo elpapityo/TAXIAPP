@@ -14,6 +14,8 @@
 .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.toggle{display:flex;align-items:center;gap:9px;font-weight:700;min-height:40px}.toggle input{width:22px;height:22px}
 .muted{color:#5b7080;font-size:12px}.status{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 0}.chip{border-radius:8px;padding:6px 9px;background:#e8f2f8;font-size:12px;font-weight:700}
 #map{height:min(65vh,620px);min-height:330px;border-radius:10px;overflow:hidden}
+#historyMap{height:350px;min-height:280px;margin-top:9px;border-radius:10px;overflow:hidden}
+#historyShiftSelect{max-width:100%;padding:9px;border:1px solid #9eb8ca;border-radius:8px}
 button{background:#fff;border:1px solid #9eb8ca;border-radius:8px;padding:9px 12px;min-height:38px;cursor:pointer;color:#20445c;font-weight:700}
 #vehicleList{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
 legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 0;font-size:12px}
@@ -59,17 +61,27 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
   <p id="connection" role="status" class="muted">位置共有を確認中…</p>
  </section>
  <section class="card">
-  <h2>GPS走行履歴</h2>
+  <h2>GPS走行履歴（端末内保存）</h2>
   <label class="toggle"><input id="historyToggle" type="checkbox" disabled>乗務ごとに履歴を記録する（初期OFF）</label>
-  <p id="historyState" class="muted">履歴保存は次の実装段階です。</p>
+  <p id="historyState" class="muted">GPS履歴を確認中</p>
+  <div class="controls">
+   <select id="historyShiftSelect" aria-label="記録された乗務を選択" disabled></select>
+   <button type="button" id="historyFit">経路全体を表示</button>
+   <button type="button" id="historyExport">GPS履歴をCSV保存</button>
+   <button type="button" id="historyDelete">端末内履歴を削除</button>
+  </div>
+  <p id="historyDetail" class="muted">記録した乗務を選択してください。</p>
+  <div id="historyMap" aria-label="過去のGPS走行経路地図"></div>
+  <p class="help">記録は約30秒間隔、取得したGPS地点を使用します。端末内で未送信の履歴も確認・CSV保存できます。クラウドへの同期は未実装です。端末の保存領域が削除されると履歴も失われる可能性があります。</p>
  </section>
  <p class="help">このページは位置共有の独立試験版で、日報・売上・料金計算・印刷データは変更しません。<br>
   ブラウザ表示中だけGPS測位を開始します。バックグラウンド中の送信は保証できません。
-  Firestoreに位置共有専用の権限設定が未反映の場合は、地図上での自分の測位表示のみ確認できます。</p>
+  Firestoreに位置共有専用の権限設定が未反映の場合、複数人のクラウド位置共有は動作しません。履歴は現在端末内のみ保存します。</p>
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="./firebase-config.js"></script>
 <script src="./gps-sharing-core.js"></script>
+<script src="./gps-history-store.js"></script>
 <script src="./gps-sharing-test.js"></script>
 </body>
 </html>
