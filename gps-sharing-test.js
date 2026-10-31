@@ -4,6 +4,7 @@
 const $=id=>document.getElementById(id);
 const core=window.TAXIAPP_GPS_SHARING_CORE;
 const history=window.TAXIAPP_GPS_HISTORY_STORE;
+const cloudHistory=window.TAXIAPP_GPS_HISTORY_SYNC;
 const set=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
 if(!core){set('connection','位置共有の基盤が読み込めません');return;}
 const paint={空車:'#171717',迎車:'#e7b900',実車:'#1874d1',支払い:'#d52b38',待機:'#7a8490'};
@@ -13,6 +14,7 @@ let localModel=null,shift=null,shiftId='',currentStatus='',lastPublishedMs=0,las
 let map=null,vehicleLayer=null,selfLayer=null,vehicles=new Map(),unsubscribe=null,intervalId=null;
 let userBusy=false,serverBusy=false,pendingHide=false,lastDutyChecked=false;
 let historyOn=false,historyQueue=Promise.resolve(),historyMap=null,historyLayer=null,historyRows=[];
+let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0;
 const STORE='taxiapp-store-v1', STORE_OBJECT='state';
 const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
@@ -26,9 +28,13 @@ function readLegacy(){
  return new Promise(resolve=>{ 
   if(!uid)return resolve(null);
   let finished=false;const finish=x=>{if(finished)return;finished=true;resolve(x);};
-  const fallback=()=>{for(const key of dutyKeys()){
-   try{const value=JSON.parse(localStorage.getItem(key)||'null');if(core.activeDuty(value)){finish(value);return;}}catch{}
-  }finish(null);};
+  const fallback=()=>{let selected=null;for(const key of dutyKeys()){
+  try{const value=JSON.parse(localStorage.getItem(key)||'null');
+   if(value?.version===1&&Array.isArray(value.shifts)){
+    if(!selected)selected=value;if(core.activeDuty(value)){finish(value);return;}
+   }
+  }catch{}
+ }finish(selected);};
   if(!window.indexedDB)return fallback();
   try{
    const req=indexedDB.open(STORE);
@@ -39,12 +45,13 @@ function readLegacy(){
     const database=req.result;
     if(!database.objectStoreNames.contains(STORE_OBJECT)){database.close();return fallback();}
     const tx=database.transaction(STORE_OBJECT,'readonly');
-    const keys=dutyKeys();let found=null;let pending=keys.length;
+    const keys=dutyKeys();let found=null,any=null,pending=keys.length;
     for(const key of keys){
      const request=tx.objectStore(STORE_OBJECT).get(key);
-     request.onsuccess=()=>{if(!found&&core.activeDuty(request.result))found=request.result;
-       if(--pending===0){database.close();finish(found);}};
-     request.onerror=()=>{if(--pending===0){database.close();finish(found);}};
+     request.onsuccess=()=>{if(!any&&request.result?.version===1&&Array.isArray(request.result.shifts))any=request.result;
+       if(!found&&core.activeDuty(request.result))found=request.result;
+       if(--pending===0){database.close();finish(found||any);}};
+     request.onerror=()=>{if(--pending===0){database.close();finish(found||any);}};
     }
    };
   }catch{fallback();}
@@ -143,8 +150,10 @@ async function refreshHistory(){
  }
  select.disabled=historyRows.length===0;
  if(prior&&historyRows.some(row=>row.shiftId===prior))select.value=prior;
+ const counts=historyRows.reduce((m,row)=>{const s=row.serverStatus||'未送信';m[s]=(m[s]||0)+1;return m;},{});
  set('historyState',(historyOn?'走行履歴：記録ON':'走行履歴：記録OFF')+
-  '｜端末内 '+historyRows.length+'乗務｜クラウド未送信');
+ '｜端末内 '+historyRows.length+'乗務｜保存済み '+(counts['保存済み']||0)+
+ '／未送信 '+(counts['未送信']||0)+'／エラー '+(counts['エラー']||0));
  if(select.value)await displayHistory(select.value);
 }
 function historyMapInit(){
