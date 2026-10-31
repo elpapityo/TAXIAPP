@@ -121,8 +121,44 @@ function create({auth,db,f,store,subtle}){
   }
   return results;
  }
+
+ async function readRemote(uid,shiftId){
+  verifyOwner(uid);
+  if(!SHIFT.test(shiftId))throw Error('乗務IDが不正です');
+  const result=await f.getDocFromServer(docFor(uid,shiftId));
+  verifyOwner(uid);
+  if(!result.exists())return null;
+  const row=result.data();
+  if(row.format!==FORMAT||row.shiftId!==shiftId||
+     !Array.isArray(row.points))throw Error('サーバーGPS履歴の形式が不正');
+  const expiry=row.expiresAt?.toMillis?.()??Number(row.expiresAt?.millis);
+  if(Number.isFinite(expiry)&&Date.now()>expiry)return null;
+  return {uid,shiftId,startedAtMs:row.startedAtMs,endedAtMs:row.endedAtMs,
+   points:row.points,serverStatus:'保存済み',source:'cloud',
+   contentHash:row.contentHash};
+ }
+ async function listRemote(uid){
+  verifyOwner(uid);
+  // User-initiated query only; no startup full-record downloads.
+  const q=f.query(f.collection(db,'gpsHistory',uid,'shifts'),
+   f.orderBy('endedAtMs','desc'),f.limit(40));
+  const snap=await f.getDocsFromServer(q);
+  verifyOwner(uid);
+  const rows=[];
+  snap.forEach(item=>{
+   const row=item.data();
+   if(row.format!==FORMAT||!SHIFT.test(String(row.shiftId||''))||
+      !Array.isArray(row.points))return;
+   const expiry=row.expiresAt?.toMillis?.()??Number(row.expiresAt?.millis);
+   if(Number.isFinite(expiry)&&Date.now()>expiry)return;
+   rows.push({uid,shiftId:row.shiftId,startedAtMs:row.startedAtMs,
+    endedAtMs:row.endedAtMs,points:row.points,serverStatus:'保存済み',
+    source:'cloud',contentHash:row.contentHash});
+  });
+  return rows;
+ }
  function dispose(){disposed=true;}
- return Object.freeze({one,all,dispose});
+ return Object.freeze({one,all,readRemote,listRemote,dispose});
 }
 const api=Object.freeze({FORMAT,MAX_BYTES,retentionDeadlineMs,prepare,sha256,create});
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
