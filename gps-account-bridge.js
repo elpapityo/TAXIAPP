@@ -1,6 +1,7 @@
 /* 日報UIDとGPS UIDを区別する認証連携。既存日報・認証状態を更新しない。 */
 (function(root){'use strict';
 const DIARY_PROJECT='taxiapp-2b6bd',GPS_PROJECT='taxigps-9f82e';
+const HISTORY_ACTIONS=Object.freeze(['saveOwnGpsHistory','getOwnGpsHistory','listOwnGpsHistory','getOwnGpsHistoryTombstone','adminViewGpsHistory','adminExportGpsHistory','adminListGpsHistory','adminListGpsHistoryAudit','deleteGpsHistory','recordOwnGpsCsvAudit']);
 function subject(user){
  if(!user?.uid||user.emailVerified!==true)throw Error('確認済みGoogleアカウントが必要です');
  const rows=(user.providerData||[]).filter(x=>x.providerId==='google.com');
@@ -18,13 +19,13 @@ function create({diaryAuth,gpsAuth,endpoint,fetch:fetcher=root.fetch,timeoutMs=1
  if(url.origin!=='https://script.google.com'||!/^\/macros\/s\/[a-zA-Z0-9_-]+\/exec$/.test(url.pathname)||url.search||url.hash||url.username||url.password)
   throw Error('GPS認証連携のURLが不正です');
  if(typeof fetcher!=='function')throw Error('GPS認証連携に接続できません');
- let disposed=false,generation=0,tail=Promise.resolve();
+ let disposed=false,generation=0,leaseExpires=0,tail=Promise.resolve();
  function current(d,g,epoch){
   if(disposed||generation!==epoch||diaryAuth.currentUser!==d||gpsAuth.currentUser!==g)
    throw Error('ログイン利用者が切り替わりました。連携を保留します');
   pair(d,g);
  }
- async function request(writerSessionId,d,g,epoch){
+ async function request(writerSessionId,d,g,epoch,operation=null){
   const ids=pair(d,g);current(d,g,epoch);
   if(writerSessionId!==null&&(typeof writerSessionId!=='string'||writerSessionId.length<32||writerSessionId.length>128))
    throw Error('操作端末の識別情報が不正です');
@@ -36,15 +37,20 @@ function create({diaryAuth,gpsAuth,endpoint,fetch:fetcher=root.fetch,timeoutMs=1
    // text/plainの単純POST。GASの実CORS/redirect受入は公開後に別途検証する。
    const response=await fetcher(url.href,{method:'POST',credentials:'omit',redirect:'follow',
     headers:{'Content-Type':'text/plain;charset=UTF-8'},signal:controller.signal,
-    body:JSON.stringify({action:'link',diaryIdToken,gpsIdToken,writerSessionId})});
+    body:JSON.stringify(operation?{action:operation.action,diaryIdToken,gpsIdToken,actorUid:ids.gpsUid,data:operation.data}:{action:'link',diaryIdToken,gpsIdToken,writerSessionId})});
    current(d,g,epoch);
    if(!response.ok)throw Error('GPS認証連携に接続できません');
    const result=await response.json();current(d,g,epoch);
    if(!result.ok)throw Error('GPS認証連携を確認できません（'+String(result.code||'unavailable')+'）');
    const data=result.data;
+   if(operation){
+    if(!data||typeof data!=='object'||Array.isArray(data))throw Error('GPS履歴応答の形式が不正です');
+    return data;
+   }
    if(data?.diaryUid!==ids.diaryUid||data?.gpsUid!==ids.gpsUid||
       data?.writerSessionId!==writerSessionId||!Number.isSafeInteger(data?.validUntilMs)||
       data.validUntilMs<=Date.now())throw Error('GPS認証連携の保存確認が一致しません');
+   leaseExpires=data.validUntilMs;
    return Object.freeze({...ids,writerSessionId,validUntilMs:data.validUntilMs});
   }finally{clearTimeout(timer);}
  }
@@ -52,9 +58,20 @@ function create({diaryAuth,gpsAuth,endpoint,fetch:fetcher=root.fetch,timeoutMs=1
   const d=diaryAuth.currentUser,g=gpsAuth.currentUser,epoch=generation;
   const run=tail.then(()=>request(writerSessionId,d,g,epoch));tail=run.catch(()=>{});return run;
  },
-  invalidate(){generation++;},dispose(){disposed=true;generation++;}});
+  call(action,data={}){
+   if(!HISTORY_ACTIONS.includes(action)||!data||typeof data!=='object'||Array.isArray(data))return Promise.reject(Error('GPS履歴操作の形式が不正です'));
+   const snapshot=JSON.parse(JSON.stringify(data));
+   const d=diaryAuth.currentUser,g=gpsAuth.currentUser,epoch=generation;
+   const run=tail.then(async()=>{
+    current(d,g,epoch);
+    if(leaseExpires<=Date.now()+15000)await request(null,d,g,epoch);
+    return request(null,d,g,epoch,{action,data:snapshot});
+   });
+   tail=run.catch(()=>{leaseExpires=0;});return run;
+  },
+  invalidate(){generation++;leaseExpires=0;},dispose(){disposed=true;generation++;leaseExpires=0;}});
 }
-const api=Object.freeze({pair,create,DIARY_PROJECT,GPS_PROJECT});
+const api=Object.freeze({pair,create,DIARY_PROJECT,GPS_PROJECT,HISTORY_ACTIONS});
 root.TAXIAPP_GPS_ACCOUNT_BRIDGE=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
