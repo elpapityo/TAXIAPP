@@ -7,8 +7,13 @@ const fragment=fs.readFileSync(path.join(root,'docs/gps-sharing-firestore.rules.
 const marker='  match /{document=**}';
 if(!base.includes(marker))throw Error('既存ルールの挿入先がありません');
 fs.writeFileSync(path.join(temp,'firestore.rules'),base.replace(marker,()=>fragment+'\n'+marker));
-fs.writeFileSync(path.join(temp,'firebase.json'),JSON.stringify({firestore:{rules:'firestore.rules'},emulators:{firestore:{host:'127.0.0.1',port:8189},ui:{enabled:false},singleProjectMode:true}}));
+const network=process.env.GPS_HTTP_TEST==='1';
+const config={firestore:{rules:'firestore.rules'},emulators:{firestore:{host:'127.0.0.1',port:8189},ui:{enabled:false},singleProjectMode:true}};
+if(network){
+ config.emulators.auth={host:'127.0.0.1',port:9098};
+}
+fs.writeFileSync(path.join(temp,'firebase.json'),JSON.stringify(config));
 const cli=require.resolve('firebase-tools/lib/bin/firebase.js');
-const result=spawnSync(process.execPath,[cli,'emulators:exec','--only','firestore','--project','demo-taxiapp-gps','--config',path.join(temp,'firebase.json'),
- '"'+process.execPath+'" --test "'+path.join(root,'tests/gps-firestore.emulator.cjs')+'"'],{cwd:temp,stdio:'inherit',env:{...process.env,GPS_TEST_RULES:path.join(temp,'firestore.rules')}});
+const result=spawnSync(process.execPath,[cli,'emulators:exec','--only',network?'firestore,auth':'firestore','--project','demo-taxiapp-gps','--config',path.join(temp,'firebase.json'),
+ '"'+process.execPath+'" --test "'+path.join(root,'tests/gps-firestore.emulator.cjs')+'"'+(network?' "'+path.join(root,'tests/gps-sharing.network.cjs')+'"':'')],{cwd:temp,stdio:'inherit',env:{...process.env,GPS_TEST_RULES:path.join(temp,'firestore.rules')}});
 process.exitCode=result.status??1;

@@ -40,6 +40,7 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
   <div class="status">
    <span class="chip" id="authState">TAXIAPP認証確認中</span>
    <span class="chip" id="dutyState">営業状態確認中</span>
+   <span class="chip" id="senderState">位置送信元の確認中</span>
    <span class="chip" id="gpsState">GPS未取得</span>
    <span class="chip" id="sendState">位置未送信</span>
   </div>
@@ -96,6 +97,8 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
 <script src="./gps-history-store.js"></script>
 <script src="./functions/gps-history-validation.js"></script>
 <script src="./gps-history-sync.js"></script>
+<script src="./device-session.js"></script>
+<script src="./gps-presence-sender.js"></script>
 <script src="./gps-sharing-preferences.js"></script>
 <script src="./gps-sharing-test.js"></script>
 </body>

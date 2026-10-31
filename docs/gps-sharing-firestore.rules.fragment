@@ -3,13 +3,50 @@
 function gpsViewerEnabled() {
   return signedIn() && (isAdmin() || activeUser(request.auth.uid));
 }
+// 既存の操作端末セッションと、その端末内のGPS送信画面を照合。
+function gpsCurrentEditor(uid,writer) {
+ return exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+   get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId == writer;
+}
+function gpsOwnsSender(uid,sender,writer) {
+ return gpsCurrentEditor(uid,writer) &&
+   exists(/databases/$(database)/documents/gpsSenderSessions/$(uid)) &&
+   get(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.senderId == sender &&
+   get(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.writerSessionId == writer;
+}
+match /gpsSenderSessions/{uid} {
+ allow get: if ownerEnabled(uid);
+ allow list: if false;
+ allow create, update: if ownerEnabled(uid) &&
+   request.resource.data.keys().hasOnly(['senderId','writerSessionId','updatedAt']) &&
+   request.resource.data.keys().hasAll(['senderId','writerSessionId','updatedAt']) &&
+   request.resource.data.senderId is string && request.resource.data.senderId.size() == 36 &&
+   request.resource.data.writerSessionId is string &&
+   gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+   request.resource.data.updatedAt == request.time &&
+   (!exists(/databases/$(database)/documents/gpsSenderSessions/$(uid)) ||
+    resource.data.senderId == request.resource.data.senderId ||
+    resource.data.writerSessionId != request.resource.data.writerSessionId ||
+    resource.data.updatedAt + duration.value(120,'s') <= request.time);
+ allow delete: if ownerEnabled(uid) &&
+   gpsCurrentEditor(uid,resource.data.writerSessionId) &&
+   getAfter(/databases/$(database)/documents/gpsPresence/$(uid)).data.senderId == resource.data.senderId &&
+   getAfter(/databases/$(database)/documents/gpsPresence/$(uid)).data.public == false;
+}
 match /gpsSharePrefs/{uid} {
   allow get: if ownerEnabled(uid);
   allow list, delete: if false;
   allow create, update: if ownerEnabled(uid) &&
-    request.resource.data.keys().hasOnly(['public','updatedAt']) &&
-    request.resource.data.keys().hasAll(['public','updatedAt']) &&
+    request.resource.data.keys().hasOnly(['public','updatedAt','revision','operationId','writerSessionId']) &&
+    request.resource.data.keys().hasAll(['public','updatedAt','revision','operationId','writerSessionId']) &&
     request.resource.data.public is bool &&
+    request.resource.data.revision is int &&
+    request.resource.data.operationId is string && request.resource.data.operationId.size() == 36 &&
+    request.resource.data.writerSessionId is string &&
+    gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+    ((!exists(/databases/$(database)/documents/gpsSharePrefs/$(uid)) && request.resource.data.revision == 1) ||
+     (exists(/databases/$(database)/documents/gpsSharePrefs/$(uid)) &&
+      request.resource.data.revision == resource.data.get('revision',0) + 1)) &&
     request.resource.data.updatedAt == request.time;
 }
 match /gpsPresence/{uid} {
@@ -20,11 +57,11 @@ match /gpsPresence/{uid} {
   allow create, update: if ownerEnabled(uid) &&
     request.resource.data.keys().hasOnly([
       'public','onDuty','status','name','lat','lon','accuracy','speed',
-      'heading','shiftId','capturedAtMs','updatedAt'
+      'heading','shiftId','capturedAtMs','updatedAt','senderId','writerSessionId'
     ]) &&
     request.resource.data.keys().hasAll([
       'public','onDuty','status','name','lat','lon','accuracy','speed',
-      'heading','shiftId','capturedAtMs','updatedAt'
+      'heading','shiftId','capturedAtMs','updatedAt','senderId','writerSessionId'
     ]) &&
     request.resource.data.public is bool &&
     request.resource.data.onDuty is bool &&
@@ -34,6 +71,10 @@ match /gpsPresence/{uid} {
     request.resource.data.updatedAt == request.time &&
     (
       (request.resource.data.public == true &&
+       gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.senderId == request.resource.data.senderId &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.writerSessionId == request.resource.data.writerSessionId &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.updatedAt + duration.value(120,'s') > request.time &&
        getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == true &&
        request.resource.data.onDuty == true &&
        request.resource.data.status in ['空車','迎車','実車','支払い','待機'] &&
@@ -57,6 +98,8 @@ match /gpsPresence/{uid} {
          request.resource.data.heading < 360)))
       ||
       (request.resource.data.public == false &&
+       (getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == false ||
+        gpsOwnsSender(uid,request.resource.data.senderId,request.resource.data.writerSessionId)) &&
        request.resource.data.onDuty == false &&
        request.resource.data.lat == null &&
        request.resource.data.lon == null &&

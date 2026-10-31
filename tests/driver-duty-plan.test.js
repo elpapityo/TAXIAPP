@@ -16,6 +16,8 @@ assert.equal(remaining.distanceKm,180);
 assert.equal(vm.runInContext('driverDutyPlan().type',ctx),'隔日勤務');
 const imported={date:'2026-10-19',startedAt:'00:00:00',gpsTrip:{tripKm:120}};
 ctx.shift=imported;
+// ISO(UTC)とタイムゾーンなしの出庫時刻は別の起点。ローカル出庫から12.5時間後を指定する。
+ctx.now=Date.parse(`${imported.date}T${imported.startedAt}`)+12.5*3600000;
 assert.equal(vm.runInContext('dutyRemaining(shift,now).minutes',ctx),450,'imported duty with local start clock remains calculable');
 model.prefs.dutyPlan={hours:'',distanceKm:''};
 const unset=vm.runInContext('dutyRemaining(shift,now)',ctx);

@@ -53,7 +53,7 @@ function create({auth,db,f,store,subtle,upload}){
     throw Error('サーバーの乗務履歴が異なります。上書きせず端末履歴を保持しました');
    if(!old.exists()){
     // Create-only rule prevents replacing a confirmed server original.
-    if(upload)await upload({payload,contentHash:hash});
+    if(upload)await upload({actorUid:uid,payload,contentHash:hash});
     else await f.setDoc(ref,{...payload,uid,contentHash:hash,
       expiresAt:f.Timestamp.fromMillis(retentionDeadlineMs(payload.endedAtMs)),
       uploadedAt:f.serverTimestamp()});

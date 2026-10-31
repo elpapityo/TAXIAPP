@@ -3,6 +3,10 @@ const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/
 const {doc,setDoc,getDoc,getDocs,collection,query,where,Timestamp,serverTimestamp}=require('firebase/firestore');
 const fs=require('node:fs');
 let env;
+async function setPref(db,value,writer){
+ const ref=doc(db,'gpsSharePrefs',uid),old=await getDoc(ref);
+ await setDoc(ref,{public:value,revision:(old.exists()?(old.data().revision??0):0)+1,operationId:require('node:crypto').randomUUID(),writerSessionId:writer,updatedAt:serverTimestamp()});
+}
 const uid='driver-12345678',other='other-12345678',admin='admin-12345678';
 before(async()=>{
  env=await initializeTestEnvironment({projectId:'demo-taxiapp-gps',firestore:{rules:fs.readFileSync(process.env.GPS_TEST_RULES,'utf8')}});
@@ -38,15 +42,17 @@ test('削除済みマーカーのある履歴は再作成拒否',async()=>{
  await assertFails(setDoc(doc(dbFor(uid),'gpsHistory',uid,'shifts','shift-101'),{...sample(),shiftId:'shift-101'}));
 });
 test('位置共有の公開Query・非公開・未登録・管理者を認可',async()=>{
- const db=dbFor(uid),p={public:true,onDuty:true,status:'空車',name:'合成テスト',lat:34,lon:135,accuracy:5,speed:null,heading:null,shiftId:'shift-100',capturedAtMs:Date.now(),updatedAt:serverTimestamp()};
- await assertSucceeds(setDoc(doc(db,'gpsSharePrefs',uid),{public:true,updatedAt:serverTimestamp()}));
+ const db=dbFor(uid),p={senderId:'a'.repeat(36),writerSessionId:'a'.repeat(32),public:true,onDuty:true,status:'空車',name:'合成テスト',lat:34,lon:135,accuracy:5,speed:null,heading:null,shiftId:'shift-100',capturedAtMs:Date.now(),updatedAt:serverTimestamp()};
+ await assertSucceeds(setDoc(doc(db,'deviceSessions',uid),{sessionId:p.writerSessionId,updatedAt:serverTimestamp()}));
+ await assertSucceeds(setDoc(doc(db,'gpsSenderSessions',uid),{senderId:p.senderId,writerSessionId:p.writerSessionId,updatedAt:serverTimestamp()}));
+ await assertSucceeds(setPref(db,true,p.writerSessionId));
  await assertSucceeds(setDoc(doc(db,'gpsPresence',uid),p));
  await assertSucceeds(getDocs(query(collection(dbFor(other),'gpsPresence'),where('public','==',true),where('onDuty','==',true))));
  await assertFails(getDocs(collection(dbFor(other),'gpsPresence')));
  await assertFails(getDoc(doc(dbFor('unregistered-123'),'gpsPresence',uid)));
  await assertSucceeds(setDoc(doc(db,'gpsPresence',uid),{...p,public:false,onDuty:false,lat:null,lon:null,accuracy:null,shiftId:'',capturedAtMs:null}));
  for(const id of [other,admin])await assertFails(getDoc(doc(dbFor(id),'gpsPresence',uid)));
- await assertSucceeds(setDoc(doc(db,'gpsSharePrefs',uid),{public:false,updatedAt:serverTimestamp()}));
+ await assertSucceeds(setPref(db,false,p.writerSessionId));
  await assertFails(setDoc(doc(db,'gpsPresence',uid),p));
 });
 test('既存の営業原本・編集セッション・UID分離を保護',async()=>{
@@ -70,15 +76,15 @@ test('実Admin SDKで監査・削除トランザクション・CSV監査の冪�
  const now=Date.now(),payload=prepare({uid,shiftId:id,startedAtMs:now-60000,endedAtMs:now-1000,
   points:[{lat:34,lon:135,accuracy:5,capturedAtMs:now-30000,segmentNo:1}]});
  const contentHash=await sha256(payload,require('node:crypto').webcrypto.subtle);
- const upload={auth:{uid},data:{payload,contentHash}};
+ const upload={auth:{uid},data:{actorUid:uid,payload,contentHash}};
  await fn.saveOwnGpsHistory.run(upload);await fn.saveOwnGpsHistory.run(upload);
  assert.equal((await db.doc(path).get()).get('contentHash'),contentHash);
  await assert.rejects(fn.saveOwnGpsHistory.run({...upload,data:{...upload.data,contentHash:'a'.repeat(64)}}),/ハッシュ/);
- const request={auth:{uid:admin},data:{targetUid:uid,shiftId:id}};
+ const request={auth:{uid:admin},data:{actorUid:admin,targetUid:uid,shiftId:id}};
  const result=await fn.adminViewGpsHistory.run(request);assert.equal(result.points.length,1);
  assert.equal((await db.collection('gpsHistoryAudit').where('action','==','view').get()).size,1);
- await assert.rejects(fn.adminViewGpsHistory.run({...request,auth:{uid:other}}),/管理者権限/);
- const exportReq={auth:{uid},data:{operationId:'12345678-1234-1234-1234-123456789abc',shiftId:id,atMs:Date.now()}};
+ await assert.rejects(fn.adminViewGpsHistory.run({...request,auth:{uid:other},data:{...request.data,actorUid:other}}),/管理者権限/);
+ const exportReq={auth:{uid},data:{actorUid:uid,operationId:'12345678-1234-1234-1234-123456789abc',shiftId:id,atMs:Date.now()}};
  await fn.recordOwnGpsCsvAudit.run(exportReq);await fn.recordOwnGpsCsvAudit.run(exportReq);
  assert.equal((await db.collection('gpsHistoryAudit').where('action','==','csv_export').get()).size,1);
  await fn.deleteGpsHistory.run({...request,data:{...request.data,confirmationShiftId:id}});
@@ -107,4 +113,51 @@ test('実IndexedDB→Callable→Firestore読戻しで保存確定し、同一乗
  assert.equal((await client.one(uid,id)).status,'saved');
  assert.ok((await client.listRemote(uid)).some(row=>row.shiftId===id));
  client.dispose();
+});
+
+test('同一UIDの2画面排他・期限後切替・古い端末の上書き/共有停止を拒否',async()=>{
+ const assert=require('node:assert/strict'),f=require('firebase/firestore');
+ const {create}=require('../gps-presence-sender');
+ const {getFirestore,Timestamp:AT}=require('firebase-admin/firestore');
+ const adminDb=getFirestore(),db=dbFor(uid),writer='x'.repeat(32);
+ await setDoc(doc(db,'deviceSessions',uid),{sessionId:writer,updatedAt:serverTimestamp()});
+ await setPref(db,true,writer);
+ const make=(senderId,sessionId=writer)=>create({auth:{currentUser:{uid}},db:dbFor(uid),f,uid,senderId,
+  session:{canWrite:()=>true,sessionId:()=>sessionId}});
+ const a=make('1'.repeat(36)),b=make('2'.repeat(36));
+ assert.equal(await a.ensure(),true);assert.equal(await b.ensure(),false);
+ const p={public:true,onDuty:true,status:'空車',name:'合成',lat:34,lon:135,accuracy:8,speed:0,heading:0,shiftId:'shift-100',capturedAtMs:Date.now()};
+ assert.equal((await a.send(p)).status,'sent');
+ assert.equal((await b.send({...p,lat:35})).status,'not-sender');
+ assert.equal(await b.stop({}),false);
+ assert.equal((await getDoc(doc(db,'gpsPresence',uid))).data().lat,34);
+ // 時間を待つ代わりに、期限切れleaseを管理用SDKで合成する。
+ await adminDb.doc('gpsSenderSessions/'+uid).update({updatedAt:AT.fromMillis(Date.now()-130000)});
+ const c=make('3'.repeat(36));assert.equal(await c.ensure(),true);
+ assert.equal((await c.send({...p,lat:36})).status,'sent');
+ assert.equal((await a.send({...p,lat:37})).status,'not-sender');
+ assert.equal(await a.stop({}),false);
+ assert.equal((await getDoc(doc(db,'gpsPresence',uid))).data().lat,36);
+ const nextWriter='y'.repeat(32);await setDoc(doc(db,'deviceSessions',uid),{sessionId:nextWriter,updatedAt:serverTimestamp()});
+ // スナップショット到達前の古い操作端末も、サーバールールが拒否する。
+ await assert.rejects(c.send({...p,lat:38}),/permission|PERMISSION/i);
+ const d=make('4'.repeat(36),nextWriter);assert.equal(await d.ensure(),true);
+ assert.equal((await d.send({...p,lat:39})).status,'sent');
+ const closed={public:false,onDuty:false,status:'',name:'合成',lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',capturedAtMs:null};
+ assert.equal(await d.stop(closed),true);
+ assert.equal((await getDoc(doc(db,'gpsSenderSessions',uid))).exists(),false);
+ assert.equal((await getDoc(doc(db,'gpsPresence',uid))).data().public,false);
+ a.dispose();b.dispose();c.dispose();d.dispose();
+});
+
+test('公開設定CAS：同一更新番号競合と旧操作端末の書込を拒否',async()=>{
+ const assert=require('node:assert/strict'),crypto=require('node:crypto');
+ const db=dbFor(uid),writer='p'.repeat(32),ref=doc(db,'gpsSharePrefs',uid);
+ await setDoc(doc(db,'deviceSessions',uid),{sessionId:writer,updatedAt:serverTimestamp()});
+ const old=await getDoc(ref),revision=old.data().revision;
+ const write=value=>({public:value,revision:revision+1,operationId:crypto.randomUUID(),writerSessionId:writer,updatedAt:serverTimestamp()});
+ await assertSucceeds(setDoc(ref,write(false)));
+ await assertFails(setDoc(ref,write(true)));
+ assert.equal((await getDoc(ref)).data().public,false);
+ await assertFails(setDoc(ref,{...write(true),revision:revision+2,writerSessionId:'old-session'}));
 });

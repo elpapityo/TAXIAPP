@@ -68,7 +68,8 @@ function downloadCsv(result){
 }
 async function call(name,data){
  const callable=httpsCallable(functions,name);
- const result=await callable(data);
+ const actorUid=currentUser?.uid;if(!actorUid)throw Error('ログイン利用者を確認できません');
+ const result=await callable({...data,actorUid});
  return result.data;
 }
 async function selectTarget(){

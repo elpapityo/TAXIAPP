@@ -18,6 +18,7 @@ const error=(code,message)=>{throw new HttpsError(code,message);};
 function identity(req){
  const uid=req.auth?.uid;
  if(!uid)error('unauthenticated','TAXIAPPへのログインが必要です');
+ if(req.data?.actorUid!==uid)error('failed-precondition','ログイン利用者が変更されました。操作をやり直してください');
  return uid;
 }
 function argumentsFor(req){

@@ -67,7 +67,7 @@ function fixture(){
 }
 test('管理者閲覧は監査ログを保存してから経路を返す',async()=>{
  const f=fixture();
- const query={auth:{uid:f.actor},data:{targetUid:f.target,shiftId:f.shiftId}};
+ const query={auth:{uid:f.actor},data:{actorUid:f.actor,targetUid:f.target,shiftId:f.shiftId}};
  const r=await f.fn.adminViewGpsHistory(query);
  assert.equal(r.points.length,1);
  const audit=f.writes.find(w=>w.value?.action==='view');
@@ -78,14 +78,14 @@ test('管理者閲覧は監査ログを保存してから経路を返す',async(
  await assert.rejects(f.fn.adminViewGpsHistory(query),/audit storage unavailable/);
 });
 test('管理者CSV出力は確認しない限り許可しない',async()=>{
- const f=fixture(),q={auth:{uid:f.actor},data:{targetUid:f.target,shiftId:f.shiftId}};
+ const f=fixture(),q={auth:{uid:f.actor},data:{actorUid:f.actor,targetUid:f.target,shiftId:f.shiftId}};
  await assert.rejects(f.fn.adminExportGpsHistory(q),/確認してください/);
  const done=await f.fn.adminExportGpsHistory({...q,data:{...q.data,confirmedExport:true}});
  assert.equal(done.points.length,1);
  assert.ok(f.writes.some(w=>w.value?.action==='csv_export'));
 });
 test('削除は確認と管理者権限を要求し、墓標・監査・削除を同時確定',async()=>{
- const f=fixture(),q={auth:{uid:f.actor},data:{targetUid:f.target,shiftId:f.shiftId}};
+ const f=fixture(),q={auth:{uid:f.actor},data:{actorUid:f.actor,targetUid:f.target,shiftId:f.shiftId}};
  await assert.rejects(f.fn.deleteGpsHistory(q),/確認してください/);
  const result=await f.fn.deleteGpsHistory({...q,data:{...q.data,confirmationShiftId:f.shiftId}});
  assert.equal(result.status,'deleted');
@@ -96,13 +96,17 @@ test('削除は確認と管理者権限を要求し、墓標・監査・削除�
 test('管理者以外の履歴閲覧を拒否',async()=>{
  const f=fixture();
  await assert.rejects(f.fn.adminViewGpsHistory({auth:{uid:'outsider-123'},
-  data:{targetUid:f.target,shiftId:f.shiftId}}),/管理者権限/);
+  data:{actorUid:'outsider-123',targetUid:f.target,shiftId:f.shiftId}}),/管理者権限/);
 });
 test('本人CSV監査は再送時に重複せず、内容違いと未登録を拒否',async()=>{
- const f=fixture(),q={auth:{uid:f.target},data:{operationId:'12345678-1234-1234-1234-123456789abc',shiftId:f.shiftId,atMs:Date.now()}};
+ const f=fixture(),q={auth:{uid:f.target},data:{actorUid:f.target,operationId:'12345678-1234-1234-1234-123456789abc',shiftId:f.shiftId,atMs:Date.now()}};
  assert.equal((await f.fn.recordOwnGpsCsvAudit(q)).status,'saved');
  assert.equal((await f.fn.recordOwnGpsCsvAudit(q)).status,'saved');
  assert.equal(f.writes.filter(w=>w.value?.action==='csv_export').length,1);
  await assert.rejects(f.fn.recordOwnGpsCsvAudit({...q,data:{...q.data,shiftId:'shift-200'}}),/異なる記録/);
- await assert.rejects(f.fn.recordOwnGpsCsvAudit({...q,auth:{uid:'outsider-123'}}),/利用資格/);
+ await assert.rejects(f.fn.recordOwnGpsCsvAudit({...q,auth:{uid:'outsider-123'},data:{...q.data,actorUid:'outsider-123'}}),/利用資格/);
+});
+
+test('認証切替で操作者UIDが一致しない要求は読取・書込前に拒否',async()=>{
+ const f=fixture();await assert.rejects(f.fn.adminViewGpsHistory({auth:{uid:f.actor},data:{actorUid:f.target,targetUid:f.target,shiftId:f.shiftId}}),/ログイン利用者が変更/);assert.equal(f.writes.length,0);
 });

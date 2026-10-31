@@ -1,0 +1,255 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn() { return request.auth != null; }
+  // admins/{uid} is bootstrapped by the Firebase Console / trusted server.
+  // Clients may NEVER assign, edit or delete administrator privileges.
+  function isAdmin() {
+   return signedIn() &&
+     exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+     get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+  }
+  match /admins/{uid} {
+   allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+   allow list: if isAdmin();
+   allow create, update, delete: if false;
+  }
+  match /users/{uid} {
+   allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+   allow list: if isAdmin();
+   // Google OAuth + verified email: self-registration of a NEW ordinary
+   // member only. Any Google account can enroll after this rule is deployed.
+   // Open Chat name is required at registration but is self-declared, not LINE verified.
+   // No account can self-update, self-unsuspend or grant administrator roles.
+   allow create: if signedIn() && request.auth.uid == uid &&
+     request.auth.token.firebase.sign_in_provider == 'google.com' &&
+     request.auth.token.email_verified == true &&
+     request.resource.data.keys().hasOnly(['status','registeredAt','openChatName']) &&
+     request.resource.data.keys().hasAll(['status','registeredAt','openChatName']) &&
+     request.resource.data.openChatName is string &&
+     request.resource.data.openChatName.size() >= 1 &&
+     request.resource.data.openChatName.size() <= 32 &&
+     request.resource.data.openChatName.matches('.*\\S.*') &&
+     request.resource.data.status == 'active' &&
+     request.resource.data.registeredAt == request.time;
+   allow update, delete: if false;
+  }
+  // Only an active account can read/write its OWN settings document.
+  // Admin privileges cannot be granted here and other accounts stay private.
+  function activeUser(uid) {
+   return exists(/databases/$(database)/documents/users/$(uid)) &&
+    get(/databases/$(database)/documents/users/$(uid)).data.status == 'active';
+  }
+  function ownerEnabled(uid) {
+   return signedIn() && request.auth.uid == uid &&
+    (isAdmin() || activeUser(uid));
+  }
+  // Last-login-wins editing session. Older devices may only read.
+  // A server timestamp is required; no background heartbeat is needed.
+  match /deviceSessions/{uid} {
+   allow get: if ownerEnabled(uid);
+   allow list, delete: if false;
+   allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly(['sessionId','updatedAt']) &&
+    request.resource.data.keys().hasAll(['sessionId','updatedAt']) &&
+    request.resource.data.sessionId is string &&
+    request.resource.data.sessionId.size() >= 32 &&
+    request.resource.data.sessionId.size() <= 128 &&
+    request.resource.data.updatedAt == request.time;
+  }
+  function isCurrentEditor(uid) {
+   return exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+    request.resource.data.writerSessionId ==
+      get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId;
+  }
+  match /accountSettings/{uid} {
+   allow get: if ownerEnabled(uid);
+   allow list, delete: if false;
+   allow create, update: if ownerEnabled(uid) && isCurrentEditor(uid) &&
+    request.resource.data.keys().hasOnly(['format','schemaVersion','prefs','updatedAt','writerSessionId']) &&
+    request.resource.data.keys().hasAll(['format','schemaVersion','prefs','updatedAt','writerSessionId']) &&
+    request.resource.data.format == 'TAXIAPP_ACCOUNT_SETTINGS_V1' &&
+    request.resource.data.schemaVersion == 1 &&
+    request.resource.data.prefs is map &&
+    request.resource.data.writerSessionId is string &&
+    request.resource.data.updatedAt == request.time;
+  }
+  // Every ordinary driver's original duty is strictly private to their UID.
+  // An administrator cannot list or read another driver's private duties.
+  // Create/update requires the current server-confirmed editing session.
+  function validPrivateDuty(uid,shiftId) {
+   return ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+     'format','revision','shift','writerSessionId','updatedAt','trashed'
+    ]) &&
+    request.resource.data.keys().hasAll([
+     'format','revision','shift','writerSessionId','updatedAt'
+    ]) &&
+    request.resource.data.format == 'TAXIAPP_PRIVATE_SHIFT_V1' &&
+    request.resource.data.revision is int &&
+    request.resource.data.revision > 0 &&
+    request.resource.data.shift is map &&
+    request.resource.data.shift.id == shiftId &&
+    request.resource.data.shift.records is list &&
+    request.resource.data.shift.records.size() <= 60 &&
+    request.resource.data.shift.settings is map &&
+    request.resource.data.writerSessionId is string &&
+    (!request.resource.data.keys().hasAny(['trashed']) || request.resource.data.trashed is bool) &&
+    request.resource.data.updatedAt == request.time &&
+    isCurrentEditor(uid);
+  }
+  match /privateDuties/{uid}/shifts/{shiftId} {
+   allow get, list: if ownerEnabled(uid);
+   allow create: if validPrivateDuty(uid,shiftId) &&
+     request.resource.data.revision == 1;
+   allow update: if validPrivateDuty(uid,shiftId) &&
+     resource.data.revision is int &&
+     request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if false;
+  }
+  // Protected user records, Drive file references and future features
+  // remain CLOSED until data-owner rules and backend are separately tested.
+// This fragment belongs INSIDE service cloud.firestore /databases/{database}/documents.
+// NOT deployed. Uses existing signedIn(), isAdmin(), activeUser(), ownerEnabled().
+function gpsViewerEnabled() {
+  return signedIn() && (isAdmin() || activeUser(request.auth.uid));
+}
+// 既存の操作端末セッションと、その端末内のGPS送信画面を照合。
+function gpsCurrentEditor(uid,writer) {
+ return exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+   get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId == writer;
+}
+function gpsOwnsSender(uid,sender,writer) {
+ return gpsCurrentEditor(uid,writer) &&
+   exists(/databases/$(database)/documents/gpsSenderSessions/$(uid)) &&
+   get(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.senderId == sender &&
+   get(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.writerSessionId == writer;
+}
+match /gpsSenderSessions/{uid} {
+ allow get: if ownerEnabled(uid);
+ allow list: if false;
+ allow create, update: if ownerEnabled(uid) &&
+   request.resource.data.keys().hasOnly(['senderId','writerSessionId','updatedAt']) &&
+   request.resource.data.keys().hasAll(['senderId','writerSessionId','updatedAt']) &&
+   request.resource.data.senderId is string && request.resource.data.senderId.size() == 36 &&
+   request.resource.data.writerSessionId is string &&
+   gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+   request.resource.data.updatedAt == request.time &&
+   (!exists(/databases/$(database)/documents/gpsSenderSessions/$(uid)) ||
+    resource.data.senderId == request.resource.data.senderId ||
+    resource.data.writerSessionId != request.resource.data.writerSessionId ||
+    resource.data.updatedAt + duration.value(120,'s') <= request.time);
+ allow delete: if ownerEnabled(uid) &&
+   gpsCurrentEditor(uid,resource.data.writerSessionId) &&
+   getAfter(/databases/$(database)/documents/gpsPresence/$(uid)).data.senderId == resource.data.senderId &&
+   getAfter(/databases/$(database)/documents/gpsPresence/$(uid)).data.public == false;
+}
+match /gpsSharePrefs/{uid} {
+  allow get: if ownerEnabled(uid);
+  allow list, delete: if false;
+  allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly(['public','updatedAt','revision','operationId','writerSessionId']) &&
+    request.resource.data.keys().hasAll(['public','updatedAt','revision','operationId','writerSessionId']) &&
+    request.resource.data.public is bool &&
+    request.resource.data.revision is int &&
+    request.resource.data.operationId is string && request.resource.data.operationId.size() == 36 &&
+    request.resource.data.writerSessionId is string &&
+    gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+    ((!exists(/databases/$(database)/documents/gpsSharePrefs/$(uid)) && request.resource.data.revision == 1) ||
+     (exists(/databases/$(database)/documents/gpsSharePrefs/$(uid)) &&
+      request.resource.data.revision == resource.data.get('revision',0) + 1)) &&
+    request.resource.data.updatedAt == request.time;
+}
+match /gpsPresence/{uid} {
+  // Server data authorization; nonpublic markers are hidden from admins too.
+  allow get, list: if gpsViewerEnabled() &&
+    (request.auth.uid == uid ||
+      (resource.data.public == true && resource.data.onDuty == true));
+  allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+      'public','onDuty','status','name','lat','lon','accuracy','speed',
+      'heading','shiftId','capturedAtMs','updatedAt','senderId','writerSessionId'
+    ]) &&
+    request.resource.data.keys().hasAll([
+      'public','onDuty','status','name','lat','lon','accuracy','speed',
+      'heading','shiftId','capturedAtMs','updatedAt','senderId','writerSessionId'
+    ]) &&
+    request.resource.data.public is bool &&
+    request.resource.data.onDuty is bool &&
+    request.resource.data.name is string &&
+    request.resource.data.name.size() >= 1 &&
+    request.resource.data.name.size() <= 80 &&
+    request.resource.data.updatedAt == request.time &&
+    (
+      (request.resource.data.public == true &&
+       gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.senderId == request.resource.data.senderId &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.writerSessionId == request.resource.data.writerSessionId &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.updatedAt + duration.value(120,'s') > request.time &&
+       getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == true &&
+       request.resource.data.onDuty == true &&
+       request.resource.data.status in ['空車','迎車','実車','支払い','待機'] &&
+       request.resource.data.shiftId is string &&
+       request.resource.data.shiftId.matches('^shift-[0-9]+(-[a-zA-Z0-9]+)?$') &&
+       request.resource.data.lat is number &&
+       request.resource.data.lon is number &&
+       request.resource.data.lat >= -90 &&
+       request.resource.data.lat <= 90 &&
+       request.resource.data.lon >= -180 &&
+       request.resource.data.lon <= 180 &&
+       request.resource.data.accuracy is number &&
+       request.resource.data.accuracy >= 0 &&
+       request.resource.data.capturedAtMs is int &&
+       request.resource.data.capturedAtMs > 0 &&
+       (request.resource.data.speed == null ||
+        (request.resource.data.speed is number && request.resource.data.speed >= 0)) &&
+       (request.resource.data.heading == null ||
+        (request.resource.data.heading is number &&
+         request.resource.data.heading >= 0 &&
+         request.resource.data.heading < 360)))
+      ||
+      (request.resource.data.public == false &&
+       (getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == false ||
+        gpsOwnsSender(uid,request.resource.data.senderId,request.resource.data.writerSessionId)) &&
+       request.resource.data.onDuty == false &&
+       request.resource.data.lat == null &&
+       request.resource.data.lon == null &&
+       request.resource.data.accuracy == null &&
+       request.resource.data.speed == null &&
+       request.resource.data.heading == null &&
+       request.resource.data.shiftId == '' &&
+       request.resource.data.capturedAtMs == null)
+    );
+  allow delete: if false;
+}
+
+
+// GPS履歴は営業日報原本とは完全に別の専用領域。
+// 本番未適用。保存期間内に限る「作成のみ」、サーバー原本を無断上書きしない。
+// 他人の履歴は管理者であっても、監査ログ同時記録を強制する
+// サーバー処理を実装するまで直接アクセスを許可しない。
+match /gpsHistory/{uid}/shifts/{shiftId} {
+  allow get: if ownerEnabled(uid) &&
+    (!exists(/databases/$(database)/documents/gpsHistory/$(uid)/shifts/$(shiftId)) ||
+     resource.data.expiresAt > request.time);
+  allow list: if ownerEnabled(uid) && resource.data.expiresAt > request.time;
+  // saveOwnGpsHistoryがハッシュ・期限・削除済みを検証。直接作成を許可しない。
+  allow create: if false;
+  allow update, delete: if false;
+}
+// Server-side deletion tombstone to prevent an offline device re-uploading
+// a history already deleted by the owner or an administrator.
+match /gpsHistoryTombstones/{uid}/shifts/{shiftId} {
+  allow get: if ownerEnabled(uid);
+  allow list, create, update, delete: if false;
+}
+// 履歴の管理者閲覧/削除は、サーバー側の権限確認・監査ログ保存と
+// 一体化する実装までは開放しない（仕様78・79）。
+// 期限切れGPS履歴と監査ログの自動削除は別ジョブで要実装。
+
+// NOTE: On-duty confirmation is currently client-side only, not server verified.
+// Rules are an unapproved draft and must not be deployed without authorization.
+
+  match /{document=**} { allow read, write: if false; }
+ }
+}

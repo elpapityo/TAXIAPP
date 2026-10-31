@@ -22,6 +22,7 @@ const {chromium}=require('playwright');
   await context.addInitScript(()=>{
    window.__online=true;Object.defineProperty(navigator,'onLine',{get:()=>window.__online});
    window.__writes=[];window.__cloud={};
+   sessionStorage.setItem('taxiapp-current-session-v1-driver-12345678','s'.repeat(32));
    window.__fix=(offset=0)=>window.__gps?.({timestamp:Date.now()+offset,coords:{latitude:34.7,longitude:135.4,accuracy:8,speed:0,heading:0}});
    navigator.geolocation.watchPosition=callback=>{window.__gps=callback;return 1;};
    navigator.geolocation.clearWatch=()=>{window.__gps=null;};
@@ -41,17 +42,23 @@ const {chromium}=require('playwright');
      return {data:{status:'saved',operationId:data.operationId}};
     };`,
    firestore:`export const getFirestore=()=>({});export const doc=(_db,...p)=>p.join('/');export const collection=doc;export const query=(...p)=>p;export const where=(...p)=>p;export const orderBy=(...p)=>p;export const limit=x=>x;
-    export const serverTimestamp=()=>Date.now();export const Timestamp={fromMillis:n=>({millis:n})};
+    export const serverTimestamp=()=>{const n=Date.now();return {toMillis:()=>n};};export const Timestamp={fromMillis:n=>({millis:n})};
     export async function getDocFromServer(p){if(!navigator.onLine)throw Error('offline');let value=window.__cloud[p];
      if(p.startsWith('admins/')&&window.__admin)value={enabled:true};
+     if(p.startsWith('deviceSessions/'))value={sessionId:'s'.repeat(32)};
      if(p.startsWith('users/'))value={status:'active',openChatName:'合成テスト'};
-     if(p.startsWith('gpsSharePrefs/'))value={public:localStorage.getItem('__serverPrefs')!=='0'};
+     if(p.startsWith('gpsSharePrefs/')&&!value)value={public:localStorage.getItem('__serverPrefs')!=='0',revision:Number(localStorage.getItem('__serverRevision')||0),operationId:localStorage.getItem('__serverOperation')};
      return {exists:()=>!!value,data:()=>value};}
     export const getDoc=getDocFromServer;
-    export async function setDoc(p,value){if(!navigator.onLine)throw Error('offline');window.__cloud[p]=value;window.__writes.push({p,value});if(p.startsWith('gpsSharePrefs/'))localStorage.setItem('__serverPrefs',value.public?'1':'0');}
+    export const runTransaction=async(_db,fn)=>{const steps=[];const result=await fn({get:getDocFromServer,set:(p,v)=>steps.push(()=>setDoc(p,v)),delete:p=>steps.push(async()=>{delete window.__cloud[p];})});for(const write of steps)await write();return result;};
+    export async function setDoc(p,value){if(!navigator.onLine)throw Error('offline');window.__cloud[p]=value;window.__writes.push({p,value});if(p.startsWith('gpsSharePrefs/')){localStorage.setItem('__serverPrefs',value.public?'1':'0');localStorage.setItem('__serverRevision',String(value.revision||0));localStorage.setItem('__serverOperation',value.operationId||'');}}
     export const writeBatch=()=>{const work=[];return {set:(p,v)=>work.push([p,v]),commit:async()=>{for(const [p,v] of work)await setDoc(p,v);}};};
     export const getDocsFromServer=async()=>({docs:[{id:'other-12345678',data:()=>({openChatName:'合成対象'})}],forEach(){}});
-    export const onSnapshot=(q,options,callback)=>{const fn=callback||options;if(typeof q==='string'){window.__remotePrivacy=value=>{localStorage.setItem('__serverPrefs',value?'1':'0');fn({exists:()=>true,data:()=>({public:value}),metadata:{fromCache:false,hasPendingWrites:false}});};}else fn({forEach(){}});return ()=>{};};`
+    export const onSnapshot=(q,options,callback)=>{const fn=callback||options;
+     if(typeof q==='string'){
+      if(q.startsWith('gpsSharePrefs/'))window.__remotePrivacy=value=>{localStorage.setItem('__serverPrefs',value?'1':'0');const row={public:value,revision:Number(localStorage.getItem('__serverRevision')||0)+1,operationId:crypto.randomUUID()};localStorage.setItem('__serverRevision',String(row.revision));fn({exists:()=>true,data:()=>row,metadata:{fromCache:false,hasPendingWrites:false}});};
+      else getDocFromServer(q).then(snap=>fn({...snap,metadata:{fromCache:false,hasPendingWrites:false}}));
+     }else fn({forEach(){}});return ()=>{};};`
   };
   await context.route('https://www.gstatic.com/firebasejs/**',route=>{
    const name=route.request().url().match(/firebase-(app|auth|firestore|functions)\.js/)[1];

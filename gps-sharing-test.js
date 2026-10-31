@@ -13,7 +13,8 @@ let privacyPublic=true,privacyConfirmed=false,watchId=null,latestFix=null,lastAc
 let localModel=null,shift=null,shiftId='',currentStatus='',lastPublishedMs=0,lastPublishedFix=null;
 let map=null,vehicleLayer=null,selfLayer=null,vehicles=new Map(),unsubscribe=null,intervalId=null;
 let userBusy=false,serverBusy=false,pendingHide=false,lastDutyChecked=false;
-let preferences=null,privacySyncing=false,unsubscribePreferences=null;
+let preferences=null,privacySyncing=null,unsubscribePreferences=null;
+let editorSession=null,sender=null,senderIdentity=null,unsubscribeSender=null,authEpoch=0,hadEditor=false,settingsLoaded=false,dutyQueue=Promise.resolve();
 let presenceWriteTail=Promise.resolve();
 function enqueuePresence(write){
  const done=presenceWriteTail.then(write,write);
@@ -21,8 +22,8 @@ function enqueuePresence(write){
  return done;
 }
 let historyOn=false,historyQueue=Promise.resolve(),historyMap=null,historyLayer=null,historyRows=[];
-let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0,remoteHistoryRows=[];
-let firebaseFunctions=null,callFirebase=null,auditRunning=false;
+let cloudSession=null,cloudRunning=null,lastLocalFinalizationMs=0,remoteHistoryRows=[];
+let firebaseFunctions=null,callFirebase=null,auditRunning=null;
 const STORE='taxiapp-store-v1', STORE_OBJECT='state';
 const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
@@ -166,11 +167,13 @@ function markHistoryGap(owner=uid,id=shiftId){
 }
 async function refreshHistory(){
  if(!history||!uid)return;
- const localRows=await history.list(uid);
+ const owner=uid,epoch=authEpoch;
+ const localRows=await history.list(owner),audits=await history.pendingAudits(owner);
+ if(uid!==owner||authEpoch!==epoch)return;
  const localIds=new Set(localRows.map(row=>row.shiftId));
  const bytes=new TextEncoder().encode(JSON.stringify(localRows)).length;
  set('storageSummary','端末内 '+localRows.length+'乗務／概算 '+(bytes/1024).toFixed(1)+' KB');
- set('auditState','CSV監査の未同期 '+(await history.pendingAudits(uid)).length+'件');
+ set('auditState','CSV監査の未同期 '+audits.length+'件');
  historyRows=[...localRows,...remoteHistoryRows.filter(row=>!localIds.has(row.shiftId))].filter(row=>row.points?.length&&
   (!Number.isFinite(row.endedAtMs)||cloudHistory.retentionDeadlineMs(row.endedAtMs)>=Date.now()))
   .sort((a,b)=>(b.startedAtMs||0)-(a.startedAtMs||0));
@@ -195,19 +198,21 @@ async function finalizeStoredShifts(model){
  if(!history||!model||!Array.isArray(model.shifts)||!uid)return;
  if(Date.now()-lastLocalFinalizationMs<60000)return;
  lastLocalFinalizationMs=Date.now();
- const rows=await history.list(uid);
+ const owner=uid,epoch=authEpoch;
+ const rows=await history.list(owner);
+ if(uid!==owner||authEpoch!==epoch)return;
  for(const row of rows){
   if(Number.isFinite(row.endedAtMs)||!row.points?.length)continue;
   const matching=model.shifts.find(s=>s.id===row.shiftId);
   if(!matching?.endedIso)continue;
   const endedAtMs=Date.parse(matching.endedIso);
-  if(Number.isFinite(endedAtMs))await history.finish(uid,row.shiftId,endedAtMs);
+  if(Number.isFinite(endedAtMs))await history.finish(owner,row.shiftId,endedAtMs);
  }
 }
 async function attemptCloudSync(singleId){
- if(!cloudSession||!uid||!history||cloudRunning)return;
+ if(!cloudSession||!uid||!history||cloudRunning===cloudSession)return;
  if(navigator.onLine===false){set('cloudStatus','オフライン：GPS履歴は端末に保持');return;}
- cloudRunning=true;
+ const session=cloudSession;cloudRunning=session;
  const currentUid=uid;
  set('cloudStatus','GPS履歴を送信・保存照合中');
  try{
@@ -215,17 +220,18 @@ async function attemptCloudSync(singleId){
   const rows=singleId?[{shiftId:singleId}]:await history.list(currentUid);
   let success=0,errors=0;
   for(const row of rows){
-   if(uid!==currentUid)break;
-   const result=await cloudSession.one(currentUid,row.shiftId);
+   if(uid!==currentUid||cloudSession!==session)return;
+   const result=await session.one(currentUid,row.shiftId);
    if(result.status==='saved')success++;
    if(result.status==='error')errors++;
   }
+  if(uid!==currentUid||cloudSession!==session)return;
   set('cloudStatus',errors?
    'GPS履歴：'+errors+'乗務を送信できません。端末に保持':
    'GPS履歴：保存確認 '+success+'乗務');
   await refreshHistory();
- }catch(error){set('cloudStatus','GPS履歴の同期に失敗：'+String(error.message||error));}
- finally{cloudRunning=false;}
+ }catch(error){if(uid===currentUid&&cloudSession===session)set('cloudStatus','GPS履歴の同期に失敗：'+String(error.message||error));}
+ finally{if(cloudRunning===session)cloudRunning=null;}
 }
 
 function historyMapInit(){
@@ -272,19 +278,19 @@ async function displayHistory(id){
  }
 }
 async function syncCsvAudits(){
- if(auditRunning||!uid||!firebaseFunctions||navigator.onLine===false)return;
- const owner=uid;auditRunning=true;
+ if(auditRunning===authEpoch||!uid||!firebaseFunctions||navigator.onLine===false)return;
+ const owner=uid,epoch=authEpoch;auditRunning=epoch;
  try{
   for(const row of await history.pendingAudits(owner)){
-   if(uid!==owner)return;
+   if(uid!==owner||authEpoch!==epoch)return;
    const response=await callFirebase(firebaseFunctions,'recordOwnGpsCsvAudit')({
-    operationId:row.operationId,shiftId:row.shiftId,atMs:row.atMs});
+    actorUid:owner,operationId:row.operationId,shiftId:row.shiftId,atMs:row.atMs});
    if(response.data?.operationId!==row.operationId||response.data?.status!=='saved')throw Error('CSV監査の保存応答が一致しません');
    await history.confirmAudit(owner,row.operationId);
   }
   if(uid===owner)set('auditState','CSV監査の未同期 '+(await history.pendingAudits(owner)).length+'件');
  }catch(error){if(uid===owner)set('auditState','CSV監査の同期待ち：'+error.message);}
- finally{auditRunning=false;}
+ finally{if(auditRunning===epoch)auditRunning=null;}
 }
 async function deleteConfirmedCopies(){
  if(!uid||!history)return;
@@ -292,15 +298,18 @@ async function deleteConfirmedCopies(){
  if(!rows.length)return;
  if(!confirm('サーバー保存確認済みの端末GPSコピー '+rows.length+'乗務を削除します。未送信GPS・監査ログ・クラウド履歴は対象外です。削除しますか？'))return;
  await historyQueue;
+ if(uid!==owner)return;
  await history.removeConfirmed(owner);if(uid===owner)await refreshHistory();
 }
 async function historyExport(){
  const select=$('historyShiftSelect');if(!select.value)return;
- const row=await history.fetchOne(uid,select.value) ||
-  remoteHistoryRows.find(item=>item.shiftId===select.value);
+ const owner=uid,epoch=authEpoch,id=select.value,remote=remoteHistoryRows;
+ const row=await history.fetchOne(owner,id) || remote.find(item=>item.shiftId===id);
+ if(uid!==owner||epoch!==authEpoch)return;
  if(!row||!row.points.length)return;
  if(Number.isFinite(row.endedAtMs)&&cloudHistory.retentionDeadlineMs(row.endedAtMs)<Date.now())throw Error('GPS履歴の保存期限を過ぎています');
- await history.queueCsvAudit(uid,row.shiftId);
+ await history.queueCsvAudit(owner,row.shiftId);
+ if(uid!==owner||epoch!==authEpoch)return;
  const csv=core.historyCsv(row.points);
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob);
@@ -321,7 +330,7 @@ async function deleteCloudHistory(){
  set('cloudStatus','クラウドGPS履歴の削除を確認中…');
  try{
   const callable=callFirebase(firebaseFunctions,'deleteGpsHistory');
-  const response=await callable({targetUid,shiftId:id,confirmationShiftId:id});
+  const response=await callable({actorUid:targetUid,targetUid,shiftId:id,confirmationShiftId:id});
   if(uid!==targetUid)return;
   if(history&&await history.fetchOne(uid,id))await history.setSyncState(uid,id,'削除済み');
   remoteHistoryRows=remoteHistoryRows.filter(row=>row.shiftId!==id);
@@ -330,11 +339,12 @@ async function deleteCloudHistory(){
  }catch(error){set('cloudStatus','クラウド履歴の削除に失敗：'+String(error.message||error));}
 }
 async function historyDelete(){
- const id=$('historyShiftSelect').value;if(!id)return;
- const local=await history.fetchOne(uid,id);
+ const owner=uid,epoch=authEpoch,id=$('historyShiftSelect').value;if(!id)return;
+ const local=await history.fetchOne(owner,id);
+ if(uid!==owner||authEpoch!==epoch)return;
  if(!local){set('historyState','この履歴はクラウド保存のみ。端末内の削除対象はありません');return;}
  if(!confirm('この乗務の端末内GPS履歴を削除します。未送信の履歴は復元できません。削除しますか？'))return;
- await history.remove(uid,id);await refreshHistory();
+ await history.remove(owner,id);if(uid===owner&&authEpoch===epoch)await refreshHistory();
  if(historyLayer)historyLayer.clearLayers();
 }
 
@@ -342,7 +352,7 @@ function stopGps(){
  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
 }
 function shouldTrack(){
- return Boolean(uid&&shift&&visible()&&(privacyPublic||$('historyToggle').checked));
+ return Boolean(uid&&shift&&visible()&&sender?.canTrack()&&(privacyPublic||historyOn));
 }
 function ensureGps(){
  const must=shouldTrack();
@@ -375,7 +385,7 @@ function presenceDoc(fix){
  };
 }
 async function publish(fix){
- if(!db||!fx||!uid||!privacyPublic||!privacyConfirmed||!shift||!visible()||serverBusy)return;
+ if(!sender?.canTrack()||!db||!fx||!uid||!privacyPublic||!privacyConfirmed||!shift||!visible()||serverBusy)return;
  const interval=core.sendIntervalMs(fix,lastPublishedFix);
  if(lastPublishedMs&&Date.now()-lastPublishedMs<interval)return;
  serverBusy=true;
@@ -384,43 +394,53 @@ async function publish(fix){
   const targetUid=uid,targetShift=shiftId,payload=presenceDoc(fix);
   const sent=await enqueuePresence(async()=>{
    if(uid!==targetUid||shiftId!==targetShift||!privacyPublic||!privacyConfirmed||!shift||!visible())return false;
-   await fx.setDoc(fx.doc(db,'gpsPresence',targetUid),payload);return true;
+   const result=await sender.send(payload);return result.status==='sent';
   });
   if(!sent||uid!==targetUid||shiftId!==targetShift)return;
   lastPublishedMs=Date.now();lastPublishedFix=fix;
   set('sendState','送信済み '+new Date(lastPublishedMs).toLocaleTimeString('ja-JP'));
  }finally{serverBusy=false;}
 }
+function closedPresence(){return {
+ public:false,onDuty:false,status:'',name:displayName||'登録利用者',
+ lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',capturedAtMs:null
+};}
 async function hidePresence(reason){
- if(!uid||!db||!fx)return;
- pendingHide=true;
+ if(!sender)return;
+ pendingHide=true;stopGps();markHistoryGap();
  if(navigator.onLine===false){set('sendState','共有停止の反映待ち：最終位置が最大5分残る場合があります');return;}
+ const owner=uid,current=sender;
  try{
-  const targetUid=uid;
-  await enqueuePresence(async()=>{
-   if(uid!==targetUid)return;
-   await fx.setDoc(fx.doc(db,'gpsPresence',targetUid),{
-    public:false,onDuty:false,status:'',name:displayName||'登録利用者',
-    lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',
-    capturedAtMs:null,updatedAt:fx.serverTimestamp()
-   });
-  });
+  const stopped=await current.stop(closedPresence());
+  if(uid!==owner||sender!==current)return;
   pendingHide=false;
-  set('sendState','共有停止：'+reason);
- }catch(error){notify('共有停止のサーバー反映待ち：'+String(error.code||error.message));}
+  set('sendState',stopped?'共有停止：'+reason:'この画面からの位置送信は停止中');
+ }catch(error){if(uid===owner)notify('共有停止のサーバー反映待ち：'+String(error.code||error.message));}
+}
+async function maintainSender(){
+ const current=sender;if(!current)return;
+ if(!shift||!visible()||!editorSession?.canWrite()||(!privacyPublic&&!historyOn)){
+  stopGps();if(current.canTrack())await hidePresence('入庫・非表示・共有停止');return;
+ }
+ try{await current.ensure();}catch(error){notify('位置送信元を確認できません：'+error.message);}
+ if(sender===current)ensureGps();
+}
+function updateControlAccess(){
+ const allowed=settingsLoaded&&(editorSession?.canWrite()||(editorSession?.state()==='pending'&&hadEditor));
+ $('privacyToggle').disabled=!allowed;$('historyToggle').disabled=!allowed||!history;
 }
 function applyPrivacyState(){
  if(!preferences)return;
  const state=preferences.state();privacyPublic=state.public;privacyConfirmed=state.confirmed;
- $('privacyToggle').checked=privacyPublic;set('privacyState',statusText());
+ $('privacyToggle').checked=privacyPublic;set('privacyState',state.conflict?'他端末で設定変更：公開・非公開を選び直してください':statusText());
 }
 async function syncPrivacy(){
- if(!preferences||privacySyncing)return;
- const current=preferences;privacySyncing=true;
+ if(!preferences||privacySyncing===preferences)return;
+ const current=preferences;privacySyncing=current;
  try{await current.sync();if(preferences!==current)return;applyPrivacyState();
   if(privacyPublic&&shift&&latestFix&&Date.now()-latestFix.capturedAtMs<30000)await publish(latestFix);
  }catch(error){notify('公開設定の同期待ち：'+String(error.message||error));}
- finally{privacySyncing=false;if(preferences===current){applyPrivacyState();ensureGps();}}
+ finally{if(privacySyncing===current)privacySyncing=null;if(preferences===current){applyPrivacyState();ensureGps();}}
 }
 async function savePrivacy(requested){
  if(!preferences)return;
@@ -429,13 +449,17 @@ async function savePrivacy(requested){
  if(!requested){stopGps();pendingHide=true;hidePresence('本人の非公開操作');}
  ensureGps();await syncPrivacy();
 }
-async function reconcileDuty(){
+function reconcileDuty(){const run=dutyQueue.then(reconcileDutyNow);dutyQueue=run.catch(()=>{});return run;}
+async function reconcileDutyNow(){
  if(!user||!uid)return;
+ const epoch=authEpoch,owner=uid;
  const nextModel=await readLegacy();
+ if(epoch!==authEpoch||uid!==owner)return;
  const next=core.activeDuty(nextModel);
  const old=shiftId;
  localModel=nextModel;
  await finalizeStoredShifts(nextModel);
+ if(epoch!==authEpoch||uid!==owner)return;
  shift=next;
  shiftId=next?next.id:'';
  currentStatus=next?core.businessStatus(next):'';
@@ -445,7 +469,7 @@ async function reconcileDuty(){
    const endIso=(nextModel?.shifts||[]).find(s=>s.id===capturedOld)?.endedIso;
    const endedAtMs=endIso?Date.parse(endIso):NaN;
    if(Number.isFinite(endedAtMs)){
-    historyQueue=historyQueue.then(()=>history.finish(uid,capturedOld,endedAtMs))
+    historyQueue=historyQueue.then(()=>history.finish(owner,capturedOld,endedAtMs))
      .then(()=>refreshHistory())
      .catch(error=>set('historyState','GPS履歴終了記録の失敗：'+error.message));
     historyQueue.then(()=>attemptCloudSync(capturedOld));
@@ -456,6 +480,7 @@ async function reconcileDuty(){
   lastPublishedMs=0;lastPublishedFix=null;lastAccepted=null;latestFix=null;
   await hidePresence('入庫または乗務切替');}
  lastDutyChecked=true;
+ await maintainSender();
  ensureGps();
  if(shift&&privacyPublic&&latestFix&&!lastPublishedMs&&Date.now()-latestFix.capturedAtMs<30000)await publish(latestFix);
  draw();
@@ -503,9 +528,10 @@ function bindEvents(){
   const open=panel.hidden;panel.hidden=!open;
   $('vehicleHeading').setAttribute('aria-expanded',String(open));
  });
- window.addEventListener('online',()=>{syncPrivacy();syncCsvAudits();attemptCloudSync();});
+ window.addEventListener('offline',()=>{sender?.invalidate();stopGps();markHistoryGap();set('senderState','通信断：位置送信元の確認待ち');});
+ window.addEventListener('online',()=>{reconcileDuty();syncPrivacy();syncCsvAudits();attemptCloudSync();});
  document.addEventListener('visibilitychange',()=>{
-  if(!visible()){stopGps();markHistoryGap();}
+  if(!visible()){stopGps();markHistoryGap();hidePresence('画面非表示');}
   else {syncCsvAudits();history?.cleanupConfirmed(uid).then(()=>refreshHistory()).catch(error=>set('historyState','端末整理失敗：'+error.message));reconcileDuty().catch(error=>notify('営業状態確認エラー：'+error.message));}
  });
 }
@@ -522,6 +548,9 @@ async function boot(){
  fx=f;app=getApps().length?getApp():initializeApp(config);auth=a.getAuth(app);db=f.getFirestore(app);
  firebaseFunctions=fn.getFunctions(app,'asia-northeast1');callFirebase=fn.httpsCallable;
  a.onAuthStateChanged(auth,async nextUser=>{
+  const epoch=++authEpoch;lastLocalFinalizationMs=0;
+  sender?.dispose();sender=null;senderIdentity?.release();senderIdentity=null;editorSession?.clear();editorSession=null;hadEditor=false;settingsLoaded=false;$('privacyToggle').disabled=true;$('historyToggle').disabled=true;
+  if(unsubscribeSender){unsubscribeSender();unsubscribeSender=null;}
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
   cloudSession?.dispose();cloudSession=null;remoteHistoryRows=[];
   preferences?.dispose();preferences=null;privacyConfirmed=false;pendingHide=false;
@@ -535,9 +564,11 @@ async function boot(){
   if(!user){$('privacyToggle').disabled=true;$('historyToggle').disabled=true;
    notify('TAXIAPP本体でGoogleログインしてください');set('authState','未ログイン');return;}
   try{
+   const ownerAtLogin=uid;
    const [own,admin]=await Promise.all([
     f.getDoc(f.doc(db,'users',uid)),f.getDoc(f.doc(db,'admins',uid))
    ]);
+   if(epoch!==authEpoch||uid!==ownerAtLogin)return;
    const active=own.exists()&&own.data().status==='active';
    isAdmin=admin.exists()&&admin.data().enabled===true;
    $('adminGpsHistoryLink').hidden=!isAdmin;
@@ -552,55 +583,87 @@ async function boot(){
      }}catch{}
    }
    const owner=uid;
+   editorSession=window.TAXIAPP_DEVICE_SESSION.create({auth,db,f,onMode:(mode,previous,detail)=>{
+    if(epoch!==authEpoch)return;
+    set('senderState',detail);
+    if(mode==='writer')hadEditor=true;else if(mode==='viewer')hadEditor=false;
+    updateControlAccess();
+    if(mode!=='writer'){sender?.invalidate();stopGps();markHistoryGap();}
+    else reconcileDuty().catch(error=>notify('操作端末確認後の照合失敗：'+error.message));
+   }});
+   const identity=await window.TAXIAPP_GPS_PRESENCE_SENDER.acquireIdentity({uid:owner,storage:sessionStorage,locks:navigator.locks});
+   if(epoch!==authEpoch){identity.release();return;}
+   senderIdentity=identity;
+   sender=window.TAXIAPP_GPS_PRESENCE_SENDER.create({auth,db,f,session:editorSession,uid:owner,
+    senderId:identity.senderId,onChange:state=>{
+     if(epoch!==authEpoch)return;
+     set('senderState',state.message);
+     if(!state.held){stopGps();markHistoryGap();}
+    }});
+   await editorSession.begin(nextUser,{claimOnLogin:false});
+   if(epoch!==authEpoch)return;
+   const currentSender=sender;
+   unsubscribeSender=f.onSnapshot(f.doc(db,'gpsSenderSessions',owner),{includeMetadataChanges:true},snap=>{
+    if(epoch!==authEpoch||sender!==currentSender)return;
+    currentSender.observe(snap);ensureGps();
+   },error=>{if(epoch===authEpoch){currentSender.invalidate();stopGps();notify('位置送信元の監視失敗：'+error.message);}});
    preferences=window.TAXIAPP_GPS_SHARING_PREFERENCES.create({uid:owner,storage:localStorage,
     online:()=>navigator.onLine!==false,
     read:async()=>{
      const saved=await f.getDocFromServer(f.doc(db,'gpsSharePrefs',owner));
-     return saved.exists()?saved.data().public:null;
+     return saved.exists()?{public:saved.data().public,revision:saved.data().revision??0,operationId:saved.data().operationId??null}:null;
     },
-    write:async value=>{
-     if(uid!==owner)throw Error('利用者が切り替わりました');
+    write:async(value,operation)=>{
+     const activeSession=editorSession?.sessionId();
+     if(uid!==owner||!editorSession?.canWrite())throw Error('操作端末ではないため公開設定の送信を保留します');
      await enqueuePresence(async()=>{
-      if(uid!==owner)throw Error('利用者が切り替わりました');
-      const batch=f.writeBatch(db);
-      batch.set(f.doc(db,'gpsSharePrefs',owner),{public:value,updatedAt:f.serverTimestamp()});
-      if(!value)batch.set(f.doc(db,'gpsPresence',owner),{
-       public:false,onDuty:false,status:'',name:displayName||'登録利用者',
-       lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',
-       capturedAtMs:null,updatedAt:f.serverTimestamp()
+      if(uid!==owner||editorSession?.sessionId()!==activeSession)throw Error('操作端末が切り替わりました');
+      const prefRef=f.doc(db,'gpsSharePrefs',owner),presenceRef=f.doc(db,'gpsPresence',owner);
+      await f.runTransaction(db,async tx=>{
+       const pref=await tx.get(prefRef);
+       if(uid!==owner||editorSession?.sessionId()!==activeSession)throw Error('操作端末が切り替わりました');
+       if(pref.exists()&&pref.data().operationId===operation.id)return;
+       if((pref.exists()?(pref.data().revision??0):0)!==operation.baseRevision)
+        throw Error('他端末で公開設定が変更されました。公開・非公開を選び直してください');
+       tx.set(prefRef,{public:value,revision:operation.baseRevision+1,operationId:operation.id,
+        writerSessionId:activeSession,updatedAt:f.serverTimestamp()});
+       if(!value)tx.set(presenceRef,{...closedPresence(),updatedAt:f.serverTimestamp(),senderId:'',writerSessionId:''});
       });
-      await batch.commit();
      });
     }});
    applyPrivacyState();await syncPrivacy();
+   if(epoch!==authEpoch)return;
    const currentPreferences=preferences;
    unsubscribePreferences=f.onSnapshot(f.doc(db,'gpsSharePrefs',owner),{includeMetadataChanges:true},snap=>{
     if(uid!==owner||preferences!==currentPreferences||snap.metadata?.fromCache||snap.metadata?.hasPendingWrites)return;
     if(!snap.exists()||typeof snap.data().public!=='boolean')return;
-    currentPreferences.receive(snap.data().public);applyPrivacyState();
+    currentPreferences.receive({public:snap.data().public,revision:snap.data().revision??0,operationId:snap.data().operationId??null});applyPrivacyState();
     if(!privacyPublic)stopGps();ensureGps();draw();
    },error=>{
     if(uid===owner)notify('公開設定の他端末同期を確認できません：'+String(error.message||error));
    });
    $('privacyToggle').checked=privacyPublic;
-   $('privacyToggle').disabled=false;set('privacyState',statusText());
+   set('privacyState',statusText());
    try{historyOn=localStorage.getItem(historyPrefKey())==='1';}catch{historyOn=false;}
-   $('historyToggle').checked=historyOn;$('historyToggle').disabled=!history;
-   await history.cleanupConfirmed(uid).catch(error=>set('cloudStatus','保存済みGPS履歴の端末整理に失敗：'+error.message));
+   $('historyToggle').checked=historyOn;settingsLoaded=true;updateControlAccess();
+   await history.cleanupConfirmed(owner).catch(error=>{if(epoch===authEpoch)set('cloudStatus','保存済みGPS履歴の端末整理に失敗：'+error.message);});
+   if(epoch!==authEpoch)return;
    cloudSession=cloudHistory&&history?cloudHistory.create({auth,db,f,store:history,
     upload:data=>callFirebase(firebaseFunctions,'saveOwnGpsHistory')(data)}):null;
    await refreshHistory();
+   if(epoch!==authEpoch)return;
    subscribe();
    await reconcileDuty();
+   if(epoch!==authEpoch)return;
    attemptCloudSync();syncCsvAudits();
-   if(!privacyPublic)await hidePresence('既存の非公開設定');
+   if(!privacyPublic&&!historyOn)await hidePresence('既存の非公開設定');
    if(!intervalId)intervalId=setInterval(()=>{
     reconcileDuty().catch(error=>notify('営業状態の照合に失敗：'+String(error.message)));
     draw();
     if(pendingHide&&navigator.onLine!==false)hidePresence('未反映操作の再送');
     if(preferences&&!preferences.state().confirmed)syncPrivacy();
    },5000);
-  }catch(error){notify('TAXIAPP登録の確認に失敗：'+String(error.code||error.message));}
+  }catch(error){if(epoch===authEpoch)notify('TAXIAPP登録の確認に失敗：'+String(error.code||error.message));}
  });
 }
 try{await boot();}catch(error){notify('位置共有の起動に失敗：'+String(error.message||error));}
