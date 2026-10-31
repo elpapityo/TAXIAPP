@@ -183,3 +183,14 @@ Notionの全プロジェクト共通・開発共通・TAXIAPP現行指示・既�
 - Authenticationを開始しGoogleプロバイダの保存前フォームを準備。公開名はTAXIAPP GPS、サポートメールは本人のGPS管理用アドレス。**Google有効化の保存は未実行**。認証設定変更と連絡先表示の操作時確認が次に必要。ブラウザのフォームを引継ぎ用に保持。
 - 未実装：日報UID↔GPS UIDの同一人物/権限連携、日報側操作端末との連動、無料バックエンド。未反映/未検証：GPS用業務ルール/公開試験版/実アカウント/実機/本体UI。既存7 CallableをSparkへそのまま配置しない。
 - 詳細は `docs/gps-separate-project-20261031.md`。登録資料・過去スレッドの参照範囲は第7節を継承し、既読で変更のない添付を重複調査していない。Notion現行指示・既存位置共有タスク・最新PR #223 HEAD 5af7e73と照合。
+
+## 13. Google有効化済み・無料の認証連携を準備（2026-10-31）
+
+本人がGoogle有効化/公開名/サポートメールを承認。ブラウザ再ログイン後、保存を実施し、プロバイダ一覧の「Google 有効」とSparkを実画面確認。第12節のGoogle有効化承認待ち/保存未実行は更新する。日報側の本番は未変更。
+
+- `gps-account-bridge.js`：日報/GPSで異なるUIDを保持し、同一の確認済みGoogle subjectを検査。固定のGAS URLへ2つの短期ID tokenをPOST本文だけで送るクライアント。URL/端末保存/ログへtokenを記録しない。ログイン切替/待ち行列/古い応答を排除。GPS画面への接続と実ブラウザ受入は未実装/未検証である。
+- `google-apps-script/gps-account-broker/Code.gs`：両tokenをGoogle accounts:lookupで検証し、aud/iss/UID/時刻/失効/Google subjectも照合。日報へは本人のtokenで本人のusers/admins/deviceSessionsだけを読み、GPS側だけにUID対応/利用資格/操作端末を事前条件付きcommit・読戻し照合する。未配置コード、実Google署名/通信の検証済みとはしない。
+- 既存の日報/印刷GASとは別に「TAXIGPS 認証連携」を本人GPS管理用アカウントで作成。Code.gsと2スコープのmanifestを下書き保存し、エディタ内容とローカルコードの完全一致を確認。スクリプトID/保存先/具体的な権限/公開対象/切戻しは同ディレクトリのREADME.md。
+- 新規連携19件＋分離/停止の既存9件＝Node28件成功。Google/Firestore/Apps Script APIは合成。既存の実Emulator/Chromium回帰は第12節の結果を継承し、今回は変更していない部分を再実行していない。
+- 次に必要な個別承認：新規スクリプトへの external_request/datastore のOAuth付与、GPS管理アカウントとして実行するWebアプリの「全員アクセス」配置、専用GASへの本人の短期token送信/UID対応表の実作成。URL自体は公開になるが、本人確認なしに利用者情報を返さない。課金設定は変更しない。
+- **未完了**：GAS実行権限/公開/実token/API/CORS、GPS画面へのAuth統合、日報UIDの端末データとの対応、日報資格変更/操作端末切替の即時失効、既決の監査/履歴/期限等の7機能を守る無料バックエンド。GASは現状linkのみで、旧7 Callableを移植済みとは報告しない。GPSクラウド停止と全拒否ルールを維持し、本体UIへ未統合。
