@@ -21,6 +21,7 @@ function enqueuePresence(write){
 }
 let historyOn=false,historyQueue=Promise.resolve(),historyMap=null,historyLayer=null,historyRows=[];
 let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0,remoteHistoryRows=[];
+let firebaseFunctions=null,callFirebase=null;
 const STORE='taxiapp-store-v1', STORE_OBJECT='state';
 const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
@@ -265,6 +266,22 @@ async function historyExport(){
  document.body.append(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+async function deleteCloudHistory(){
+ if(!uid||!firebaseFunctions||!callFirebase)return;
+ const targetUid=uid,id=$('historyShiftSelect').value;
+ if(!id)return;
+ if(!window.confirm('この乗務のクラウドGPS履歴を削除します。サーバーから復元できなくなります。削除しますか？'))return;
+ set('cloudStatus','クラウドGPS履歴の削除を確認中…');
+ try{
+  const callable=callFirebase(firebaseFunctions,'deleteGpsHistory');
+  const response=await callable({targetUid,shiftId:id,confirmationShiftId:id});
+  if(uid!==targetUid)return;
+  if(history&&await history.fetchOne(uid,id))await history.setSyncState(uid,id,'削除済み');
+  remoteHistoryRows=remoteHistoryRows.filter(row=>row.shiftId!==id);
+  await refreshHistory();
+  set('cloudStatus',response.data?.status==='deleted'?'クラウドGPS履歴を削除しました':'履歴は既に削除済みです');
+ }catch(error){set('cloudStatus','クラウド履歴の削除に失敗：'+String(error.message||error));}
+}
 async function historyDelete(){
  const id=$('historyShiftSelect').value;if(!id)return;
  const local=await history.fetchOne(uid,id);
@@ -420,6 +437,7 @@ function bindEvents(){
  });
  $('historyExport').addEventListener('click',()=>historyExport().catch(error=>set('historyState','CSV出力失敗：'+error.message)));
  $('historyDelete').addEventListener('click',()=>historyDelete().catch(error=>set('historyState','履歴削除失敗：'+error.message)));
+ $('historyDeleteCloud').addEventListener('click',()=>deleteCloudHistory());
  $('historyFit').addEventListener('click',()=>displayHistory($('historyShiftSelect').value));
  $('recenter').addEventListener('click',()=>{if(map&&latestFix)map.setView([latestFix.lat,latestFix.lon],15);});
  $('vehicleHeading').addEventListener('click',()=>{
@@ -438,11 +456,13 @@ async function boot(){
  const config=window.TAXIAPP_FIREBASE_CONFIG;
  if(!config||!config.projectId){notify('TAXIAPPのFirebase設定が見つかりません');return;}
  const v='12.4.0';
- const [{initializeApp,getApps,getApp},a,f]=await Promise.all([
+ const [{initializeApp,getApps,getApp},a,f,fn]=await Promise.all([
   import('https://www.gstatic.com/firebasejs/'+v+'/firebase-app.js'),
   import('https://www.gstatic.com/firebasejs/'+v+'/firebase-auth.js'),
-  import('https://www.gstatic.com/firebasejs/'+v+'/firebase-firestore.js')]);
+  import('https://www.gstatic.com/firebasejs/'+v+'/firebase-firestore.js'),
+  import('https://www.gstatic.com/firebasejs/'+v+'/firebase-functions.js')]);
  fx=f;app=getApps().length?getApp():initializeApp(config);auth=a.getAuth(app);db=f.getFirestore(app);
+ firebaseFunctions=fn.getFunctions(app,'asia-northeast1');callFirebase=fn.httpsCallable;
  a.onAuthStateChanged(auth,async nextUser=>{
   stopGps();if(unsubscribe){unsubscribe();unsubscribe=null;}
   cloudSession?.dispose();cloudSession=null;remoteHistoryRows=[];
