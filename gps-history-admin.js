@@ -138,6 +138,26 @@ async function deleteSelected(){
   await selectTarget();
  }catch(error){txt('status','削除不可：'+String(error.message||error));}
 }
+
+async function refreshAudit(){
+ const list=$('auditList');list.replaceChildren();
+ const actor=currentUser;
+ if(!actor)return;
+ txt('status','GPS履歴の監査ログを確認中');
+ try{
+  const data=await call('adminListGpsHistoryAudit',{});
+  if(currentUser!==actor)return;
+  for(const row of data.entries||[]){
+   const line=document.createElement('p');
+   const action={view:'閲覧',csv_export:'CSV出力',delete:'削除'}[row.action]||row.action;
+   const at=Number.isFinite(row.atMs)?new Date(row.atMs).toLocaleString('ja-JP'):'時刻未確認';
+   line.textContent=at+'｜'+action+'｜操作 '+row.actorUid+
+    '｜対象 '+row.targetUid+'｜乗務 '+row.shiftId;
+   list.append(line);
+  }
+  txt('status','監査ログ '+(data.entries||[]).length+'件を表示（座標情報なし）');
+ }catch(error){txt('status','監査ログを取得できません：'+String(error.message||error));}
+}
 async function init(){
  makeMap();
  $('target').addEventListener('change',selectTarget);
@@ -147,6 +167,7 @@ async function init(){
  $('export').addEventListener('click',exportSelected);
  $('delete').addEventListener('click',deleteSelected);
  $('fit').addEventListener('click',fitRoute);
+ $('auditRefresh').addEventListener('click',refreshAudit);
  const [{initializeApp,getApp,getApps},a,f,fn]=await Promise.all([
   import('https://www.gstatic.com/firebasejs/'+version+'/firebase-app.js'),
   import('https://www.gstatic.com/firebasejs/'+version+'/firebase-auth.js'),
