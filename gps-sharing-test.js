@@ -11,16 +11,20 @@ let privacyPublic=true,privacyConfirmed=false,watchId=null,latestFix=null,lastAc
 let localModel=null,shift=null,shiftId='',currentStatus='',lastPublishedMs=0,lastPublishedFix=null;
 let map=null,vehicleLayer=null,selfLayer=null,vehicles=new Map(),unsubscribe=null,intervalId=null;
 let userBusy=false,serverBusy=false,pendingHide=false,lastDutyChecked=false;
-const STORE='taxiapp-store-v1', STORE_OBJECT='state', STORE_KEY='taxiapp';
+const STORE='taxiapp-store-v1', STORE_OBJECT='state';
+const dutyKeys=()=>isAdmin?['taxiapp-account-state-v1-'+uid,'taxiapp']:['taxiapp-account-state-v1-'+uid];
 const prefKey=()=> 'taxiapp-location-public-v1-'+uid;
 const visible=()=>document.visibilityState==='visible';
 const statusText=()=>privacyPublic?'公開中':privacyConfirmed?'非公開中':'非公開切替待ち';
 const notify=message=>set('connection',message);
 
 function readLegacy(){
- return new Promise(resolve=>{
+ return new Promise(resolve=>{ 
+  if(!uid)return resolve(null);
   let finished=false;const finish=x=>{if(finished)return;finished=true;resolve(x);};
-  const fallback=()=>{try{finish(JSON.parse(localStorage.getItem('taxiapp-v1')||'null'));}catch{finish(null);}};
+  const fallback=()=>{for(const key of dutyKeys()){
+   try{const value=JSON.parse(localStorage.getItem(key)||'null');if(core.activeDuty(value)){finish(value);return;}}catch{}
+  }finish(null);};
   if(!window.indexedDB)return fallback();
   try{
    const req=indexedDB.open(STORE);
@@ -31,9 +35,13 @@ function readLegacy(){
     const database=req.result;
     if(!database.objectStoreNames.contains(STORE_OBJECT)){database.close();return fallback();}
     const tx=database.transaction(STORE_OBJECT,'readonly');
-    const request=tx.objectStore(STORE_OBJECT).get(STORE_KEY);
-    request.onsuccess=()=>{const value=request.result;database.close();finish(value);};
-    request.onerror=()=>{database.close();fallback();};
+    const keys=dutyKeys();let found=null;let pending=keys.length;
+    for(const key of keys){
+     const request=tx.objectStore(STORE_OBJECT).get(key);
+     request.onsuccess=()=>{if(!found&&core.activeDuty(request.result))found=request.result;
+       if(--pending===0){database.close();finish(found);}};
+     request.onerror=()=>{if(--pending===0){database.close();finish(found);}};
+    }
    };
   }catch{fallback();}
  });
@@ -170,7 +178,7 @@ async function savePrivacy(requested){
  if(!requested){stopGps();await hidePresence('本人の非公開操作');}
  try{
   await fx.setDoc(fx.doc(db,'gpsSharePrefs',uid),{public:requested,updatedAt:fx.serverTimestamp()});
-  privacyConfirmed=true;
+  privacyConfirmed=!pendingHide;
   if(requested&&shift&&latestFix)await publish(latestFix);
  }catch(error){notify('公開設定の同期待ち：'+String(error.code||error.message));}
  set('privacyState',statusText());userBusy=false;ensureGps();
@@ -243,18 +251,19 @@ async function boot(){
    displayName=own.exists()?String(own.data().openChatName||user.displayName||'登録利用者'):
     String(user.displayName||'登録利用者');
    set('authState',displayName+'（既存TAXIAPPログイン）');
-   const local=localStorage.getItem(prefKey());
+   let local=null;try{local=localStorage.getItem(prefKey());}catch{}
    privacyPublic=local!=='0';privacyConfirmed=false;
    try{
     const setting=await f.getDoc(f.doc(db,'gpsSharePrefs',uid));
     if(setting.exists()&&typeof setting.data().public==='boolean'){
      privacyPublic=setting.data().public;privacyConfirmed=true;
-     localStorage.setItem(prefKey(),privacyPublic?'1':'0');
+     try{localStorage.setItem(prefKey(),privacyPublic?'1':'0');}catch{}
     }
    }catch{notify('位置共有の設定は端末値で仮表示中（サーバー未確認）');}
    $('privacyToggle').checked=privacyPublic;set('privacyState',statusText());
    subscribe();
    await reconcileDuty();
+   if(!privacyPublic)await hidePresence('既存の非公開設定');
    if(!intervalId)intervalId=setInterval(()=>{
     reconcileDuty().catch(error=>notify('営業状態の照合に失敗：'+String(error.message)));
     draw();
