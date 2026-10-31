@@ -4,26 +4,37 @@
 
 承認範囲のコード修正と手元検証を実施。本番反映は未実施。本体の営業UIへの統合は実機受入後。新しいアカウント体系を追加せず既存TAXIAPPログインを使う。
 
-- 本体設定ファイルのprojectIdは `taxiapp-2b6bd`。**実際の配置先・配置済みFirestoreルール・課金プラン・Functions配置状態は、まだ本番へ接続できていないため未確認**。
-- この環境で `firebase login:list --json` は認証アカウントを返さず、`firebase projects:list --json` は `Failed to authenticate, have you run firebase login?` で失敗。Googleログインや認証情報の入力は本人操作が必要。認証済みと誤報しない。
-- 本番ルール・認証・Functions/Scheduler・公開・追加費用に関わる操作は、WORK_HANDOFF.mdとNotion専用指示により個別承認対象。無料/有料の実状態を未確認のまま課金設定を有効にしない。
+- 本人がGPSルール差分・7 Callable・同一オリジン試験ページ公開を承認済み。Schedulerと新規の有料設定は承認範囲外。本体営業UIへの統合は実機受入後。
+- 本人が安全なGoogleアカウント選択で管理用アカウントを指定し、Firebaseコンソールの `taxiapp-2b6bd` / TAXIAPPに接続できた。**現行はSpark（無料、月額0ドル）**。Functions画面は「最初のデプロイを待機しています」と表示。配置済みGPS関数の存在を確認できたわけではない。
+- 本番ルールの現行版はコンソールで「10月24日2026年22:41」の星付き版。本文を `docs/firestore-production-observed-20261031.rules` に保存。コメント/空白を除く文字列・演算子・識別子のトークン列はリポジトリ版と一致した。GPS差分だけを追加して候補を再生成し、その本番ベースでEmulator9ケース成功。本番ルールは未編集・未公開。
+- Firebase CLIは引き続き未認証。`login --no-localhost` のアカウント選択は進んだが、認証コードの取得・チャット転送・CLI入力はしていない。不要になった待機CLIは中止。ブラウザの既存認証とCLIのデプロイ資格情報を混同しない。
+
+## 新たに判明した費用の承認事項
+
+Cloud Functions for FirebaseはBlazeプランとCloud Billingの紐付けが必要。現在のSparkのまま7関数を配置できない。Blazeへの変更は従量課金への移行であり、今回承認済みの「追加費用を有効化しない」範囲を超えるため未実施。関数配置、動作する試験版の公開はこの条件の決定待ち。ルールだけ先に公開して利用開始済みとは扱わない。
+
+- 対象案：既存 `taxiapp-2b6bd` をBlazeへ変更してGPS7関数を配置。Schedulerは引き続き配置しない。請求先アカウント・支払方法は本人が選択する。
+- 現行コードは各関数 `minInstances:0 / maxInstances:1 / concurrency:1 / memory:256MiB / timeoutSeconds:120 / asia-northeast1`。常時稼働を避ける設定だが、無料・月額上限を保証するものではない。Firestoreの位置送受信やCloud Build/Artifact Registryも費用条件に含める。
+- 無料枠のある従量課金でも、実利用・ビルド・コンテナ保存等により費用が出る。現状の利用人数/履歴容量/実測転送量で月額を確定できないため「無料で使える」とは報告しない。予算通知も支出を停止する上限ではない。
+- 公式根拠：[Firebase料金プラン](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)、[Functions料金FAQ](https://firebase.google.com/docs/functions/faq-and-troubleshooting)。確認日2026-10-31。
 
 ## 承認後に適用を検討する具体的な範囲
 
 1. 現行の本番Firestoreルールと配置状態を読取り、リポジトリの `firestore.rules` と照合する。食い違う場合は未適用候補をそのままデプロイせず、既存ルールを保った差分に組み直す。
 2. GPS専用のルール差分だけを追加する。対象は `gpsSharePrefs`、`gpsSenderSessions`、`gpsPresence`、`gpsHistory`、`gpsHistoryTombstones`。既存の営業原本・Google印刷・ユーザー登録・管理者設定・操作端末のルールを変更しない。
 3. GPS Callable 7関数だけを対象に配置する。既存の管理者関数は配置対象にしない。必要な課金/IAM/プロジェクト設定の変更が生じる場合は、その実際の内容を提示して止める。
-4. 検証ページと参照JSを既存TAXIAPPと**同じオリジン**へ試験公開し、既存ログイン・操作端末セッションを引き継いでGalaxy/iPhone実機試験を行う。別ドメインの試験URLを同じログイン/操作権が自動共有されるものとして扱わない。公開操作は未承認。
+4. 検証ページと参照JSを既存TAXIAPPと**同じオリジン**へ試験公開し、既存ログイン・操作端末セッションを引き継いでGalaxy/iPhone実機試験を行う。別ドメインの試験URLを同じログイン/操作権が自動共有されるものとして扱わない。試験公開は承認済みだが、必要な関数配置が費用承認待ち。READMEのGitHub Pages URLは条件付き説明であり、実際の公開設定・本番URLは未照合。
 5. Schedulerの `cleanupGpsHistoryAndAudit` はこの7関数配置に含めない。03:00 JSTの実削除、費用と必要権限は別の確認・承認が必要。期限切れ閲覧拒否のルールと物理削除の実行は別。
 
 ## ルールのレビュー用ファイル
 
 - 最小差分：`docs/gps-sharing-firestore.rules.fragment`
-- 既存リポジトリ版へ差し込んだ全文候補：`docs/gps-sharing-firestore.rules.candidate`
+- 取得済み本番版へ差し込んだ全文候補：`docs/gps-sharing-firestore.rules.candidate`
+- 観測時点の本番ルール：`docs/firestore-production-observed-20261031.rules`
 - 候補を指定する別設定：`firebase.gps-review.json`
-- 再生成：`node scripts/prepare-gps-deployment.js`
+- 再生成：`node scripts/prepare-gps-deployment.js docs/firestore-production-observed-20261031.rules`
 
-再生成はローカルファイルを書くだけで、接続・認証・デプロイを行わない。候補は本番配置済みルールを取得したものではない。
+再生成はローカルファイルを書くだけで、接続・認証・デプロイを行わない。候補は取得した本番ベース＋未適用GPS差分であり、配置済み本文そのものではない。公開直前に本番版の更新がないか照合する。
 
 ## GPS Callable配置対象
 

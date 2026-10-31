@@ -38,3 +38,13 @@ node scripts/run-gps-emulator-tests.js
 - 公式Functions Emulatorはこの環境でUnixソケットのlisten/connectがEPERMとなるため使用できなかった。代わりに**実装済みonCallハンドラをExpressのローカルTCPで実行**する。認可コードやHTTP認証処理をモックに置き換えていないが、Functions EmulatorそのものやCloud Run/IAMの検証ではない。
 - GPS座標はChromium Geolocationの合成、可視状態は試験から制御する。GSIタイル画像は試験では外部取得しない。実機GPS・Google OAuth・実タイル・本番費用・Schedulerの成功とは区別する。
 - Emulator起動失敗・試験失敗をスキップして成功にしない。ルール候補は `node scripts/prepare-gps-deployment.js` で再生成できるが、このコマンドも接続・デプロイをしない。
+# 取得済み本番ルールでの再確認（2026-10-31）
+
+`docs/firestore-production-observed-20261031.rules` はFirebaseコンソールから読取った現行版（星付き2026-10-24 22:41）。コメント/空白を除くトークンはリポジトリ版と一致。候補はGPS差分のみを挿入する。
+
+```sh
+node scripts/prepare-gps-deployment.js docs/firestore-production-observed-20261031.rules
+GPS_RULES_BASE=docs/firestore-production-observed-20261031.rules node scripts/run-gps-emulator-tests.js
+```
+
+NodeとNODE_PATHは下記と同じ環境を使用。本番ベースで9ケース成功。生成/試験は本番へ変更しない。本番の最新ルールは公開直前にも照合する。

@@ -2,11 +2,13 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const base=fs.readFileSync(path.join(root,'firestore.rules'),'utf8');
+// 省略時は従来のリポジトリ案。公開直前は取得・照合済みの本番スナップショットを渡す。
+const basePath=process.argv[2]?path.resolve(root,process.argv[2]):path.join(root,'firestore.rules');
+const base=fs.readFileSync(basePath,'utf8');
 const fragment=fs.readFileSync(path.join(root,'docs/gps-sharing-firestore.rules.fragment'),'utf8');
-const marker='  match /{document=**}';
-if(base.split(marker).length!==2)throw Error('既存ルールの挿入先を一意に確認できません');
-const candidate=base.replace(marker,()=>fragment+'\n'+marker);
+const marker=/^[ \t]*match \/\{document=\*\*\}/gm;
+if([...base.matchAll(marker)].length!==1)throw Error('既存ルールの挿入先を一意に確認できません');
+const candidate=base.replace(marker,match=>fragment+'\n'+match);
 fs.writeFileSync(path.join(root,'docs/gps-sharing-firestore.rules.candidate'),candidate);
 const original=JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8'));
 fs.writeFileSync(path.join(root,'firebase.gps-review.json'),JSON.stringify({

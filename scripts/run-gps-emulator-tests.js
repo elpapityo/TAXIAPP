@@ -2,11 +2,11 @@
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'taxiapp-gps-'));
-const base=fs.readFileSync(path.join(root,'firestore.rules'),'utf8');
+const base=fs.readFileSync(process.env.GPS_RULES_BASE?path.resolve(root,process.env.GPS_RULES_BASE):path.join(root,'firestore.rules'),'utf8');
 const fragment=fs.readFileSync(path.join(root,'docs/gps-sharing-firestore.rules.fragment'),'utf8');
-const marker='  match /{document=**}';
-if(!base.includes(marker))throw Error('既存ルールの挿入先がありません');
-fs.writeFileSync(path.join(temp,'firestore.rules'),base.replace(marker,()=>fragment+'\n'+marker));
+const marker=/^[ \t]*match \/\{document=\*\*\}/gm;
+if([...base.matchAll(marker)].length!==1)throw Error('既存ルールの挿入先を一意に確認できません');
+fs.writeFileSync(path.join(temp,'firestore.rules'),base.replace(marker,match=>fragment+'\n'+match));
 const network=process.env.GPS_HTTP_TEST==='1';
 const config={firestore:{rules:'firestore.rules'},emulators:{firestore:{host:'127.0.0.1',port:8189},ui:{enabled:false},singleProjectMode:true}};
 if(network){
