@@ -250,8 +250,9 @@ async function historyExport(){
  const csv=core.historyCsv(row.points);
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob);
- const filename=new Date(row.startedAtMs).toISOString().replace(/[:.]/g,'-')+
-  '_'+row.shiftId+'_gps.csv';
+ const jstName=new Date(row.startedAtMs+9*3600000).toISOString().slice(0,19)
+  .replace('T','_').replace(/:/g,'-');
+ const filename=jstName+'_'+row.shiftId+'_gps.csv';
  const a=document.createElement('a');a.href=url;a.download=filename;
  document.body.append(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
