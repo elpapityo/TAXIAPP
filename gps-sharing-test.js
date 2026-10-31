@@ -13,6 +13,12 @@ let privacyPublic=true,privacyConfirmed=false,watchId=null,latestFix=null,lastAc
 let localModel=null,shift=null,shiftId='',currentStatus='',lastPublishedMs=0,lastPublishedFix=null;
 let map=null,vehicleLayer=null,selfLayer=null,vehicles=new Map(),unsubscribe=null,intervalId=null;
 let userBusy=false,serverBusy=false,pendingHide=false,lastDutyChecked=false;
+let presenceWriteTail=Promise.resolve();
+function enqueuePresence(write){
+ const done=presenceWriteTail.then(write,write);
+ presenceWriteTail=done.catch(()=>{});
+ return done;
+}
 let historyOn=false,historyQueue=Promise.resolve(),historyMap=null,historyLayer=null,historyRows=[];
 let cloudSession=null,cloudRunning=false,lastLocalFinalizationMs=0;
 const STORE='taxiapp-store-v1', STORE_OBJECT='state';
@@ -299,7 +305,11 @@ async function publish(fix){
  serverBusy=true;
  try{
   // This is a NEW GPS-only collection; never write privateDuties or taxiapp-store-v1.
-  await fx.setDoc(fx.doc(db,'gpsPresence',uid),presenceDoc(fix));
+  const targetUid=uid;
+  await enqueuePresence(async()=>{
+   if(uid!==targetUid||!privacyPublic||!privacyConfirmed||!shift||!visible())return;
+   await fx.setDoc(fx.doc(db,'gpsPresence',targetUid),presenceDoc(fix));
+  });
   lastPublishedMs=Date.now();lastPublishedFix=fix;
   set('sendState','送信済み '+new Date(lastPublishedMs).toLocaleTimeString('ja-JP'));
  }finally{serverBusy=false;}
@@ -308,10 +318,14 @@ async function hidePresence(reason){
  if(!uid||!db||!fx)return;
  pendingHide=true;
  try{
-  await fx.setDoc(fx.doc(db,'gpsPresence',uid),{
-   public:false,onDuty:false,status:'',name:displayName||'登録利用者',
-   lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',
-   capturedAtMs:null,updatedAt:fx.serverTimestamp()
+  const targetUid=uid;
+  await enqueuePresence(async()=>{
+   if(uid!==targetUid)return;
+   await fx.setDoc(fx.doc(db,'gpsPresence',targetUid),{
+    public:false,onDuty:false,status:'',name:displayName||'登録利用者',
+    lat:null,lon:null,accuracy:null,speed:null,heading:null,shiftId:'',
+    capturedAtMs:null,updatedAt:fx.serverTimestamp()
+   });
   });
   pendingHide=false;privacyConfirmed=true;
   set('sendState','共有停止：'+reason);
