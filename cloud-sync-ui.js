@@ -358,6 +358,32 @@ root.TAXIAPP_SYNC_UI=function(d){
   if(viewerTimer!==null)clearTimeout(viewerTimer);
   viewerTimer=null;viewerFeedback='';viewerFingerprint=null;
  }
+
+ // ゴミ箱済みの日報はsyncGetで取得できないため、サーバーの削除状態だけ照合する。
+ async function verifyTrashedLocal(id){
+  if(!d.remoteOnDemand?.()||!d.configured()||
+     !(enabled()||d.canReviewBlockedConflict?.())||
+     !status().conflicts.some(c=>c.id===id&&String(c.reason).startsWith('クラウド側でゴミ箱に移動済み')))return false;
+  const uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||''),epoch=cloudEpoch;
+  try{
+   const result=await d.request('syncList',{shiftIds:[id]});
+   if(uid!==String(d.scopeKey?.()||'')||endpoint!==String(d.endpoint()||'')||
+      epoch!==cloudEpoch||!d.configured()||
+      !(enabled()||d.canReviewBlockedConflict?.()))throw Error('ログインまたは保存先が変わりました');
+   const matching=result?.shifts?.filter(row=>row.id===id);
+   if(matching?.length!==1||matching[0].deleted!==true)
+    throw Error('クラウドのゴミ箱状態を確認できません。再照合してください');
+   return true;
+  }catch(error){
+   d.toast('端末削除の確認に失敗：'+String(error?.message||error),true);
+   return false;
+  }
+ }
+ function dismissTrashedConflict(id){
+  if(!engine.dismissTrashedConflict(id))return false;
+  delete comparedDuties[id];queuedDutyIds.delete(id);
+  writerFeedback='';refreshPanel();return true;
+ }
  async function compare(id){
   if(!(enabled()||(d.canReviewBlockedConflict?.()&&status().conflicts.length))||!status().conflicts.some(x=>x.id===id))return false;
   const uid=String(d.scopeKey?.()||''),endpoint=String(d.endpoint()||''),epoch=cloudEpoch;
@@ -750,7 +776,15 @@ root.TAXIAPP_SYNC_UI=function(d){
     '<p>支払方法：'+d.escape(r.payment||'未記録')+'</p>'+
     '<p class="caption-note">記録区分：'+d.escape(r.kind||'未記録')+'</p></div>').join(''):
     '<p>営業記録はありません。</p>')+'</div>';
-  const conflicts=s.conflicts.map(c=>{const local=d.getModel()?.shifts?.find(sh=>sh.id===c.id);const reviewed=Boolean(comparedDuties[c.id]);return '<div class="card"><strong>'+d.escape(local?.date||comparedDuties[c.id]?.remote?.date||'日付確認中')+'の日報で保存内容が異なります</strong>'+ '<p class="caption-note">対象の乗務ID：'+d.escape(c.id)+'</p>'+
+  const conflicts=s.conflicts.map(c=>{const local=d.getModel()?.shifts?.find(sh=>sh.id===c.id);const reviewed=Boolean(comparedDuties[c.id]);
+   if(String(c.reason||'').startsWith('クラウド側でゴミ箱に移動済み')){
+    return '<div class="card"><strong>'+d.escape(local?.date||'日付確認中')+'の端末日報が残っています</strong>'+
+     '<p class="caption-note">乗務ID：'+d.escape(c.id)+'</p>'+
+     '<p class="helper">クラウドではすでにゴミ箱に移動しています。比較は不要です。端末から不要な日報を削除する場合は下のボタンを押してください。</p>'+
+     '<button class="btn red" type="button" data-sync-trash-local="'+d.escape(c.id)+'">この端末の日報を削除</button>'+
+     '<p class="caption-note">確認は1回だけです。クラウドのゴミ箱やほかの日報には触れません。</p></div>';
+   }
+   return '<div class="card"><strong>'+d.escape(local?.date||comparedDuties[c.id]?.remote?.date||'日付確認中')+'の日報で保存内容が異なります</strong>'+ '<p class="caption-note">対象の乗務ID：'+d.escape(c.id)+'</p>'+
    '<p class="warn">'+d.escape(c.reason)+'</p>'+
    '<button class="btn" type="button" data-sync-compare="'+d.escape(c.id)+'">端末版とサーバー版を比較</button>'+
    (comparedDuties[c.id]?'<section class="card"><strong>実際に異なる項目</strong>'+
@@ -759,7 +793,8 @@ root.TAXIAPP_SYNC_UI=function(d){
    '<p class="caption-note">'+(reviewed?'比較後、残したい原本を選んでください。選ばれない側も暗号化バックアップに保存します。':'先に「端末版とクラウド版を比較」を押してください。比較するまで選択はできません。')+'</p>'+ '<div class="actions"><button class="btn" type="button" data-sync-resolve="remote" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>クラウド原本を残す</button>'+
    '<button class="btn red" type="button" data-sync-resolve="local" data-id="'+d.escape(c.id)+'" '+(!reviewed?'disabled':'')+'>端末原本を残す</button>'+
    '<button class="btn" type="button" data-sync-resolve="hold" data-id="'+d.escape(c.id)+'">保留（両方残す）</button></div></div>';}).join('');
-  return conflicts?'<h3 class="subsection">競合の解決</h3><p class="caption-note">「両方残す」は変更せず保留します。片方を残す場合は、もう片方を復旧できる控えを自動保存します。</p>'+conflicts:'';
+  return conflicts?'<h3 class="subsection">'+
+   (s.conflicts.some(c=>!String(c.reason||'').startsWith('クラウド側でゴミ箱に移動済み'))?'競合の解決':'端末に残ったゴミ箱済み日報の整理')+'</h3>'+conflicts:'';
  }
  // Refresh the status in place after login or a manual viewer refresh.
  // Never rebuild Settings: that would collapse details and reset the scroll.
@@ -801,6 +836,7 @@ root.TAXIAPP_SYNC_UI=function(d){
  return {conflictPanel:()=>conflictMarkup(status()),enabled,run,schedule,viewNow,viewSchedule,cancelViewer,panel,privateDiaryPanel,resolve,compare,status,dutySyncStatus,message,archiveAction,loadArchives,bootstrapWriter,verifiedRevision,resetAccount,
   cloudEntries:()=>cloudLoaded?cloudRows.map(r=>({...r,shift:undefined})):null,
   cloudEntry:id=>cloudLoaded?cloudRows.find(r=>r.id===id)||null:null,
+  verifyTrashedLocal,dismissTrashedConflict,
   // A history CAS edit may also affect the retained last returned duty.
   // Called only after that exact server-confirmed version is durable locally.
   adoptHistoryDuty:received=>{
