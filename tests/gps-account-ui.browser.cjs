@@ -40,6 +40,7 @@ const {chromium}=require('playwright');
     export function getAuth(app){if(app.name==='[DEFAULT]')throw Error('日報本体のAuthを開始してはいけない');if(!auths.has(app.name))auths.set(app.name,{app,currentUser:window.__testSignedOut&&!window.__testTrial?null:user(app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user'),authStateReady:async()=>{}});return auths.get(app.name);}
     export function onAuthStateChanged(auth,fn){fn(auth.currentUser);(auth.listeners||(auth.listeners=[])).push(fn);window.__testSwitchAccounts=()=>{for(const a of auths.values()){a.currentUser=user('changed-user');for(const f of a.listeners||[])f(a.currentUser);}};return()=>{};}
     export class GoogleAuthProvider{setCustomParameters(){}}
+    export async function signOut(auth){if(auth.app.name==='[DEFAULT]')throw Error('日報本体をログアウトしてはいけない');auth.currentUser=null;for(const f of auth.listeners||[])f(null);}
     export async function signInWithPopup(auth){if(!navigator.userActivation.isActive)throw Error('popupは明示クリック内だけ');window.__popupCalls.push(auth.app.name);auth.currentUser=user(auth.app.options.projectId==='taxiapp-2b6bd'?'diary-ui-user':'gps-ui-user');}`});
    return route.abort();
   });
@@ -168,7 +169,7 @@ const {chromium}=require('playwright');
    await page.locator('#auditRefresh').click();await page.waitForFunction(()=>document.getElementById('auditList').textContent.includes('閲覧'));
    assert.equal(requests.at(-1).action,'adminListGpsHistoryAudit');
    // 監査/資格拒否で座標のキャッシュと利用者表示を消し、CSVを許可しない。
-   adminAuditFails=true;await page.locator('#view').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('permission-denied'));
+   adminAuditFails=true;await page.locator('#view').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('管理者権限を確認できません'));
    assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#export').isDisabled(),true);
    adminAuditFails=false;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
    await page.locator('#target').selectOption('driver-a');await page.waitForFunction(()=>!document.getElementById('view').disabled);
@@ -177,9 +178,16 @@ const {chromium}=require('playwright');
    page.once('dialog',d=>d.accept());await page.locator('#delete').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('履歴 0乗務'));
    assert.equal(trialRows.size,0);assert.equal(await page.locator('#export').isDisabled(),true);
    // 権限拒否は画面を開かず、本人連携は別に成功する。
-   adminDenied=true;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('permission-denied'));
+   adminDenied=true;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('管理者権限を確認できません'));
    assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#target option').count(),0);
    adminDenied=false;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
+   assert.match(await page.locator('#gpsAccountIdentity').innerText(),/synthetic@example.invalid/);
+   const beforeChange=requests.length;await page.locator('#gpsAccountChange').click();
+   await page.waitForFunction(()=>document.getElementById('gpsAccountStatus').textContent.includes('連携アカウントを解除'));
+   assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(requests.length,beforeChange);
+   assert.equal(await page.locator('#gpsAccountIdentity').innerText(),'日報：未確認 ／ GPS：未確認');
+   await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>document.getElementById('gpsAccountLink').textContent.includes('GPSでも確認'));
+   await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
    const beforeAdminSwitch=requests.length;await page.evaluate(()=>window.__testSwitchAccounts());
    assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#target option').count(),0);assert.equal(requests.length,beforeAdminSwitch);
    assert.equal(await page.evaluate(()=>localStorage.getItem('taxiapp-diary-protection-sentinel')),'未同期の日報を保持');
