@@ -1,6 +1,10 @@
 # TAXIGPS 認証連携：GPS専用Apps Script
 
-## 期限付き資格版の公開結果（2026-11-01）
+## 現在の公開状態（2026-11-01）
+
+既存デプロイは合成履歴限定の版3。公開ソースはhistory/Code.candidate.gs。本人連携と固定1地点の保存/照合/削除/墓標確認を実確認済み。通常GPS送信・全拒否ルール・無料Sparkを維持。詳しくは末尾の版3結果を参照。
+
+## 期限付き資格版2の公開経緯（2026-11-01）
 
 本人承認後、既存デプロイをバージョン2へ更新済み（画面2026/11/01 8:30）。同じURL/実行者/全員アクセスを維持。保存前の旧コードが取得済み版1と一致し、保存後のコードがリポジトリ更新候補と一致することをUIのコピーで確認した。公開GETでrevision=lease-v2、既存試験ページで新しい版の実本人連携成功を確認。GASは期限も保存/読戻し一致確認後だけ成功を返す。Firestoreコンソールの独立目視、実停止/降格/端末切替は未確認。具体的な差分・更新対象・切戻しは [更新レビュー](../../docs/gps-identity-expiry-review-20261101.md)。
 
@@ -68,6 +72,8 @@ UI試験は `tests/gps-account-ui.browser.cjs`。合成時はボタン前SDK読�
 参考（公式）：[Firebase Auth REST](https://firebase.google.com/docs/reference/rest/auth)、[ID token検証](https://firebase.google.com/docs/auth/admin/verify-id-tokens)、[Apps Script OAuth token](https://developers.google.com/apps-script/reference/script/script-app#getoauthtoken)、[ContentService](https://developers.google.com/apps-script/guides/content)、[Apps Script利用枠](https://developers.google.com/apps-script/guides/services/quotas)。
 
 
-## 次の未公開候補：合成履歴API
+## 現在の公開版：合成履歴API（版3）
 
-公開中の本人連携版2を保ったまま、[history/README.md](history/README.md)に無料履歴バックエンドと生成候補を用意した。実REST Emulator8件・Node41件・実DOM合成試験に成功。公開候補は固定1地点の合成データにサーバー側で限定し、実履歴の保存/取得と期限整理実行を拒否する。新しいGAS版と試験HTML/3JSの限定公開、合成試験1件の作成/照合/削除は [合成公開レビュー](../../docs/gps-history-gas-trial-review-20261101.md)の次の承認対象。版2更新は承認/反映済みで再承認不要。実GPS停止・全拒否ルール・Sparkを維持。
+本人承認後、[history/Code.candidate.gs](history/Code.candidate.gs)を既存GASデプロイの版3として公開済み。公開GETのrevision=history-v3/historyTrialOnly=trueと、既存試験ページから実本人による固定合成1地点の保存・内容照合・削除・墓標確認の成功を確認。公開時刻は画面2026/11/01 8:55、同じURL/実行者/全員アクセス/既存2スコープを維持。親Code.gsは版2の本人連携部を生成に使う基盤であり、現在の編集欄全文は生成した合成限定版3と一致する。
+
+実REST Emulator8件・Node41件・実DOM合成試験の実績は[history/README.md](history/README.md)。mainには試験HTML/本人連携3JSだけを38c1a4cbで公開。[合成公開レビュー](../../docs/gps-history-gas-trial-review-20261101.md)の対象は承認/適用済みで再承認不要。実GPS停止・全拒否ルール・Sparkを維持。実履歴の送受信/他者閲覧/本体統合/03:00トリガーは未完了。

@@ -290,3 +290,16 @@ Notionの全プロジェクト共通・開発共通・TAXIAPP現行指示・既�
 - 次の承認対象を docs/gps-history-gas-trial-review-20261101.md に具体化：同じ専用GASを合成限定版へ更新、既存試験ページの4ファイルだけ限定公開、本人の固定合成履歴1件を作成/照合/削除する試験。現在の版2更新を再質問せず、新しい履歴APIと合成データ操作を対象にする。AGENTS.md第5節による本番公開/再デプロイの承認が必要な段階。
 - 今回の範囲外：実GPS履歴や位置共有の有効化/実データ移行削除/Firestoreルール開放/課金/Functions/Scheduler/トリガー/本体統合。実履歴の既存同期・管理者UIはまだ旧Functions/Firestore方式で、GPS UID/日報UIDの端末データ接続も未完成。全機能の無料化完成とは報告しない。
 - GAS版2の実公開/実本人連携成功は第19節を継承。GPS送信停止/全拒否ルール/Sparkと既存日報/計算/印刷を維持。GitHub/Notionへ新実装と次の承認対象を保存し、PR #223はDraftを継続する。
+
+
+## 21. 承認後に合成履歴GAS版3と限定UIを公開・実保存照合削除成功（2026-11-01 JST）
+
+本人が第20節/レビューのGAS更新・試験ページ限定公開・合成1地点の作成照合削除を承認。既承認の再質問なしに実施。
+
+- 既存スクリプトのCode.gsをUIコピーで取得済み版2と完全一致確認後、history/Code.candidate.gsの全文を保存し、保存後の全文も完全一致確認。既存デプロイを同じID/URL/実行者/全員アクセスのまま新しい版へ更新。「デプロイを更新しました。バージョン3（2026/11/01 8:55）」を実画面確認。公開GETでrevision=history-v3/historyTrialOnly=trueと許可履歴action一覧を確認。
+- main直前363e275とfeature直前2d66e43をls-remoteで照合し、承認済みのgps-sharing-test.html/gps-account-config.js/gps-account-bridge.js/gps-account-ui.jsだけをmain38c1a4cb2f58fc63708340bb048a64098b0dc7c9へ限定反映。JS3ファイルの版指定付き公開と新しい合成ボタンを実画面確認。PR全体は未マージ。
+- 実Google本人の連携再確認後、合成確認ボタンを1回実行。固定0地点の保存→読戻し全内容ハッシュ照合→当該試験だけ削除→墓標確認に成功し、成功と実GPS送信停止の表示をAX/スクリーンショットで確認。GASは削除監査/墓標/原本削除を実トランザクションで行い、保存内容と削除結果も読戻す。実GAS/IAM/Firestore REST/ブラウザ通信で、この固定1地点の通常成功を確認済み。
+- 証跡taxigps-history-v3-success-20261101.jpg。最初の画像取得はPage.captureScreenshot timed outで失敗。同じタブのgetScreenshot対応APIで取得成功。アプリの保存/削除失敗ではない。
+- 監査（90日期限）と削除済み墓標は仕様どおり残す。物理削除の定期実行は未有効。Firestoreコンソールの独立目視、実他者閲覧/停止降格/13時間量の実GAS/実2名受入は未検証。実GPS/通常履歴の送受信/既存データ削除/整理関数/トリガー/本体統合は有効化していない。
+- 現在のGAS編集欄/公開全文は生成したhistory/Code.candidate.gs。親Code.gsは版2の本人連携基盤として生成に再利用するため残す。公開状態の参照を取り違えない。manifest/スコープは変更なし。
+- GPS位置・実履歴送信停止、GPS全拒否ルール、無料Spark、既存index.html/日報config/device-session.js/営業原本/計算/印刷を維持。今回の承認対象は適用・実確認済みで再承認不要。PR #223はDraft継続。GitHub/Notionへ最新結果を記録する。
