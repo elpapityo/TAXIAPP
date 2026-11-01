@@ -1878,6 +1878,8 @@ html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color
 .passenger-count-row .passenger-cycle strong{font-size:clamp(16px,4vw,20px)}
 
 /* 車載メーター写真を参考にした営業操作ボタン配色。文字と状態名を併記する。 */
+.meter-console .meter-state[data-meter-state="空車"] strong{background:#e85a22;color:#fff;border:1px solid #ba4515;border-radius:7px;padding:4px 10px}
+
 .meter-actions .meter-wait:not(:disabled),.meter-actions .meter-dispatch:not(:disabled){background:#e8edf3!important;border-color:#a9b6c6!important;color:#394b60!important}
 .meter-actions .meter-ride:not(:disabled){background:#2f6fe4!important;border-color:#2255b5!important;color:#fff!important}
 .meter-actions .meter-settle:not(:disabled){background:#e6b14a!important;border-color:#ac7b21!important;color:#2b1b00!important}
@@ -4695,7 +4697,7 @@ function renderMeterDrive(shift){
  '<div class="meter-payment-full" aria-label="メーター精算の支払い方法"><div class="field-label">支払い方法</div>'+selector('N',shownPayments(d.raw.N),d.raw.N,true)+(d.raw.E==='U'?renderMeterUberSettlement(shift,d):'')+paymentItems+'</div></div>':'';
  const gps=shift.gpsTrip,km=Number(gps?.tripKm),gpsInfo=Number.isFinite(km)&&gps?.tripKm!==undefined?'GPS累計（参考） '+(gpsTripUI?.fmt?gpsTripUI.fmt(km):km.toFixed(1))+' km':'GPS距離：計測待ち';
  return '<section class="card hero meter-console" aria-label="メーター型営業操作">'+
-  '<div class="meter-state"><small>状態</small><strong>'+safeText(status)+'</strong>'+(simple?'':'<small>'+safeText(gpsInfo)+'</small>')+'</div>'+
+  '<div class="meter-state" data-meter-state="'+safeText(status)+'"><small>状態</small><strong>'+safeText(status)+'</strong>'+(simple?'':'<small>'+safeText(gpsInfo)+'</small>')+'</div>'+
   '<div class="meter-actions">'+actions+'</div>'+renderMeterHighwayInline(shift)+(d?.kind==='empty'?'<div class="meter-inline-editor">'+renderEmptyForm(shift,d)+'</div>':'')+(waiting?'<div class="meter-wait-inline">'+renderWaitCard(shift)+'</div>':'')+dispatchFields+passengerFields+quick+
   '</section>'+
   '<details class="details meter-details" '+(d?.kind==='empty'?'open':'')+'><summary>'+(simple?'その他の入力・時刻や距離の修正':'詳細入力・修正（距離・高速・決済など）')+'</summary><div class="inner">'+
