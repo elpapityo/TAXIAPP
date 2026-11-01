@@ -1916,6 +1916,8 @@ html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color
 .preview-duty-summary .preview-duty-stat strong,.meter-status-summary .preview-duty-stat strong{font-size:clamp(23px,5vw,34px)!important;font-weight:900!important;line-height:1.25!important}
 .preview-duty-summary .preview-duty-route strong,.meter-status-summary .preview-duty-route strong{font-size:clamp(21px,4.5vw,30px)!important;font-weight:900!important;line-height:1.25!important}
 .preview-duty-summary .preview-duty-payment strong{font-size:clamp(22px,4.7vw,32px)!important;font-weight:900!important}
+
+.preview-duty-summary .preview-duty-payment-row{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin:5px 0 0}
 </style>
 </head>
 <body>
@@ -3644,7 +3646,7 @@ function renderDutyStatus(shift){
   '<div class="preview-duty-stats meter-summary-always">'+additional.join('')+'</div>':'';
  return '<section class="preview-duty-summary'+(meterCompact?' meter-status-summary':'')+'" aria-label="現在の営業情報">'+
   (primary.length?'<div class="preview-duty-stats">'+primary.join('')+'</div>':'')+
-  routeWithSave+(shift.draft?.kind==='ride'&&driveStatusFieldVisible('payment')?'<div class="preview-duty-payment"><small>金種</small><strong>'+safeText(status.payment)+'</strong></div>':'')+more+'</section>';
+  routeWithSave+(shift.draft?.kind==='ride'&&driveStatusFieldVisible('payment')?'<div class="preview-duty-stats preview-duty-payment-row">'+stat('金種',status.payment,'payment')+'</div>':'')+more+'</section>';
 }
 function renderGuidedHeading(shift){
  const d=shift.draft;
