@@ -51,3 +51,5 @@ Node22/Java17、依存と実行環境のパスはtests/gps-tools/README.md。Fir
 `gps-history-gas-adapter.js` と既存gps-history-sync.jsのcreateGasで、端末の日報UIDとクラウドGPS UIDを分けたまま既存履歴欄へ接続する。GPS送信/新規測位は停止したまま、既存本人履歴の手動操作だけを扱う。Node58件、実DOM/実IndexedDB＋合成Auth/GAS、実REST Emulator10件が成功。後者の結合はfake-indexeddbと実クライアント/GAS VMを使い、Google認証/日報資格だけは合成。管理者画面/実通常履歴/実端末は未完了。
 
 管理者画面の次候補は `Code.manager-candidate.gs`（history-v5-admin、未公開）。`Admin.gs`の管理者限定利用者一覧を追加する。既存版3/公開版4の候補は保持する。次の限定公開と復旧範囲は `docs/gps-history-admin-review-20261101.md`、作業結果は `WORK_HANDOFF.md`第24節。今回の検証はNode45件、実DOM＋合成Auth/GAS、実REST Emulator11件成功。新一覧/管理者画面の実Google/GAS/IAMは未検証。
+
+本人のGAS承認委任後、Code.manager-candidate.gsを版5（2026-11-01 10:07 JST）へ公開済み。実本人連携成功、管理者APIはpermission-deniedで拒否を実確認。管理者成功は未検証。最新公開状態・委任はWORK_HANDOFF.md第25節を参照。
