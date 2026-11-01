@@ -55,3 +55,5 @@ Node22/Java17、依存と実行環境のパスはtests/gps-tools/README.md。Fir
 本人のGAS承認委任後、Code.manager-candidate.gsを版5（2026-11-01 10:07 JST）へ公開済み。実本人連携成功、管理者APIはpermission-deniedで拒否を実確認。管理者成功は未検証。最新公開状態・委任はWORK_HANDOFF.md第25節を参照。
 
 現在地共有の次候補は `Presence.gs` / `Code.presence-candidate.gs`（gps-v6-presence、未公開）。送信元/位置/停止/公開CAS/一覧を追加するが、公開画面は停止を維持しHTMLへ新アダプターを読み込んでいない。Node44件/実REST Emulator14件成功。日報側の資格確認の読取回数と実UI接続が未解決。詳細 `docs/gps-presence-gas-status-20261101.md`、`WORK_HANDOFF.md`第30節。
+
+現在地候補は第31節で負荷対策済み：5分資格コピー＋commit直前の日報操作端末1読取へ変更（資格停止反映は最大5分）。実REST15件で送信1読取/一覧0読取を確認。ただし現送信は13 URL Fetchを要し、13時間15秒運用ではGASの個人枠を超える。通信方式は未解決で、公開/有効化しない。容量試算は `scripts/gps-presence-capacity.js` / `docs/gps-presence-capacity-20261101.json`。

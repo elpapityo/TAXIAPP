@@ -51,3 +51,5 @@ Node22/Java17、依存と実行環境のパスはtests/gps-tools/README.md。Fir
 `gps-history-gas-adapter.js` と既存gps-history-sync.jsのcreateGasで、端末の日報UIDとクラウドGPS UIDを分けたまま既存履歴欄へ接続する。GPS送信/新規測位は停止したまま、既存本人履歴の手動操作だけを扱う。Node58件、実DOM/実IndexedDB＋合成Auth/GAS、実REST Emulator10件が成功。後者の結合はfake-indexeddbと実クライアント/GAS VMを使い、Google認証/日報資格だけは合成。管理者画面/実通常履歴/実端末は未完了。
 
 現在地GAS候補の検証も既存 `GPS_HISTORY_GAS_TEST=1` モードに含む（14件）。送信元/公開CAS/5分非表示と実クライアント→GAS→RESTを追加。Node側は `node --test tests/gps-presence-gas-adapter.test.js tests/gps-presence-sender.test.js tests/gps-account-bridge.test.js tests/gps-cloud-policy.test.js`（44件）。実Google認証と日報資格は未検証、本番へは接続しない。
+
+現在地の5分資格候補は同じGAS RESTモードで15件成功。送信時の日報deviceSessions読取1回/一覧0回と、コピー失効/不正対応/commit時の端末切替拒否を確認。`node scripts/gps-presence-capacity.js` は静的容量試算のみで、本番通信/課金変更/測位を行わない。現候補の15秒・13時間運用は個人GASのURL Fetch上限超過のため未公開。

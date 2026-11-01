@@ -1,0 +1,112 @@
+{
+  "asOf": "2026-11-01",
+  "method": "静的回数モデル。全員同時稼働・候補100件未満。再送/停止/設定変更/実日報・履歴/インデックス等を含まない。実利用の保証ではない。",
+  "sources": [
+    "https://firebase.google.com/docs/firestore/quotas",
+    "https://developers.google.com/apps-script/guides/services/quotas"
+  ],
+  "scenarios": [
+    {
+      "users": 1,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "link": 165,
+        "list": 780
+      },
+      "diaryReads": 4300,
+      "gpsReads": 34530,
+      "gpsWrites": 4135,
+      "urlFetch": 55445,
+      "withinDocumentedCoreQuotas": false
+    },
+    {
+      "users": 1,
+      "hours": 13,
+      "sendEverySec": 90,
+      "listEverySec": 60,
+      "perUser": {
+        "send": 520,
+        "claim": 520,
+        "link": 165,
+        "list": 780
+      },
+      "diaryReads": 1700,
+      "gpsReads": 13730,
+      "gpsWrites": 1535,
+      "urlFetch": 21645,
+      "withinDocumentedCoreQuotas": false
+    },
+    {
+      "users": 2,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "link": 165,
+        "list": 780
+      },
+      "diaryReads": 8600,
+      "gpsReads": 75300,
+      "gpsWrites": 8270,
+      "urlFetch": 115570,
+      "withinDocumentedCoreQuotas": false
+    },
+    {
+      "users": 2,
+      "hours": 13,
+      "sendEverySec": 90,
+      "listEverySec": 60,
+      "perUser": {
+        "send": 520,
+        "claim": 520,
+        "link": 165,
+        "list": 780
+      },
+      "diaryReads": 3400,
+      "gpsReads": 33700,
+      "gpsWrites": 3070,
+      "urlFetch": 47970,
+      "withinDocumentedCoreQuotas": false
+    },
+    {
+      "users": 10,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "link": 165,
+        "list": 780
+      },
+      "diaryReads": 43000,
+      "gpsReads": 626100,
+      "gpsWrites": 41350,
+      "urlFetch": 765050,
+      "withinDocumentedCoreQuotas": false
+    },
+    {
+      "users": 10,
+      "hours": 13,
+      "sendEverySec": 90,
+      "listEverySec": 60,
+      "perUser": {
+        "send": 520,
+        "claim": 520,
+        "link": 165,
+        "list": 780
+      },
+      "diaryReads": 17000,
+      "gpsReads": 418100,
+      "gpsWrites": 15350,
+      "urlFetch": 427050,
+      "withinDocumentedCoreQuotas": false
+    }
+  ]
+}

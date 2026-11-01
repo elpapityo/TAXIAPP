@@ -556,17 +556,36 @@ function gpsPresenceWrite_(path,data,prior){
  return {update:{name:gpsPresenceName_(path),fields:gpsHistoryEncode_(data).mapValue.fields},
   currentDocument:prior?{updateTime:prior.updateTime}:{exists:false},updateTransforms:[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}]};
 }
-function gpsPresenceRecheck_(auth){
- if(auth.expires<=Date.now())gpsBridgeFail_('permission-denied');
- var eligibility=gpsBridgeSource_(auth.source,auth.request,auth.writer||null);
- if(!eligibility.eligible||auth.adminRequired&&!eligibility.isAdmin||auth.writer&&!eligibility.editor)gpsBridgeFail_('permission-denied');
- auth.displayName=eligibility.name;
+// 現在地だけは公開済み本人連携の5分資格を利用。履歴/管理者の再確認方式は変えない。
+function gpsPresenceLease_(auth){
+ var member=gpsBridgeFields_(gpsBridgeRead_(GPS_BRIDGE_GPS_,'users/'+auth.target.uid,auth.ownerToken)),now=Date.now();
+ if(!member||member.status!=='active'||member.diaryUid!==auth.source.uid||member.googleSubject!==auth.source.subject||
+  !Number.isSafeInteger(member.accessExpiresAt)||member.accessExpiresAt<=now||member.accessExpiresAt>now+GPS_BRIDGE_LEASE_MS_)gpsBridgeFail_('permission-denied');
+ if(auth.expires===undefined)auth.expires=member.accessExpiresAt;
+ auth.expires=Math.min(auth.expires,member.accessExpiresAt);
+ if(auth.expires<=now)gpsBridgeFail_('permission-denied');
+ auth.displayName=String(member.openChatName||'登録利用者').slice(0,80);
+}
+function gpsPresenceAuthorize_(request){
+ // Googleは毎回オンライン検証。資格の5分保持と、token失効の検証を混同しない。
+ var source=gpsBridgeVerified_(GPS_BRIDGE_DIARY_,request.diaryIdToken),target=gpsBridgeVerified_(GPS_BRIDGE_GPS_,request.gpsIdToken);
+ if(source.subject!==target.subject||source.email!==target.email)gpsBridgeFail_('account-mismatch');
+ if(request.actorUid!==target.uid)gpsBridgeFail_('failed-precondition');
+ var auth={source:source,target:target,request:request,ownerToken:ScriptApp.getOAuthToken()};
+ gpsPresenceLease_(auth);return auth;
+}
+function gpsPresenceRecheck_(auth){gpsPresenceLease_(auth);}
+function gpsPresenceCheckWriter_(auth){
+ if(!auth.writer)return;
+ // commit直前に日報の現行操作端末だけを1回読む。操作権を作成/取得しない。
+ var session=gpsBridgeFields_(gpsBridgeRead_(GPS_BRIDGE_DIARY_,'deviceSessions/'+auth.source.uid,auth.request.diaryIdToken));
+ if(!session||session.sessionId!==auth.writer)gpsBridgeFail_('permission-denied');
 }
 function gpsPresenceTx_(auth,operation){
  var tx=gpsBridgeRequest_(gpsHistoryBase_()+':beginTransaction','post',auth.ownerToken,{}).transaction;
  if(typeof tx!=='string'||!tx)gpsBridgeFail_('unavailable');var done=false;
  try{
-  var result=operation(tx);gpsPresenceRecheck_(auth);
+  var result=operation(tx);gpsPresenceRecheck_(auth);gpsPresenceCheckWriter_(auth);
   var committed=gpsBridgeRequest_(gpsHistoryBase_()+':commit','post',auth.ownerToken,{transaction:tx,writes:result.writes});done=true;
   if(!Array.isArray(committed.writeResults||[])||(committed.writeResults||[]).length!==result.writes.length)gpsBridgeFail_('readback-mismatch');
   return result;
@@ -676,7 +695,7 @@ function gpsPresenceList_(auth){
 }
 function gpsPresenceDispatch_(request){
  if(GPS_PRESENCE_ACTIONS_.indexOf(request.action)<0)gpsBridgeFail_('invalid-argument');
- var auth=gpsHistoryAuthorize_(request),writerActions=['acquireGpsSender','sendGpsPresence','stopGpsPresence','setOwnGpsSharePrefs'];
+ var auth=gpsPresenceAuthorize_(request),writerActions=['acquireGpsSender','sendGpsPresence','stopGpsPresence','setOwnGpsSharePrefs'];
  if(writerActions.indexOf(request.action)>=0){
   var writer=(request.data||{}).writerSessionId;
   if(typeof writer!=='string'||writer.length<32||writer.length>128)gpsBridgeFail_('invalid-argument');auth.writer=writer;

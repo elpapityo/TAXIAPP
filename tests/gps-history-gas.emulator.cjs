@@ -6,7 +6,7 @@ const code=fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-accoun
 const validation=require('../functions/gps-history-validation');
 const prefix='https://firestore.googleapis.com/v1/projects/taxigps-9f82e/databases/(default)/documents';
 function fixture({archive=false,manager=false,presence=false}={}){
- const calls=[],state={auditFails:false,sourceSuspended:false,sourceDemoted:false,loseResponse:false,auditReadFails:false,suspendOnAudit:false,writerSession:'w'.repeat(32),sourceReadonly:false};
+ const calls=[],state={auditFails:false,sourceSuspended:false,sourceDemoted:false,loseResponse:false,auditReadFails:false,suspendOnAudit:false,writerSession:'w'.repeat(32),sourceReadonly:false,diaryReads:0,writerReads:0,sourceReads:0,changeWriterOnRead:false};
  const c=vm.createContext({Date,TextEncoder,console:{log(){throw Error('非公開データをログしない');}},
  ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})},
  Utilities:{getUuid:()=>crypto.randomUUID(),DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},
@@ -36,7 +36,15 @@ function fixture({archive=false,manager=false,presence=false}={}){
   const [kind,id]=String(token).split(':');if(kind!==(project===c.GPS_BRIDGE_DIARY_?'d':'g')||!id)throw Object.assign(Error('unauthenticated'),{gpsCode:'unauthenticated'});
   return {uid:(kind==='d'?'diary-':'')+id,subject:'subject-'+id,email:id+'@example.invalid'};
  };
- c.gpsBridgeSource_=(source,request,writer)=>({editor:!state.sourceReadonly&&writer===state.writerSession,eligible:!state.sourceSuspended,isAdmin:source.uid==='diary-admin-12345678'&&!state.sourceDemoted,name:'合成利用者'});
+ c.gpsBridgeSource_=(source,request,writer)=>{state.diaryReads+=writer===null?2:3;state.sourceReads+=writer===null?2:3;return {editor:!state.sourceReadonly&&writer===state.writerSession,eligible:!state.sourceSuspended,isAdmin:source.uid==='diary-admin-12345678'&&!state.sourceDemoted,name:'合成利用者'};};
+ const originalRead=c.gpsBridgeRead_;
+ c.gpsBridgeRead_=(project,p,token)=>{
+  if(project!==c.GPS_BRIDGE_DIARY_)return originalRead(project,p,token);
+  assert.match(p,/^deviceSessions\/diary-/);assert.ok(String(token).startsWith('d:'));
+  state.diaryReads++;state.writerReads++;
+  if(state.changeWriterOnRead){state.changeWriterOnRead=false;state.writerSession='changed-writer-session'.padEnd(32,'x');}
+  return {fields:{sessionId:{stringValue:state.sourceReadonly?'readonly':state.writerSession}}};
+ };
  const auth={ownerToken:'owner'};
  function seed(uid){
   const name=c.gpsBridgeName_(c.GPS_BRIDGE_GPS_,'users/'+uid),fields={status:{stringValue:'active'},diaryUid:{stringValue:'diary-'+uid},googleSubject:{stringValue:'subject-'+uid},accessExpiresAt:{timestampValue:new Date(Date.now()+300000).toISOString()}};
@@ -243,4 +251,25 @@ test('実クライアント→GAS→実REST：現在地送信元と既存公開�
  preference.choose(false);await preference.sync();assert.equal(sender.canTrack(),false);assert.equal((await sender.list()).vehicles.some(row=>row.uid===actor),false);
  const closed=f.c.gpsHistoryData_(f.c.gpsPresenceRead_('gpsPresence/'+actor,f.auth));assert.equal(closed.lat,null);assert.equal(closed.lon,null);assert.equal(f.c.gpsPresenceRead_('gpsSenderSessions/'+actor,f.auth),null);
  assert.ok(f.calls.every(call=>call.url.startsWith(prefix)));sender.dispose();client.dispose();
+});
+
+test('実REST：現在地の資格を5分以内に限定し、日報読取は送信1回・一覧0回、停止/不正対応/端末切替は拒否',()=>{
+ const f=fixture({presence:true}),actor='driver-leased-12345678';f.seed(actor);const senderId=crypto.randomUUID(),writerSessionId=f.state.writerSession;
+ const post=(action,data={})=>f.post(action,{writerSessionId,...data},actor);
+ assert.equal(post('setOwnGpsSharePrefs',{public:true,baseRevision:0,operationId:crypto.randomUUID()}).ok,true);
+ assert.equal(post('acquireGpsSender',{senderId}).ok,true);
+ const payload={public:true,onDuty:true,status:'空車',shiftId:'shift-9010',lat:34,lon:135,accuracy:5,capturedAtMs:Date.now()-1000};
+ f.state.diaryReads=0;f.state.writerReads=0;f.state.sourceReads=0;
+ const fetchBefore=f.calls.length;assert.equal(post('sendGpsPresence',{senderId,payload}).data.status,'sent');assert.equal(require('../scripts/gps-presence-capacity').counts.send.urlFetch,f.calls.length-fetchBefore+f.state.diaryReads+2);assert.equal(f.state.diaryReads,1);assert.equal(f.state.writerReads,1);assert.equal(f.state.sourceReads,0);
+ f.state.diaryReads=0;assert.equal(post('listGpsPresence').ok,true);assert.equal(post('getOwnGpsSharePrefs').ok,true);assert.equal(f.state.diaryReads,0);
+ // 日報資格の変更は5分以内のコピー期限で反映する。古い資格を無期限に延長しない。
+ f.state.sourceSuspended=true;assert.equal(post('sendGpsPresence',{senderId,payload}).ok,true);f.state.sourceSuspended=false;
+ const userName=f.c.gpsBridgeName_(f.c.GPS_BRIDGE_GPS_,'users/'+actor),patch=fields=>f.rawCommit([{update:{name:userName,fields},updateMask:{fieldPaths:Object.keys(fields)}}]);
+ patch({accessExpiresAt:{timestampValue:new Date(1).toISOString()}});assert.equal(post('sendGpsPresence',{senderId,payload}).code,'permission-denied');
+ patch({accessExpiresAt:{timestampValue:new Date(Date.now()+600000).toISOString()}});assert.equal(post('listGpsPresence').code,'permission-denied');
+ patch({accessExpiresAt:{timestampValue:new Date(Date.now()+300000).toISOString()},diaryUid:{stringValue:'other-diary'}});assert.equal(post('listGpsPresence').code,'permission-denied');
+ patch({diaryUid:{stringValue:'diary-'+actor},status:{stringValue:'suspended'}});assert.equal(post('listGpsPresence').code,'permission-denied');
+ patch({status:{stringValue:'active'}});f.state.changeWriterOnRead=true;
+ assert.equal(post('sendGpsPresence',{senderId,payload:{...payload,lat:35}}).code,'permission-denied');
+ assert.equal(f.c.gpsHistoryData_(f.c.gpsPresenceRead_('gpsPresence/'+actor,f.auth)).lat,34);
 });
