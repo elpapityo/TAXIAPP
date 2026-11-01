@@ -32,7 +32,7 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
 <section class="main" id="gpsAccountPanel" aria-label="GPSの利用者連携" hidden>
  <div class="card">
   <h2>GPSの利用者連携</h2>
-  <p class="muted">日報で使うGoogleアカウントをGPSでも確認します。日報は変更せず、位置共有・走行履歴の送信は開始しません。</p>
+  <p class="muted">日報で使うGoogleアカウントを確認します。連携しただけでは位置共有・GPS記録や履歴送信を開始しません。</p>
   <button type="button" id="gpsAccountLink">Googleで利用者を連携する</button>
   <button type="button" id="gpsHistoryBackendTrial" hidden disabled>合成履歴でクラウド保存・削除を確認する</button>
  <p id="gpsHistoryBackendStatus" class="muted" role="status" hidden>実GPSを使わず、固定の合成地点だけを保存・照合・削除します。監査と削除済みの印は残ります。</p>
@@ -105,14 +105,16 @@ legend{font-size:12px}.legend{display:flex;gap:13px;flex-wrap:wrap;margin:8px 0 
 <script src="./firebase-config.js"></script>
 <script src="./gps-firebase-config.js"></script>
 <script src="./gps-firebase-project.js"></script>
-<script src="./gps-account-config.js?v=20261101-historytrial"></script>
-<script src="./gps-account-bridge.js?v=20261101-historytrial"></script>
-<script src="./gps-account-ui.js?v=20261101-historytrial"></script>
+<script src="./gps-account-config.js?v=20261101-archive"></script>
+<script src="./gps-account-bridge.js?v=20261101-archive"></script>
+<script src="./gps-account-ui.js?v=20261101-archive"></script>
 <script src="./gps-cloud-policy.js"></script>
 <script src="./gps-sharing-core.js"></script>
 <script src="./gps-history-store.js"></script>
 <script src="./functions/gps-history-validation.js"></script>
-<script src="./gps-history-sync.js"></script>
+<script src="./gps-history-sync.js?v=20261101-archive"></script>
+<script src="./gps-history-gas-adapter.js?v=20261101-archive"></script>
+<script src="./gps-history-archive-ui.js?v=20261101-archive"></script>
 <script src="./device-session.js"></script>
 <script src="./gps-presence-sender.js"></script>
 <script src="./gps-sharing-preferences.js"></script>

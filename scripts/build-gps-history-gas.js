@@ -13,3 +13,11 @@ code+='\n// 同じ共有検証ソースを埋込み。Apps ScriptではUTF-8容�
 code+='\n'+fs.readFileSync(path.join(base,'history/History.gs'),'utf8');
 fs.writeFileSync(path.join(base,'history/Code.candidate.gs'),code);
 console.log('GPS履歴GASの未公開候補を生成。既存公開ソース/本番には変更なし。');
+// 次の通常アーカイブ用候補。公開中の合成限定ファイル/本番を切り替えない。
+let archive=code.replace("revision:'history-v3'","revision:'history-v4-archive'")
+ .replace('var GPS_HISTORY_TRIAL_ONLY_=true; // 公開候補は固定1地点の合成試験だけ。実履歴は拒否。',
+  'var GPS_HISTORY_TRIAL_ONLY_=false; // 保存済み履歴の手動操作用。測位/位置共有は開始しない。')
+ .replace("function cleanupGpsHistoryAndAudit(){\n if(GPS_HISTORY_TRIAL_ONLY_)gpsBridgeFail_('failed-precondition');",
+  "function cleanupGpsHistoryAndAudit(){\n gpsBridgeFail_('failed-precondition'); // 整理は今回も未承認のため常時拒否。");
+if(!archive.includes("revision:'history-v4-archive'")||!archive.includes('GPS_HISTORY_TRIAL_ONLY_=false')||!archive.includes('整理は今回も未承認'))throw Error('通常アーカイブ候補の生成箇所が変わっています');
+fs.writeFileSync(path.join(base,'history/Code.archive-candidate.gs'),archive);

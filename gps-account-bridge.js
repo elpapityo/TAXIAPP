@@ -41,7 +41,7 @@ function create({diaryAuth,gpsAuth,endpoint,fetch:fetcher=root.fetch,timeoutMs=1
    current(d,g,epoch);
    if(!response.ok)throw Error('GPS認証連携に接続できません');
    const result=await response.json();current(d,g,epoch);
-   if(!result.ok)throw Error('GPS認証連携を確認できません（'+String(result.code||'unavailable')+'）');
+   if(!result.ok){const error=Error('GPS認証連携を確認できません（'+String(result.code||'unavailable')+'）');error.code=String(result.code||'unavailable');throw error;}
    const data=result.data;
    if(operation){
     if(!data||typeof data!=='object'||Array.isArray(data))throw Error('GPS履歴応答の形式が不正です');

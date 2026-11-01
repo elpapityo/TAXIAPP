@@ -5,7 +5,7 @@ const {execFileSync}=require('node:child_process');
 const code=fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.candidate.gs'),'utf8');
 const validation=require('../functions/gps-history-validation');
 const prefix='https://firestore.googleapis.com/v1/projects/taxigps-9f82e/databases/(default)/documents';
-function fixture(){
+function fixture({archive=false}={}){
  const calls=[],state={auditFails:false,sourceSuspended:false,sourceDemoted:false,loseResponse:false,auditReadFails:false,suspendOnAudit:false};
  const c=vm.createContext({Date,TextEncoder,console:{log(){throw Error('非公開データをログしない');}},
  ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})},
@@ -31,12 +31,12 @@ function fixture(){
   if(state.loseResponse&&url.endsWith(':commit')&&status===200){state.loseResponse=false;throw Error('合成の応答消失');}
   return {getResponseCode:()=>status,getContentText:()=>text};
  }}});
- vm.runInContext(code,c);c.GPS_HISTORY_TRIAL_ONLY_=false; // 全機能の実REST回帰は試験環境だけで解除。
+ vm.runInContext(archive?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.archive-candidate.gs'),'utf8'):code,c);if(!archive)c.GPS_HISTORY_TRIAL_ONLY_=false; // 全機能の実REST回帰は試験環境だけで解除。
  c.gpsBridgeVerified_=(project,token)=>{
   const [kind,id]=String(token).split(':');if(kind!==(project===c.GPS_BRIDGE_DIARY_?'d':'g')||!id)throw Object.assign(Error('unauthenticated'),{gpsCode:'unauthenticated'});
   return {uid:(kind==='d'?'diary-':'')+id,subject:'subject-'+id,email:id+'@example.invalid'};
  };
- c.gpsBridgeSource_=(source)=>({eligible:!state.sourceSuspended,isAdmin:source.uid==='diary-admin-12345678'&&!state.sourceDemoted});
+ c.gpsBridgeSource_=(source)=>({eligible:!state.sourceSuspended,isAdmin:source.uid==='diary-admin-12345678'&&!state.sourceDemoted,name:'合成利用者'});
  const auth={ownerToken:'owner'};
  function seed(uid){
   const name=c.gpsBridgeName_(c.GPS_BRIDGE_GPS_,'users/'+uid),fields={status:{stringValue:'active'},diaryUid:{stringValue:'diary-'+uid},googleSubject:{stringValue:'subject-'+uid},accessExpiresAt:{timestampValue:new Date(Date.now()+300000).toISOString()}};
@@ -145,4 +145,35 @@ test('公開候補の合成限定：実履歴/実座標/整理実行を拒否、
  assert.equal(f.post('getOwnGpsHistory',{shiftId:'shift-8100'}).code,'failed-precondition');
  assert.throws(()=>f.c.cleanupGpsHistoryAndAudit());
  assert.equal(f.post('deleteGpsHistory',{shiftId:id,confirmationShiftId:id}).ok,true);
+});
+
+test('通常アーカイブ候補：非0地点の履歴を保存・照合・削除できるが、整理実行は常時拒否',()=>{
+ const f=fixture({archive:true});f.seed('driver-12345678');
+ const health=JSON.parse(f.c.doGet().text);assert.equal(health.revision,'history-v4-archive');assert.equal(health.historyTrialOnly,false);
+ const data=sample('shift-8900');assert.equal(f.post('saveOwnGpsHistory',data).ok,true);
+ assert.equal(f.post('getOwnGpsHistory',{shiftId:'shift-8900'}).data.history.points[0].lat,34.5);
+ assert.throws(()=>f.c.cleanupGpsHistoryAndAudit());
+ assert.equal(f.post('deleteGpsHistory',{shiftId:'shift-8900',confirmationShiftId:'shift-8900'}).ok,true);
+});
+
+test('通常アーカイブ結合：実IndexedDB互換→日報/GPS別UIDの実クライアント→GAS→実REST保存照合削除',async()=>{
+ const f=fixture({archive:true});f.seed('driver-12345678');
+ const {indexedDB}=require('fake-indexeddb');global.indexedDB=indexedDB;
+ const store=require('../gps-history-store'),sync=require('../gps-history-sync'),bridge=require('../gps-account-bridge'),{webcrypto}=require('node:crypto');
+ const user=(uid,token)=>({uid,emailVerified:true,providerData:[{providerId:'google.com',uid:'subject-driver-12345678'}],getIdToken:async()=>token});
+ const diaryAuth={app:{options:{projectId:bridge.DIARY_PROJECT}},currentUser:user('diary-driver-12345678','d:driver-12345678')};
+ const gpsAuth={app:{options:{projectId:bridge.GPS_PROJECT}},currentUser:user('driver-12345678','g:driver-12345678')};
+ const client=bridge.create({diaryAuth,gpsAuth,endpoint:'https://script.google.com/macros/s/mock-history/exec',fetch:async(url,options)=>{
+  assert.equal(options.credentials,'omit');assert.equal(url.includes('token'),false);
+  const result=JSON.parse(f.c.doPost({postData:{contents:options.body}}).text);return {ok:true,json:async()=>result};
+ }});
+ const session=sync.createGas({diaryAuth,gpsAuth,client,store,subtle:webcrypto.subtle}),uid=diaryAuth.currentUser.uid,id='shift-9000',now=Date.now();
+ await store.record(uid,id,now-60000,{capturedAtMs:now-30000,lat:34.5,lon:135.5,accuracy:5,segmentNo:1});await store.finish(uid,id,now-1000);
+ assert.equal((await session.one(uid,id)).status,'saved');
+ assert.equal((await store.fetchOne(uid,id)).uid,uid);assert.equal(f.read('gpsHistory/driver-12345678/shifts/'+id).uid,'driver-12345678');
+ assert.equal((await session.listRemote(uid)).some(r=>r.shiftId===id&&r.uid===uid&&r.cloudUid==='driver-12345678'),true);
+ assert.equal((await session.readRemote(uid,id)).points[0].lat,34.5);
+ await session.removeRemote(uid,id,id);assert.equal(f.read('gpsHistory/driver-12345678/shifts/'+id),null);
+ await store.setSyncState(uid,id,'未送信');assert.equal((await session.one(uid,id)).status,'deleted');assert.equal((await store.fetchOne(uid,id)).points.length,1);
+ session.dispose();client.dispose();
 });

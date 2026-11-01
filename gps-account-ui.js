@@ -4,7 +4,7 @@ const panel=document.getElementById('gpsAccountPanel'),button=document.getElemen
 const config=window.TAXIAPP_GPS_ACCOUNT_CONFIG,project=window.TAXIAPP_GPS_FIREBASE_PROJECT,core=window.TAXIAPP_GPS_ACCOUNT_BRIDGE;
 if(!panel||!button||!status||config?.enabled!==true||!project||!core)return;
 panel.hidden=false;
-let loading=null,sessionReady=null,client=null,busy=false,trialPending=null;
+let loading=null,sessionReady=null,client=null,busy=false,trialPending=null,archive=null;
 const historyTrial=document.getElementById('gpsHistoryBackendTrial'),historyStatus=document.getElementById('gpsHistoryBackendStatus');
 if(historyTrial&&historyStatus&&config.historyTrialEnabled===true){historyTrial.hidden=false;historyStatus.hidden=false;}
 function nextStep(session){
@@ -32,7 +32,7 @@ async function load(){
  for(const auth of [diaryAuth,gpsAuth]){
   let prior=auth.currentUser;
   a.onAuthStateChanged(auth,user=>{
-   if(prior!==user){prior=user;client?.invalidate();message('ログインが切り替わりました。利用者の連携をやり直してください。');}
+   if(prior!==user){prior=user;client?.invalidate();archive?.dispose();archive=null;if(historyTrial)historyTrial.disabled=true;message('ログインが切り替わりました。利用者の連携をやり直してください。');}
   });
  }
  return {a,diaryAuth,gpsAuth};
@@ -64,13 +64,21 @@ button.addEventListener('click',async()=>{
    await a.signInWithPopup(gpsAuth,provider);
   }
   core.pair(diaryAuth.currentUser,gpsAuth.currentUser);
-  client?.dispose();client=core.create({diaryAuth,gpsAuth,endpoint:config.endpoint});
+  archive?.dispose();archive=null;client?.dispose();client=core.create({diaryAuth,gpsAuth,endpoint:config.endpoint});
   message('日報の利用資格とGPS側の保存内容を確認しています…');
   // まず利用者資格だけを連携。日報/位置の操作権を取得・奪取しない。
   await client.link(null);
+  let archiveNotice='';
+  if(config.historyArchiveEnabled===true){
+   let historySession;try{
+   historySession=window.TAXIAPP_GPS_HISTORY_SYNC.createGas({diaryAuth,gpsAuth,client,store:window.TAXIAPP_GPS_HISTORY_STORE,subtle:crypto.subtle});
+   archive=window.TAXIAPP_GPS_HISTORY_ARCHIVE_UI.create({session:historySession,diaryAuth,gpsAuth,store:window.TAXIAPP_GPS_HISTORY_STORE,core:window.TAXIAPP_GPS_SHARING_CORE});
+   await archive.refresh();
+   }catch(error){archive?.dispose();archive=null;historySession?.dispose();archiveNotice=' 保存済み履歴の表示を確認できません：'+String(error.message||error);}
+  }
   if(historyTrial&&config.historyTrialEnabled===true)historyTrial.disabled=false;
   button.textContent='利用者の連携をもう一度確認する';
-  message('利用者の連携を確認しました。位置共有・走行履歴の送信は停止中です。');
+  message('利用者の連携を確認しました。'+(config.historyArchiveEnabled===true?'新しい位置共有・GPS記録は停止中です。保存済み履歴は手動で操作できます。':'位置共有・走行履歴の送信は停止中です。')+archiveNotice);
  }catch(error){
   const code=String(error?.code||'');
   if(code==='auth/popup-blocked')message('ログイン画面を開けませんでした。もう一度ボタンを押してください。');
@@ -114,7 +122,7 @@ if(historyTrial&&historyStatus&&config.historyTrialEnabled===true)historyTrial.a
    pending.stage='tomb';
   }
   if((await call('getOwnGpsHistoryTombstone',{shiftId})).deleted!==true)throw Error('削除済みの確認ができません');
-  trialPending=null;historyStatus.textContent='合成履歴の保存・内容照合・削除確認に成功しました。位置共有・実GPS履歴の送信は停止中です。';
+  trialPending=null;historyStatus.textContent='合成履歴の保存・内容照合・削除確認に成功しました。新しい位置共有・GPS記録は停止中です。';
  }catch(error){historyStatus.textContent='合成履歴の確認を完了できませんでした：'+String(error.message||'通信を確認してください')+(trialPending?'（試験ID '+trialPending.payload.shiftId+'）':'');}
  finally{busy=false;button.disabled=false;historyTrial.disabled=false;}
 });

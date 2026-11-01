@@ -42,3 +42,10 @@ Node22/Java17、依存と実行環境のパスはtests/gps-tools/README.md。Fir
 - 期限整理のコードは実装・Emulator検証済みだが、GASの03:00 JSTトリガーは未作成。公開候補では整理実行自体も拒否。監査の90日期限はデータ/閲覧に反映するが、物理削除の定期実行は未有効。3時ちょうどの実行保証は未検証であり、既存Schedulerを無料で有効化できた意味ではない。
 
 公式仕様: [batchGet](https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/batchGet)、[commit](https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/commit)、[Write](https://firebase.google.com/docs/firestore/reference/rest/v1/Write)、[list](https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/list)。
+
+
+## 次の未公開候補：通常アーカイブ接続
+
+`Code.archive-candidate.gs` は通常履歴を扱うAPIへの更新候補。公開中の合成限定Code.candidate.gsとは別に生成する。通常版でも整理実行は無条件拒否のまま。新しい公開/実データの扱いは [通常履歴レビュー](../../../docs/gps-history-archive-review-20261101.md)の承認対象であり、現在の公開版3は変更していない。
+
+`gps-history-gas-adapter.js` と既存gps-history-sync.jsのcreateGasで、端末の日報UIDとクラウドGPS UIDを分けたまま既存履歴欄へ接続する。GPS送信/新規測位は停止したまま、既存本人履歴の手動操作だけを扱う。Node58件、実DOM/実IndexedDB＋合成Auth/GAS、実REST Emulator10件が成功。後者の結合はfake-indexeddbと実クライアント/GAS VMを使い、Google認証/日報資格だけは合成。管理者画面/実通常履歴/実端末は未完了。
