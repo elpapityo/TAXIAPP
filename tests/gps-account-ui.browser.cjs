@@ -191,6 +191,19 @@ const {chromium}=require('playwright');
    const beforeAdminSwitch=requests.length;await page.evaluate(()=>window.__testSwitchAccounts());
    assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#target option').count(),0);assert.equal(requests.length,beforeAdminSwitch);
    assert.equal(await page.evaluate(()=>localStorage.getItem('taxiapp-diary-protection-sentinel')),'未同期の日報を保持');
+   // 実際の既存管理者ボタンで、本人の固定合成履歴を扱う準備/削除確認。
+   trialEnabled=true;await page.reload();await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
+   const beforeAdminTrial=requests.length;await page.locator('#gpsHistoryBackendTrial').click();
+   await page.waitForFunction(()=>document.getElementById('gpsHistoryBackendStatus').textContent.includes('本人の合成履歴を保存・照合'));
+   assert.equal(trialRows.size,1);const trialId=[...trialRows.keys()][0];assert.match(trialId,/gastrial[a-f0-9]{32}$/);
+   assert.equal(await page.locator('#target').inputValue(),'gps-ui-user');assert.equal(await page.locator('#shift').inputValue(),trialId);
+   assert.equal(requests.slice(beforeAdminTrial).some(r=>r.action==='deleteGpsHistory'),false);
+   await page.locator('#view').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('閲覧監査済み'));
+   page.once('dialog',d=>d.accept());const trialDownload=page.waitForEvent('download');await page.locator('#export').click();assert.ok((await trialDownload).suggestedFilename().includes(trialId));
+   page.once('dialog',d=>d.accept());await page.locator('#delete').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('履歴 0乗務'));
+   await page.locator('#gpsHistoryBackendTrial').click();await page.waitForFunction(()=>document.getElementById('gpsHistoryBackendStatus').textContent.includes('削除確認に成功'));
+   assert.equal(trialRows.size,0);assert.equal(requests.at(-1).action,'getOwnGpsHistoryTombstone');
+   console.log('管理者合成確認：自動削除せず既存の閲覧/CSV/確認削除を通し、同じ合成IDの墓標を確認。');
    console.log('管理者実DOM＋合成GAS：利用者続き/対象履歴/監査済みCSV/確認取消/クラウド削除/権限拒否/本人切替を確認。Firestore/Functions importなし。');
   }
   assert.deepEqual(errors,[]);

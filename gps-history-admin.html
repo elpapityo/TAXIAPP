@@ -32,6 +32,8 @@ button.delete{background:#a63b3b}#historyMap{height:min(66vh,570px);min-height:3
  <button type="button" id="gpsAccountLink">Googleで管理者を連携する</button>
  <button type="button" id="gpsAccountChange" hidden disabled>連携アカウントを変更</button>
  <p id="gpsAccountIdentity" class="note" aria-live="polite"></p>
+ <button type="button" id="gpsHistoryBackendTrial" hidden disabled>合成履歴を用意して管理者操作を確認する</button>
+ <p id="gpsHistoryBackendStatus" role="status" hidden>本人の固定1地点（0,0）だけを保存します。下の閲覧・CSV・削除ボタンで試した後、このボタンで削除済みを確認します。</p>
  <p id="gpsAccountStatus" role="status">ボタンを押すと本人確認を開始します。</p>
 </section>
 <section class="card">
@@ -73,7 +75,7 @@ button.delete{background:#a63b3b}#historyMap{height:min(66vh,570px);min-height:3
 <script src="./functions/gps-history-validation.js"></script>
 <script src="./gps-history-sync.js?v=20261101-archive"></script>
 <script src="./gps-history-gas-adapter.js?v=20261101-admin"></script>
-<script src="./gps-history-admin.js?v=20261101-accountchange"></script>
-<script src="./gps-account-ui.js?v=20261101-accountchange"></script>
+<script src="./gps-history-admin.js?v=20261101-admintrial"></script>
+<script src="./gps-account-ui.js?v=20261101-admintrial"></script>
 </body>
 </html>
