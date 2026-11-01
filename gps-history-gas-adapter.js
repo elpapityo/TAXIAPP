@@ -52,11 +52,24 @@ function create({diaryAuth,gpsAuth,client,subtle=root.crypto?.subtle}){
    if(r?.status!=='saved'||r.operationId!==row.operationId)throw Error('CSV監査の保存確認が一致しません');return r;
   },
   async admin(action,data){
-   if(!['adminListGpsHistory','adminViewGpsHistory','adminExportGpsHistory','adminListGpsHistoryAudit'].includes(action))throw Error('管理者履歴操作が不正です');
-   if(action!=='adminListGpsHistoryAudit'&&(typeof data?.targetUid!=='string'||!UID.test(data.targetUid)))throw Error('GPS側の対象利用者IDが不正です');
+   if(!['adminListGpsHistoryUsers','adminListGpsHistory','adminViewGpsHistory','adminExportGpsHistory','adminListGpsHistoryAudit','deleteGpsHistory'].includes(action))throw Error('管理者履歴操作が不正です');
+   if(!['adminListGpsHistoryAudit','adminListGpsHistoryUsers'].includes(action)&&(typeof data?.targetUid!=='string'||!UID.test(data.targetUid)))throw Error('GPS側の対象利用者IDが不正です');
+   if(['adminViewGpsHistory','adminExportGpsHistory','deleteGpsHistory'].includes(action))shift(data?.shiftId);
+   if(action==='deleteGpsHistory'&&data?.confirmationShiftId!==data.shiftId)throw Error('削除対象の乗務を確認してください');
+   if(action==='adminExportGpsHistory'&&data?.confirmedExport!==true)throw Error('CSV書き出しを確認してください');
+   if(action==='adminListGpsHistoryUsers'&&data?.afterUid!==undefined&&(typeof data.afterUid!=='string'||!UID.test(data.afterUid)))throw Error('利用者一覧の続き指定が不正です');
    const r=await call(ids.diaryUid,action,data||{});
+   if(action==='adminListGpsHistoryUsers'){
+    if(!Array.isArray(r?.users)||r.users.length>40||r.nextAfterUid!==null&&(typeof r.nextAfterUid!=='string'||!UID.test(r.nextAfterUid))||r.nextAfterUid!==null&&r.users.at(-1)?.uid!==r.nextAfterUid)throw Error('管理者利用者一覧の形式が不正です');
+    const seen=new Set();return {users:r.users.map(row=>{
+     if(typeof row.uid!=='string'||!UID.test(row.uid)||seen.has(row.uid)||typeof row.name!=='string'||row.name.length>80||!['active','inactive'].includes(row.status))throw Error('管理者利用者一覧の形式が不正です');
+     seen.add(row.uid);return {uid:row.uid,name:row.name,status:row.status};
+    }),nextAfterUid:r.nextAfterUid};
+   }
+   if(action==='deleteGpsHistory'&&(r?.targetUid!==data.targetUid||r.shiftId!==data.shiftId||!['deleted','already-deleted'].includes(r.status)))throw Error('管理者削除の確認が一致しません');
    if(action==='adminViewGpsHistory'||action==='adminExportGpsHistory'){
     if(r?.targetUid!==data.targetUid||r.shiftId!==data.shiftId||r.source!=='admin_server_audited')throw Error('監査済みの対象履歴が一致しません');
+    if(history.retentionDeadlineMs(r.endedAtMs)<=Date.now())throw Error('管理者履歴の保存期限を過ぎています');
     if(await history.sha256(history.prepare({...r,uid:data.targetUid}),subtle)!==r.contentHash)throw Error('管理者履歴の内容が一致しません');current();
    }
    if(action==='adminListGpsHistory'){

@@ -1,7 +1,7 @@
 /* 日報UIDとGPS UIDを区別する認証連携。既存日報・認証状態を更新しない。 */
 (function(root){'use strict';
 const DIARY_PROJECT='taxiapp-2b6bd',GPS_PROJECT='taxigps-9f82e';
-const HISTORY_ACTIONS=Object.freeze(['saveOwnGpsHistory','getOwnGpsHistory','listOwnGpsHistory','getOwnGpsHistoryTombstone','adminViewGpsHistory','adminExportGpsHistory','adminListGpsHistory','adminListGpsHistoryAudit','deleteGpsHistory','recordOwnGpsCsvAudit']);
+const HISTORY_ACTIONS=Object.freeze(['adminListGpsHistoryUsers','saveOwnGpsHistory','getOwnGpsHistory','listOwnGpsHistory','getOwnGpsHistoryTombstone','adminViewGpsHistory','adminExportGpsHistory','adminListGpsHistory','adminListGpsHistoryAudit','deleteGpsHistory','recordOwnGpsCsvAudit']);
 function subject(user){
  if(!user?.uid||user.emailVerified!==true)throw Error('確認済みGoogleアカウントが必要です');
  const rows=(user.providerData||[]).filter(x=>x.providerId==='google.com');

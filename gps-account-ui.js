@@ -69,7 +69,11 @@ button.addEventListener('click',async()=>{
   // まず利用者資格だけを連携。日報/位置の操作権を取得・奪取しない。
   await client.link(null);
   let archiveNotice='';
-  if(config.historyArchiveEnabled===true){
+  if(document.getElementById('adminPanel')&&window.TAXIAPP_GPS_HISTORY_ADMIN_UI){
+   const remote=window.TAXIAPP_GPS_HISTORY_GAS_ADAPTER.create({diaryAuth,gpsAuth,client,subtle:crypto.subtle});
+   try{archive=window.TAXIAPP_GPS_HISTORY_ADMIN_UI.create({remote,diaryAuth,gpsAuth,core:window.TAXIAPP_GPS_SHARING_CORE});await archive.refresh();}
+   catch(error){archive?.dispose();archive=null;remote.dispose();throw error;}
+  }else if(config.historyArchiveEnabled===true){
    let historySession;try{
    historySession=window.TAXIAPP_GPS_HISTORY_SYNC.createGas({diaryAuth,gpsAuth,client,store:window.TAXIAPP_GPS_HISTORY_STORE,subtle:crypto.subtle});
    archive=window.TAXIAPP_GPS_HISTORY_ARCHIVE_UI.create({session:historySession,diaryAuth,gpsAuth,store:window.TAXIAPP_GPS_HISTORY_STORE,core:window.TAXIAPP_GPS_SHARING_CORE});
