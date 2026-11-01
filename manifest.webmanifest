@@ -1,0 +1,19 @@
+{
+  "name": "TAXIAPP｜乗務日報・営業支援",
+  "short_name": "TAXIAPP",
+  "description": "タクシー乗務日報・営業支援",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#172d47",
+  "theme_color": "#172d47",
+  "icons": [
+    {
+      "src": "./pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
