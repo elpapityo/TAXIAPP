@@ -1,0 +1,251 @@
+{
+  "asOf": "2026-11-01",
+  "status": "構成比較・未実装・未公開",
+  "assumptions": "全員13時間同時利用、送信15秒・一覧60秒。Workerが現在地をGAS/Firestore GPSへ中継せず、Googleオンライン確認を毎要求維持。資格は本人tokenで日報2文書を最長5分ごとに確認。操作端末はwriter操作の書込直前確認。SQLは1ユーザー1行へ状態統合する想定。実課金測定ではない。",
+  "sources": [
+    "https://developers.cloudflare.com/workers/platform/limits/",
+    "https://developers.cloudflare.com/durable-objects/platform/pricing/",
+    "https://firebase.google.com/docs/firestore/quotas"
+  ],
+  "scenarios": [
+    {
+      "users": 1,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 0,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 3120,
+      "plannedDiaryReads": 3971,
+      "workerRequests": 4587,
+      "doRequests": 4587,
+      "plannedLogicalWrites": 3806,
+      "googleLookups": 9174,
+      "blockers": [],
+      "status": "回数の一次比較のみ・採用未決定",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    },
+    {
+      "users": 2,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 0,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 6240,
+      "plannedDiaryReads": 7942,
+      "workerRequests": 9174,
+      "doRequests": 9174,
+      "plannedLogicalWrites": 7612,
+      "googleLookups": 18348,
+      "blockers": [],
+      "status": "回数の一次比較のみ・採用未決定",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    },
+    {
+      "users": 10,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 0,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 31200,
+      "plannedDiaryReads": 39710,
+      "workerRequests": 45870,
+      "doRequests": 45870,
+      "plannedLogicalWrites": 38060,
+      "googleLookups": 91740,
+      "blockers": [],
+      "status": "回数の一次比較のみ・採用未決定",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    },
+    {
+      "users": 20,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 0,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 62400,
+      "plannedDiaryReads": 79420,
+      "workerRequests": 91740,
+      "doRequests": 91740,
+      "plannedLogicalWrites": 76120,
+      "googleLookups": 183480,
+      "blockers": [
+        "送信ごとの操作端末確認だけで日報読取上限超過",
+        "想定日報読取が上限超過"
+      ],
+      "status": "既知の上限に抵触",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    },
+    {
+      "users": 100,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 0,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 312000,
+      "plannedDiaryReads": 397100,
+      "workerRequests": 458700,
+      "doRequests": 458700,
+      "plannedLogicalWrites": 380600,
+      "googleLookups": 917400,
+      "blockers": [
+        "送信ごとの操作端末確認だけで日報読取上限超過",
+        "想定日報読取が上限超過",
+        "Workers要求数が上限超過",
+        "Durable Objects要求数が上限超過",
+        "論理書込だけでSQL書込行上限超過"
+      ],
+      "status": "既知の上限に抵触",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    }
+  ],
+  "preflightSensitivity": [
+    {
+      "users": 10,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 1,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 31200,
+      "plannedDiaryReads": 39710,
+      "workerRequests": 91740,
+      "doRequests": 45870,
+      "plannedLogicalWrites": 38060,
+      "googleLookups": 91740,
+      "blockers": [],
+      "status": "回数の一次比較のみ・採用未決定",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    },
+    {
+      "users": 20,
+      "hours": 13,
+      "sendEverySec": 15,
+      "listEverySec": 60,
+      "diaryOtherReads": 0,
+      "workerOtherRequests": 0,
+      "preflightsPerRequest": 1,
+      "perUser": {
+        "send": 3120,
+        "claim": 520,
+        "eligibility": 165,
+        "list": 780
+      },
+      "writerReadsLowerBound": 62400,
+      "plannedDiaryReads": 79420,
+      "workerRequests": 183480,
+      "doRequests": 91740,
+      "plannedLogicalWrites": 76120,
+      "googleLookups": 183480,
+      "blockers": [
+        "送信ごとの操作端末確認だけで日報読取上限超過",
+        "想定日報読取が上限超過",
+        "Workers要求数が上限超過"
+      ],
+      "status": "既知の上限に抵触",
+      "productionReady": false,
+      "unmeasured": [
+        "実日報と他Workerの使用量",
+        "認証API割当",
+        "CPU時間",
+        "DO実課金行数/索引/再試行",
+        "DO実行時間/容量",
+        "停止/設定変更/オフライン復帰"
+      ]
+    }
+  ]
+}
