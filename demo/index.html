@@ -4007,12 +4007,12 @@ function localSaveLabel(){
 async function save(){if(!canEditNow())return false;localSavePending=false;storageStatus='デモ専用一時メモリ';updateLocalSaveIndicator();return true;}
 function saveLater(){if(!canEditNow())return;localSavePending=true;updateLocalSaveIndicator();clearTimeout(persistTimer);persistTimer=setTimeout(()=>{persistTimer=0;void save();},350);}
 function renderNav(){
- const selected=id=>tab===id||(id==='manage'&&['cloud','files'].includes(tab));
+ const selected=id=>tab===id||(id==='manage'&&['cloud','local','files'].includes(tab));
  const buttons=Object.entries(labels).filter(([name])=>!['print','manage'].includes(name));
  const desktop=buttons.map(([id,[icon,title]])=>
   `<button type="button" data-tab="${id}" class="${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('');
  const mobileItem=(id,icon,title)=>`<button type="button" data-tab="${id}" class="taxi-mobile-item ${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico" aria-hidden="true">${icon}</span><span class="nav-label">${title}</span></button>`;
- const moreSelected=['manage','cloud','files','settings'].includes(tab);
+ const moreSelected=['manage','cloud','local','files','settings'].includes(tab);
  return `<div class="sidebar">
  <nav class="card nav" aria-label="メインメニュー">${desktop}</nav>
  <div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div>
@@ -4131,7 +4131,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='monthly'?renderMonthlyManagement():tab==='manage'?renderManagementHome():tab==='cloud'?renderCloudManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):(typeof renderSettingsCategorized==='function'?renderSettingsCategorized(shift):renderSettings(shift))}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='monthly'?renderMonthlyManagement():tab==='manage'?renderManagementHome():tab==='cloud'?renderCloudManagement():tab==='local'?renderLocalManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):(typeof renderSettingsCategorized==='function'?renderSettingsCategorized(shift):renderSettings(shift))}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -7898,8 +7898,34 @@ function handleSheetTargetSetting(target){const field=target.dataset.cloudSettin
 }
 // A single departure-to-return session is the unit of device data removal.
 // Render as full-width touch cards, not a horizontally scrollable table.
-function managementSubNav(){return '<div class="actions" style="margin-bottom:16px"><button class="btn" type="button" data-tab="manage">管理</button><button class="btn" type="button" data-tab="cloud">☁ クラウド日報</button><button class="btn" type="button" data-tab="files">▣ ファイル管理</button></div>';}
-function renderManagementHome(){return titleBlock('管理','MANAGEMENT','日報の管理とファイル操作を別々に扱います。')+'<section class="card"><h2 class="h2">クラウド日報管理</h2><p class="helper">本人のサーバー日報の閲覧・修正・保存状態とゴミ箱</p><button class="btn primary" type="button" data-tab="cloud">クラウド日報管理を開く</button></section>'+'<section class="card"><h2 class="h2">ファイル管理</h2><p class="helper">JSON・CSV・バックアップ・取込・端末内整理</p><button class="btn primary" type="button" data-tab="files">ファイル管理を開く</button></section>';}
+function managementSubNav(){
+ return '<div class="actions" style="margin-bottom:16px">'+
+ '<button class="btn" type="button" data-tab="manage">管理</button>'+
+ '<button class="btn" type="button" data-tab="cloud">☁ クラウド日報</button>'+
+ '<button class="btn" type="button" data-tab="local">▣ 端末内日報</button>'+
+ '<button class="btn" type="button" data-tab="files">▣ ファイル管理</button></div>';
+}
+function deviceRetainedDuties(){
+ const data=deviceMode==='viewer'?viewerLocalModel:model;
+ return accountScopeLoaded&&Array.isArray(data?.shifts)?data.shifts:[];
+}
+function renderManagementHome(){
+ const count=deviceRetainedDuties().length;
+ return titleBlock('管理','MANAGEMENT','日報の保存先ごとに管理します。')+
+ '<section class="card"><h2 class="h2">クラウド日報管理</h2>'+
+ '<p class="helper">本人のサーバー日報の閲覧・修正・保存状態とゴミ箱</p>'+
+ '<button class="btn primary" type="button" data-tab="cloud">クラウド日報管理を開く</button></section>'+
+ '<section class="card"><h2 class="h2">端末内の日報一覧（'+(accountScopeLoaded?count+'件':'読み込み待ち')+'）</h2>'+
+ '<p class="helper">この端末の本人アカウントに残る日報を表示します。クラウドの件数とは別です。</p>'+
+ '<button class="btn primary" type="button" data-tab="local">端末内の日報一覧を開く</button></section>'+
+ '<section class="card"><h2 class="h2">ファイル管理</h2>'+
+ '<p class="helper">JSON・CSV・バックアップ・取込・端末間移行</p>'+
+ '<button class="btn primary" type="button" data-tab="files">ファイル管理を開く</button></section>';
+}
+function renderLocalManagement(){
+ return titleBlock('端末内の日報一覧','LOCAL DIARY','この端末に残る日報を、クラウドとは別に確認します。')+
+ managementSubNav()+renderDataManagement();
+}
 
 function renderCloudManagement(){
  const date=cloudManagementDate||historyDate||dateStamp();
@@ -7942,31 +7968,42 @@ ${legacyDiary()?`<section class="card"><h2 class="h2">CSV・ファイル名</h2>
 ${renderDataManagement()}
 `;}
 function renderDataManagement(){
- const sessions=[...(model.shifts||[])].sort((a,b)=>String(b.startedIso||'').localeCompare(String(a.startedIso||'')));
+ const data=deviceMode==='viewer'?viewerLocalModel:model;
+ const sessions=[...deviceRetainedDuties()].sort((a,b)=>String(b.startedIso||b.date||'').localeCompare(String(a.startedIso||a.date||'')));
+ const conflicts=syncUI.status().conflicts;
  const items=sessions.map(s=>{
-  const active=s.id===model.activeId;
-  const unfinished=active||!s.endedAt;
+  const active=s.id===data?.activeId,unfinished=active||(!s.endedAt&&!s.endedIso);
+  const cloudTrashed=memberDiary()&&conflicts.some(c=>c.id===s.id&&
+    String(c.reason||'').startsWith('クラウド側でゴミ箱に移動済み'));
+  const syncLabel=cloudTrashed?'クラウドはゴミ箱済み（端末に保持）':
+    deviceMode==='viewer'?'閲覧専用：クラウド照合は行いません':
+    memberDiary()?syncUI.dutySyncStatus(s).label:'旧Google原本とは別の端末保存';
   const count=(s.records||[]).length;
   const fare=totals(s.records||[],s.settings||{},s.date||'').meter;
-  const period=shortTime(s.startedAt)+' ～ '+(s.endedAt?shortTime(s.endedAt):'未入庫');
-  return `<article class="duty-management-item">
-   <div class="duty-management-info">
-    <strong>${safeText(s.date||'日付不明')} <span class="pill ${unfinished?'amber':'mint'}">${active?'乗務中':unfinished?'未入庫':'入庫済み'}</span></strong>
-    <span>出庫 ～ 入庫：${safeText(period)}</span>
-    <span>営業記録：${count}件 ／ メーター売上：${money(fare)}</span>
-    ${s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':''}
-   </div>
-   <button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="${safeText(s.id)}" aria-label="${safeText((s.date||'日付不明')+' '+period+' の乗務を削除')}">${memberDiary()?"この乗務をゴミ箱へ移動":"端末の乗務を整理（旧Google原本は保持）"}</button>
-  </article>`;
+  const period=shortTime(s.startedAt||s.startedIso)+' ～ '+
+    ((s.endedAt||s.endedIso)?shortTime(s.endedAt||s.endedIso):'未入庫');
+  const deleteAllowed=deviceMode==='writer'&&!unfinished&&(canEditNow()||writerLoadGate&&cloudTrashed);
+  const deletion=unfinished?'<p class="caption-note">乗務中・未入庫のため削除不可</p>':
+    cloudTrashed?'<button class="btn red fill duty-delete-button" type="button" data-sync-trash-local="'+safeText(s.id)+'" '+(deleteAllowed?'':'disabled')+'>この端末の日報を削除</button>':
+    '<button class="btn red fill duty-delete-button" type="button" data-action="deleteShift" data-id="'+safeText(s.id)+'" '+(deleteAllowed?'':'disabled')+'>'+
+      (memberDiary()?'この乗務をゴミ箱へ移動':'端末の乗務を整理（旧Google原本は保持）')+'</button>';
+  return '<article class="duty-management-item">'+
+   '<div class="duty-management-info">'+
+   '<strong>'+safeText(s.date||'日付不明')+' <span class="pill '+(unfinished?'amber':'mint')+'">'+(active?'乗務中':unfinished?'未入庫':'入庫済み')+'</span></strong>'+
+   '<span>出庫 ～ 入庫：'+safeText(period)+'</span>'+
+   '<span>営業記録：'+count+'件 ／ メーター売上：'+money(fare)+'</span>'+
+   '<span>乗務ID：'+safeText(s.id)+'</span>'+
+   '<span>クラウド照合：'+safeText(syncLabel)+'</span>'+
+   (s.driver?'<span>乗務員：'+safeText(s.driver)+'</span>':'')+
+   '</div>'+deletion+'</article>';
  }).join('');
- return `<section class="card"><h2 class="h2">端末に保存された乗務（${sessions.length}件）</h2>
-   <p class="helper">本人Firestoreの保存確認済み日報は、明示削除でゴミ箱へ移し、復元できる状態を維持します。保存未確認・競合中の日報は削除できません。旧Google原本は移行・削除しません。</p>
-   <p class="warn">通常保持の自動整理と、手動のゴミ箱移動は別操作です。旧Google原本・印刷帳票は変更しません。未同期・競合・移行前の乗務は引き続き保護してください。</p>
-   <div class="actions"><button class="btn" type="button" data-action="downloadJson">⇩ JSONバックアップを保存</button></div>
-  </section>
-  <section class="card"><h2 class="h2">乗務一覧</h2>
-   ${items||'<p class="empty-state">削除する乗務はありません。新しく出庫できます。</p>'}
-  </section>`;
+ return '<section class="card"><h2 class="h2">端末内に保持中の日報（'+sessions.length+'件）</h2>'+
+   '<p class="helper">ログイン中の本人アカウントについて、この端末に読み込んだ日報を一覧表示します。クラウド側の全日報ではありません。</p>'+
+   '<p class="caption-note">端末保存：'+safeText(localSaveLabel())+'。未同期・競合中の記録も表示します。クラウドがゴミ箱済みのものは端末専用の削除ボタンで整理できます。</p>'+
+   '</section><section class="card"><h2 class="h2">乗務一覧</h2>'+
+   (accountScopeLoaded?(items||'<p class="empty-state">この端末に保持している日報はありません。</p>'):
+     '<p class="helper">本人アカウントの端末データを読み込み中です。</p>')+
+   '</section>';
 }
 
 function renderDeviceManagementPanel(){
