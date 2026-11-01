@@ -5,7 +5,7 @@ const {execFileSync}=require('node:child_process');
 const code=fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.candidate.gs'),'utf8');
 const validation=require('../functions/gps-history-validation');
 const prefix='https://firestore.googleapis.com/v1/projects/taxigps-9f82e/databases/(default)/documents';
-function fixture({archive=false}={}){
+function fixture({archive=false,manager=false}={}){
  const calls=[],state={auditFails:false,sourceSuspended:false,sourceDemoted:false,loseResponse:false,auditReadFails:false,suspendOnAudit:false};
  const c=vm.createContext({Date,TextEncoder,console:{log(){throw Error('非公開データをログしない');}},
  ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})},
@@ -31,7 +31,7 @@ function fixture({archive=false}={}){
   if(state.loseResponse&&url.endsWith(':commit')&&status===200){state.loseResponse=false;throw Error('合成の応答消失');}
   return {getResponseCode:()=>status,getContentText:()=>text};
  }}});
- vm.runInContext(archive?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.archive-candidate.gs'),'utf8'):code,c);if(!archive)c.GPS_HISTORY_TRIAL_ONLY_=false; // 全機能の実REST回帰は試験環境だけで解除。
+ vm.runInContext(manager?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.manager-candidate.gs'),'utf8'):archive?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.archive-candidate.gs'),'utf8'):code,c);if(!archive)c.GPS_HISTORY_TRIAL_ONLY_=false; // 全機能の実REST回帰は試験環境だけで解除。
  c.gpsBridgeVerified_=(project,token)=>{
   const [kind,id]=String(token).split(':');if(kind!==(project===c.GPS_BRIDGE_DIARY_?'d':'g')||!id)throw Object.assign(Error('unauthenticated'),{gpsCode:'unauthenticated'});
   return {uid:(kind==='d'?'diary-':'')+id,subject:'subject-'+id,email:id+'@example.invalid'};
@@ -176,4 +176,23 @@ test('通常アーカイブ結合：実IndexedDB互換→日報/GPS別UIDの実�
  await session.removeRemote(uid,id,id);assert.equal(f.read('gpsHistory/driver-12345678/shifts/'+id),null);
  await store.setSyncState(uid,id,'未送信');assert.equal((await session.one(uid,id)).status,'deleted');assert.equal((await store.fetchOne(uid,id)).points.length,1);
  session.dispose();client.dispose();
+});
+
+test('実REST：管理者だけ利用者40名ずつ取得・続き重複なし・内部資格/座標を返さず降格を拒否',()=>{
+ const f=fixture({manager:true});f.seed('admin-12345678');f.seed('driver-12345678');
+ const names=[];
+ for(let i=0;i<42;i++){
+  const uid='paged-user-'+String(i).padStart(3,'0');names.push(uid);
+  const name=f.c.gpsBridgeName_(f.c.GPS_BRIDGE_GPS_,'users/'+uid);
+  f.rawCommit([{update:{name,fields:{openChatName:{stringValue:'合成'+i},status:{stringValue:'active'},diaryUid:{stringValue:'private-diary'},googleSubject:{stringValue:'private-subject'},email:{stringValue:'private@example.invalid'}}}}]);
+ }
+ assert.equal(f.post('adminListGpsHistoryUsers').code,'permission-denied');
+ const first=f.post('adminListGpsHistoryUsers',{},'admin-12345678');assert.equal(first.ok,true,JSON.stringify(first));assert.equal(first.data.users.length,40);
+ const second=f.post('adminListGpsHistoryUsers',{afterUid:first.data.nextAfterUid},'admin-12345678');assert.equal(second.ok,true,JSON.stringify(second));assert.equal(second.data.nextAfterUid,null);
+ const all=[...first.data.users,...second.data.users];assert.equal(new Set(all.map(u=>u.uid)).size,all.length);
+ for(const name of names)assert.ok(all.some(u=>u.uid===name));
+ assert.equal(JSON.stringify(first).includes('private'),false);assert.equal(JSON.stringify(first).includes('points'),false);
+ assert.ok(f.calls.some(c=>c.body?.structuredQuery?.select?.fields?.length===2));
+ assert.equal(f.post('adminListGpsHistoryUsers',{afterUid:'../users'},'admin-12345678').code,'invalid-argument');
+ f.state.sourceDemoted=true;assert.equal(f.post('adminListGpsHistoryUsers',{},'admin-12345678').code,'permission-denied');
 });

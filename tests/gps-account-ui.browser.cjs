@@ -23,7 +23,7 @@ const {chromium}=require('playwright');
   browser=await chromium.launch(options);
   const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[],requests=[],failures=[];
   page.on('requestfailed',r=>failures.push({host:new URL(r.url()).hostname,error:r.failure()?.errorText}));
-  let firebaseImports=0,mode='success',trialEnabled=false,archiveEnabled=false;const trialRows=new Map(),trialTombs=new Set();page.on('pageerror',e=>errors.push(e.message));
+  let firebaseImports=0,mode='success',trialEnabled=false,archiveEnabled=false,adminDenied=false,adminAuditFails=false;const trialRows=new Map(),trialTombs=new Set();page.on('pageerror',e=>errors.push(e.message));
   await context.addInitScript(()=>{
    navigator.geolocation.getCurrentPosition=()=>{throw Error('合成試験で実GPSを取得してはいけない');};
    navigator.geolocation.watchPosition=()=>{throw Error('本人連携中に測位を開始してはいけない');};
@@ -50,11 +50,15 @@ const {chromium}=require('playwright');
    else if(body.action==='link')response={ok:true,data:{diaryUid:'diary-ui-user',gpsUid:'gps-ui-user',writerSessionId:null,validUntilMs:Date.now()+300000}};
    else{
     assert.equal(body.actorUid,'gps-ui-user');const d=body.data;
-    if(body.action==='saveOwnGpsHistory'){trialRows.set(d.payload.shiftId,{...d.payload,uid:'gps-ui-user',contentHash:d.contentHash,expiresAt:Date.now()+60000});response={ok:true,data:{status:'saved',shiftId:d.payload.shiftId,contentHash:d.contentHash}};}
+    if(body.action==='adminListGpsHistoryUsers')response=adminDenied?{ok:false,code:'permission-denied'}:{ok:true,data:{users:d.afterUid?[{uid:'driver-b',name:'合成利用者B',status:'inactive'}]:[{uid:'driver-a',name:'合成利用者A',status:'active'}],nextAfterUid:d.afterUid?null:'driver-a'}};
+    else if(body.action==='adminListGpsHistory')response={ok:true,data:{targetUid:d.targetUid,shifts:[...trialRows.values()].map(row=>({shiftId:row.shiftId,startedAtMs:row.startedAtMs,endedAtMs:row.endedAtMs}))}};
+    else if(['adminViewGpsHistory','adminExportGpsHistory'].includes(body.action))response=adminAuditFails?{ok:false,code:'permission-denied'}:{ok:true,data:{...trialRows.get(d.shiftId),targetUid:d.targetUid,source:'admin_server_audited'}};
+    else if(body.action==='adminListGpsHistoryAudit')response={ok:true,data:{entries:[{actorUid:'gps-ui-user',targetUid:'driver-a',shiftId:'shift-9300',action:'view',atMs:Date.now()}]}};
+    else if(body.action==='saveOwnGpsHistory'){trialRows.set(d.payload.shiftId,{...d.payload,uid:'gps-ui-user',contentHash:d.contentHash,expiresAt:Date.now()+60000});response={ok:true,data:{status:'saved',shiftId:d.payload.shiftId,contentHash:d.contentHash}};}
     else if(body.action==='getOwnGpsHistory')response=trialRows.has(d.shiftId)?{ok:true,data:{history:trialRows.get(d.shiftId)}}:{ok:false,code:'not-found'};
     else if(body.action==='listOwnGpsHistory')response={ok:true,data:{targetUid:'gps-ui-user',shifts:[...trialRows.values()].map(row=>({shiftId:row.shiftId,startedAtMs:row.startedAtMs,endedAtMs:row.endedAtMs}))}};
     else if(body.action==='recordOwnGpsCsvAudit')response={ok:true,data:{operationId:d.operationId,status:'saved'}};
-    else if(body.action==='deleteGpsHistory'){trialRows.delete(d.shiftId);trialTombs.add(d.shiftId);response={ok:true,data:{targetUid:'gps-ui-user',shiftId:d.shiftId,status:'deleted'}};}
+    else if(body.action==='deleteGpsHistory'){trialRows.delete(d.shiftId);trialTombs.add(d.shiftId);response={ok:true,data:{targetUid:d.targetUid||'gps-ui-user',shiftId:d.shiftId,status:'deleted'}};}
     else if(body.action==='getOwnGpsHistoryTombstone')response={ok:true,data:{deleted:trialTombs.has(d.shiftId)}};
     else throw Error('予期しない合成履歴操作');
    }
@@ -146,6 +150,41 @@ const {chromium}=require('playwright');
   assert.equal(await page.evaluate(()=>localStorage.getItem('taxiapp-diary-protection-sentinel')),'未同期の日報を保持');
   if(!archiveEnabled)assert.equal(await page.locator('main button:enabled,main input:enabled').count(),0);
   assert.equal(await page.locator('#privacyToggle').isDisabled(),true);assert.equal(await page.locator('#historyToggle').isDisabled(),true);
+  if(!live){
+   const beforeAdmin=requests.length,importsBefore=firebaseImports;
+   await page.goto('http://127.0.0.1:'+server.address().port+'/gps-history-admin.html');
+   assert.equal(firebaseImports,importsBefore);assert.equal(requests.length,beforeAdmin);
+   await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
+   assert.deepEqual(requests.slice(beforeAdmin).map(r=>r.action),['link','adminListGpsHistoryUsers']);
+   assert.equal(await page.locator('#target option').count(),2);
+   await page.locator('#usersMore').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('GPS利用者 2名'));
+   assert.equal(await page.locator('#target option').count(),3);assert.match(await page.locator('#target').innerText(),/停止中/);
+   await page.locator('#target').selectOption('driver-a');await page.waitForFunction(()=>!document.getElementById('view').disabled);
+   assert.equal(requests.at(-1).action,'adminListGpsHistory');assert.equal(await page.locator('#export').isDisabled(),true);
+   await page.locator('#view').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('閲覧監査済み'));
+   assert.equal(requests.at(-1).data.targetUid,'driver-a');
+   const beforeCancel=requests.length;page.once('dialog',d=>d.dismiss());await page.locator('#export').click();assert.equal(requests.length,beforeCancel);
+   page.once('dialog',d=>d.accept());const dw=page.waitForEvent('download');await page.locator('#export').click();assert.match((await dw).suggestedFilename(),/shift-9300_gps.csv/);
+   await page.locator('#auditRefresh').click();await page.waitForFunction(()=>document.getElementById('auditList').textContent.includes('閲覧'));
+   assert.equal(requests.at(-1).action,'adminListGpsHistoryAudit');
+   // 監査/資格拒否で座標のキャッシュと利用者表示を消し、CSVを許可しない。
+   adminAuditFails=true;await page.locator('#view').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('permission-denied'));
+   assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#export').isDisabled(),true);
+   adminAuditFails=false;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
+   await page.locator('#target').selectOption('driver-a');await page.waitForFunction(()=>!document.getElementById('view').disabled);
+   await page.locator('#view').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('閲覧監査済み'));
+   const beforeDelete=requests.length;page.once('dialog',d=>d.dismiss());await page.locator('#delete').click();assert.equal(requests.length,beforeDelete);
+   page.once('dialog',d=>d.accept());await page.locator('#delete').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('履歴 0乗務'));
+   assert.equal(trialRows.size,0);assert.equal(await page.locator('#export').isDisabled(),true);
+   // 権限拒否は画面を開かず、本人連携は別に成功する。
+   adminDenied=true;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('permission-denied'));
+   assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#target option').count(),0);
+   adminDenied=false;await page.locator('#gpsAccountLink').click();await page.waitForFunction(()=>!document.getElementById('adminPanel').hidden);
+   const beforeAdminSwitch=requests.length;await page.evaluate(()=>window.__testSwitchAccounts());
+   assert.equal(await page.locator('#adminPanel').isHidden(),true);assert.equal(await page.locator('#target option').count(),0);assert.equal(requests.length,beforeAdminSwitch);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('taxiapp-diary-protection-sentinel')),'未同期の日報を保持');
+   console.log('管理者実DOM＋合成GAS：利用者続き/対象履歴/監査済みCSV/確認取消/クラウド削除/権限拒否/本人切替を確認。Firestore/Functions importなし。');
+  }
   assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

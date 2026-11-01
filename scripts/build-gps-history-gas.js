@@ -21,3 +21,10 @@ let archive=code.replace("revision:'history-v3'","revision:'history-v4-archive'"
   "function cleanupGpsHistoryAndAudit(){\n gpsBridgeFail_('failed-precondition'); // 整理は今回も未承認のため常時拒否。");
 if(!archive.includes("revision:'history-v4-archive'")||!archive.includes('GPS_HISTORY_TRIAL_ONLY_=false')||!archive.includes('整理は今回も未承認'))throw Error('通常アーカイブ候補の生成箇所が変わっています');
 fs.writeFileSync(path.join(base,'history/Code.archive-candidate.gs'),archive);
+// 版3/版4の生成内容を保持し、管理者利用者一覧だけ追加する次の候補。
+const adminSource=fs.readFileSync(path.join(base,'history/Admin.gs'),'utf8');
+const manager=archive.replace("revision:'history-v4-archive'","revision:'history-v5-admin'")
+ .replace("'adminViewGpsHistory','adminExportGpsHistory'","'adminListGpsHistoryUsers','adminViewGpsHistory','adminExportGpsHistory'")
+ .replace("case 'adminListGpsHistory':result=gpsHistoryList_(auth,true);break;", "case 'adminListGpsHistoryUsers':result=gpsHistoryAdminUsers_(auth);break;\n   case 'adminListGpsHistory':result=gpsHistoryList_(auth,true);break;")+ '\n'+adminSource;
+if(!manager.includes("case 'adminListGpsHistoryUsers':")||!manager.includes("revision:'history-v5-admin'"))throw Error('管理者候補の生成箇所が変わっています');
+fs.writeFileSync(path.join(base,'history/Code.manager-candidate.gs'),manager);

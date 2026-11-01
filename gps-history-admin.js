@@ -1,18 +1,35 @@
-/* TAXIAPP GPS履歴管理者画面。日報データには一切アクセスしない。 */
-(async()=>{
-'use strict';
-const $=id=>document.getElementById(id),txt=(id,value)=>{$(id).textContent=String(value)};
-if(window.TAXIAPP_GPS_CLOUD_POLICY?.enabled!==true){
- $('adminPanel').hidden=true;
- document.querySelectorAll('main button,main input,main select').forEach(el=>{el.disabled=true;});
- txt('status',window.TAXIAPP_GPS_CLOUD_POLICY?.message||'日報優先：GPSクラウド通信は停止しています');
- return;
+/* GPS管理者履歴。無料GASのみ、明示連携後に起動。日報原本/端末履歴は読まない。 */
+(function(root){'use strict';
+const initialDoc=root.document||(typeof document!=='undefined'?document:null);
+if(initialDoc){
+ initialDoc.querySelectorAll('#adminPanel button,#adminPanel select').forEach(el=>{el.disabled=true;});
+ const status=initialDoc.getElementById('status');if(status)status.textContent='日報とGPSのGoogle本人確認後、管理者資格を確認します。新規GPS測位は停止中です。';
+ const panel=initialDoc.getElementById('adminPanel');if(panel)panel.hidden=true;
 }
-const core=window.TAXIAPP_GPS_SHARING_CORE;
-let auth=null,users=[],map=null,layer=null,functions=null,httpsCallable=null;
-let currentUser=null,currentTarget='',currentShift='',serverResult=null,selectionEpoch=0;
-if(!core){txt('status','TAXIAPPの設定を確認できません');return;}
-const version='12.4.0';
+
+function create({remote,diaryAuth,gpsAuth,core,document:doc=root.document}){
+ if(!remote||!core||root.TAXIAPP_GPS_CLOUD_POLICY?.enabled!==false)throw Error('管理者履歴の接続設定が不正です');
+ const $=id=>doc.getElementById(id),txt=(id,value)=>{$(id).textContent=String(value)};
+ const diary=diaryAuth.currentUser,gps=gpsAuth.currentUser;
+ let map=null,layer=null,serverResult=null,currentTarget='',currentShift='',selectionEpoch=0,disposed=false,busy=false,nextAfterUid=null;
+ const listeners=[];
+ function current(){if(disposed||diaryAuth.currentUser!==diary||gpsAuth.currentUser!==gps)throw Error('管理者のログインが切り替わりました');}
+ function active(epoch){return !disposed&&epoch===selectionEpoch&&diaryAuth.currentUser===diary&&gpsAuth.currentUser===gps;}
+ function controls(){
+  for(const id of ['target','usersMore','auditRefresh'])$(id).disabled=disposed||busy||(id==='usersMore'&&!nextAfterUid);
+  $('shift').disabled=disposed||busy||!$('shift').options.length;
+  $('view').disabled=disposed||busy||!currentTarget||!$('shift').value;
+  for(const id of ['fit','export','delete'])$(id).disabled=disposed||busy||!serverResult;
+ }
+ async function run(task){if(busy||disposed)return;busy=true;controls();try{current();await task();}catch(error){
+  fail(error,'操作できません：');
+ }finally{busy=false;controls();}}
+ function fail(error,prefix){
+  if(disposed)return;serverResult=null;layer?.clearLayers();
+  if(['permission-denied','unauthenticated','account-mismatch'].includes(error.code))dispose();
+  txt('status',prefix+String(error.message||error));
+ }
+ function on(id,event,fn){$(id).addEventListener(event,fn);listeners.push(()=>$(id).removeEventListener(event,fn));}
 function makeMap(){
  if(!window.L){txt('status','地図を表示できません');return;}
  map=L.map('historyMap').setView([34.75,135.4],10);
@@ -21,7 +38,8 @@ function makeMap(){
  layer=L.layerGroup().addTo(map);
 }
 function fitRoute(){
- if(!map||!serverResult)return;
+ if(!serverResult)return;
+ if(!map){makeMap();if(!map)return;drawRoute();}
  const points=(serverResult.points||[]).filter(p=>p.suspectedJump!==true);
  if(!points.length)return;
  const bounds=L.latLngBounds(points.map(p=>[p.lat,p.lon]));
@@ -58,7 +76,6 @@ function drawRoute(){
   L.circleMarker([first.lat,first.lon],{radius:7,color:'#078a70'}).bindPopup('記録開始').addTo(layer);
   L.circleMarker([last.lat,last.lon],{radius:7,color:'#c23b42'}).bindPopup('記録終了').addTo(layer);
  }
- fitRoute();
 }
 function fileName(result){
  const jst=new Date(result.startedAtMs+9*3600000).toISOString().slice(0,19)
@@ -72,12 +89,7 @@ function downloadCsv(result){
  anchor.href=uri;anchor.download=fileName(result);document.body.append(anchor);
  anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(uri),1000);
 }
-async function call(name,data){
- const callable=httpsCallable(functions,name);
- const actorUid=currentUser?.uid;if(!actorUid)throw Error('ログイン利用者を確認できません');
- const result=await callable({...data,actorUid});
- return result.data;
-}
+async function call(name,data){current();const result=await remote.admin(name,data);current();return result;}
 async function selectTarget(){
  const epoch=++selectionEpoch;
  const target=$('target').value;currentTarget=target;
@@ -88,7 +100,7 @@ async function selectTarget(){
  txt('status','選択利用者の保存済みGPS履歴を確認中');
  try{
   const result=await call('adminListGpsHistory',{targetUid:target});
-  if(currentTarget!==target||epoch!==selectionEpoch)return;
+  if(!active(epoch)||currentTarget!==target)return;
   for(const item of result.shifts||[]){
    const option=document.createElement('option');option.value=item.shiftId;
    option.textContent=new Date(item.startedAtMs).toLocaleString('ja-JP')+
@@ -99,7 +111,7 @@ async function selectTarget(){
   $('view').disabled=$('shift').disabled;
   currentShift=$('shift').value;
   txt('status','履歴 '+(result.shifts||[]).length+'乗務。選択後「履歴を開く」を押してください');
- }catch(error){txt('status','履歴一覧の確認に失敗：'+String(error.message||error));}
+ }catch(error){fail(error,'履歴一覧の確認に失敗：');}
 }
 async function viewSelected(){
  const target=currentTarget,id=$('shift').value,epoch=selectionEpoch;
@@ -109,52 +121,52 @@ async function viewSelected(){
  try{
   // Server logs actor/time/target/shift before returning coordinates.
   const result=await call('adminViewGpsHistory',{targetUid:target,shiftId:id});
-  if(currentTarget!==target||$('shift').value!==id||epoch!==selectionEpoch)return;
+  if(!active(epoch)||currentTarget!==target||$('shift').value!==id)return;
   serverResult=result;currentShift=id;drawRoute();
   $('export').disabled=false;$('delete').disabled=false;
   txt('status','履歴を表示：GPS '+result.points.length+'点（閲覧監査済み）');
  }catch(error){
-  txt('status','閲覧不可（監査ログ・権限・通信を確認）：'+String(error.message||error));
- }finally{if(epoch===selectionEpoch)$('view').disabled=!currentUser||!currentTarget||!$('shift').value;}
+  fail(error,'閲覧不可（監査ログ・権限・通信を確認）：');
+ }finally{if(epoch===selectionEpoch)$('view').disabled=disposed||!currentTarget||!$('shift').value;}
 }
 async function exportSelected(){
- const target=currentTarget,id=currentShift;
+ const target=currentTarget,id=currentShift,epoch=selectionEpoch;
  if(!target||!id||!serverResult)return;
- if(!confirm('選択した利用者のGPS履歴をCSV書き出ししますか？'))return;
+ if(!confirm('対象 '+$('target').selectedOptions[0].textContent+'／乗務 '+id+' のGPS履歴をCSV書き出ししますか？'))return;
  txt('status','書き出し監査ログを保存中');
  try{
   const result=await call('adminExportGpsHistory',{
    targetUid:target,shiftId:id,confirmedExport:true
   });
-  if(currentTarget!==target||currentShift!==id)return;
+  if(!active(epoch)||currentTarget!==target||currentShift!==id)return;
   downloadCsv(result);
   txt('status','CSV出力を行いました（監査ログ保存済み）');
- }catch(error){txt('status','CSV出力不可：'+String(error.message||error));}
+ }catch(error){fail(error,'CSV出力不可：');}
 }
 async function deleteSelected(){
- const target=currentTarget,id=currentShift;
+ const target=currentTarget,id=currentShift,epoch=selectionEpoch;
  if(!target||!id||!serverResult)return;
- if(!confirm('この利用者の選択乗務のGPS履歴をサーバーから削除します。よろしいですか？'))return;
+ if(!confirm('対象 '+$('target').selectedOptions[0].textContent+'／乗務 '+id+' のGPS履歴をサーバーから削除します。よろしいですか？'))return;
  txt('status','削除操作と監査ログを保存中');
  try{
   const result=await call('deleteGpsHistory',{targetUid:target,shiftId:id,
    confirmationShiftId:id});
-  if(currentTarget!==target)return;
+  if(!active(epoch)||currentTarget!==target||currentShift!==id)return;
   serverResult=null;layer?.clearLayers();
   txt('status',result.status==='deleted'?'GPS履歴を削除しました（監査ログ記録済み）':
    'このGPS履歴はすでに削除されています');
   await selectTarget();
- }catch(error){txt('status','削除不可：'+String(error.message||error));}
+ }catch(error){fail(error,'削除不可：');}
 }
 
 async function refreshAudit(){
  const list=$('auditList');list.replaceChildren();
- const actor=currentUser;
+ const actor=diary;
  if(!actor)return;
  txt('status','GPS履歴の監査ログを確認中');
  try{
   const data=await call('adminListGpsHistoryAudit',{});
-  if(currentUser!==actor)return;
+  if(disposed||diaryAuth.currentUser!==actor)return;
   for(const row of data.entries||[]){
    const line=document.createElement('p');
    const action={view:'閲覧',csv_export:'CSV出力',delete:'削除'}[row.action]||row.action;
@@ -164,50 +176,40 @@ async function refreshAudit(){
    list.append(line);
   }
   txt('status','監査ログ '+(data.entries||[]).length+'件を表示（座標情報なし）');
- }catch(error){txt('status','監査ログを取得できません：'+String(error.message||error));}
+ }catch(error){fail(error,'監査ログを取得できません：');}
 }
-async function init(){
- const project=window.TAXIAPP_GPS_FIREBASE_PROJECT;
- if(!project)throw Error('GPS専用接続の基盤がありません');
- const config=project.configFor(window.TAXIAPP_GPS_FIREBASE_CONFIG,window.TAXIAPP_FIREBASE_CONFIG);
- makeMap();
- $('target').addEventListener('change',selectTarget);
- $('shift').addEventListener('change',()=>{selectionEpoch++;currentShift=$('shift').value;
-  serverResult=null;layer?.clearLayers();$('export').disabled=true;$('delete').disabled=true;});
- $('view').addEventListener('click',viewSelected);
- $('export').addEventListener('click',exportSelected);
- $('delete').addEventListener('click',deleteSelected);
- $('fit').addEventListener('click',fitRoute);
- $('auditRefresh').addEventListener('click',refreshAudit);
- const [{initializeApp,getApps},a,f,fn]=await Promise.all([
-  import('https://www.gstatic.com/firebasejs/'+version+'/firebase-app.js'),
-  import('https://www.gstatic.com/firebasejs/'+version+'/firebase-auth.js'),
-  import('https://www.gstatic.com/firebasejs/'+version+'/firebase-firestore.js'),
-  import('https://www.gstatic.com/firebasejs/'+version+'/firebase-functions.js')]);
- const app=project.initialize({initializeApp,getApps},config,window.TAXIAPP_FIREBASE_CONFIG);
- auth=a.getAuth(app);const db=f.getFirestore(app);
- functions=fn.getFunctions(app,'asia-northeast1');httpsCallable=fn.httpsCallable;
- a.onAuthStateChanged(auth,async user=>{
-  selectionEpoch++;$('adminPanel').hidden=true;currentUser=user;currentTarget='';currentShift='';serverResult=null;
-  layer?.clearLayers();$('auditList').replaceChildren();$('target').replaceChildren();$('shift').replaceChildren();
-  $('view').disabled=true;$('export').disabled=true;$('delete').disabled=true;
-  if(!user){txt('status','TAXIAPP本体でログインしてください');return;}
-  try{
-   const admin=await f.getDocFromServer(f.doc(db,'admins',user.uid));
-   if(currentUser!==user)return;
-   if(!admin.exists()||admin.data().enabled!==true){
-    txt('status','管理者権限がありません');return;
-   }
-   const snap=await f.getDocsFromServer(f.collection(db,'users'));
-   if(currentUser!==user)return;
-   users=snap.docs.map(x=>({uid:x.id,name:String(x.data().openChatName||x.id)}))
-    .sort((x,y)=>x.name.localeCompare(y.name,'ja'));
-   $('target').replaceChildren(new Option('利用者を選択',''));
-   for(const item of users)$('target').append(new Option(item.name+'（'+item.uid.slice(-5)+'）',item.uid));
-   $('adminPanel').hidden=false;
-   txt('status','管理者の認証を確認しました。利用者を選択してください');
-  }catch(error){txt('status','権限確認に失敗：'+String(error.message||error));}
- });
+
+ async function loadUsers(more=false){
+  const epoch=++selectionEpoch;
+  serverResult=null;currentTarget='';currentShift='';layer?.clearLayers();$('shift').replaceChildren();
+  if(!more){$('target').replaceChildren(new Option('利用者を選択',''));nextAfterUid=null;}
+  txt('status','管理者資格とGPS利用者一覧を確認中…');
+  const data=await call('adminListGpsHistoryUsers',more?{afterUid:nextAfterUid}:{});
+  if(!active(epoch))return;
+  for(const item of data.users){
+   if([...$('target').options].some(option=>option.value===item.uid))continue;
+   $('target').append(new Option(item.name+'（'+item.uid+'）'+(item.status==='inactive'?'［停止中］':''),item.uid));
+  }
+  $('target').value='';nextAfterUid=data.nextAfterUid;
+  $('adminPanel').hidden=false;
+  txt('status','管理者資格を確認しました。GPS利用者 '+($('target').options.length-1)+'名。対象を選択してください。');
+ }
+ on('target','change',()=>run(selectTarget));
+ on('usersMore','click',()=>run(()=>loadUsers(true)));
+ on('shift','change',()=>{selectionEpoch++;currentShift=$('shift').value;serverResult=null;layer?.clearLayers();controls();});
+ on('view','click',()=>run(viewSelected));
+ on('export','click',()=>run(exportSelected));
+ on('delete','click',()=>run(deleteSelected));
+ on('fit','click',()=>{try{current();fitRoute();}catch{dispose();}});
+ on('auditRefresh','click',()=>run(refreshAudit));
+ function dispose(){
+  if(disposed)return;disposed=true;selectionEpoch++;serverResult=null;currentTarget='';currentShift='';nextAfterUid=null;
+  listeners.forEach(off=>off());remote.dispose();layer?.clearLayers();map?.remove();map=null;layer=null;
+  $('target').replaceChildren();$('shift').replaceChildren();$('auditList').replaceChildren();$('adminPanel').hidden=true;
+  txt('status','管理者連携を確認してください。');controls();
+ }
+ controls();
+ return Object.freeze({refresh:()=>run(()=>loadUsers(false)),dispose});
 }
-try{await init()}catch(error){txt('status','管理者画面の起動に失敗：'+String(error.message||error));}
-})();
+root.TAXIAPP_GPS_HISTORY_ADMIN_UI=Object.freeze({create});
+})(typeof window!=='undefined'?window:globalThis);

@@ -69,3 +69,17 @@ test('GAS一括送信：最初の通信/資格エラーで停止し、残りの�
  const r=await f.session.all('diary-user');assert.equal(r.length,1);assert.equal(r[0].status,'error');assert.equal(f.calls.length,1);
  assert.equal(f.rows.get('shift-124').serverStatus,'未送信');assert.equal(f.rows.get('shift-124').points.length,1);
 });
+
+test('管理者GAS：利用者一覧は許可項目だけ・閲覧ハッシュ/期限・削除対象確認・本人切替を検証',async()=>{
+ const f=fixture(),remote=f.remote;
+ const payload=sync.prepare({...f.row,uid:'target'}),hash=await sync.sha256(payload,webcrypto.subtle);
+ let response={users:[{uid:'target',name:'合成利用者',status:'active',diaryUid:'secret'}],nextAfterUid:null};
+ f.client.call=async()=>structuredClone(response);
+ assert.deepEqual(await remote.admin('adminListGpsHistoryUsers',{}),{users:[{uid:'target',name:'合成利用者',status:'active'}],nextAfterUid:null});
+ response={...payload,targetUid:'target',contentHash:hash,source:'admin_server_audited'};
+ assert.equal((await remote.admin('adminViewGpsHistory',{targetUid:'target',shiftId:payload.shiftId})).points.length,1);
+ response.points[0].lat=1;await assert.rejects(remote.admin('adminViewGpsHistory',{targetUid:'target',shiftId:payload.shiftId}),/内容/);
+ await assert.rejects(remote.admin('deleteGpsHistory',{targetUid:'target',shiftId:payload.shiftId,confirmationShiftId:'shift-999'}),/削除対象/);
+ response={targetUid:'wrong',shiftId:payload.shiftId,status:'deleted'};await assert.rejects(remote.admin('deleteGpsHistory',{targetUid:'target',shiftId:payload.shiftId,confirmationShiftId:payload.shiftId}),/確認/);
+ f.client.call=async()=>{f.gpsAuth.currentUser={...f.gpsAuth.currentUser};return {users:[],nextAfterUid:null};};await assert.rejects(remote.admin('adminListGpsHistoryUsers',{}),/切り替わり/);
+});
