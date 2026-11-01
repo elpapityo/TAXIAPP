@@ -209,7 +209,20 @@ async function refreshAudit(){
   txt('status','管理者連携を確認してください。');controls();
  }
  controls();
- return Object.freeze({refresh:()=>run(()=>loadUsers(false)),dispose});
+ async function selectTrial(shiftId){
+  current();if(!/^shift-[0-9]+-gastrial[a-f0-9]{32}$/.test(shiftId))throw Error('合成確認の乗務IDではありません');
+  const uid=remote.gpsUid;
+  if(![...$('target').options].some(option=>option.value===uid))$('target').append(new Option('本人（合成確認）',uid));
+  $('target').value=uid;
+  await run(async()=>{
+   await selectTarget();current();
+   if(![...$('shift').options].some(option=>option.value===shiftId))throw Error('合成履歴を一覧で確認できません');
+   $('shift').value=shiftId;currentShift=shiftId;selectionEpoch++;
+   txt('status','本人の合成履歴を選択しました。履歴を開く→CSV→削除の順に確認できます。');
+  });
+  current();if($('shift').value!==shiftId)throw Error('合成履歴の選択を確認できません');
+ }
+ return Object.freeze({refresh:()=>run(()=>loadUsers(false)),selectTrial,dispose});
 }
 root.TAXIAPP_GPS_HISTORY_ADMIN_UI=Object.freeze({create});
 })(typeof window!=='undefined'?window:globalThis);

@@ -87,7 +87,7 @@ button.addEventListener('click',async()=>{
    await archive.refresh();
    }catch(error){archive?.dispose();archive=null;historySession?.dispose();archiveNotice=' 保存済み履歴の表示を確認できません：'+String(error.message||error);}
   }
-  if(historyTrial&&config.historyTrialEnabled===true)historyTrial.disabled=false;
+  if(historyTrial&&config.historyTrialEnabled===true)historyTrial.disabled=!!document.getElementById('adminPanel')?.hidden;
   button.textContent='利用者の連携をもう一度確認する';
   message(document.getElementById('adminPanel')?'本人連携を確認しました。管理者資格の確認結果は下に表示します。新規GPS測位・共有は停止中です。':'利用者の連携を確認しました。'+(config.historyArchiveEnabled===true?'新しい位置共有・GPS記録は停止中です。保存済み履歴は手動で操作できます。':'位置共有・走行履歴の送信は停止中です。')+archiveNotice);
  }catch(error){
@@ -138,16 +138,28 @@ if(historyTrial&&historyStatus&&config.historyTrialEnabled===true)historyTrial.a
   if(pending.stage==='verify'){
    const result=await call('getOwnGpsHistory',{shiftId}),row=result.history;
    if(row?.uid!==g.uid||row?.shiftId!==shiftId||row?.contentHash!==pending.hash||await sync.sha256(sync.prepare(row),crypto.subtle)!==pending.hash)throw Error('合成履歴の内容が一致しません');
-   check();pending.stage='delete';
+   check();pending.stage=document.getElementById('adminPanel')?'admin-manual':'delete';
+   if(pending.stage==='admin-manual'){
+    await archive.selectTrial(shiftId);check();
+    historyTrial.textContent='合成履歴の削除済みを確認する';
+    historyStatus.textContent='本人の合成履歴を保存・照合しました。下の「履歴を開く」「GPS履歴をCSV保存」「この乗務のGPS履歴を削除」で確認後、このボタンで削除済みを確認してください。';return;
+   }
   }
   if(pending.stage==='delete'){
    const result=await call('deleteGpsHistory',{shiftId,confirmationShiftId:shiftId});
    if(result.targetUid!==g.uid||result.shiftId!==shiftId||!['deleted','already-deleted'].includes(result.status))throw Error('合成履歴の削除確認が一致しません');
    pending.stage='tomb';
   }
-  if((await call('getOwnGpsHistoryTombstone',{shiftId})).deleted!==true)throw Error('削除済みの確認ができません');
+  if((await call('getOwnGpsHistoryTombstone',{shiftId})).deleted!==true){
+   if(pending.stage==='admin-manual'){
+    await archive.selectTrial(shiftId);check();
+    historyStatus.textContent='合成履歴はまだ削除されていません。下の既存ボタンで閲覧・CSV・削除を確認してください。';return;
+   }
+   throw Error('削除済みの確認ができません');
+  }
+  if(pending.stage==='admin-manual')historyTrial.textContent='合成履歴を用意して管理者操作を確認する';
   trialPending=null;historyStatus.textContent='合成履歴の保存・内容照合・削除確認に成功しました。新しい位置共有・GPS記録は停止中です。';
  }catch(error){historyStatus.textContent='合成履歴の確認を完了できませんでした：'+String(error.message||'通信を確認してください')+(trialPending?'（試験ID '+trialPending.payload.shiftId+'）':'');}
- finally{busy=false;button.disabled=false;historyTrial.disabled=false;}
+ finally{busy=false;button.disabled=false;historyTrial.disabled=sessionReady.diaryAuth.currentUser!==d||sessionReady.gpsAuth.currentUser!==g||!!document.getElementById('adminPanel')?.hidden;}
 });
 })();
