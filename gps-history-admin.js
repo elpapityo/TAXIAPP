@@ -27,7 +27,7 @@ function create({remote,diaryAuth,gpsAuth,core,document:doc=root.document}){
  function fail(error,prefix){
   if(disposed)return;serverResult=null;layer?.clearLayers();
   if(['permission-denied','unauthenticated','account-mismatch'].includes(error.code))dispose();
-  txt('status',prefix+String(error.message||error));
+  txt('status',error.code==='permission-denied'?'このGoogleアカウントでは管理者権限を確認できません。上の「連携アカウントを変更」で、登録済み管理者を選び直してください。':prefix+String(error.message||error));
  }
  function on(id,event,fn){$(id).addEventListener(event,fn);listeners.push(()=>$(id).removeEventListener(event,fn));}
 function makeMap(){

@@ -30,6 +30,8 @@ button.delete{background:#a63b3b}#historyMap{height:min(66vh,570px);min-height:3
  <h2>GPS履歴の管理者連携</h2>
  <p>日報とGPSで同じGoogleアカウントを確認します。日報の保存先や操作端末は変更しません。</p>
  <button type="button" id="gpsAccountLink">Googleで管理者を連携する</button>
+ <button type="button" id="gpsAccountChange" hidden disabled>連携アカウントを変更</button>
+ <p id="gpsAccountIdentity" class="note" aria-live="polite"></p>
  <p id="gpsAccountStatus" role="status">ボタンを押すと本人確認を開始します。</p>
 </section>
 <section class="card">
@@ -71,7 +73,7 @@ button.delete{background:#a63b3b}#historyMap{height:min(66vh,570px);min-height:3
 <script src="./functions/gps-history-validation.js"></script>
 <script src="./gps-history-sync.js?v=20261101-archive"></script>
 <script src="./gps-history-gas-adapter.js?v=20261101-admin"></script>
-<script src="./gps-history-admin.js?v=20261101-admin"></script>
-<script src="./gps-account-ui.js?v=20261101-admin"></script>
+<script src="./gps-history-admin.js?v=20261101-accountchange"></script>
+<script src="./gps-account-ui.js?v=20261101-accountchange"></script>
 </body>
 </html>
