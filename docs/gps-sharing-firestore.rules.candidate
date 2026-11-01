@@ -1,0 +1,439 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 認証・管理者判定
+    // ==========================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // 管理者権限はFirebase Consoleまたは
+    // 信頼済みサーバーからのみ設定する
+    function isAdmin() {
+      return signedIn() &&
+        exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ) &&
+        get(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ).data.enabled == true;
+    }
+
+    // ==========================================
+    // 管理者情報
+    // ==========================================
+
+    match /admins/{uid} {
+
+      allow get: if signedIn() &&
+        (request.auth.uid == uid || isAdmin());
+
+      allow list: if isAdmin();
+
+      // 管理者権限の自己取得は禁止
+      allow create, update, delete: if false;
+    }
+
+    // ==========================================
+    // 一般利用者登録
+    // Google認証後の自動登録
+    // オプチャネームを同時保存
+    // ==========================================
+
+    match /users/{uid} {
+
+      // 本人または管理者だけが登録情報を閲覧
+      allow get: if signedIn() &&
+        (request.auth.uid == uid || isAdmin());
+
+      // 利用者一覧は管理者のみ
+      allow list: if isAdmin();
+
+      // 本人による初回登録のみ許可
+      allow create: if signedIn() &&
+
+        // 他人のUIDへの登録禁止
+        request.auth.uid == uid &&
+
+        // Googleアカウント認証が必須
+        request.auth.token.firebase.sign_in_provider
+          == 'google.com' &&
+
+        // 確認済みメールアドレスが必須
+        request.auth.token.email_verified == true &&
+
+        // 登録可能な項目を限定
+        request.resource.data.keys().hasOnly([
+          'status',
+          'registeredAt',
+          'openChatName'
+        ]) &&
+
+        request.resource.data.keys().hasAll([
+          'status',
+          'registeredAt',
+          'openChatName'
+        ]) &&
+
+        // オプチャネーム必須
+        request.resource.data.openChatName is string &&
+        request.resource.data.openChatName.size() >= 1 &&
+        request.resource.data.openChatName.size() <= 32 &&
+
+        // 空白だけの名前は拒否
+        request.resource.data.openChatName.matches(
+          '.*\\S.*'
+        ) &&
+
+        // 一般利用者として有効化
+        request.resource.data.status == 'active' &&
+
+        // 登録日時はサーバー時刻
+        request.resource.data.registeredAt
+          == request.time;
+
+      // 既存ユーザーの自己変更・自己復活は禁止
+      allow update, delete: if false;
+    }
+
+    // ==========================================
+    // 有効な利用者の判定
+    // ==========================================
+
+    function activeUser(uid) {
+      return exists(
+        /databases/$(database)/documents/users/$(uid)
+      ) &&
+        get(
+          /databases/$(database)/documents/users/$(uid)
+        ).data.status == 'active';
+    }
+
+    // 本人UIDだけを許可
+    function ownerEnabled(uid) {
+      return signedIn() &&
+        request.auth.uid == uid &&
+        (isAdmin() || activeUser(uid));
+    }
+
+    // ==========================================
+    // 操作端末のセッション管理
+    // ==========================================
+
+    match /deviceSessions/{uid} {
+
+      allow get: if ownerEnabled(uid);
+
+      allow list, delete: if false;
+
+      allow create, update: if ownerEnabled(uid) &&
+
+        request.resource.data.keys().hasOnly([
+          'sessionId',
+          'updatedAt'
+        ]) &&
+
+        request.resource.data.keys().hasAll([
+          'sessionId',
+          'updatedAt'
+        ]) &&
+
+        request.resource.data.sessionId is string &&
+
+        request.resource.data.sessionId.size() >= 32 &&
+
+        request.resource.data.sessionId.size() <= 128 &&
+
+        request.resource.data.updatedAt == request.time;
+    }
+
+    // ==========================================
+    // 現在の操作端末の確認
+    // ==========================================
+
+    function isCurrentEditor(uid) {
+      return exists(
+        /databases/$(database)/documents/deviceSessions/$(uid)
+      ) &&
+        request.resource.data.writerSessionId ==
+          get(
+            /databases/$(database)/documents/deviceSessions/$(uid)
+          ).data.sessionId;
+    }
+
+    // ==========================================
+    // 利用者別設定
+    // ==========================================
+
+    match /accountSettings/{uid} {
+
+      allow get: if ownerEnabled(uid);
+
+      allow list, delete: if false;
+
+      allow create, update: if ownerEnabled(uid) &&
+        isCurrentEditor(uid) &&
+
+        request.resource.data.keys().hasOnly([
+          'format',
+          'schemaVersion',
+          'prefs',
+          'updatedAt',
+          'writerSessionId'
+        ]) &&
+
+        request.resource.data.keys().hasAll([
+          'format',
+          'schemaVersion',
+          'prefs',
+          'updatedAt',
+          'writerSessionId'
+        ]) &&
+
+        request.resource.data.format ==
+          'TAXIAPP_ACCOUNT_SETTINGS_V1' &&
+
+        request.resource.data.schemaVersion == 1 &&
+
+        request.resource.data.prefs is map &&
+
+        request.resource.data.writerSessionId is string &&
+
+        request.resource.data.updatedAt == request.time;
+    }
+
+    // ==========================================
+    // 本人UID別Firestore日報原本
+    // ==========================================
+
+    function validPrivateDuty(uid, shiftId) {
+      return ownerEnabled(uid) &&
+
+        request.resource.data.keys().hasOnly([
+          'format',
+          'revision',
+          'shift',
+          'writerSessionId',
+          'updatedAt',
+          'trashed'
+        ]) &&
+
+        request.resource.data.keys().hasAll([
+          'format',
+          'revision',
+          'shift',
+          'writerSessionId',
+          'updatedAt'
+        ]) &&
+
+        request.resource.data.format ==
+          'TAXIAPP_PRIVATE_SHIFT_V1' &&
+
+        request.resource.data.revision is int &&
+
+        request.resource.data.revision > 0 &&
+
+        request.resource.data.shift is map &&
+
+        request.resource.data.shift.id == shiftId &&
+
+        request.resource.data.shift.records is list &&
+
+        request.resource.data.shift.records.size() <= 60 &&
+
+        request.resource.data.shift.settings is map &&
+
+        request.resource.data.writerSessionId is string &&
+
+        (
+          !request.resource.data.keys().hasAny([
+            'trashed'
+          ]) ||
+          request.resource.data.trashed is bool
+        ) &&
+
+        request.resource.data.updatedAt == request.time &&
+
+        isCurrentEditor(uid);
+    }
+
+    // ==========================================
+    // 日報原本：利用者ごとに完全分離
+    // ==========================================
+
+    match /privateDuties/{uid}/shifts/{shiftId} {
+
+      // 本人だけが取得・一覧参照可能
+      allow get, list: if ownerEnabled(uid);
+
+      // 新規保存：更新番号は1
+      allow create: if validPrivateDuty(uid, shiftId) &&
+        request.resource.data.revision == 1;
+
+      // 更新：更新番号を必ず1増やす
+      allow update: if validPrivateDuty(uid, shiftId) &&
+
+        resource.data.revision is int &&
+
+        request.resource.data.revision ==
+          resource.data.revision + 1;
+
+      // 日報原本の直接削除は禁止
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // 未承認のデータ領域はアクセス禁止
+    // ==========================================
+
+// This fragment belongs INSIDE service cloud.firestore /databases/{database}/documents.
+// NOT deployed. Uses existing signedIn(), isAdmin(), activeUser(), ownerEnabled().
+function gpsViewerEnabled() {
+  return signedIn() && (isAdmin() || activeUser(request.auth.uid));
+}
+// 既存の操作端末セッションと、その端末内のGPS送信画面を照合。
+function gpsCurrentEditor(uid,writer) {
+ return exists(/databases/$(database)/documents/deviceSessions/$(uid)) &&
+   get(/databases/$(database)/documents/deviceSessions/$(uid)).data.sessionId == writer;
+}
+function gpsOwnsSender(uid,sender,writer) {
+ return gpsCurrentEditor(uid,writer) &&
+   exists(/databases/$(database)/documents/gpsSenderSessions/$(uid)) &&
+   get(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.senderId == sender &&
+   get(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.writerSessionId == writer;
+}
+match /gpsSenderSessions/{uid} {
+ allow get: if ownerEnabled(uid);
+ allow list: if false;
+ allow create, update: if ownerEnabled(uid) &&
+   request.resource.data.keys().hasOnly(['senderId','writerSessionId','updatedAt']) &&
+   request.resource.data.keys().hasAll(['senderId','writerSessionId','updatedAt']) &&
+   request.resource.data.senderId is string && request.resource.data.senderId.size() == 36 &&
+   request.resource.data.writerSessionId is string &&
+   gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+   request.resource.data.updatedAt == request.time &&
+   (!exists(/databases/$(database)/documents/gpsSenderSessions/$(uid)) ||
+    resource.data.senderId == request.resource.data.senderId ||
+    resource.data.writerSessionId != request.resource.data.writerSessionId ||
+    resource.data.updatedAt + duration.value(120,'s') <= request.time);
+ allow delete: if ownerEnabled(uid) &&
+   gpsCurrentEditor(uid,resource.data.writerSessionId) &&
+   getAfter(/databases/$(database)/documents/gpsPresence/$(uid)).data.senderId == resource.data.senderId &&
+   getAfter(/databases/$(database)/documents/gpsPresence/$(uid)).data.public == false;
+}
+match /gpsSharePrefs/{uid} {
+  allow get: if ownerEnabled(uid);
+  allow list, delete: if false;
+  allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly(['public','updatedAt','revision','operationId','writerSessionId']) &&
+    request.resource.data.keys().hasAll(['public','updatedAt','revision','operationId','writerSessionId']) &&
+    request.resource.data.public is bool &&
+    request.resource.data.revision is int &&
+    request.resource.data.operationId is string && request.resource.data.operationId.size() == 36 &&
+    request.resource.data.writerSessionId is string &&
+    gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+    ((!exists(/databases/$(database)/documents/gpsSharePrefs/$(uid)) && request.resource.data.revision == 1) ||
+     (exists(/databases/$(database)/documents/gpsSharePrefs/$(uid)) &&
+      request.resource.data.revision == resource.data.get('revision',0) + 1)) &&
+    request.resource.data.updatedAt == request.time;
+}
+match /gpsPresence/{uid} {
+  // Server data authorization; nonpublic markers are hidden from admins too.
+  allow get, list: if gpsViewerEnabled() &&
+    (request.auth.uid == uid ||
+      (resource.data.public == true && resource.data.onDuty == true));
+  allow create, update: if ownerEnabled(uid) &&
+    request.resource.data.keys().hasOnly([
+      'public','onDuty','status','name','lat','lon','accuracy','speed',
+      'heading','shiftId','capturedAtMs','updatedAt','senderId','writerSessionId'
+    ]) &&
+    request.resource.data.keys().hasAll([
+      'public','onDuty','status','name','lat','lon','accuracy','speed',
+      'heading','shiftId','capturedAtMs','updatedAt','senderId','writerSessionId'
+    ]) &&
+    request.resource.data.public is bool &&
+    request.resource.data.onDuty is bool &&
+    request.resource.data.name is string &&
+    request.resource.data.name.size() >= 1 &&
+    request.resource.data.name.size() <= 80 &&
+    request.resource.data.updatedAt == request.time &&
+    (
+      (request.resource.data.public == true &&
+       gpsCurrentEditor(uid,request.resource.data.writerSessionId) &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.senderId == request.resource.data.senderId &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.writerSessionId == request.resource.data.writerSessionId &&
+       getAfter(/databases/$(database)/documents/gpsSenderSessions/$(uid)).data.updatedAt + duration.value(120,'s') > request.time &&
+       getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == true &&
+       request.resource.data.onDuty == true &&
+       request.resource.data.status in ['空車','迎車','実車','支払い','待機'] &&
+       request.resource.data.shiftId is string &&
+       request.resource.data.shiftId.matches('^shift-[0-9]+(-[a-zA-Z0-9]+)?$') &&
+       request.resource.data.lat is number &&
+       request.resource.data.lon is number &&
+       request.resource.data.lat >= -90 &&
+       request.resource.data.lat <= 90 &&
+       request.resource.data.lon >= -180 &&
+       request.resource.data.lon <= 180 &&
+       request.resource.data.accuracy is number &&
+       request.resource.data.accuracy >= 0 &&
+       request.resource.data.capturedAtMs is int &&
+       request.resource.data.capturedAtMs > 0 &&
+       (request.resource.data.speed == null ||
+        (request.resource.data.speed is number && request.resource.data.speed >= 0)) &&
+       (request.resource.data.heading == null ||
+        (request.resource.data.heading is number &&
+         request.resource.data.heading >= 0 &&
+         request.resource.data.heading < 360)))
+      ||
+      (request.resource.data.public == false &&
+       (getAfter(/databases/$(database)/documents/gpsSharePrefs/$(uid)).data.public == false ||
+        gpsOwnsSender(uid,request.resource.data.senderId,request.resource.data.writerSessionId)) &&
+       request.resource.data.onDuty == false &&
+       request.resource.data.lat == null &&
+       request.resource.data.lon == null &&
+       request.resource.data.accuracy == null &&
+       request.resource.data.speed == null &&
+       request.resource.data.heading == null &&
+       request.resource.data.shiftId == '' &&
+       request.resource.data.capturedAtMs == null)
+    );
+  allow delete: if false;
+}
+
+
+// GPS履歴は営業日報原本とは完全に別の専用領域。
+// 本番未適用。保存期間内に限る「作成のみ」、サーバー原本を無断上書きしない。
+// 他人の履歴は管理者であっても、監査ログ同時記録を強制する
+// サーバー処理を実装するまで直接アクセスを許可しない。
+match /gpsHistory/{uid}/shifts/{shiftId} {
+  allow get: if ownerEnabled(uid) &&
+    (!exists(/databases/$(database)/documents/gpsHistory/$(uid)/shifts/$(shiftId)) ||
+     resource.data.expiresAt > request.time);
+  allow list: if ownerEnabled(uid) && resource.data.expiresAt > request.time;
+  // saveOwnGpsHistoryがハッシュ・期限・削除済みを検証。直接作成を許可しない。
+  allow create: if false;
+  allow update, delete: if false;
+}
+// Server-side deletion tombstone to prevent an offline device re-uploading
+// a history already deleted by the owner or an administrator.
+match /gpsHistoryTombstones/{uid}/shifts/{shiftId} {
+  allow get: if ownerEnabled(uid);
+  allow list, create, update, delete: if false;
+}
+// 履歴の管理者閲覧/削除は、サーバー側の権限確認・監査ログ保存と
+// 一体化する実装までは開放しない（仕様78・79）。
+// 期限切れGPS履歴と監査ログの自動削除は別ジョブで要実装。
+
+// NOTE: On-duty confirmation is currently client-side only, not server verified.
+// Rules are an unapproved draft and must not be deployed without authorization.
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+  }
+}

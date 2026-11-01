@@ -473,3 +473,8 @@ exports.adminUpdateOpenChatName=onCall(options,async request=>{
  return {uid,newName:name,source,
   message:'オプチャネームの変更をサーバーで確認しました。'};
 });
+
+
+// GPS走行履歴の独立機能。PRの試験コードのみで本番デプロイはしていない。
+// 他人の履歴閲覧はサーバー監査保存成功後にのみデータを返す。
+Object.assign(exports, require('./gps-history-operations.js'));
