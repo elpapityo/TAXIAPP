@@ -182,6 +182,18 @@ function create(deps){
   return base.revision;
  }
  const isConflict=id=>Boolean(conflict[id]);
+ // クラウドで削除済みとサーバー確認後、端末側の明示削除だけを競合から外す。
+ function dismissTrashedConflict(id){
+  const c=conflict[id];
+  if(!c||!String(c.reason).startsWith('クラウド側でゴミ箱に移動済み'))return false;
+  if(getModel()?.shifts?.some(s=>s.id===id))return false;
+  try{if(!Object.prototype.hasOwnProperty.call(localRemovals(),id))return false;}
+  catch{return false;}
+  delete conflict[id];clearSendUnknown(id);
+  lastError='';lastSyncAt=Date.now();
+  return true;
+ }
+
  function markConflict(id,reason,localRevision,remoteRevision){
   conflict[id]={id,reason,localRevision,remoteRevision};
  }
@@ -491,7 +503,7 @@ function create(deps){
   conflict={};lastError='';lastSyncAt=0;sendingId=null;unknownSendIds.clear();
   viewerLastError='';viewerLastSyncAt=0;viewerEndpoint='';viewerCache=new Map();
  }
- return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,isSendUnknown,digest,resetAccount,markLocalRemoval,undoLocalRemoval,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
+ return {run,readOnly,viewerStatus,adoptViewerBaseline,adoptReceivedDuty,resolve,status,verifiedRevision,isConflict,isSendUnknown,digest,resetAccount,markLocalRemoval,undoLocalRemoval,dismissTrashedConflict,excludeLocalRemovals,hasLocalRemovals,localRemovalIds,assertSafeWriterSnapshot,planSafeWriterSnapshot};
 }
 root.TAXIAPP_BIDIRECTIONAL_SYNC=Object.freeze({create,digest});
 })(typeof window!=='undefined'?window:globalThis);
