@@ -3632,7 +3632,7 @@ function renderDutyStatus(shift){
   '<div class="preview-duty-stats meter-summary-always">'+additional.join('')+'</div>':'';
  return '<section class="preview-duty-summary'+(meterCompact?' meter-status-summary':'')+'" aria-label="現在の営業情報">'+
   (primary.length?'<div class="preview-duty-stats">'+primary.join('')+'</div>':'')+
-  routeWithSave+more+'</section>';
+  routeWithSave+(shift.draft?.kind==='ride'&&driveStatusFieldVisible('payment')?'<div class="preview-duty-payment"><small>金種</small><strong>'+safeText(status.payment)+'</strong></div>':'')+more+'</section>';
 }
 function renderGuidedHeading(shift){
  const d=shift.draft;
