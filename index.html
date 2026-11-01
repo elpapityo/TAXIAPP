@@ -7863,7 +7863,7 @@ function jumpFromDutyPanel(key){
  if(tab!=='drive')return;
  if(key==='state'){
   const meter=appEl.querySelector('#main-content .meter-console');
-  if(meter){meter.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  if(meter){const y=window.scrollY+meter.getBoundingClientRect().top-130;window.scrollTo({top:Math.max(0,y),behavior:'smooth'});return;}
   const target=appEl.querySelector('#main-content .hero');
   target?.scrollIntoView({behavior:'smooth',block:'start'});
   return;
