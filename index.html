@@ -582,6 +582,12 @@ html:not([data-ui-drive-layout="legacy"]) #main-content:has(.preview-duty-summar
 .preview-duty-route{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #476680;background:#203951;padding:11px 13px;border-radius:13px}
 .preview-duty-route div{min-width:0;flex:1}.preview-duty-route div:last-child{text-align:right}.preview-duty-route strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .preview-duty-route>span{font-size:24px;color:#8bd8ff}
+/* 営業情報サマリー：項目名は非表示、値を大きく表示する（入力・保存には影響しない）。 */
+.preview-duty-summary .preview-duty-stat>small,.preview-duty-summary .preview-duty-route small,.preview-duty-summary .preview-duty-payment small{display:none}
+.preview-duty-summary .preview-duty-stat strong{font-size:clamp(23px,4.3vw,38px);line-height:1.25}
+.preview-duty-summary .preview-duty-route strong{font-size:clamp(20px,3.7vw,32px);line-height:1.3}
+.preview-duty-summary .preview-duty-payment strong{display:block;font-size:clamp(22px,4vw,34px);font-weight:850;line-height:1.3}
+
 .preview-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:9px 0 13px}.preview-steps>div{background:#21374a;border:1px solid #41627c;color:white;border-radius:10px;text-align:center;padding:9px 3px;font-size:13px;font-weight:800}.preview-steps>div.active{background:#115e96}.preview-steps>div.done{background:#174c42}.preview-steps small{display:block;font-size:11px}
 html[data-ui-drive-layout="compact"] .hero .action-grid button:first-child{background:#1684cd;color:white;min-height:77px;font-size:clamp(18px,2.5vw,27px)}
 html[data-ui-drive-layout="compact"] .hero .action-grid button:nth-child(2){min-height:77px}
