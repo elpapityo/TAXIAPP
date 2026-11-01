@@ -22,22 +22,22 @@ async function acquireIdentity({uid,storage,locks,random=()=>root.crypto.randomU
  // Web Locksが使えない場合も同一IDを複製せず、安全側の新しいIDにする。
  return {senderId:random(),release(){}};
 }
-function create({auth,db,f,session,uid,senderId,onChange=()=>{},now=()=>Date.now()}){
- let disposed=false,held=false,leaseAt=0,retryAt=0,leaseDirty=false,tail=Promise.resolve(),generation=0;
- const lease=f.doc(db,'gpsSenderSessions',uid),presence=f.doc(db,'gpsPresence',uid);
- const current=()=>!disposed&&auth.currentUser?.uid===uid&&session.canWrite()&&Boolean(session.sessionId());
+function create({auth,db,f,session,uid,senderId,remote,onChange=()=>{},now=()=>Date.now()}){
+ let disposed=false,held=false,leaseAt=0,retryAt=0,leaseDirty=false,tail=Promise.resolve(),generation=0,heldWriter='';
+ const lease=remote?null:f.doc(db,'gpsSenderSessions',uid),presence=remote?null:f.doc(db,'gpsPresence',uid);
+ const current=()=>!disposed&&auth.currentUser?.uid===uid&&session.canWrite()&&Boolean(session.sessionId())&&(!remote||remote.isCurrent());
  function report(message){onChange({held:held&&current(),message});}
- function clear(message){held=false;leaseAt=0;retryAt=0;generation++;report(message);}
+ function clear(message){held=false;heldWriter='';leaseAt=0;retryAt=0;generation++;report(message);}
  function owned(row,writer){return row?.senderId===senderId&&row?.writerSessionId===writer;}
  function time(row){return row?.updatedAt?.toMillis?.()??NaN;}
  function enqueue(operation){const p=tail.then(operation);tail=p.catch(()=>{});return p;}
- function valid(){return current()&&held&&Number.isFinite(leaseAt)&&now()<leaseAt+LEASE_MS;}
+ function valid(){return current()&&held&&heldWriter===session.sessionId()&&Number.isFinite(leaseAt)&&now()<leaseAt+LEASE_MS;}
  async function maintain(){
   if(!current()){clear('閲覧専用／操作権確認中：位置送信停止');return false;}
   if(valid()&&now()<leaseAt+RENEW_MS)return true;
   if(now()<retryAt)return false;
   const writer=session.sessionId(),epoch=generation;
-  const result=await f.runTransaction(db,async tx=>{
+  let result;if(remote){leaseDirty=true;result=await remote.claim(writer,senderId);}else result=await f.runTransaction(db,async tx=>{
    const snap=await tx.get(lease),row=snap.exists()?snap.data():null;
    if(!current()||writer!==session.sessionId()||epoch!==generation)return {status:'cancelled'};
    const updated=time(row);
@@ -52,10 +52,10 @@ function create({auth,db,f,session,uid,senderId,onChange=()=>{},now=()=>Date.now
    report('別の位置共有画面が送信中：この画面は閲覧のみ');return false;
   }
   // serverTimestampを実読戻ししてからGPS/履歴記録を開始する。
-  const snap=await f.getDocFromServer(lease);
+  const snap=remote?{exists:()=>true,data:()=>({senderId:result.senderId,writerSessionId:result.writerSessionId,updatedAt:{toMillis:()=>result.updatedAtMs}})}:await f.getDocFromServer(lease);
   if(!current()||writer!==session.sessionId()||epoch!==generation)return false;
   const row=snap.exists()?snap.data():null;
-  held=owned(row,writer);leaseAt=time(row);
+  held=owned(row,writer);heldWriter=writer;leaseAt=time(row);
   if(!valid()){held=false;report('位置送信元のサーバー確認待ち');return false;}
   retryAt=0;report('この画面から位置送信');return true;
  }
@@ -65,7 +65,7 @@ function create({auth,db,f,session,uid,senderId,onChange=()=>{},now=()=>Date.now
  function send(payload){return enqueue(async()=>{
   if(!valid())return {status:'not-sender'};
   const writer=session.sessionId(),epoch=generation;
-  const result=await f.runTransaction(db,async tx=>{
+  const result=remote?(await remote.send(writer,senderId,payload)).status==='sent':await f.runTransaction(db,async tx=>{
    const snap=await tx.get(lease),row=snap.exists()?snap.data():null;
    if(!current()||epoch!==generation||writer!==session.sessionId()||!owned(row,writer)||!(now()<time(row)+LEASE_MS))return false;
    tx.set(presence,{...payload,senderId,writerSessionId:writer,updatedAt:f.serverTimestamp()});
@@ -80,6 +80,7 @@ function create({auth,db,f,session,uid,senderId,onChange=()=>{},now=()=>Date.now
   report('位置送信停止');
   return enqueue(async()=>{
    if(disposed||auth.currentUser?.uid!==uid||!writer||!session.canWrite()||session.sessionId()!==writer)return false;
+   if(remote)return remote.stop(writer,senderId).then(r=>r.stopped).finally(()=>{leaseDirty=false;});
    return f.runTransaction(db,async tx=>{
     const snap=await tx.get(lease),row=snap.exists()?snap.data():null;
     if(disposed||auth.currentUser?.uid!==uid||session.sessionId()!==writer||!session.canWrite()||!owned(row,writer))return false;

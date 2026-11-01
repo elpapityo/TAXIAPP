@@ -5,8 +5,8 @@ const {execFileSync}=require('node:child_process');
 const code=fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.candidate.gs'),'utf8');
 const validation=require('../functions/gps-history-validation');
 const prefix='https://firestore.googleapis.com/v1/projects/taxigps-9f82e/databases/(default)/documents';
-function fixture({archive=false,manager=false}={}){
- const calls=[],state={auditFails:false,sourceSuspended:false,sourceDemoted:false,loseResponse:false,auditReadFails:false,suspendOnAudit:false};
+function fixture({archive=false,manager=false,presence=false}={}){
+ const calls=[],state={auditFails:false,sourceSuspended:false,sourceDemoted:false,loseResponse:false,auditReadFails:false,suspendOnAudit:false,writerSession:'w'.repeat(32),sourceReadonly:false};
  const c=vm.createContext({Date,TextEncoder,console:{log(){throw Error('非公開データをログしない');}},
  ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})},
  Utilities:{getUuid:()=>crypto.randomUUID(),DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},
@@ -31,12 +31,12 @@ function fixture({archive=false,manager=false}={}){
   if(state.loseResponse&&url.endsWith(':commit')&&status===200){state.loseResponse=false;throw Error('合成の応答消失');}
   return {getResponseCode:()=>status,getContentText:()=>text};
  }}});
- vm.runInContext(manager?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.manager-candidate.gs'),'utf8'):archive?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.archive-candidate.gs'),'utf8'):code,c);if(!archive)c.GPS_HISTORY_TRIAL_ONLY_=false; // 全機能の実REST回帰は試験環境だけで解除。
+ vm.runInContext(presence?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.presence-candidate.gs'),'utf8'):manager?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.manager-candidate.gs'),'utf8'):archive?fs.readFileSync(path.join(__dirname,'../google-apps-script/gps-account-broker/history/Code.archive-candidate.gs'),'utf8'):code,c);if(!archive)c.GPS_HISTORY_TRIAL_ONLY_=false; // 全機能の実REST回帰は試験環境だけで解除。
  c.gpsBridgeVerified_=(project,token)=>{
   const [kind,id]=String(token).split(':');if(kind!==(project===c.GPS_BRIDGE_DIARY_?'d':'g')||!id)throw Object.assign(Error('unauthenticated'),{gpsCode:'unauthenticated'});
   return {uid:(kind==='d'?'diary-':'')+id,subject:'subject-'+id,email:id+'@example.invalid'};
  };
- c.gpsBridgeSource_=(source)=>({eligible:!state.sourceSuspended,isAdmin:source.uid==='diary-admin-12345678'&&!state.sourceDemoted,name:'合成利用者'});
+ c.gpsBridgeSource_=(source,request,writer)=>({editor:!state.sourceReadonly&&writer===state.writerSession,eligible:!state.sourceSuspended,isAdmin:source.uid==='diary-admin-12345678'&&!state.sourceDemoted,name:'合成利用者'});
  const auth={ownerToken:'owner'};
  function seed(uid){
   const name=c.gpsBridgeName_(c.GPS_BRIDGE_GPS_,'users/'+uid),fields={status:{stringValue:'active'},diaryUid:{stringValue:'diary-'+uid},googleSubject:{stringValue:'subject-'+uid},accessExpiresAt:{timestampValue:new Date(Date.now()+300000).toISOString()}};
@@ -195,4 +195,52 @@ test('実REST：管理者だけ利用者40名ずつ取得・続き重複なし�
  assert.ok(f.calls.some(c=>c.body?.structuredQuery?.select?.fields?.length===2));
  assert.equal(f.post('adminListGpsHistoryUsers',{afterUid:'../users'},'admin-12345678').code,'invalid-argument');
  f.state.sourceDemoted=true;assert.equal(f.post('adminListGpsHistoryUsers',{},'admin-12345678').code,'permission-denied');
+});
+
+test('実REST：現在地GASの操作端末/送信元排他・公開CAS・本人だけ送信・停止で座標を消去',()=>{
+ const f=fixture({presence:true});for(const uid of ['driver-12345678','viewer-12345678'])f.seed(uid);
+ const writerSessionId=f.state.writerSession,a=crypto.randomUUID(),b=crypto.randomUUID(),post=(action,data={})=>f.post(action,{writerSessionId,...data});
+ const payload={public:true,onDuty:true,status:'空車',shiftId:'shift-9001',lat:34.5,lon:135.5,accuracy:5,capturedAtMs:Date.now()-1000,name:'偽の名前'};
+ assert.equal(post('acquireGpsSender',{senderId:a}).data.status,'claimed');assert.equal(post('acquireGpsSender',{senderId:b}).data.status,'standby');
+ assert.equal(post('sendGpsPresence',{senderId:a,payload}).code,'failed-precondition');
+ const operationId=crypto.randomUUID();let r=post('setOwnGpsSharePrefs',{public:true,baseRevision:0,operationId});assert.equal(r.ok,true,JSON.stringify(r));assert.equal(r.data.preference.revision,1);
+ assert.equal(post('setOwnGpsSharePrefs',{public:true,baseRevision:0,operationId}).ok,true);
+ assert.equal(post('setOwnGpsSharePrefs',{public:false,baseRevision:0,operationId:crypto.randomUUID()}).code,'already-exists');
+ assert.equal(post('sendGpsPresence',{senderId:a,payload,targetUid:'viewer-12345678'}).data.status,'sent');
+ r=f.post('listGpsPresence',{},'viewer-12345678');assert.equal(r.ok,true,JSON.stringify(r));assert.equal(r.data.vehicles.length,1);assert.equal(r.data.vehicles[0].uid,'driver-12345678');assert.notEqual(r.data.vehicles[0].name,'偽の名前');assert.equal(JSON.stringify(r).includes('writerSessionId'),false);
+ f.state.sourceReadonly=true;assert.equal(post('acquireGpsSender',{senderId:b}).code,'permission-denied');assert.equal(f.post('listGpsPresence',{},'viewer-12345678').ok,true);f.state.sourceReadonly=false;
+ r=post('setOwnGpsSharePrefs',{public:false,baseRevision:1,operationId:crypto.randomUUID()});assert.equal(r.ok,true,JSON.stringify(r));
+ const closed=f.c.gpsHistoryData_(f.c.gpsPresenceRead_('gpsPresence/driver-12345678',f.auth));assert.equal(closed.lat,null);assert.equal(closed.lon,null);assert.equal(f.c.gpsPresenceRead_('gpsSenderSessions/driver-12345678',f.auth),null);assert.equal(f.post('listGpsPresence').data.vehicles.length,0);
+});
+test('実REST：現在地GASの期限後送信元交代・旧端末の停止拒否・不正点・5分非表示',()=>{
+ const f=fixture({presence:true});f.seed('driver-moving-12345678');const w=f.state.writerSession,a=crypto.randomUUID(),b=crypto.randomUUID();
+ const post=(action,data={})=>f.post(action,{writerSessionId:w,...data},'driver-moving-12345678');
+ const payload={public:true,onDuty:true,status:'実車',shiftId:'shift-9002',lat:34.5,lon:135.5,accuracy:5,capturedAtMs:Date.now()-1000};
+ const initialized=post('setOwnGpsSharePrefs',{public:true,baseRevision:0,operationId:crypto.randomUUID()});assert.equal(initialized.ok,true,JSON.stringify(initialized));assert.equal(post('acquireGpsSender',{senderId:a}).ok,true);
+ assert.equal(post('sendGpsPresence',{senderId:a,payload:{...payload,lat:91}}).code,'invalid-argument');
+ const name=f.c.gpsPresenceName_('gpsSenderSessions/driver-moving-12345678');f.rawCommit([{update:{name,fields:{updatedAt:{timestampValue:new Date(Date.now()-121000).toISOString()}}},updateMask:{fieldPaths:['updatedAt']}}]);
+ assert.equal(post('acquireGpsSender',{senderId:b}).data.status,'claimed');assert.equal(post('sendGpsPresence',{senderId:a,payload}).data.status,'not-sender');assert.equal(post('stopGpsPresence',{senderId:a}).data.stopped,false);
+ assert.equal(post('sendGpsPresence',{senderId:b,payload}).data.status,'sent');
+ const presenceName=f.c.gpsPresenceName_('gpsPresence/driver-moving-12345678');f.rawCommit([{update:{name:presenceName,fields:{updatedAt:{timestampValue:new Date(Date.now()-300001).toISOString()}}},updateMask:{fieldPaths:['updatedAt']}}]);
+ assert.equal(post('listGpsPresence').data.vehicles.length,0);
+ f.state.writerSession='n'.repeat(32);assert.equal(post('stopGpsPresence',{senderId:b}).code,'permission-denied');
+ assert.equal(post('acquireGpsSender',{writerSessionId:f.state.writerSession,senderId:a}).data.status,'claimed');assert.equal(post('stopGpsPresence',{writerSessionId:f.state.writerSession,senderId:a}).data.stopped,true);
+ assert.equal(f.c.gpsHistoryData_(f.c.gpsPresenceRead_('gpsPresence/driver-moving-12345678',f.auth)).public,false);
+});
+
+test('実クライアント→GAS→実REST：現在地送信元と既存公開設定をUID分離して接続',async()=>{
+ const f=fixture({presence:true}),actor='driver-client-12345678';f.seed(actor);
+ const account=require('../gps-account-bridge'),presence=require('../gps-presence-gas-adapter'),prefs=require('../gps-sharing-preferences');
+ const user=(uid,kind)=>({uid,emailVerified:true,providerData:[{providerId:'google.com',uid:'same-subject'}],getIdToken:async()=>kind+':'+actor});
+ const diaryAuth={app:{options:{projectId:'taxiapp-2b6bd'}},currentUser:user('diary-'+actor,'d')},gpsAuth={app:{options:{projectId:'taxigps-9f82e'}},currentUser:user(actor,'g')};
+ const client=account.create({diaryAuth,gpsAuth,endpoint:'https://script.google.com/macros/s/synthetic-presence-test/exec',fetch:async(url,options)=>({ok:true,json:async()=>JSON.parse(f.c.doPost({postData:{contents:options.body}}).text)})});
+ const sender=presence.createSender({diaryAuth,gpsAuth,client,session:{canWrite:()=>true,sessionId:()=>f.state.writerSession},senderId:crypto.randomUUID()});
+ const saved=new Map(),storage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)};
+ const preference=prefs.create({uid:'diary-'+actor,storage,read:sender.readPreference,write:(value,op)=>sender.writePreference(value,op,f.state.writerSession)});
+ await preference.sync();assert.equal(preference.state().confirmed,true);assert.equal(await sender.ensure(),true);
+ assert.equal((await sender.send({public:true,onDuty:true,status:'待機',shiftId:'shift-9003',lat:34,lon:135,accuracy:5,capturedAtMs:Date.now()-1000})).status,'sent');
+ const shared=await sender.list();assert.ok(shared.vehicles.some(row=>row.uid===actor));assert.equal(shared.vehicles.some(row=>row.uid==='diary-'+actor),false);
+ preference.choose(false);await preference.sync();assert.equal(sender.canTrack(),false);assert.equal((await sender.list()).vehicles.some(row=>row.uid===actor),false);
+ const closed=f.c.gpsHistoryData_(f.c.gpsPresenceRead_('gpsPresence/'+actor,f.auth));assert.equal(closed.lat,null);assert.equal(closed.lon,null);assert.equal(f.c.gpsPresenceRead_('gpsSenderSessions/'+actor,f.auth),null);
+ assert.ok(f.calls.every(call=>call.url.startsWith(prefix)));sender.dispose();client.dispose();
 });

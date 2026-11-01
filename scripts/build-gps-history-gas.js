@@ -28,3 +28,9 @@ const manager=archive.replace("revision:'history-v4-archive'","revision:'history
  .replace("case 'adminListGpsHistory':result=gpsHistoryList_(auth,true);break;", "case 'adminListGpsHistoryUsers':result=gpsHistoryAdminUsers_(auth);break;\n   case 'adminListGpsHistory':result=gpsHistoryList_(auth,true);break;")+ '\n'+adminSource;
 if(!manager.includes("case 'adminListGpsHistoryUsers':")||!manager.includes("revision:'history-v5-admin'"))throw Error('管理者候補の生成箇所が変わっています');
 fs.writeFileSync(path.join(base,'history/Code.manager-candidate.gs'),manager);
+// 現在地共有の未公開候補。履歴版3/4/5と停止中の公開画面を変更しない。
+const presence=manager.replace("revision:'history-v5-admin'","revision:'gps-v6-presence'")
+ .replace("actions:['link'].concat(GPS_HISTORY_ACTIONS_)","actions:['link'].concat(GPS_HISTORY_ACTIONS_,GPS_PRESENCE_ACTIONS_)")
+ .replace("data.action==='link'?gpsBridgeLink_(data):gpsHistoryDispatch_(data)","data.action==='link'?gpsBridgeLink_(data):(GPS_PRESENCE_ACTIONS_.indexOf(data.action)>=0?gpsPresenceDispatch_(data):gpsHistoryDispatch_(data))")+'\n'+fs.readFileSync(path.join(base,'history/Presence.gs'),'utf8');
+if(!presence.includes('gpsPresenceDispatch_(data)')||!presence.includes("revision:'gps-v6-presence'"))throw Error('現在地候補の生成箇所が変わっています');
+fs.writeFileSync(path.join(base,'history/Code.presence-candidate.gs'),presence);

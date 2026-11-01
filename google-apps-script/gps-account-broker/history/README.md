@@ -53,3 +53,5 @@ Node22/Java17、依存と実行環境のパスはtests/gps-tools/README.md。Fir
 管理者画面の次候補は `Code.manager-candidate.gs`（history-v5-admin、未公開）。`Admin.gs`の管理者限定利用者一覧を追加する。既存版3/公開版4の候補は保持する。次の限定公開と復旧範囲は `docs/gps-history-admin-review-20261101.md`、作業結果は `WORK_HANDOFF.md`第24節。今回の検証はNode45件、実DOM＋合成Auth/GAS、実REST Emulator11件成功。新一覧/管理者画面の実Google/GAS/IAMは未検証。
 
 本人のGAS承認委任後、Code.manager-candidate.gsを版5（2026-11-01 10:07 JST）へ公開済み。実本人連携成功、管理者APIはpermission-deniedで拒否を実確認。管理者成功は未検証。最新公開状態・委任はWORK_HANDOFF.md第25節を参照。
+
+現在地共有の次候補は `Presence.gs` / `Code.presence-candidate.gs`（gps-v6-presence、未公開）。送信元/位置/停止/公開CAS/一覧を追加するが、公開画面は停止を維持しHTMLへ新アダプターを読み込んでいない。Node44件/実REST Emulator14件成功。日報側の資格確認の読取回数と実UI接続が未解決。詳細 `docs/gps-presence-gas-status-20261101.md`、`WORK_HANDOFF.md`第30節。

@@ -2,6 +2,7 @@
 (function(root){'use strict';
 const DIARY_PROJECT='taxiapp-2b6bd',GPS_PROJECT='taxigps-9f82e';
 const HISTORY_ACTIONS=Object.freeze(['adminListGpsHistoryUsers','saveOwnGpsHistory','getOwnGpsHistory','listOwnGpsHistory','getOwnGpsHistoryTombstone','adminViewGpsHistory','adminExportGpsHistory','adminListGpsHistory','adminListGpsHistoryAudit','deleteGpsHistory','recordOwnGpsCsvAudit']);
+const PRESENCE_ACTIONS=Object.freeze(['acquireGpsSender','sendGpsPresence','stopGpsPresence','getOwnGpsSharePrefs','setOwnGpsSharePrefs','listGpsPresence']);
 function subject(user){
  if(!user?.uid||user.emailVerified!==true)throw Error('確認済みGoogleアカウントが必要です');
  const rows=(user.providerData||[]).filter(x=>x.providerId==='google.com');
@@ -59,7 +60,7 @@ function create({diaryAuth,gpsAuth,endpoint,fetch:fetcher=root.fetch,timeoutMs=1
   const run=tail.then(()=>request(writerSessionId,d,g,epoch));tail=run.catch(()=>{});return run;
  },
   call(action,data={}){
-   if(!HISTORY_ACTIONS.includes(action)||!data||typeof data!=='object'||Array.isArray(data))return Promise.reject(Error('GPS履歴操作の形式が不正です'));
+   if(!HISTORY_ACTIONS.includes(action)&&!PRESENCE_ACTIONS.includes(action)||!data||typeof data!=='object'||Array.isArray(data))return Promise.reject(Error('GPS履歴操作の形式が不正です'));
    const snapshot=JSON.parse(JSON.stringify(data));
    const d=diaryAuth.currentUser,g=gpsAuth.currentUser,epoch=generation;
    const run=tail.then(async()=>{
@@ -71,7 +72,7 @@ function create({diaryAuth,gpsAuth,endpoint,fetch:fetcher=root.fetch,timeoutMs=1
   },
   invalidate(){generation++;leaseExpires=0;},dispose(){disposed=true;generation++;leaseExpires=0;}});
 }
-const api=Object.freeze({pair,create,DIARY_PROJECT,GPS_PROJECT,HISTORY_ACTIONS});
+const api=Object.freeze({pair,create,DIARY_PROJECT,GPS_PROJECT,HISTORY_ACTIONS,PRESENCE_ACTIONS});
 root.TAXIAPP_GPS_ACCOUNT_BRIDGE=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
