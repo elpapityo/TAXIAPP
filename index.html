@@ -1918,8 +1918,8 @@ html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color
 <script src="./elapsed-alight-clock.js?v=1"></script>
 <script src="./highway-sections.js?v=20261020-1"></script>
 <script src="./highway-report.js?v=20261020-1"></script>
-<script src="./bidirectional-sync.js?v=20261023-bootstrap-conflict"></script>
-<script src="./cloud-sync-ui.js?v=20261026-owner-trash"></script>
+<script src="./bidirectional-sync.js?v=20261101-trashfix-1"></script>
+<script src="./cloud-sync-ui.js?v=20261101-trashfix-1"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
 <script src="./login-core.js?v=20261024-openchat-name-1"></script>
@@ -2686,7 +2686,7 @@ function blockViewerEdit(event){
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
-   (target.closest?.('[data-sync-compare],[data-sync-resolve]')||target.matches?.('[data-sync-backup-password]')));
+   (target.closest?.('[data-sync-compare],[data-sync-resolve],[data-sync-trash-local]')||target.matches?.('[data-sync-backup-password]')));
  if(safe)return;
  if(!['click','pointerdown','input','change','keydown','submit'].includes(event.type))return;
  event.preventDefault();event.stopImmediatePropagation();
@@ -9134,6 +9134,50 @@ async function importDevice(){
   render();toast('PCから'+newCount+'乗務と設定を引き継ぎました。Google送信は手動にしています。');
  }catch(e){toast('一括引き継ぎに失敗：'+String(e.message||e),true);}
 }
+// ゴミ箱内の日報は通常競合にせず、本人が選択した端末記録のみ削除する。
+async function deleteTrashedLocalShift(shiftId){
+ const uid=accountScope.uid,generation=accountScopeGeneration;
+ const conflict=syncUI.status().conflicts.some(c=>c.id===shiftId&&
+  String(c.reason).startsWith('クラウド側でゴミ箱に移動済み'));
+ const stable=()=>accountScopeGeneration===generation&&accountScope.uid===uid&&
+  accountScopeLoaded&&deviceMode==='writer'&&
+  currentLoginScope?.uid===uid&&currentLoginScope.firebase?.auth?.currentUser?.uid===uid;
+ if(!memberDiary()||!stable()||!conflict){toast('本人の端末でゴミ箱済みの日報を選択してください',true);return;}
+ const shift=model.shifts.find(x=>x.id===shiftId);
+ if(!shift||shift.id===model.activeId||(!shift.endedAt&&!shift.endedIso)){
+  toast('乗務中または存在しない日報は削除できません',true);return;
+ }
+ if(cloudRunning||syncUI.status().busy){toast('同期中です。完了後に操作してください',true);return;}
+ if(!confirm('【端末の日報を削除】\n'+(shift.date||'日付不明')+
+  '\nクラウドはすでにゴミ箱にあります。この端末の日報だけ削除しますか？'))return;
+ if(!await syncUI.verifyTrashedLocal(shiftId)||!stable())return;
+ const before=deepCopy(model),gate=writerLoadGate;
+ let marked=false,done=false;
+ try{
+  if(gate)bootstrapConflictResolutionId=shiftId;
+  marked=syncUI.markLocalRemoval(shiftId,shift);
+  clearTimeout(persistTimer);persistTimer=0;
+  model=window.TAXIAPP_DEVICE_DATA.deleteShift(model,shiftId,{allowUnfinished:false}).model;
+  if(!stable()||await save(true)!==true)throw Error('端末保存に失敗しました');
+  const data=db?await idbGet(db,scopedStorageKey()):
+    JSON.parse(localStorage.getItem(scopedStorageKey())||'null');
+  if(!stable()||!Array.isArray(data?.shifts)||data.shifts.some(s=>s.id===shiftId))
+   throw Error('端末からの削除を確認できませんでした');
+  if(!syncUI.dismissTrashedConflict(shiftId))
+   throw Error('競合表示の解除に失敗しました');
+  if(historyShiftId===shiftId)historyShiftId='';
+  if(printShiftId===shiftId)printShiftId='';
+  done=true;render();toast('端末の不要な日報を削除しました');
+ }catch(error){
+  model=before;
+  if(marked)try{syncUI.undoLocalRemoval(shiftId);}catch{}
+  try{await save(true);}catch{}
+  render();toast('削除に失敗しました：'+String(error?.message||error),true);
+ }finally{
+  if(gate&&bootstrapConflictResolutionId===shiftId)bootstrapConflictResolutionId='';
+  if(done&&gate)void syncUI.bootstrapWriter();
+ }
+}
 async function deleteWholeShift(shiftId){
  if(!canEditNow()){toast('乗務の削除は認証済みの操作端末で行ってください',true);return;}
  const shift=model.shifts.find(s=>s.id===shiftId);
@@ -9156,12 +9200,8 @@ async function deleteWholeShift(shiftId){
   '\n現行のGoogle原本・印刷元は変更せず、この端末だけを整理します。';
  if(!confirm('【乗務1件の手動削除】\n'+display+'\n営業 '+shift.records.length+'件／メーター売上 '+money(total.meter)+
    deletionSummary+'\n実行しますか？'))return;
- if(unfinished&&!confirm('【未入庫データの整理を最終確認】\n入庫前の端末記録を整理します。旧Google原本は変更しません。続けますか？'))return;
- // Download a recovery copy BEFORE contacting the server or changing the
- // local model. Real earnings, location and payment records remain protected.
- download(JSON.stringify({version:1,ownerUid:accountScope.uid||null,shifts:[deepCopy(shift)]}),
-  'TAXIAPP_削除前_'+dateStamp()+'_'+shiftId+'.json','application/json;charset=utf-8');
- if(!confirm('この乗務のJSONバックアップを端末外にも保管しましたか？\n未保存ならキャンセルしてください。'))return;
+ 
+ // 本人の明示削除ではバックアップのダウンロードを強制しない。
  const previous=deepCopy(model);
  const uid=accountScope.uid,generation=accountScopeGeneration;
  let serverTrashed=false,newlyMarked=false;
@@ -9515,7 +9555,7 @@ appEl.addEventListener('click',event=>{
   input.dispatchEvent(new Event('change',{bubbles:true}));return;
  }
  const archive=event.target.closest('[data-sync-archive]');if(archive){if(archive.dataset.syncArchive==='list')syncUI.loadArchives(true);else syncUI.archiveAction(archive.dataset.syncArchive,archive.dataset.id);return;}
- const compare=event.target.closest('[data-sync-compare]');if(compare){void syncUI.compare(compare.dataset.syncCompare);return;}
+ const trashLocal=event.target.closest('[data-sync-trash-local]');if(trashLocal){void deleteTrashedLocalShift(String(trashLocal.dataset.syncTrashLocal||''));return;}const compare=event.target.closest('[data-sync-compare]');if(compare){void syncUI.compare(compare.dataset.syncCompare);return;}
  const conflict=event.target.closest('[data-sync-resolve]');if(conflict){syncUI.resolve(conflict.dataset.id,conflict.dataset.syncResolve==='hold'?null:conflict.dataset.syncResolve==='local');return;}let tabButton=event.target.closest('[data-tab]');if(tabButton){
  if(tab==='history'&&tabButton.dataset.tab!=='history'){
   try{protectOpenHistoryEdit();}
