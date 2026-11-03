@@ -47,6 +47,7 @@ function create({auth,db,f,session,uid,senderId,remote,onChange=()=>{},now=()=>D
    return {status:'claimed'};
   });
   if(!current()||writer!==session.sessionId()||epoch!==generation)return false;
+  if(result.status==='deferred'){report(result.message);return false;}
   if(result.status!=='claimed'){
    held=false;retryAt=Math.max(now()+5000,result.until||0);
    report('別の位置共有画面が送信中：この画面は閲覧のみ');return false;
@@ -65,7 +66,11 @@ function create({auth,db,f,session,uid,senderId,remote,onChange=()=>{},now=()=>D
  function send(payload){return enqueue(async()=>{
   if(!valid())return {status:'not-sender'};
   const writer=session.sessionId(),epoch=generation;
-  const result=remote?(await remote.send(writer,senderId,payload)).status==='sent':await f.runTransaction(db,async tx=>{
+  let response;if(remote){response=await remote.send(writer,senderId,payload);if(response.status==='deferred'){
+   if(!current()||writer!==session.sessionId()||epoch!==generation)return {status:'cancelled'};
+   report(response.message);return response;
+  }}
+  const result=remote?response.status==='sent':await f.runTransaction(db,async tx=>{
    const snap=await tx.get(lease),row=snap.exists()?snap.data():null;
    if(!current()||epoch!==generation||writer!==session.sessionId()||!owned(row,writer)||!(now()<time(row)+LEASE_MS))return false;
    tx.set(presence,{...payload,senderId,writerSessionId:writer,updatedAt:f.serverTimestamp()});

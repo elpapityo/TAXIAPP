@@ -3,11 +3,20 @@
 const bridge=root.TAXIAPP_GPS_ACCOUNT_BRIDGE||require('./gps-account-bridge');
 const core=root.TAXIAPP_GPS_SHARING_CORE||require('./gps-sharing-core');
 const UID=/^[a-zA-Z0-9_-]{1,128}$/;
-function create({diaryAuth,gpsAuth,client,now=()=>Date.now()}){
+function create({diaryAuth,gpsAuth,client,budget,now=()=>Date.now()}){
  if(diaryAuth?.app?.options?.projectId!==bridge.DIARY_PROJECT||gpsAuth?.app?.options?.projectId!==bridge.GPS_PROJECT||diaryAuth===gpsAuth||typeof client?.call!=='function')throw Error('現在地共有の認証接続が不正です');
  const d=diaryAuth.currentUser,g=gpsAuth.currentUser,ids=bridge.pair(d,g);let disposed=false;
  function current(){if(disposed||diaryAuth.currentUser!==d||gpsAuth.currentUser!==g)throw Error('現在地共有のログイン本人が切り替わりました');bridge.pair(d,g);}
- async function call(action,data={}){current();const result=await client.call(action,data);current();return result;}
+ const operations={acquireGpsSender:'claim',sendGpsPresence:'send',getOwnGpsSharePrefs:'readPreference',setOwnGpsSharePrefs:'writePreference',listGpsPresence:'list'};
+ async function call(action,data={}){
+  current();
+  // 共有停止・非公開化はGPS定期通信の予算で妨げない。認証/操作権/CASは従来通りサーバーで検査。
+  if(action!=='stopGpsPresence'&&!(action==='setOwnGpsSharePrefs'&&data.public===false)){
+   const decision=budget?.admit(operations[action],{minIntervalMs:action==='sendGpsPresence'?core.sendIntervalMs(data.payload,null):0});
+   if(!decision?.allowed){const error=Error(decision?.message||'クラウド利用量未確認：GPS通信を休止');error.code='GPS_BUDGET_DEFERRED';error.decision=decision;throw error;}
+  }
+  const result=await client.call(action,data);current();return result;
+ }
  function checkIds(writerSessionId,senderId){
   current();if(typeof writerSessionId!=='string'||writerSessionId.length<32||writerSessionId.length>128||typeof senderId!=='string'||!/^[a-fA-F0-9-]{36}$/.test(senderId))throw Error('位置送信元の識別情報が不正です');
  }
@@ -18,14 +27,14 @@ function create({diaryAuth,gpsAuth,client,now=()=>Date.now()}){
  }
  return Object.freeze({localUid:ids.diaryUid,gpsUid:ids.gpsUid,isCurrent(){try{current();return true;}catch{return false;}},
   async claim(writerSessionId,senderId){
-   checkIds(writerSessionId,senderId);const r=await call('acquireGpsSender',{writerSessionId,senderId});
+   checkIds(writerSessionId,senderId);let r;try{r=await call('acquireGpsSender',{writerSessionId,senderId});}catch(e){if(e.code==='GPS_BUDGET_DEFERRED')return {status:'deferred',message:e.message};throw e;}
    if(r?.status==='standby'&&Number.isSafeInteger(r.retryAtMs)&&r.retryAtMs>now()&&r.retryAtMs<=now()+120000)return r;
    if(r?.status!=='claimed'||r.senderId!==senderId||r.writerSessionId!==writerSessionId||!Number.isSafeInteger(r.updatedAtMs)||r.updatedAtMs>now()+30000||r.validUntilMs!==r.updatedAtMs+120000||r.validUntilMs<=now())throw Error('位置送信元の保存確認が一致しません');return r;
   },
   async send(writerSessionId,senderId,payload){
    checkIds(writerSessionId,senderId);
    const clean={};for(const key of ['public','onDuty','status','shiftId','capturedAtMs','lat','lon','accuracy','speed','heading'])if(payload?.[key]!==undefined)clean[key]=payload[key];
-   const r=await call('sendGpsPresence',{writerSessionId,senderId,payload:clean});
+   let r;try{r=await call('sendGpsPresence',{writerSessionId,senderId,payload:clean});}catch(e){if(e.code==='GPS_BUDGET_DEFERRED')return {status:'deferred',message:e.message};throw e;}
    if(r?.status==='not-sender')return r;
    if(r?.status!=='sent'||!Number.isSafeInteger(r.updatedAtMs)||r.updatedAtMs>now()+30000||r.updatedAtMs<=now()-120000)throw Error('現在地の保存確認が不正です');return r;
   },

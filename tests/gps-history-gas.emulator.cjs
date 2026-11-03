@@ -242,13 +242,17 @@ test('実クライアント→GAS→実REST：現在地送信元と既存公開�
  const user=(uid,kind)=>({uid,emailVerified:true,providerData:[{providerId:'google.com',uid:'same-subject'}],getIdToken:async()=>kind+':'+actor});
  const diaryAuth={app:{options:{projectId:'taxiapp-2b6bd'}},currentUser:user('diary-'+actor,'d')},gpsAuth={app:{options:{projectId:'taxigps-9f82e'}},currentUser:user(actor,'g')};
  const client=account.create({diaryAuth,gpsAuth,endpoint:'https://script.google.com/macros/s/synthetic-presence-test/exec',fetch:async(url,options)=>({ok:true,json:async()=>JSON.parse(f.c.doPost({postData:{contents:options.body}}).text)})});
- const sender=presence.createSender({diaryAuth,gpsAuth,client,session:{canWrite:()=>true,sessionId:()=>f.state.writerSession},senderId:crypto.randomUUID()});
+ const budget=require('../gps-cloud-budget').create({resources:{synthetic:{limit:10000,reserve:5000}},
+  costs:Object.fromEntries(['claim','send','list','readPreference','writePreference'].map(op=>[op,{synthetic:1}]))});
+ budget.update({scope:'account-and-project',observedAtMs:Date.now(),windows:{synthetic:{used:0,resetAtMs:Date.now()+86400000}}});
+ const sender=presence.createSender({diaryAuth,gpsAuth,client,budget,session:{canWrite:()=>true,sessionId:()=>f.state.writerSession},senderId:crypto.randomUUID()});
  const saved=new Map(),storage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)};
  const preference=prefs.create({uid:'diary-'+actor,storage,read:sender.readPreference,write:(value,op)=>sender.writePreference(value,op,f.state.writerSession)});
  await preference.sync();assert.equal(preference.state().confirmed,true);assert.equal(await sender.ensure(),true);
  assert.equal((await sender.send({public:true,onDuty:true,status:'待機',shiftId:'shift-9003',lat:34,lon:135,accuracy:5,capturedAtMs:Date.now()-1000})).status,'sent');
  const shared=await sender.list();assert.ok(shared.vehicles.some(row=>row.uid===actor));assert.equal(shared.vehicles.some(row=>row.uid==='diary-'+actor),false);
- preference.choose(false);await preference.sync();assert.equal(sender.canTrack(),false);assert.equal((await sender.list()).vehicles.some(row=>row.uid===actor),false);
+ preference.choose(false);await preference.sync();assert.equal(sender.canTrack(),false);
+ await assert.rejects(sender.list(),e=>e.code==='GPS_BUDGET_DEFERRED','一覧の即時再取得は間引く');
  const closed=f.c.gpsHistoryData_(f.c.gpsPresenceRead_('gpsPresence/'+actor,f.auth));assert.equal(closed.lat,null);assert.equal(closed.lon,null);assert.equal(f.c.gpsPresenceRead_('gpsSenderSessions/'+actor,f.auth),null);
  assert.ok(f.calls.every(call=>call.url.startsWith(prefix)));sender.dispose();client.dispose();
 });
