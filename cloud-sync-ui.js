@@ -130,6 +130,38 @@ root.TAXIAPP_SYNC_UI=function(d){
      seen.add(row.id);
     }
     let selected=local,receivedForBootstrap=null;
+    // 明示的な端末引き継ぎ時のみ、既存の古いローカル日報とは別に
+    // 本人Firestoreの未入庫乗務を1件だけ確認する。通常の起動・同期は従来どおり。
+    if(local.length&&d.handoffResumeRequested?.()){
+     const resume=await d.request('syncList',{resumeOnly:true,
+      excludeIds:d.resumeExcludedIds?.()||[]});
+     if(!stable())return false;
+     if(!Array.isArray(resume?.shifts)||resume.shifts.length>1)
+      throw Error('端末引き継ぎの再開候補が不正です。既存日報を保護して停止しました');
+     const candidate=resume.shifts[0];
+     const plan=root.TAXIAPP_HANDOFF_POLICY?.resumePlan(local,candidate);
+     if(!plan?.ok)throw Error(plan?.reason||'乗務の安全な引き継ぎを確認できません');
+     if(candidate&&!candidate.deleted&&!candidate.ended){
+      const received=await d.request('syncGet',{shiftId:candidate.id});
+      if(!stable())return false;
+      if(received?.id!==candidate.id||received?.revision!==candidate.revision||
+         received.shift?.id!==candidate.id)
+       throw Error('再開候補が取得中に変更されました。原本を保持して停止しました');
+      if(plan.fetch){
+       selected=[...local,received.shift];
+      }else{
+       // ローカルに同じIDがある場合は古い値を無断採用しない。
+       const stored=local.find(item=>item.id===candidate.id);
+       const packet=d.getPacket(stored);
+       const canonical=value=>Array.isArray(value)?value.map(canonical):
+        value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
+       if(!packet?.shift||JSON.stringify(canonical(packet.shift))!==
+           JSON.stringify(canonical(received.shift)))
+        throw Error('この端末の未入庫乗務とクラウド原本が異なります。どちらも残して照合を停止しました');
+      }
+      receivedForBootstrap=received;
+     }
+    }
     if(!local.length){
      const available=listing.shifts.filter(row=>!row.deleted);
      const open=available.filter(row=>!row.ended);
