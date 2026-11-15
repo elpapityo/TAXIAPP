@@ -12,6 +12,18 @@ root.TAXIAPP_DEVICE_SESSION={
   let pendingTakeover=false,watchGeneration=0;
   let claimCandidate='',claimWriteAck=false,confirmedSession='';
   const STORAGE='taxiapp-current-session-v1-';
+  const YIELDED='taxiapp-handoff-view-only-v1-';
+  function handedOff(){try{return root.localStorage.getItem(YIELDED+currentUid)==='1';}catch{return false;}}
+  function markHandedOff(){
+   try{root.localStorage.setItem(YIELDED+currentUid,'1');
+    if(root.localStorage.getItem(YIELDED+currentUid)!=='1')throw Error('保存確認失敗');}
+   catch{throw Error('端末の引き継ぎ状態を保存できません。操作権は維持します');}
+  }
+  function clearHandedOff(){
+   try{root.localStorage.removeItem(YIELDED+currentUid);
+    return root.localStorage.getItem(YIELDED+currentUid)!=='1';}
+   catch{return false;}
+  }
   const f=d.f,db=d.db;
   const ref=()=>f.doc(db,'deviceSessions',currentUid);
   function id(){
@@ -28,6 +40,7 @@ root.TAXIAPP_DEVICE_SESSION={
    d.onMode?.(next,previous,detail);
   }
   function viewOnly(){
+   if(currentUid)markHandedOff(); // 再起動後も操作権を勝手に取り戻さない
    viewerRequested=true;
    claimCandidate='';claimWriteAck=false;
    if(currentUid)set('viewer','閲覧専用で利用中');
@@ -76,6 +89,9 @@ root.TAXIAPP_DEVICE_SESSION={
    if(!claimCandidate||!claimWriteAck||!listenerHealthy||
       confirmedSession!==claimCandidate)return false;
    const acceptedId=claimCandidate;
+   if(!clearHandedOff()){
+    set('viewer','端末切替の保存状態を更新できません。再試行してください');return false;
+   }
    setSession(acceptedId);
    claimedOnce=true;viewerRequested=false;
    claimCandidate='';claimWriteAck=false;
@@ -185,8 +201,8 @@ root.TAXIAPP_DEVICE_SESSION={
    currentUid=user.uid;
    const oldId=readStored();
    sessionId=oldId;
-   viewerRequested=Boolean(viewer);
-   claimedOnce=Boolean(oldId)||!claimOnLogin;
+   viewerRequested=Boolean(viewer)||handedOff();
+   claimedOnce=Boolean(oldId)||!claimOnLogin||viewerRequested;
    set('pending','操作権を確認しています…');
    subscribe();
   }
