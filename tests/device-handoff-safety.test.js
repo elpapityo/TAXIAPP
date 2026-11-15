@@ -1,0 +1,21 @@
+/* Node: node tests/device-handoff-safety.test.js — 実データ・ネットワーク未使用 */
+const assert = require('node:assert/strict');
+require('../device-handoff-policy.js');
+const policy=globalThis.TAXIAPP_HANDOFF_POLICY;
+const ready={ownerVerified:true,writer:true,online:true,activeId:'shift-1794740000000',ended:false,remoteReady:true,busy:false,conflicts:0,remoteError:false,localSaved:true,settingsConfirmed:true,syncSucceeded:true,remoteConfirmed:true,allLocalConfirmed:true,unchanged:true};
+const reject=['online','remoteConfirmed','syncSucceeded','localSaved','settingsConfirmed','allLocalConfirmed','unchanged','ownerVerified','writer','remoteReady'];
+assert.equal(policy.gate(ready).ok,true);
+for(const key of reject)assert.equal(policy.gate({...ready,[key]:false}).ok,false,key);
+assert.equal(policy.gate({...ready,conflicts:1}).ok,false);
+assert.equal(policy.gate({...ready,busy:true}).ok,false);
+const duty={id:ready.activeId,records:[{id:'a',raw:{K:'1200'}}],draft:{id:'b',raw:{K:''}}};
+const before=JSON.stringify(duty);
+const existing=[{id:'shift-1',endedAt:'2026-11-14'}];
+const plan=policy.resumePlan(existing,{id:duty.id,revision:5,ended:false});
+assert.equal(plan.fetch,true);
+const adopted=[...existing,JSON.parse(JSON.stringify(duty))];
+assert.equal(adopted.length,2);assert.equal(JSON.stringify(duty),before);
+assert.equal(policy.resumePlan([{id:'shift-1',endedAt:''}],{id:duty.id,revision:5,ended:false}).ok,false);
+assert.equal(policy.resumePlan([duty],{id:duty.id,revision:5,ended:false}).fetch,false);
+assert.equal(policy.resumePlan(existing,{id:duty.id,revision:-1,ended:false}).ok,false);
+console.log('端末間引き継ぎの保護シミュレーション：17ケース＋原本不変を確認');
