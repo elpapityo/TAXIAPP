@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="TAXIAPP">
 <meta name="description" content="TAXIAPP 乗務日報・営業支援">
-<title>TAXIAPP v0.3.244 — 乗務日報</title>
+<title>TAXIAPP v0.3.245 — 乗務日報</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#1a314a;background:#f4f7fa;line-height:1.55;font-synthesis:none;--blue:#1768b8;--dark:#162a45;--teal:#087f7c;--line:#dce4ee;--muted:#687b91;--sheet:#fff;--sky:#eef6ff}
 *{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--blue)}.boot{padding:60px;text-align:center}.layout{max-width:1380px;margin:auto;padding:18px 24px 90px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{display:grid;place-items:center;width:45px;height:45px;background:linear-gradient(135deg,#1768b8,#075e75);color:#fff;border-radius:14px;font-size:22px;box-shadow:0 6px 18px #13578e22}.brand-name{font-size:23px;font-weight:850;line-height:1.15;letter-spacing:-.8px}.brand-tag{font-size:11px;font-weight:650;letter-spacing:1px;color:var(--muted)}.status-pill{font-size:12px;color:#236262;background:#e0f4ee;border:1px solid #afe0d3;border-radius:30px;padding:6px 12px;font-weight:750}.status-pill.stop{color:#64738a;background:#edf1f7;border-color:#dae1eb}.content-layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:23px}.sidebar{align-self:start;position:sticky;top:16px}.card{border:1px solid var(--line);background:var(--sheet);border-radius:17px;box-shadow:0 3px 16px #233c5709;padding:22px;margin-bottom:18px}.nav{padding:12px}.nav button{width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:transparent;border:0;border-radius:11px;padding:14px 15px;color:#536780;font-weight:700}.nav button:hover{background:#f4f8fc}.nav button.selected{color:#165ca7;background:#eaf4ff;box-shadow:inset 3px 0 #247bd0}.nav-ico{font-size:19px;min-width:24px}.nav-label{font-size:14px}.sidebar-note{font-size:12px;color:var(--muted);line-height:1.8;padding:4px 12px}.eyebrow{font-size:11px;color:#3a759c;font-weight:800;letter-spacing:1.25px;margin:0 0 4px}.h1{font-size:27px;letter-spacing:-.7px;font-weight:850;line-height:1.3;margin:0}.h2{font-size:19px;letter-spacing:-.3px;margin:0}.subtle{color:var(--muted)}.small{font-size:12px}.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}.meta{font-size:13px;color:var(--muted);line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px 16px 14px}.metric .label{font-size:12px;font-weight:650;color:var(--muted)}.metric strong{display:block;font-weight:850;font-size:23px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-top:3px}.metric small{display:block;font-size:11px;color:var(--muted)}.metric.highlight{background:linear-gradient(140deg,#193858,#16324d);border-color:#254c69;color:white}.metric.highlight .label,.metric.highlight small{color:#c5dbe8}.hero{border:1px solid #cddff0;background:linear-gradient(130deg,#f1f7ff,#fff 65%);padding:26px}.hero-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}.hero-heading{font-size:23px;margin:0 0 5px;font-weight:840}.helper{font-size:13px;color:#647791;margin:5px 0 16px}.pill{display:inline-flex;align-items:center;border-radius:100px;background:#e5f2ff;color:#14588b;border:1px solid #cfe2f5;font-size:11px;font-weight:800;padding:5px 11px}.pill.mint{background:#dcf3ef;color:#136c64;border-color:#bce6df}.pill.amber{background:#fff0da;color:#9c5f10;border-color:#f4d5a7}.btn{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--dark);font-weight:800;font-size:14px;padding:12px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px;text-decoration:none}.btn:hover{filter:brightness(.97)}.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #82baf0;outline-offset:2px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#0e58a0}.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}.btn.dark{background:var(--dark);border-color:var(--dark);color:#fff}.btn.red{border-color:#e2a8a8;color:#aa3737;background:#fff}.btn.ghost{background:transparent}.btn.big{font-size:19px;padding:17px 23px;min-height:66px;border-radius:14px}.btn.fill{width:100%}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:block;min-width:0}.field .field-label{display:block;font-size:12px;color:#485d77;font-weight:780;margin-bottom:6px}.field .field-sub{font-size:10px;color:var(--muted);margin-left:5px}.control{display:block;width:100%;border:1px solid #c8d4e2;border-radius:10px;background:#fff;color:#18324c;font-size:17px;padding:11px 13px;min-height:46px;font-variant-numeric:tabular-nums}.control:focus{border-color:#3283c9;box-shadow:0 0 0 2px #dceeff;outline:none}.control[readonly]{background:#eef2f6;color:#60748b}.control::placeholder{color:#a2aec0}.mini-control{max-width:245px}.selector{display:flex;flex-wrap:wrap;gap:7px}.chip{background:white;border:1px solid #cad7e5;border-radius:10px;min-height:45px;min-width:60px;padding:8px 15px;color:#3e536b;font-weight:830}.chip.active{background:#e0efff;border:2px solid #1768b8;color:#145f9a;padding:7px 14px}.chip.label-chip{font-size:13px}.caption-note{font-size:12px;color:#6c7b8d;margin-top:8px}.divider{border:0;border-top:1px solid #e5eaf0;margin:20px 0}.subsection{font-size:15px;margin:17px 0 12px}.stepper{display:flex;align-items:center;gap:8px}.step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dbefff;color:#1464a0;font-size:13px;font-weight:900}.step-name{font-weight:850;font-size:15px}.tag{font-size:11px;color:var(--muted);font-weight:750}.panel-strip{padding:14px 17px;border:1px solid #bbdfd8;background:#ebfaf5;border-radius:11px;margin:16px 0;font-size:13px;color:#285b58}.warn{background:#fff5e4;border:1px solid #f3d7a1;color:#84550e;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.danger-note{background:#fff1f1;border:1px solid #eac1c1;color:#a33b3b;border-radius:11px;padding:13px 15px;font-size:13px;margin:14px 0}.progress-track{height:9px;background:#e6edf4;border-radius:6px;overflow:hidden;margin:10px 0}.progress-track span{display:block;height:100%;background:#1768b8;border-radius:6px}.details{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:17px;overflow:hidden}.details summary{cursor:pointer;font-weight:800;padding:17px 19px;background:#f9fbfd}.details .inner{padding:18px}.details .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.table-wrap{overflow-x:auto}.data-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}.data-table th{background:#f3f7fa;color:#5b7088;font-size:12px;font-weight:800}.data-table td,.data-table th{padding:12px 11px;text-align:left;border-bottom:1px solid #e7edf2}.data-table tbody tr:hover{background:#f9fbfe}.empty-state{text-align:center;padding:45px 12px;color:var(--muted)}.empty-state .illustration{font-size:36px;display:block;margin-bottom:8px}.history-detail-section{margin-top:14px}.history-record-detail{margin:12px 0;border:1px solid var(--line,#ccd5df);border-radius:10px;overflow:hidden}.history-record-detail>summary{padding:13px 15px;font-weight:800;cursor:pointer;line-height:1.7}.history-record-detail>summary small{font-size:12px;color:var(--muted);font-weight:600}.history-record-detail>.inner{padding:12px 15px 18px}.history-record-detail .subsection{margin:14px 0 8px}.history-fact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.history-fact{border-bottom:1px dashed #e0e7ef;padding:8px 0;min-width:0;display:flex;justify-content:space-between;gap:8px;align-items:start}.history-fact span{color:var(--muted);font-size:12px}.history-fact strong{text-align:right;font-size:13px;overflow-wrap:anywhere}.history-payment-table{white-space:normal}.history-payment-table tfoot th{background:#eef5fc;color:var(--ink,#1e334b)}@media(max-width:700px){.history-fact-grid{grid-template-columns:1fr}.history-payment-table td,.history-payment-table th{padding:9px 6px}.history-record-detail>summary{font-size:13px}}.record-actions{display:flex;gap:5px}.linkbutton{padding:5px;border:0;background:none;color:var(--blue);font-weight:750;font-size:12px}.linkbutton.danger{color:#b74343}.footnote{font-size:11px;color:var(--muted);margin:13px 0 0}.stats-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dashed #e0e7ef;gap:12px;font-size:14px}.statline:last-child{border:0}.statline b{font-variant-numeric:tabular-nums;font-size:16px}.sheet-page{border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0;background:#fff}.sheet-page h3{margin:0 0 6px;font-size:16px}.sheet-page .pageslots{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.slot{font-size:11px;border:1px solid #cbd8e5;border-radius:5px;background:#f5f8fc;padding:4px 6px;color:#596d80}.slot.on{border-color:#a4d7c9;color:#076f66;background:#e9f9f3}.toast{position:fixed;left:50%;bottom:85px;transform:translate(-50%,12px);z-index:50;color:#fff;background:#1a3855;box-shadow:0 5px 30px #05152633;padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}.toast.visible{opacity:1;transform:translate(-50%,0)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -1986,6 +1986,7 @@ html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color
 <script src="./highway-sections.js?v=20261020-1"></script>
 <script src="./highway-report.js?v=20261020-1"></script>
 <script src="./bidirectional-sync.js?v=20261101-trashfix-1"></script>
+<script src="./device-handoff-policy.js?v=1"></script>
 <script src="./cloud-sync-ui.js?v=20261101-trashfix-1"></script>
 <script src="./cross-device-state.js?v=20261017-10"></script>
 <script src="./firebase-config.js?v=20261017-2"></script>
@@ -2397,13 +2398,14 @@ function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
 const appEl=document.getElementById('app'), noticeEl=document.getElementById('notice');
-const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],settings:['⚙','設定']};
+const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],handoff:['⇄','データの引き継ぎ'],settings:['⚙','設定']};
 const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE','AF','AG','AH','AI','AJ','AK','AN','AO','AP','AQ','AR']);
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
 let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab='drive',db=null,persistTimer=0,toastTimer=0;
 const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDistance!=='off':['S','V','AB','AE','X','Y','AJ','AK'].includes(field)?model.prefs.highwayDistance!=='off':true;
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
+let handoffBusy=false,handoffMessage='',handoffPrepared=null,handoffResumeRequested=false;
 // 新規日報は管理者を含め本人Firestoreへ保存する。既存Google原本・端末原本は移行も削除もしない。
 // 本人UID認証・操作端末権限・Firestore読戻し確認は従来どおり必須。
 const ADMIN_FIRESTORE_CUTOVER_ENABLED=true;
@@ -2749,7 +2751,7 @@ function blockViewerEdit(event){
  const pcPrintControl=printViewerOwner&&(
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
- const safe=target.closest?.('[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"],[data-action="monthlyDayView"],[data-action="monthlyViewerRefresh"]')||
+ const safe=target.closest?.('[data-handoff-action],[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"],[data-action="monthlyDayView"],[data-action="monthlyViewerRefresh"]')||
   readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
@@ -3226,7 +3228,7 @@ function renderNav(){
  const desktop=buttons.map(([id,[icon,title]])=>
   `<button type="button" data-tab="${id}" class="${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('');
  const mobileItem=(id,icon,title)=>`<button type="button" data-tab="${id}" class="taxi-mobile-item ${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico" aria-hidden="true">${icon}</span><span class="nav-label">${title}</span></button>`;
- const moreSelected=['manage','cloud','local','files','settings'].includes(tab);
+ const moreSelected=['manage','cloud','local','files','handoff','settings'].includes(tab);
  return `<div class="sidebar">
  <nav class="card nav" aria-label="メインメニュー">${desktop}</nav>
  <div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div>
@@ -3242,6 +3244,7 @@ function renderNav(){
     <strong>その他の画面</strong>
     ${mobileItem('settings','⚙','設定')}
     ${mobileItem('manage','▣','管理')}
+    ${mobileItem('handoff','⇄','データの引き継ぎ')}
    </div>
   </details>
  </nav></div>`;
@@ -3354,7 +3357,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='monthly'?renderMonthlyManagement():tab==='manage'?renderManagementHome():tab==='cloud'?renderCloudManagement():tab==='local'?renderLocalManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):(typeof renderSettingsCategorized==='function'?renderSettingsCategorized(shift):renderSettings(shift))}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='monthly'?renderMonthlyManagement():tab==='manage'?renderManagementHome():tab==='handoff'?renderHandoffPage():tab==='cloud'?renderCloudManagement():tab==='local'?renderLocalManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):(typeof renderSettingsCategorized==='function'?renderSettingsCategorized(shift):renderSettings(shift))}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -6721,6 +6724,7 @@ const syncUI=window.TAXIAPP_SYNC_UI({
  allowCloudIndexView:()=>TAXIAPP_PRINT_VIEWER_MODE&&deviceMode==='viewer'&&accountDiary.ready(),
  // Isolate editor CAS baselines from the production manager's UID state.
  previewFreshOnly:()=>Boolean(accountScope.adminFirestorePreview),
+ handoffResumeRequested:()=>handoffResumeRequested,
  resumeExcludedIds:()=>accountScope.adminFirestore&&!accountScope.adminFirestorePreview?
   (adminFirestoreManifest(accountScope.uid)?.excludedIds||[]):[],
  canSync:()=>canEditNow(),
@@ -6818,6 +6822,8 @@ const syncUI=window.TAXIAPP_SYNC_UI({
   return true;
  },
  onWriterBootstrapReady:()=>{
+  if(handoffResumeRequested&&tab==='handoff')handoffMessage='操作権を確認し、本人クラウドから乗務を取得しました。営業件数と乗務IDを確認してください。';
+  handoffResumeRequested=false;
   writerLoadGate=false;writerLoadError='';
   firstRunGuideActivate();
   // 営業原本の取得完了後だけ、本人の月間設定をFirestore照合する。
@@ -7356,6 +7362,135 @@ function deviceRetainedDuties(){
  const data=deviceMode==='viewer'?viewerLocalModel:model;
  return accountScopeLoaded&&Array.isArray(data?.shifts)?data.shifts:[];
 }
+
+/* その他 > データの引き継ぎ。既存の原本保存・同期CAS・端末権限を使用する。 */
+function handoffRemoteAvailable(){
+ if(accountScope.adminFirestorePreview||TAXIAPP_PRINT_VIEWER_MODE)return false;
+ return memberDiary()?accountDiary.ready():
+  legacyDiary()&&sheetTargetPrefs().syncMode==='on'&&googleIsConfigured();
+}
+function handoffOwnerVerified(){
+ const uid=accountScope.uid;
+ return Boolean(uid&&accountScopeLoaded&&currentLoginScope?.uid===uid&&
+  currentLoginScope?.firebase?.auth?.currentUser?.uid===uid&&
+  accountSettingsAuto?.status()?.enabled);
+}
+function renderHandoffPage(){
+ const duty=getShift(),writer=canEditNow(),viewer=deviceMode==='viewer';
+ const remote=memberDiary()?'本人Firestore':legacyDiary()?'従来Google原本':'保存先を確認中';
+ const available=handoffRemoteAvailable();
+ const canPrepare=writer&&Boolean(duty&&!duty.endedAt&&!duty.endedIso)&&
+  available&&handoffOwnerVerified()&&!handoffBusy;
+ const canClaim=viewer&&handoffOwnerVerified()&&!handoffBusy&&!TAXIAPP_PRINT_VIEWER_MODE;
+ const canResume=writer&&!duty&&memberDiary()&&available&&!handoffBusy;
+ const caption=duty?'乗務 '+safeText(duty.id)+'／'+safeText(duty.date||'日付不明')+
+  '／記録'+(duty.records?.length||0)+'件':'この端末に操作中の乗務は表示されていません';
+ const state=writer?'操作端末（編集可能）':viewer?'閲覧専用（編集できません）':
+  '操作権または原本の確認中';
+ const readyLabel=available?'同期先の接続設定あり（読戻しは操作時に検証）':
+  'クラウドの同期設定が不足：このままでは引き継げません';
+ return titleBlock('データの引き継ぎ','DEVICE HANDOFF','乗務を終了せず、端末保存とクラウド原本の一致を確認して操作端末を変更します。')+
+  '<section class="card"><h2 class="h2">現在の引き継ぎ状況</h2>'+
+  '<p class="panel-strip">'+safeText(state)+'</p><p>'+caption+'</p>'+
+  '<p class="caption-note">原本：'+safeText(remote)+'／'+safeText(readyLabel)+'</p>'+
+  (handoffMessage?'<p role="status" class="warn">'+safeText(handoffMessage)+'</p>':'')+
+  (handoffPrepared?'<p class="panel-strip">準備済みの控え：'+safeText(handoffPrepared)+'</p>':'')+
+  (deviceMode==='writer'&&writerLoadGate?'<p class="warn">'+safeText(writerLoadError||'サーバー照合中')+'</p>':'')+'</section>'+
+  '<section class="card"><h2 class="h2">① 今使っている端末で準備</h2>'+
+  '<p class="helper">この端末の未入庫乗務と設定を保存し、本人クラウドの更新番号・内容を読戻します。失敗したら操作権は手放しません。準備完了後もこの端末の原本は消しません。</p>'+
+  '<button type="button" class="btn teal" data-handoff-action="prepare" '+
+   (canPrepare?'':'disabled')+'>'+(handoffBusy?'照合中…':'引き継ぎ準備・保存確認')+'</button>'+
+  (!available?'<p class="danger-note">双方向同期がOFF、または本人クラウドに接続できていません。同期先を確認するまでこの端末で入力を続けてください。</p>':'')+
+  '</section>'+
+  '<section class="card"><h2 class="h2">② 次に使う端末で受け取る</h2>'+
+  '<p class="helper">新端末で同じGoogleアカウントにログインし、必要なら「この端末で操作する」を押します。受信完了まで入力はできません。古い端末ではログアウトせず、画面を閉じても元のデータは削除しないでください。</p>'+
+  '<button type="button" class="btn primary" data-handoff-action="receive" '+(canClaim?'':'disabled')+'>この端末で操作する</button>'+
+  (canResume?'<div class="actions"><button type="button" class="btn" data-handoff-action="resume">未入庫の乗務を読戻す</button></div>':'')+
+  '<p class="caption-note">受信後は乗務ID・営業件数・最後の営業内容を照合してから入力を再開してください。異なる未入庫乗務があれば自動統合しません。</p></section>';
+}
+async function prepareDeviceHandoff(){
+ if(handoffBusy)return;
+ const shift=getShift();
+ if(!canEditNow()||!shift||!handoffOwnerVerified()){
+  handoffMessage='本人の操作端末で未入庫の乗務を開いてください';render();return;
+ }
+ if(!handoffRemoteAvailable()){
+  handoffMessage='クラウド同期を利用できません。元の端末から引き継ぎできません';render();return;
+ }
+ const uid=accountScope.uid,shiftId=shift.id,epoch=accountScopeGeneration;
+ const initial=JSON.stringify(model.shifts);
+ const intact=()=>accountScopeGeneration===epoch&&accountScope.uid===uid&&
+  handoffOwnerVerified()&&canEditNow()&&model.activeId===shiftId&&
+  JSON.stringify(model.shifts)===initial;
+ handoffBusy=true;handoffMessage='端末とクラウドを保存・照合中です。入力操作をしないでください';render();
+ try{
+  if(persistTimer){clearTimeout(persistTimer);persistTimer=0;}
+  const localOk=await save(true);
+  if(!localOk||!intact())throw Error('端末保存中に乗務データが変更されたため保留しました');
+  const settingsOk=await accountSettingsAuto?.syncBeforeSignOut?.();
+  if(!settingsOk||!intact())throw Error('設定のクラウド読戻しが未完了、またはデータが変更されました');
+  const syncOk=await syncUI.run(true);
+  const current=getShift(),st=syncUI.status();
+  const all=memberDiary()?(model.shifts||[]).every(sh=>syncUI.dutySyncStatus(sh).state==='confirmed'):
+   Boolean(syncOk);
+  const confirmed=memberDiary()?syncUI.dutySyncStatus(current).state==='confirmed':Boolean(syncOk);
+  const check=window.TAXIAPP_HANDOFF_POLICY.gate({
+   ownerVerified:handoffOwnerVerified(),writer:canEditNow(),online:navigator.onLine!==false,
+   activeId:current?.id===shiftId?shiftId:'',ended:Boolean(current?.endedAt||current?.endedIso),
+   remoteReady:handoffRemoteAvailable(),busy:Boolean(st.busy),
+   conflicts:st.conflicts?.length||0,remoteError:Boolean(st.lastError),
+   localSaved:localOk===true&&!localSavePending&&!persistTimer,settingsConfirmed:settingsOk===true,
+   syncSucceeded:syncOk===true,remoteConfirmed:confirmed,allLocalConfirmed:all,
+   unchanged:intact()
+  });
+  if(!check.ok)throw Error(check.reason);
+  const receipt='乗務'+shiftId+' ／ 営業'+(current.records?.length||0)+'件 ／ '+remoteDateLabelForHandoff();
+  handoffPrepared=receipt;handoffMessage='クラウド照合成功。現在の端末を閲覧専用に切り替えました。新端末で受け取ってください。';
+  if(!accountSettingsAuto?.yieldEditorForHandoff?.())throw Error('操作端末の権限を手放せませんでした。現在の端末を確認してください');
+ }catch(error){
+  handoffMessage='引き継ぎを保留：'+String(error?.message||error)+'。日報は削除していません。';
+ }finally{handoffBusy=false;render();}
+}
+function remoteDateLabelForHandoff(){return new Date().toLocaleString('ja-JP');}
+async function receiveDeviceHandoff(){
+ if(handoffBusy)return;
+ if(!handoffOwnerVerified()||deviceMode!=='viewer'){
+  handoffMessage='閲覧専用で本人ログインした端末から受け取ってください';render();return;
+ }
+ if(!navigator.onLine){
+  handoffMessage='通信がありません。受け取りを保留しました';render();return;
+ }
+ handoffResumeRequested=true;
+ if(!accountSettingsAuto?.claimEditorForHandoff?.()){
+  handoffResumeRequested=false;handoffMessage='操作権の取得を開始できません';render();return;
+ }
+ handoffMessage='サーバーの操作権と原本を確認中。乗務IDと営業件数を照合してから入力してください。';
+ render();
+}
+async function resumeDeviceHandoff(){
+ if(handoffBusy||!canEditNow()||getShift()||!memberDiary()||!handoffRemoteAvailable())return;
+ handoffBusy=true;handoffResumeRequested=true;
+ writerLoadGate=true;writerLoadError='未入庫の本人乗務をクラウドから取得中…';
+ handoffMessage=writerLoadError;render();
+ try{
+  const ok=await syncUI.bootstrapWriter();
+  if(!ok){
+   handoffMessage='受信が未完了です。上部の「同期」で再試行してください。旧端末の日報は削除されていません。';
+  }
+ }catch(error){
+  handoffMessage='受信を保留：'+String(error?.message||error);
+ }finally{handoffBusy=false;render();}
+}
+appEl.addEventListener('click',event=>{
+ const control=event.target.closest?.('[data-handoff-action]');
+ if(!control||control.disabled)return;
+ event.preventDefault();event.stopPropagation();
+ const action=control.dataset.handoffAction;
+ if(action==='prepare')void prepareDeviceHandoff();
+ else if(action==='receive')void receiveDeviceHandoff();
+ else if(action==='resume')void resumeDeviceHandoff();
+});
+
 function renderManagementHome(){
  const count=deviceRetainedDuties().length;
  return titleBlock('管理','MANAGEMENT','日報の保存先ごとに管理します。')+
