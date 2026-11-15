@@ -139,6 +139,9 @@ root.TAXIAPP_SYNC_UI=function(d){
      if(!Array.isArray(resume?.shifts)||resume.shifts.length>1)
       throw Error('端末引き継ぎの再開候補が不正です。既存日報を保護して停止しました');
      const candidate=resume.shifts[0];
+     if(local.some(shift=>shift&&!shift.endedAt&&!shift.endedIso)&&
+        (!candidate||candidate.deleted||candidate.ended))
+      throw Error('端末に未入庫乗務がありますが本人クラウドに再開候補がありません。原本を保持して停止しました');
      const plan=root.TAXIAPP_HANDOFF_POLICY?.resumePlan(local,candidate);
      if(!plan?.ok)throw Error(plan?.reason||'乗務の安全な引き継ぎを確認できません');
      if(candidate&&!candidate.deleted&&!candidate.ended){
