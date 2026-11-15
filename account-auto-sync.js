@@ -712,7 +712,21 @@ root.TAXIAPP_ACCOUNT_AUTO={
    deferredWhileEditing=false;
    schedule(200);
   }
+  // 既存の編集端末セッションを再利用する。日報やFirestoreルールは変更しない。
+  function yieldEditorForHandoff(){
+   if(printViewerMode||!enabled||!uid||auth?.currentUser?.uid!==uid||
+      !deviceSession?.canWrite())return false;
+   deviceSession.viewOnly();
+   return deviceSession.state()==='viewer';
+  }
+  function claimEditorForHandoff(){
+   if(printViewerMode||!enabled||!uid||auth?.currentUser?.uid!==uid||
+      deviceSession?.state()!=='viewer')return false;
+   void deviceSession.claim();
+   return true; // 操作権取得完了ではなく、既存のサーバー確認処理を開始しただけ
+  }
   return {start,localSaved,editingEnded,syncBeforeSignOut,refreshViewerMonthlyPrefs:loadViewerMonthlyPrefs,
+   yieldEditorForHandoff,claimEditorForHandoff,
    syncNow:()=>{if(enabled&&deviceSession?.canWrite())schedule(0);},
    status:()=>({enabled,uid,mode:deviceSession?.state(),message:settingsMessage})};
  }
