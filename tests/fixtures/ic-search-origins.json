@@ -1,0 +1,86 @@
+[
+  {
+    "name": "阪急伊丹駅周辺",
+    "latitude": 34.779915,
+    "longitude": 135.41373,
+    "radius_m": 10000,
+    "expected_names": [
+      "中国池田",
+      "大阪空港",
+      "豊中北"
+    ],
+    "expected_count": 26,
+    "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2025.html",
+    "source_feature": {
+      "type": "Feature",
+      "properties": {
+        "N02_001": "12",
+        "N02_002": "4",
+        "N02_003": "伊丹線",
+        "N02_004": "阪急電鉄",
+        "N02_005": "伊丹",
+        "N02_005c": "006714",
+        "N02_005g": "006714"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.41335,
+            34.7803
+          ],
+          [
+            135.41411,
+            34.77953
+          ]
+        ]
+      }
+    },
+    "source_sha256": "aaf76af133b2e771e538fabc4646d2e443dc1d5a67b221382a28d744e706cc9f",
+    "method": "駅形状の重心（IC座標には使用しない）"
+  },
+  {
+    "name": "三木小野代表点周辺",
+    "latitude": 34.812443,
+    "longitude": 134.957558,
+    "radius_m": 3000,
+    "expected_names": [
+      "三木小野"
+    ],
+    "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html",
+    "source_feature_id": "EA03_531005"
+  },
+  {
+    "name": "門真JCT代表点周辺",
+    "latitude": 34.715613,
+    "longitude": 135.589573,
+    "radius_m": 3000,
+    "expected_names": [
+      "門真JCT"
+    ],
+    "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html",
+    "source_feature_id": "EA03_526048"
+  },
+  {
+    "name": "垂水JCT/IC代表点周辺",
+    "latitude": 34.659703,
+    "longitude": 135.067724,
+    "radius_m": 3000,
+    "expected_names": [
+      "垂水JCT/IC"
+    ],
+    "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html",
+    "source_feature_id": "EA03_646003"
+  },
+  {
+    "name": "高槻JCT代表点周辺",
+    "latitude": 34.86688405830349,
+    "longitude": 135.62625436713688,
+    "radius_m": 3000,
+    "expected_names": [
+      "高槻JCT"
+    ],
+    "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html",
+    "source_feature_id": "EA03_527029"
+  }
+]

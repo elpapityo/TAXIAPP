@@ -1,0 +1,1940 @@
+{
+  "checked_at": "2026-11-13",
+  "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/",
+  "summary": {
+    "doorway": {
+      "matched_representative": 131,
+      "unresolved": 13
+    },
+    "jct": {
+      "unresolved": 11,
+      "matched_representative": 24
+    }
+  },
+  "items": [
+    {
+      "name": "藍那",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719010-224fe0c71a46"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "安治川",
+      "kind": "doorway",
+      "road": "阪神高速17号西大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_714006-5afe91fb7834"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "芦原",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712004-ef0905df0cbc"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "芦屋",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716012-8d98254a6bdc"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "阿倍野",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711003-9d9f7ca20616"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "尼崎末広",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717007-2b9666661017"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "尼崎西",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716009-33b39dda4005"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "尼崎東",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716008-220799b662da"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "尼崎東海岸",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717006-74dc340d323c"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "天美",
+      "kind": "doorway",
+      "road": "阪神高速6号大和川線",
+      "status": "unresolved",
+      "reason": "road_mismatch",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "有馬口",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719015-05ddf4f0524e"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "阿波座",
+      "kind": "doorway",
+      "road": "阪神高速16号大阪港線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_713002-3e238aa4ab52"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "生田川",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716017-e40e81b50a41"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "池田",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708011-05e80f08f4b4"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "池田木部",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708014-371bb4353ba6"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "石津",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715010-d24cf74d2e60"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "泉大津",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715014-37ff8ebb6948"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "泉佐野北",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715018-1c3396867def"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "泉佐野南",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715019-1c0322a7e93a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "魚崎",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716014-72c13810c04f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "魚崎浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717014-3c5bb3cdd707"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "梅田",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708004-f954c0c4fd4f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "海老江",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716004-9a85c3029e69"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "えびす町",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705018-7d5507924019"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "扇町",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709003-9d12db81e5da"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大阪空港",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708010-8dd1457feee1"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大浜",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715008-269aa17cffba"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大開",
+      "kind": "doorway",
+      "road": "阪神高速2号淀川左岸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大堀",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711010-685b074f3533"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大和田",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716007-ced16f9c5728"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "貝塚",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715017-6a1cd30931ed"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "加島",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708007-0c4557c86d77"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "神若",
+      "kind": "doorway",
+      "road": "阪神高速32号新神戸トンネル",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_818003-8a53a378fe96"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "からと西",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719012-bca3a68e8aa4"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "からと東",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719013-a3149a2638c7"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "川西小花",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708013-4b6de1b9e2e7"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "岸和田北",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715015-55f4bb26761b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "岸和田南",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715016-39b0ffdd3946"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "北神戸箕谷",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "北津守",
+      "kind": "doorway",
+      "road": "阪神高速17号西大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_714002-c5118be0f3fc"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "北浜",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705008-7c74ee239d4d"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "京橋",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716018-65df854e9939"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "喜連瓜破",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711007-081252bcd744"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "九条",
+      "kind": "doorway",
+      "road": "阪神高速16号大阪港線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_713005-a86055974207"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "甲子園浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717009-a24f5334adce"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "神田",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708012-f6d22cdcbac2"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "高津",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705015-8eed680c7367"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "神戸長田",
+      "kind": "doorway",
+      "road": "阪神高速31号神戸山手線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_720002-04a30871afaa"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "高麗橋",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705010-f71d466bf237"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "国道２号",
+      "kind": "doorway",
+      "road": "阪神高速32号新神戸トンネル",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_818001-2a0f2d78939a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "五社",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719019-f5440638f259"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "駒川",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711005-37916843e1d6"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "堺",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712009-3d1e0afa72c4"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "堺（Ｒ２６）",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712010-c1becd768b29"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "三宝",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715007-4dbf5a036308"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "しあわせの村",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719009-e199ce462d1a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "汐見橋",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712003-b00e7073a018"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "信濃橋",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705004-4ec223f02742"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "島屋",
+      "kind": "doorway",
+      "road": "阪神高速2号淀川左岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_706002-a082c0431df1"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "正蓮寺川",
+      "kind": "doorway",
+      "road": "阪神高速2号淀川左岸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "白川南",
+      "kind": "doorway",
+      "road": "阪神高速31号神戸山手線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_720004-2cf56348dcb1"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "城北",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709006-679a77b7a3c8"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "新神戸駅",
+      "kind": "doorway",
+      "road": "阪神高速32号新神戸トンネル",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_818004-6de7eb06048a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "新神戸箕谷",
+      "kind": "doorway",
+      "road": "阪神高速32号新神戸トンネル",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "助松",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "住之江",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712008-b967f3abdb30"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "住吉浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717013-cf0abdfd414f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "前開",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719004-5f97ab56f6ce"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大正西",
+      "kind": "doorway",
+      "road": "阪神高速17号西大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_714004-1c210104037f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "大正東",
+      "kind": "doorway",
+      "road": "阪神高速17号西大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_714003-295a982fd279"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "高石",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715012-21bd4fb6d20d"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "高井田",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710005-8f0e8fee7b77"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "玉出",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712007-c03d13fab127"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "塚本",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708006-f96dc90e1172"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "月見山",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716024-28c5ee41976e"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "津守",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_712006-8334831aab12"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "出入橋",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708002-2b79af2b1fd2"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "出島",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715009-908a61126878"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "鉄砲",
+      "kind": "doorway",
+      "road": "阪神高速6号大和川線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_826005-4dae63ad976b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "天王寺",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711002-72a8ffba608b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "天保山",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "堂島",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705007-6f79a224143f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "道頓堀",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705014-6ba6a91aa51a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "常磐",
+      "kind": "doorway",
+      "road": "阪神高速6号大和川線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "土佐堀",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705005-267ab71d0079"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "豊中北",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708009-5ea7b7e4284f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "豊中南",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708008-c1e24ee28a4f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "永井谷",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719003-1dbabcb15782"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "中島",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717005-48730e805ce2"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "長田",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710006-80e42fbd36fb"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "中野",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710008-9eecfc0252f2"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "中之島",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708003-905a9e6eb52d"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "中之島西",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "長堀",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705013-5d901be5d563"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "長柄",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709004-ce35a819455c"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "波除",
+      "kind": "doorway",
+      "road": "阪神高速16号大阪港線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_713007-6d6dc5fd0bfb"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "鳴尾浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717008-26e5e14086d3"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南港北",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715003-3bae44f88736"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南港中",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715004-b8be6dc026f0"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南港南",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715005-ed5d149ceb1b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "なんば",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705019-9efbe876af46"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西長堀",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_713004-71aea3b81a7b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西宮",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "unresolved",
+      "reason": "ambiguous_name",
+      "matched_ids": [
+        "EA03_716011-26dc3d3073f2",
+        "EA03_716902-53b5b11c21ac"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西宮浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717010-0a3ee70ba6ef"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西宮山口東",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719017-55911c64c349"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西宮山口南",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719016-882b49543e92"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "二宮",
+      "kind": "doorway",
+      "road": "阪神高速32号新神戸トンネル",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_818002-5137ba7a6718"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "浜寺",
+      "kind": "doorway",
+      "road": "阪神高速4号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715011-54dc360cefdb"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "東大阪荒本",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710007-f073954392be"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "姫島",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716006-321c9315cd70"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "平野",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711006-0ab0e64e6629"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "深江",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716013-2835fb44dfa1"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "深江浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717012-077b1f2bb204"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "福島",
+      "kind": "doorway",
+      "road": "阪神高速11号池田線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_708005-54a288717e11"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "布施畑西",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719005-8eadc2fb0c42"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "布施畑東",
+      "kind": "doorway",
+      "road": "阪神高速7号北神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719007-33509a8fb39a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "文の里",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711004-b21bc5c3a6b5"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "弁天町",
+      "kind": "doorway",
+      "road": "阪神高速17号西大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_714005-70948db0c8e8"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "法円坂",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710003-cee53ff4ce8b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "本田",
+      "kind": "doorway",
+      "road": "阪神高速16号大阪港線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_713005-a86055974207"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "本町",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705011-70aeb44a7826"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "摩耶",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716016-15ee76d7b889"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "水走",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710009-0e65e0a27d90"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "湊川",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716021-14f4cd556c55"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "湊町",
+      "kind": "doorway",
+      "road": "阪神高速15号堺線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705001-79594718c137"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南芦屋浜",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717011-9af893328d62"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南森町",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709002-f17f6a7cd065"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "三宅",
+      "kind": "doorway",
+      "road": "阪神高速14号松原線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711008-65dd9d385e03"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "三宅西",
+      "kind": "doorway",
+      "road": "阪神高速6号大和川線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_826001-99512ee9906a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "都島",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709005-8037a860a150"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "妙法寺",
+      "kind": "doorway",
+      "road": "阪神高速31号神戸山手線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_720003-67113ffdf351"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "武庫川",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716010-9ad3734e4cfe"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "守口",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709007-6bca6369144f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "守口（Ｒ１）",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "森小路",
+      "kind": "doorway",
+      "road": "阪神高速12号守口線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709009-05c1a9c95bdb"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "森之宮",
+      "kind": "doorway",
+      "road": "阪神高速13号東大阪線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710004-854910dd2384"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "柳原",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716019-c804faee8c7d"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "夕陽丘",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705016-cfede911eb5f"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "ユニバーサルシティ",
+      "kind": "doorway",
+      "road": "阪神高速2号淀川左岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_706002-a082c0431df1"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "四ツ橋",
+      "kind": "doorway",
+      "road": "阪神高速1号環状線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705002-d7c2d8b7dbcd"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "淀川左岸舞洲",
+      "kind": "doorway",
+      "road": "阪神高速2号淀川左岸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "六甲アイランド北",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_717015-d725f9fe90c4"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "若宮",
+      "kind": "doorway",
+      "road": "阪神高速3号神戸線",
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716023-482eaebb7693"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "湾岸舞洲",
+      "kind": "doorway",
+      "road": "阪神高速5号湾岸線",
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "箕谷JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "布施畑JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_646002-7a7a5d99198b"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "永井谷JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719002-7e5a8462318e"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "垂水JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "road_mismatch",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "名谷JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "湊川JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716021-14f4cd556c55"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西宮IC",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716011-26dc3d3073f2"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "海老江JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_716004-2f39de6e4d5d"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西船場JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705004-4ec223f02742"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "東船場JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710002-aade9a139e59"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "天保山JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_713009-06ed84cca018"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "守口JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_709010-fb3de7c511b7"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "東大阪JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_710007-f073954392be"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "湊町JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705001-79594718c137"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "高津JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705015-8eed680c7367"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "松原JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_711011-46babc87053a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "三宝JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_826003-40771e2f37f8"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "中之島JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_705006-5f408d32b89c"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "天神橋JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "えびすJCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南開JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "蛍池JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "阿波座JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "南港JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "布引JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "伊川谷JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719001-efaedbca8b30"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "白川JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719008-f8b5b9215cb9"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "有馬口JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719014-891db0c20b02"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "柳谷JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719020-783273a0d373"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "西宮山口JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_719018-de8cc68f8e69"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "豊中IC",
+      "kind": "jct",
+      "road": null,
+      "status": "unresolved",
+      "reason": "no_matching_name",
+      "matched_ids": [],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "北港JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_706001-f8bee3be3a86"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "三宅JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_826002-d22691232103"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "助松JCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715013-2b7aa70834be"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    },
+    {
+      "name": "りんくうJCT",
+      "kind": "jct",
+      "road": null,
+      "status": "matched_representative",
+      "reason": null,
+      "matched_ids": [
+        "EA03_715020-9c9c691f2a7a"
+      ],
+      "source": "https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/"
+    }
+  ]
+}
