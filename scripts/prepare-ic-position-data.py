@@ -12,6 +12,45 @@ DOWNLOAD = 'https://nlftp.mlit.go.jp/ksj/gml/data/N06/N06-25/N06-25_GML.zip'
 HANSHIN = 'https://www.hanshin-exp.co.jp/drivers/ryoukin/annai/route/'
 TYPES = {'1': '一般IC', '2': 'スマートIC', '3': 'JCT', '4': 'その他の接合部'}
 
+# 原典の併記・旧称で個別確認できた代表点。公式案内に基づき関連付ける。
+# 箕谷は共有点として扱い、3か所の個別ランプ座標には展開しない。
+REVIEWED = {
+    ('doorway', '天美'): ('EA03_826007-6e1344a896f8',
+                         'https://www.hanshin-exp.co.jp/company/torikumi/useful/yamatogawa/'),
+    ('doorway', '中之島西'): ('EA03_716003-dcc7c60409fd', 'https://www.openstreetmap.org/node/1019867785'),
+    ('doorway', '西宮'): ('EA03_716902-53b5b11c21ac', 'https://www.openstreetmap.org/node/302504482'),
+    ('doorway', '湾岸舞洲'): ('EA03_717003-52ddc3ad44ba',
+                           'https://www.hanshin-exp.co.jp/drivers/douro/topics/2013-0628-1440.pdf'),
+    ('doorway', '北神戸箕谷'): ('EA03_719011-85dc1e9fdcb6', HANSHIN + 'images/jct_img01.png'),
+    ('doorway', '新神戸箕谷'): ('EA03_719011-85dc1e9fdcb6', HANSHIN + 'images/jct_img01.png'),
+    ('jct', '箕谷JCT'): ('EA03_719011-85dc1e9fdcb6', HANSHIN + 'images/jct_img01.png'),
+    ('jct', '垂水JCT'): ('EA03_646003-da161b26f0c6', HANSHIN + 'images/jct_img04.png'),
+    ('jct', '豊中IC'): ('EA03_518058-fe048e077680', HANSHIN + 'images/jct_img31.png'),
+}
+NEXCO_KEIHAN = 'https://corp.w-nexco.co.jp/corporate/release/hq/h21/1130a/'
+KEIHAN_DIRECTIONS = {
+    '京田辺松井': '大阪方面', '枚方学研': '大阪方面', '交野北': '京都方面',
+    '交野南': '大阪方面', '寝屋川北': '京都方面', '寝屋川南': '大阪方面',
+    '第二京阪門真': '京都方面',
+}
+
+def normalize_direction(value):
+    if value in {'ー', '－', '-'}:
+        return []
+    if value == '○':
+        return ['環状線 一方通行']
+    if value in {'環状線入り口', '環状線出口'}:
+        return ['環状線']
+    # 条件付きの案内もそのまま条件を保持する。未確認値から方角を補完しない。
+    directions = [v.strip() for v in value.split('、')]
+    flags = re.compile(r'(?:(?:大和川線|大阪港線)?[東西南北]行き(?:（六甲アイランド北入口から走行時）)?|六甲アイランド北方面|環状線出口)')
+    return directions if all(flags.fullmatch(v) for v in directions) else None
+
+def access_record(entrance, exit_, source):
+    if entrance is None and exit_ is None:
+        return None
+    return {'entrance': entrance, 'exit': exit_, 'direction': 'by_entrance_or_exit', 'source': source}
+
 def current(p, start, end):
     return int(p[start]) <= 2025 <= int(p[end])
 
@@ -51,6 +90,8 @@ def main():
     p.add_argument('--hanshin-list', type=pathlib.Path, required=True, help='公式route.json（照合専用・原本は配布しない）')
     p.add_argument('--audit', type=pathlib.Path, default=pathlib.Path('data/ic-coverage-audit.json'))
     p.add_argument('--checked-at', required=True, help='取得・確認日 YYYY-MM-DD')
+    p.add_argument('--osm', type=pathlib.Path, help='照合に使う、独立したODbL補完JSON')
+    p.add_argument('--audit-only', action='store_true', help='国交省の位置JSONを保持し、照合結果だけ更新')
     a = p.parse_args()
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', a.checked_at):
         p.error('checked-atはYYYY-MM-DDで指定してください')
@@ -92,22 +133,54 @@ def main():
     if not items or len({x['id'] for x in items}) != len(items):
         raise ValueError('出力が空、または現況IDが重複。既存JSONは変更しません')
     official = json.loads(a.hanshin_list.read_text(encoding='utf-8-sig'))
+    by_id = {item['id']: item for item in items}
+    osm_items = json.loads(a.osm.read_text(encoding='utf-8'))['items'] if a.osm else []
     audit = []
     for kind in ('doorway', 'jct'):
         for row in official[kind]:
+            title = normal(row['title'])
             route = '阪神高速' + row['route'] if kind == 'doorway' else None
             route_names = {route}
             if route == '阪神高速32号新神戸トンネル':
-                route_names.add('阪神高速32号線')  # 同じ32号の原典表記。名称を上書きしない。
-            candidates = [x for x in items if normal(row['title']) in names(x['source_name'])
+                route_names.add('阪神高速32号線')
+            candidates = [x for x in items if title in names(x['source_name'])
                           and (bool(route_names.intersection(x['road_geometry_matches'])) if route else any(r.startswith('阪神高速') for r in x['road_geometry_matches']))]
-            global_candidates = [x for x in items if normal(row['title']) in names(x['source_name'])]
-            reason = None if len(candidates) == 1 else ('ambiguous_name' if len(candidates) > 1 else 'road_mismatch' if global_candidates else 'no_matching_name')
-            audit.append({'name': row['title'], 'kind': kind, 'road': route,
-                          'status': 'matched_representative' if len(candidates) == 1 else 'unresolved',
-                          'reason': reason, 'matched_ids': [x['id'] for x in candidates], 'source': HANSHIN})
-            if len(candidates) == 1:
-                candidates[0].setdefault('hanshin_catalog_matches', []).append({'name': row['title'], 'kind': kind, 'road': route})
+            global_candidates = [x for x in items if title in names(x['source_name'])]
+            reason = ('ambiguous_name' if len(candidates) > 1 else
+                      'road_mismatch' if global_candidates else 'no_matching_name')
+            evidence = None
+            resolution = 'matched_representative' if len(candidates) == 1 else 'unresolved'
+            if (kind, title) in REVIEWED:
+                selected_id, evidence = REVIEWED[kind, title]
+                candidates = [by_id[selected_id]]
+                resolution = 'matched_shared_representative' if '箕谷' in title else 'matched_representative'
+            elif resolution == 'unresolved':
+                supplement = [x for x in osm_items if normal(x['name']) == title
+                              and (x['road'] == route if route else
+                                   x['type'] == 'JCT' and x['road'].startswith('阪神高速'))]
+                if supplement:
+                    candidates = supplement
+                    resolution = 'matched_osm_position'
+            entry = {'name': row['title'], 'kind': kind, 'road': route,
+                     'status': resolution, 'reason': reason if resolution == 'unresolved' else None,
+                     'matched_ids': [x['id'] for x in candidates], 'source': HANSHIN}
+            if evidence:
+                entry['matching_evidence'] = evidence
+            if kind == 'doorway':
+                access = access_record(normalize_direction(row['entrance']),
+                                       normalize_direction(row['exit']), HANSHIN)
+                if access is not None:
+                    entry['access'] = access
+            audit.append(entry)
+            if resolution in {'matched_representative', 'matched_shared_representative'}:
+                candidates[0].setdefault('hanshin_catalog_matches', []).append(
+                    {'name': row['title'], 'kind': kind, 'road': route})
+    other_access = []
+    for x in osm_items:
+        if x['road'] == '第二京阪道路' and x['name'] in KEIHAN_DIRECTIONS:
+            directions = [KEIHAN_DIRECTIONS[x['name']]]
+            other_access.append({'name': x['name'], 'road': x['road'], 'matched_ids': [x['id']],
+                                 'access': access_record(directions, directions, NEXCO_KEIHAN)})
     summary = {k: dict(Counter(x['status'] for x in audit if x['kind'] == k)) for k in ('doorway', 'jct')}
     result = {
         'schema_version': 1, 'source': SOURCE, 'source_download': DOWNLOAD,
@@ -122,8 +195,10 @@ def main():
         'limitations': '路線は原典形状と0.5m以内で重なる候補。交差だけの場合もあり接続保証ではない。入口・出口・方向は未収録。2026年の新設・変更は未反映。',
         'hanshin_catalog_summary': summary, 'items': items,
     }
-    write_json(a.audit, {'checked_at': a.checked_at, 'source': HANSHIN, 'summary': summary, 'items': audit})
-    write_json(a.output, result)
+    write_json(a.audit, {'checked_at': a.checked_at, 'source': HANSHIN, 'summary': summary,
+                         'items': audit, 'other_access': other_access})
+    if not a.audit_only:
+        write_json(a.output, result)
     print(json.dumps({'items': len(items), 'road_unresolved': sum(not x['road'] for x in items), 'hanshin': summary}, ensure_ascii=True))
 
 if __name__ == '__main__':

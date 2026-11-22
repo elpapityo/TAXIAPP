@@ -9,7 +9,7 @@
       "大阪空港",
       "豊中北"
     ],
-    "expected_count": 26,
+    "expected_count": 27,
     "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2025.html",
     "source_feature": {
       "type": "Feature",
@@ -82,5 +82,37 @@
     ],
     "source": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html",
     "source_feature_id": "EA03_527029"
+  },
+  {
+    "name": "玉津接続点周辺",
+    "latitude": 34.6839417,
+    "longitude": 134.9823762,
+    "radius_m": 3000,
+    "expected_names": [
+      "玉津"
+    ],
+    "source": "https://www.openstreetmap.org/node/1939291315"
+  },
+  {
+    "name": "交野南接続点周辺",
+    "latitude": 34.7750639,
+    "longitude": 135.6639745,
+    "radius_m": 3000,
+    "expected_names": [
+      "交野南"
+    ],
+    "source": "https://www.openstreetmap.org/node/1735942967",
+    "expected_directions": "入口 大阪方面 ／ 出口 大阪方面"
+  },
+  {
+    "name": "大開接続点周辺",
+    "latitude": 34.6867256,
+    "longitude": 135.4606908,
+    "radius_m": 3000,
+    "expected_names": [
+      "大開"
+    ],
+    "source": "https://www.openstreetmap.org/node/2336793395",
+    "expected_directions": "入口 西行き ／ 出口 東行き"
   }
 ]
