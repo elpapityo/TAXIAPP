@@ -9,6 +9,7 @@
 .pick-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 </style></head>
 <body><main><h1>高速道路 IC名取得テスト</h1><p>登録済みのIC位置データとGPS座標を端末内で照合します。候補から入口・出口を選び、IC名をコピーしてTAXIAPPの高速入力欄に貼り付けられます。</p>
+<section><a href="./demo/?test=highway-ic">TAXIAPPと同じ高速入力画面で試す</a></section>
 <section><button id="loc">現在地を取得</button><button class="secondary" id="sample">阪急伊丹駅周辺10kmで試す</button>
 <label>緯度<input id="lat" type="number" step="any" placeholder="緯度"></label><label>経度<input id="lon" type="number" step="any" placeholder="経度"></label>
 <label>検索半径<select id="radius"><option value="3000">3 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option></select></label>
