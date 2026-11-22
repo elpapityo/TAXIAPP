@@ -669,6 +669,10 @@ html:not([data-ui-drive-layout="legacy"]) #app:has(.preview-duty-summary) .previ
 .highway-nearby-list{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);padding:10px;margin-top:8px;border-radius:10px}
 .highway-nearby-list .btn{text-align:left;white-space:normal;min-height:44px}
 .highway-nearby-list small{color:var(--muted)}
+.highway-nearby-list[hidden]{display:none}
+.highway-ic-input{display:flex;align-items:stretch;gap:6px}
+.highway-ic-input .control{min-width:0}
+.highway-ic-input .btn{flex:none;min-width:44px;padding:8px}
 /* Visible manual device layout selector; independent of the ride input mode. */
 .device-layout-switch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 9px;margin:0 0 10px;border:1px solid #36516a;border-radius:12px;background:#13263a}
 .device-layout-switch strong{font-size:12px;color:#c7dceb;margin:0 8px 0 3px}
@@ -4877,6 +4881,13 @@ function renderHighwaySections(d,mode){
   if(distance){
    el=kmControl(el);
    el+='<button type="button" class="btn inline-field-icon" data-hwy-gps="'+index+'" data-hwy-distance-field="'+key+'" aria-label="'+labels[key]+'をGPSで取得">⌖ GPS</button>';
+  }
+  if(demoHighwayTest&&(key==='entryIC'||key==='exitIC')&&model.prefs?.highwayNearbyIC===true){
+   const label=key==='entryIC'?'入口':'出口';
+   return '<div class="field" data-hwy-picker><label><span class="field-label">'+labels[key]+'</span></label>'+
+    '<div class="highway-ic-input">'+el+'<button type="button" class="btn" data-hwy-nearby="'+index+
+    '" data-hwy-ic-field="'+key+'" data-hwy-dropdown aria-label="'+label+'の候補を表示" aria-expanded="false">▼</button></div>'+
+    '<button type="button" class="btn" data-hwy-nearby="'+index+'" data-hwy-ic-field="'+key+'">⌖ 近くの'+label+'を探す</button></div>';
   }
   if((key==='entryIC'||key==='exitIC')&&model.prefs?.highwayNearbyIC===true)
    el+='<button type="button" class="btn" data-hwy-nearby="'+index+'" data-hwy-ic-field="'+key+'">⌖ 近くの'+(key==='entryIC'?'入口':'出口')+'を探す</button>';
@@ -10185,6 +10196,17 @@ appEl.addEventListener('click',event=>{
   const shift=getShift(),draft=shift?.draft,index=Number(nearby.dataset.hwyNearby),key=nearby.dataset.hwyIcField;
   const seg=draft?.meta?.highwaySections?.[index];
   if(!seg||!['entryIC','exitIC'].includes(key))return;
+  const picker=nearby.closest('[data-hwy-picker]');
+  const dropdown=picker?.querySelector('[data-hwy-dropdown]');
+  const toggle=nearby.hasAttribute('data-hwy-dropdown');
+  const panelBefore=picker?.querySelector('[data-nearby-list]');
+  if(toggle&&panelBefore){
+   panelBefore.hidden=!panelBefore.hidden;
+   dropdown.setAttribute('aria-expanded',String(!panelBefore.hidden));
+   return;
+  }
+  const controls=picker?Array.from(picker.querySelectorAll('[data-hwy-nearby]')):[nearby];
+  const initialName=String(seg[key]??'').trim();
   const timeKey=key==='entryIC'?'entryTime':'exitTime',kmKey=key==='entryIC'?'entryKm':'exitKm';
   // Capture the operation timestamp and any ALREADY available distance, not async lookup time.
   const capturedAt=new Date();
@@ -10198,36 +10220,53 @@ appEl.addEventListener('click',event=>{
   saveLater();
   const uid=accountScope.uid,shiftId=shift.id,draftId=draft.id;
   const valid=()=>canEditNow()&&accountScope.uid===uid&&model.prefs?.highwayNearbyIC===true&&getShift()?.id===shiftId&&getShift()?.draft?.id===draftId&&getShift()?.draft?.meta?.highwaySections?.[index]===seg;
-  nearby.disabled=true;
+  controls.forEach(button=>{button.disabled=true;});
   try{
    if(!(demoHighwayTest&&demoUseItami)&&(!navigator.geolocation||!window.isSecureContext))throw Error('GPSを利用できません');
-   const origin=demoHighwayTest&&demoUseItami?{latitude:34.779915,longitude:135.41373}:
+   const useItami=demoUseItami;
+   const origin=demoHighwayTest&&useItami?{latitude:34.779915,longitude:135.41373}:
     (await new Promise((ok,ng)=>navigator.geolocation.getCurrentPosition(ok,ng,{enableHighAccuracy:true,timeout:10000,maximumAge:0}))).coords;
    const choices=await findNearbyHighwayIC(origin.latitude,origin.longitude);
-   if(!valid())return;
+   if(!valid()||(picker&&useItami!==demoUseItami))return;
    const row=nearby.closest('[data-hwy-row]');
    if(!row?.isConnected)return;
-   row.querySelector('[data-nearby-list]')?.remove();
+   const host=picker||row;
+   host.querySelector('[data-nearby-list]')?.remove();
+   const useChoice=choice=>{
+    seg[key]=choice.name;
+    for(const input of appEl.querySelectorAll('[data-hwy-index="'+index+'"][data-hwy-field="'+key+'"]'))input.value=choice.name;
+    saveLater();
+   };
+   if(picker&&choices.length&&!initialName&&!String(seg[key]??'').trim())useChoice(choices[0]);
    const panel=document.createElement('div');panel.className='highway-nearby-list';panel.dataset.nearbyList=key;
    const title=document.createElement('strong');title.textContent='近くのIC候補（入口・出口の方向は要確認）';panel.append(title);
    if(!choices.length){const p=document.createElement('p');p.textContent='現在地から5km以内に名前付きのIC候補がありません。手入力してください。';panel.append(p);}
    choices.forEach(choice=>{
     const button=document.createElement('button');button.type='button';button.className='btn';
     button.textContent=choice.name+'（約'+choice.km.toFixed(1)+'km）'+(choice.road?' ／ '+choice.road:'');
-    button.addEventListener('click',()=>{if(!valid())return;seg[key]=choice.name;
-     for(const input of appEl.querySelectorAll('[data-hwy-index="'+index+'"][data-hwy-field="'+key+'"]'))input.value=choice.name;
-     saveLater();panel.remove();
+    button.addEventListener('click',()=>{
+     if(!valid())return;
+     useChoice(choice);
+     if(dropdown){
+      panel.hidden=true;
+      dropdown.setAttribute('aria-expanded','false');
+      dropdown.focus({preventScroll:true});
+     }else panel.remove();
     });panel.append(button);
    });
    const note=document.createElement('small');note.textContent=demoHighwayTest?'国土交通省 国土数値情報を加工（CC BY 4.0）／ © OpenStreetMap contributors（ODbL）':'© OpenStreetMap contributors／道路データ照会には通信が必要です';panel.append(note);
-   row.append(panel);
+   if(dropdown){
+    panel.hidden=!toggle&&choices.length>0;
+    dropdown.setAttribute('aria-expanded',String(!panel.hidden));
+   }
+   host.append(panel);
   }catch(error){
     if(valid()){
       const reason=error?.code===1?'位置情報が許可されていません':error?.code===2?'現在地を測位できません':error?.code===3?'位置情報の取得が時間切れです':(error?.message||'通信エラー');
       toast('IC候補を取得できません：'+reason+'。IC名は手入力できます。',true);
     }
   }
-  finally{if(nearby.isConnected)nearby.disabled=false;}
+  finally{controls.forEach(button=>{button.disabled=false;});}
   })().catch(error=>toast('IC検索処理に失敗しました：'+error.message,true));
   return;
  }
@@ -10433,12 +10472,16 @@ banner.innerHTML='<strong>操作体験デモ　TAXIAPP v0.3.208</strong><span>�
 document.body.prepend(banner);
 if(demoHighwayTest){
  banner.querySelector('strong').textContent='TAXIAPP 高速入力テスト';
- banner.querySelector('span').textContent='テスト乗務。入口・出口の候補を選ぶと、その区間の入力欄に入ります。';
+ banner.querySelector('span').textContent='テスト乗務。入口・出口を検索すると最寄りのICが入ります。▼で候補を変更できます。';
  const originButton=document.createElement('button');
  originButton.type='button';
  originButton.textContent='検索地点：現在地';
  originButton.addEventListener('click',()=>{
   demoUseItami=!demoUseItami;
+  for(const picker of appEl.querySelectorAll('[data-hwy-picker]')){
+   picker.querySelector('[data-nearby-list]')?.remove();
+   picker.querySelector('[data-hwy-dropdown]').setAttribute('aria-expanded','false');
+  }
   originButton.textContent=demoUseItami?'検索地点：阪急伊丹駅':'検索地点：現在地';
  });
  banner.append(originButton);
