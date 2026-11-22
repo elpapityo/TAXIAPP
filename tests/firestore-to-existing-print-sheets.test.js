@@ -258,3 +258,19 @@ assert.match(load('index.html'),/ADMIN_LEGACY_DUTY_MIGRATION_APPROVED=false/,
 assert.match(load('index.html'),/__taxiPrintSummary=deepCopy\(packet.summary\)/);
 assert.doesNotMatch(load('google-apps-script/FirestorePrintPullDraft.gs'),/function doPost\(/);
 console.log('Firestore owner print pull PASS: exact UID, same source recheck, four print sources only, no original/selector/formula writes.');
+
+// キャンセル残額は収入にせず、クライアント計算済みの照合項目だけ転送する。
+payload.revision=8;
+shift.records.push({kind:'cancel',status:'complete',raw:{A:2,K:0,N:'キ'},meta:{cancelMeterAdjustment:700},amounts:{meter:0,cancellation:0},payments:[]});
+Object.assign(shift.__taxiPrintSummary,{meterTotal:1700,cancelMeterDeduction:700,actualSales:1000});
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+const totalsByKind=new Map();
+for(let row=2;row<=sh['TAXIAPP_集計'].getLastRow();row++){
+ if(values.get('TAXIAPP_集計').get(row+':1')===id)totalsByKind.set(values.get('TAXIAPP_集計').get(row+':2'),values.get('TAXIAPP_集計').get(row+':3'));
+}
+assert.equal(totalsByKind.get('meterTotal'),1700);
+assert.equal(totalsByKind.get('cancelMeterDeduction'),700);
+assert.equal(totalsByKind.get('actualSales'),1000);
+assert.equal(totalsByKind.get('cancellation'),0);
+assert.equal(values.get('TAXIAPP_乗務一覧').get('2:9'),1000);
+console.log('キャンセル累計・控除・実売上の印刷元転送確認成功');

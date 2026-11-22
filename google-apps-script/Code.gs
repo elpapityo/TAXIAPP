@@ -487,6 +487,10 @@ function savePacket_(data,options) {
  var items = ['meter','discount','goFee','uberSurcharge','cashRemittance',
   'etcRemittance','totalRemittance','realToll','emptyToll','cancellation','tip',
   'reservation','cashReceived','paymentAllocated'];
+ // 新しいクライアントの計算済み値のみ転送。古い原本をサーバーで再計算しない。
+ ['meterTotal','cancelMeterDeduction','actualSales'].forEach(function(key){
+  if(typeof summary[key]==='number'&&Number.isFinite(summary[key]))items.push(key);
+ });
  var aggregate = items.map(function(key){
   return [id,key,numeric_(summary[key]),'TAXIAPP 計算済み',now];
  });
