@@ -7,6 +7,8 @@ const html=fs.readFileSync('index.html','utf8');
 const cut=(a,b)=>{const x=html.indexOf(a),y=html.indexOf(b,x+a.length);
  assert.ok(x>0&&y>x,'missing source boundary '+a);return html.slice(x,y)};
 const source=[
+ cut('const INPUT_DEFAULTS=','function refreshSettingChoice('),
+ cut('function numberInputMode(','function applyInputKeyboardMode('),
  cut('function validateDraft(','function deepCopy('),
  cut('function renderDispatchForm(','function amountDiscount('),
  cut('function renderHighwaySections(','function renderEmptyForm('),
@@ -117,8 +119,12 @@ model.prefs.highwayDistance='off';
 const sectionsOff=vm.runInContext('renderHighwaySections(d,"実")',context);
 assert.doesNotMatch(sectionsOff,/data-hwy-field="entryKm"/);
 assert.doesNotMatch(sectionsOff,/data-hwy-field="exitKm"/);
-assert.match(sectionsOff,/data-hwy-field="fee"/);
+assert.match(sectionsOff,/data-hwy-field="fee" data-number-kind="money" type="text" inputmode="none"/);
 assert.match(sectionsOff,/data-hwy-field="entryIC"/);
+model.prefs.input={keyboard:'system'};
+const sectionsSystem=vm.runInContext('renderHighwaySections(d,"実")',context);
+assert.match(sectionsSystem,/data-hwy-field="fee" data-number-kind="money" type="text" inputmode="numeric"/);
+delete model.prefs.input;
 assert.equal(JSON.stringify(recordedHighway),preserved,'distance toggle does not clear saved kilometres');
 const invalid={kind:'ride',raw:{...raw, F:'',K:'1300',N:'現'},meta:{highwaySections:[
  {mode:'実',entryIC:'入口',entryKm:'10',exitIC:'出口',exitKm:'',fee:'500'}]}};
