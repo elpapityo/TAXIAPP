@@ -432,6 +432,17 @@ function savePacket_(data,options) {
  })};
  var id=String(shift.id);
  var summary={...(data.summary||{}),cancellation:0};
+ // 保存済み残額の投影。運賃・納金は既存計算済み値を維持する。
+ var cancelDeduction=(shift.records||[]).reduce(function(sum,record){
+  if(record.kind!=='cancel'||record.status!=='complete')return sum;
+  var saved=record.meta&&record.meta.cancelMeterAdjustment;
+  return sum+(saved!==undefined&&saved!==null&&String(saved)!==''&&Number.isFinite(Number(saved))&&Number(saved)>=0?Number(saved):700);
+ },0);
+ if(summary.cancelMeterDeduction!==undefined&&numeric_(summary.cancelMeterDeduction)!==cancelDeduction)
+  throw Error('保存済みキャンセル控除と集計が一致しません');
+ summary.cancelMeterDeduction=cancelDeduction;
+ summary.meterTotal=numeric_(summary.meter)+cancelDeduction;
+ summary.actualSales=numeric_(summary.meter);
  if(!printOnly){
   summary.cashRemittance=numeric_(summary.cashRemittance)+restoredGoCash;
   summary.paymentAllocated=numeric_(summary.paymentAllocated)+restoredGoPayments;
@@ -455,7 +466,7 @@ function savePacket_(data,options) {
   numeric_(summary.cashRemittance),numeric_(summary.etcRemittance),
   numeric_(summary.totalRemittance),now,printOnly?'Firestore印刷済':'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
  if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
- var storage=[],payments=[],print=[];
+ var storage=[],payments=[],print=[],printNumber=0;
  records.forEach(function(record) {
   var raw = record.raw||{},amounts=record.amounts||{};
   var num = raw.A||'';
@@ -464,7 +475,7 @@ function savePacket_(data,options) {
    raw.AR||'',raw.W||'',raw.AI||'',raw.AQ||'',numeric_(amounts.uberSurcharge),
    (record.meta&&record.meta.settledIso)||'',JSON.stringify(record)]);
   (record.payments||[]).forEach(function(p,i) {
-   payments.push([id,num,i+1,p.type||'',numeric_(p.received),
+   payments.push([id,printOnly&&record.kind!=='empty'?printNumber+1:num,i+1,p.type||'',numeric_(p.received),
     p.type==='U'?numeric_(p.received):'',p.type==='現'?numeric_(p.received):'',
     numeric_(raw.W),numeric_(raw.AR),
     numeric_(p.received)-numeric_(p.company),
@@ -474,7 +485,8 @@ function savePacket_(data,options) {
   // but do not include any fare in the printed or aggregate sales.
   var isCancellation=record.kind==='cancel'&&record.status==='complete';
   var meta=record.meta||{};
-  print.push([id,num,raw.E||'',isCancellation?'キャンセル':raw.N||'',
+  if(record.kind==='empty')return; // 空車高速は雑損へ集計済み。乗車一覧の空欄行にはしない。
+  print.push([id,++printNumber,raw.E||'',isCancellation?'キャンセル':raw.N||'',
    isCancellation?0:raw.K||'',
    isCancellation?(meta.dispatchAt||raw.C||''):raw.G||'',
    isCancellation?(meta.cancelAt||''):raw.M||'',
@@ -649,7 +661,8 @@ function applySelectedPrintShift() {
  var second=ss.getSheetByName('補助簿印刷用_2頁');
  if(!first||!second)throw Error('補助簿の印刷用シートがありません');
  SpreadsheetApp.flush();
- var actual=Number(first.getRange('X23').getValue()||0);
+ var printedCancel=Number(first.getRange('AG25').getValue()||0);
+ var actual=Number(first.getRange('X23').getValue()||0)-printedCancel;
  if (Math.abs(expected-actual)>0.01)
   throw Error('集計表のメーター売上が一致しません。B17を再選択してください。');
  // Preserve live status and selection formulas in B18, B19, B3 and B4.

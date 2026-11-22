@@ -173,7 +173,7 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   if(typeof verifyBeforeIndex==='function')verifyBeforeIndex();
   if(!recorded||revision>recorded.revision){
    journal.properties.setProperty(journal.key,JSON.stringify({
-    uid:uid,id:id,revision:revision,digest:existingDigest,state:'ready'
+    uid:uid,id:id,revision:revision,digest:existingDigest,state:'ready',printProjectionVersion:3
    }));
   }
   return {id:id,changedSheets:[],oldOriginalUnchanged:true,paperFormsUnchanged:true};
@@ -190,11 +190,11 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   journal.properties.setProperty(journal.key,JSON.stringify({
    uid:uid,id:id,revision:revision,
    digest:firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(published)),
-   state:'ready'
+   state:'ready',printProjectionVersion:3
   }));
   return first;
  }
- if(revision===recorded.revision)
+ if(revision===recorded.revision&&recorded.printProjectionVersion===3)
   throw Error('同じ更新番号で印刷明細が変わっています。自動上書きしません');
  // A growing block is safe only when it is the last occupied block. No
  // row insertion or shifting of another duty is ever attempted.
@@ -247,7 +247,7 @@ function firestorePrintPublishVersionedDraft_(ss,id,batches,revision,uid,verifyB
   journal.properties.setProperty(journal.key,JSON.stringify({
    uid:uid,id:id,revision:revision,
    digest:firestorePrintDigestDraft_(firestorePrintJournalRowsDraft_(checked)),
-   state:'ready'
+   state:'ready',printProjectionVersion:3
   }));
  }catch(error){
   var needsManual=[];

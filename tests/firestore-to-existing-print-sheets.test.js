@@ -274,3 +274,21 @@ assert.equal(totalsByKind.get('actualSales'),1000);
 assert.equal(totalsByKind.get('cancellation'),0);
 assert.equal(values.get('TAXIAPP_乗務一覧').get('2:9'),1000);
 console.log('キャンセル累計・控除・実売上の印刷元転送確認成功');
+
+// Empty-highway entries must not shift mixed-payment references on paper.
+payload.revision=9;
+shift.records.splice(1,0,{kind:'empty',status:'complete',raw:{A:2,AI:300},amounts:{},payments:[]});
+shift.records.push({...shift.records[0],raw:{...shift.records[0].raw,A:4}});
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(values.get('TAXIAPP_印刷データ').get('4:2'),3);
+assert.equal(values.get('TAXIAPP_決済内訳').get((2+shift.records[0].payments.length)+':2'),3);
+const oldProjection=JSON.parse(journalStorage.get(journalKey));
+delete oldProjection.printProjectionVersion;
+journalStorage.set(journalKey,JSON.stringify(oldProjection));
+values.get('TAXIAPP_印刷データ').set('4:2',4);
+oldProjection.digest=ctx.firestorePrintDigestDraft_(ctx.firestorePrintJournalRowsDraft_(ctx.firestorePrintSnapshotDraft_(ss,id,['TAXIAPP_印刷データ','TAXIAPP_決済内訳','TAXIAPP_集計','TAXIAPP_乗務一覧'].map(name=>({name,width:head[name].length,rows:[]})))));
+journalStorage.set(journalKey,JSON.stringify(oldProjection));
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(values.get('TAXIAPP_印刷データ').get('4:2'),3);
+assert.equal(JSON.parse(journalStorage.get(journalKey)).printProjectionVersion,3);
+console.log('空車高速除外・支払連番・旧印刷形式更新を確認');
