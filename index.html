@@ -3302,7 +3302,7 @@ function header(){
  return `<header class="topbar"><div class="brand"><span class="brand-icon">🚕</span><div><div class="brand-name">TAXIAPP</div><div class="brand-tag">乗務日報 · ${displayVersion}</div></div></div><div class="viewer-header-right"><span class="status-pill ${shift?'':'stop'}">${state}</span>${viewerTools}${writerTools}</div></header>${conflictAtTop}`;
 }
 let pendingRender=false, renderAfterKeypad=false;
-let focusDispatchSourceAfterRender=false;
+let dutyInputAfterRender='';
 let saveTouchPress=null,saveRenderPending=false,saveTouchTimeout=null,skipSaveClick=null;
 
 function render(){
@@ -3451,20 +3451,26 @@ function renderNow(){
   requestAnimationFrame(restore);
  }
  else if(!sameTab)window.scrollTo(0,0);
- if(tab==='drive'&&typeof focusDispatchSourceAfterRender!=='undefined'&&focusDispatchSourceAfterRender){
-  focusDispatchSourceAfterRender=false;
+ if(tab==='drive'&&dutyInputAfterRender){
+  const phase=dutyInputAfterRender;
+  dutyInputAfterRender='';
   requestAnimationFrame(()=>{
-   if(tab!=='drive'||getShift()?.draft?.kind!=='dispatch')return;
-   const actions=appEl.querySelector('#main-content .meter-console .meter-actions');
-   if(actions){
-    // The detailed dispatch form can be closed. Reveal the visible controls below the sticky summary.
-    const summary=displayPrefs().stickyDutySummary==='on'?appEl.querySelector('#main-content .preview-duty-summary'):null;
-    const offset=Math.ceil(summary?.getBoundingClientRect().height??0)+12;
-    const top=Math.max(0,window.scrollY+actions.getBoundingClientRect().top-offset);
+   if(tab!=='drive'||getShift()?.draft?.kind!==phase)return;
+   const dispatch=phase==='dispatch';
+   const target=appEl.querySelector('#main-content .meter-console '+(dispatch?'.meter-actions':'[aria-label="実車入力"]'));
+   if(target){
+    // Use the visible meter form. Its duplicate in the detailed panel can be closed.
+    const summary=appEl.querySelector('#main-content .preview-duty-summary');
+    const sticky=displayPrefs().stickyDutySummary==='on';
+    const anchor=!dispatch&&!sticky&&summary?summary:target;
+    const summaryHeight=sticky?(summary?.getBoundingClientRect().height??0):0;
+    const offset=Math.ceil(summaryHeight)+(dispatch?12:8);
+    const top=Math.max(0,window.scrollY+anchor.getBoundingClientRect().top-offset);
     window.scrollTo({top,behavior:'instant'});
     syncFloatingDutySummary();
     return;
    }
+   if(!dispatch)return;
    const group=appEl.querySelector('#main-content [data-dispatch-source]');
    if(!group)return;
    // Leave room for the fixed current-duty summary on narrow screens.
@@ -3527,7 +3533,7 @@ function field(key,raw,opts={}){
  return `<div class="field time-field"><div class="time-field-header"><span class="field-label">${safeText(label)}${required}</span></div><div class="inline-time-field"><input class="control time-input" data-col="${key}" type="time" step="60" value="${value?safeText(shortTime(value)): ''}" aria-label="${safeText(label)}（手動修正可）"><button class="btn time-now inline-field-icon" data-time-now="${key}" type="button" aria-label="${safeText(label)}に現在時刻を入力" title="${safeText(label)}に現在時刻を入力">◷</button></div></div>`;
  }else if(numberFields.has(key)){control=`<input class="control" data-col="${key}" data-number-kind="${KM_KEYS.has(key)?'distance':'money'}" type="text" inputmode="none" value="${safeText(KM_KEYS.has(key)?kmOne(value):value)}" placeholder="${opts.placeholder??'0'}" ${key==='AQ'?'readonly title="GO手数料は降車・精算完了後に自動判定"':key==='AP'?'readonly title="預り金から自動計算します"':''} aria-label="${safeText(label)}">`;
  }else{control=`<input class="control" data-col="${key}" type="text" value="${safeText(value)}" placeholder="${safeText(opts.placeholder??'')}" aria-label="${safeText(label)}">`;}
- if(opts.highwayIc&&model.prefs?.highwayNearbyIC===true)
+ if(opts.highwayIc&&model.prefs?.highwayNearbyIC!==false)
   return renderHighwayIcPicker(raw,key,label,control);
  if(KM_KEYS.has(key))control=kmControl(control);
  const gpsSourceName=nativeDiaryGpsEnabled()?'Android GPS距離ラボ v1.4.0／旧v1.3.1':'従来のブラウザGPS';
@@ -3908,14 +3914,12 @@ function renderMeterHighwayInline(shift){
  const d=shift?.draft;
  if(!d||d.kind!=='ride'||!meterHighwayInlineOpen)return '';
  const rows=d.meta?.highwaySections;
- const fields=Array.isArray(rows)?renderHighwaySections(d,'実')+renderHighwaySections(d,'空'):
-  renderLegacyRideHighway(d,'実')+renderLegacyRideHighway(d,'空');
+ const fields=Array.isArray(rows)?renderHighwaySections(d,'実'):renderLegacyRideHighway(d,'実');
  return '<div class="meter-inline-editor meter-inline-highway" aria-label="高速入力">'+
   '<div class="field-label">高速道路の記録</div>'+
-  '<div class="actions"><button type="button" class="btn" data-action="highwayAdd" data-id="実">＋ 実車高速区間</button>'+
-  '<button type="button" class="btn" data-action="highwayAdd" data-id="空">＋ 空車高速区間</button></div>'+
+  '<div class="actions"><button type="button" class="btn" data-action="highwayAdd" data-id="実">＋ 実車高速区間</button></div>'+
   (fields?'<div class="highway-mode-fields">'+fields+'</div>':
-  '<p class="caption-note">実車または空車の高速区間を追加してください。</p>')+
+  '<p class="caption-note">実車高速区間を追加してください。</p>')+
   '</div>';
 }
 function renderMeterUberSettlement(shift,d){
@@ -4090,7 +4094,7 @@ const HIGHWAY_IC_FIELDS={
  entryIC:['entryTime','entryKm','入口'],exitIC:['exitTime','exitKm','出口'],
  Q:['R','S','入口'],T:['U','V','出口'],Z:['AA','AB','入口'],AC:['AD','AE','出口']
 };
-// 候補は編集中の欄ごとに保持し、日報原本には既存のIC名だけを記録する。
+// 候補は編集中の欄ごとに保持し、選択したIC名と確認できた道路名を記録する。
 const highwayIcPickers=new WeakMap();
 function highwayIcPickerState(fields,key){
  let byKey=highwayIcPickers.get(fields);
@@ -4125,7 +4129,7 @@ function highwayIcRecordFields(draft,key,index){
  return (real?hasRealHighway(draft.raw):hasEmptyHighway(draft.raw))?draft.raw:null;
 }
 function highwayIcTarget(picker){
- if(!picker||tab!=='drive'||!canEditNow()||model.prefs?.highwayNearbyIC!==true)return null;
+ if(!picker||tab!=='drive'||!canEditNow()||model.prefs?.highwayNearbyIC===false)return null;
  const shift=getShift(),draft=shift?.draft;
  if(!draft||!['ride','empty'].includes(draft.kind))return null;
  const key=picker.dataset.hwyPicker,index=picker.dataset.hwyPickerIndex;
@@ -4154,6 +4158,15 @@ function setHighwayIcChoice(target,choiceIndex){
  if(!choice||!input)return;
  target.state.preferred=choiceIndex;
  target.state.manual=false;
+ const road=typeof choice.road==='string'?choice.road.trim():'';
+ if(road){
+  const isEntry=HIGHWAY_IC_FIELDS[target.key][2]==='入口';
+  const legacy=target.index==='';
+  const roadKey=legacy?window.TAXIAPP_HIGHWAY_SECTIONS.roadNameKey(['Q','T'].includes(target.key)?'実':'空'):'roadName';
+  const record=legacy?(target.draft.meta??={}):target.fields;
+  // Use the entry road when known. The exit road is a fallback for a missing name.
+  if((isEntry||!record[roadKey])&&record[roadKey]!==road){record[roadKey]=road;saveLater();}
+ }
  if(String(target.fields[target.key]??'')===choice.name)return;
  input.value=choice.name;
  input.dispatchEvent(new Event('change',{bubbles:true}));
@@ -4167,12 +4180,12 @@ function changeHighwayIcChoice(select){
  refreshHighwayIcPickers(target);
  if(target.state.manual)picker.querySelector('input').focus();
 }
-async function searchHighwayIc(picker){
+async function searchHighwayIc(picker,{capture=true}={}){
  const target=highwayIcTarget(picker);
  if(!target||target.state.pending)return;
  const {shift,draft,key,index,fields,state}=target;
  const userGeneration=accountScopeGeneration,uid=accountScope.uid;
- const isCurrent=()=>tab==='drive'&&canEditNow()&&model.prefs?.highwayNearbyIC===true&&
+ const isCurrent=()=>tab==='drive'&&canEditNow()&&model.prefs?.highwayNearbyIC!==false&&
   accountScopeGeneration===userGeneration&&accountScope.uid===uid&&getShift()===shift&&shift.draft===draft&&
   highwayIcRecordFields(draft,key,index)===fields;
  const initiallyBlank=!String(fields[key]??'').trim();
@@ -4184,7 +4197,7 @@ async function searchHighwayIc(picker){
   appEl.querySelectorAll(selector).forEach(input=>{input.value=value;});
  };
  // 収録済みの明細を修正する場合は検索時刻や距離を補わない。
- if(!draft.editId){
+ if(capture&&!draft.editId){
   setIfBlank(timeKey,stamp().slice(0,5));
   if(distanceEnabled(index===''?kmKey:'S')&&gpsTripUI?.trusted(shift)&&Number.isFinite(shift.gpsTrip?.tripKm))
    setIfBlank(kmKey,Number(shift.gpsTrip.tripKm).toFixed(1));
@@ -4219,17 +4232,20 @@ async function searchHighwayIc(picker){
  }
 }
 
-function highwayRoadNameField(d,mode){
- const key=window.TAXIAPP_HIGHWAY_SECTIONS.roadNameKey(mode);
- return '<label class="field"><span class="field-label">高速道路名</span>'+
-  '<input class="control" data-meta="'+key+'" maxlength="100" type="text" value="'+
-  safeText(d.meta?.[key]??'')+'"></label>';
+function searchHighwayIcOnCapture(key,index=''){
+ if(getShift()?.draft?.editId)return;
+ const ic=Object.keys(HIGHWAY_IC_FIELDS).find(name=>HIGHWAY_IC_FIELDS[name].slice(0,2).includes(key));
+ if(!ic)return;
+ const picker=appEl.querySelector('[data-hwy-picker="'+ic+'"][data-hwy-picker-index="'+index+'"]');
+ const target=highwayIcTarget(picker);
+ if(target&&!target.state.manual&&!String(target.fields[ic]??'').trim())
+  return searchHighwayIc(picker,{capture:false});
 }
 function renderHighwaySections(d,mode){
  const rows=d.meta?.highwaySections;
  if(!Array.isArray(rows))return '';
  const list=rows.map((seg,index)=>({seg,index})).filter(x=>x.seg.mode===mode);
- const labels={roadName:'高速道路名',entryIC:'入口インター',entryTime:'入口時刻',entryKm:'入口距離（km）',
+ const labels={entryIC:'入口インター',entryTime:'入口時刻',entryKm:'入口距離（km）',
  exitIC:'出口インター',exitTime:'出口時刻',exitKm:'出口距離（km）',fee:'高速料金（円）'};
  const fieldHtml=(seg,index,key)=>{
   const value=String(seg[key]??''),distance=key==='entryKm'||key==='exitKm',time=key==='entryTime'||key==='exitTime';
@@ -4237,9 +4253,9 @@ function renderHighwaySections(d,mode){
   const numberKind=distance?'distance':key==='fee'?'money':'';
   let el='<input class="control" data-hwy-index="'+index+'" data-hwy-field="'+key+'"'+
    (numberKind?' data-number-kind="'+numberKind+'"':'')+' type="'+(time?'time':'text')+'"'+
-   (time?' step="60"':'')+(key==='roadName'?' maxlength="100"':'')+' inputmode="'+(numberKind?numberInputMode(numberKind):'text')+'" value="'+
+   (time?' step="60"':'')+' inputmode="'+(numberKind?numberInputMode(numberKind):'text')+'" value="'+
    safeText(distance?kmOne(value):time?shortTime(value):value)+'" aria-label="'+labels[key]+'">';
-  if((key==='entryIC'||key==='exitIC')&&model.prefs?.highwayNearbyIC===true)
+  if((key==='entryIC'||key==='exitIC')&&model.prefs?.highwayNearbyIC!==false)
    return renderHighwayIcPicker(seg,key,labels[key],el,index);
   if(distance){
    el=kmControl(el);
@@ -4254,7 +4270,7 @@ function renderHighwaySections(d,mode){
   const exempt=km===null?'未計算':(Math.round(km*.75*1000)/1000).toFixed(3)+' km';
   return '<div class="highway-section-row" data-hwy-row="'+index+'"><div class="highway-section-header"><strong>'+
    (mode==='実'?'実車':'空車')+'高速 '+(n+1)+'区間</strong><button class="btn" type="button" data-action="highwayRemove" data-id="'+index+'">この区間を削除</button></div>'+
-   '<div class="form-grid">'+['roadName','entryIC','entryTime','entryKm','exitIC','exitTime','exitKm','fee'].map(k=>fieldHtml(seg,index,k)).join('')+'</div>'+
+   '<div class="form-grid">'+['entryIC','entryTime','entryKm','exitIC','exitTime','exitKm','fee'].map(k=>fieldHtml(seg,index,k)).join('')+'</div>'+
    '<p class="caption-note">区間距離：'+(km===null?'未記録':km.toFixed(1)+' km')+' ／ 免除距離：'+exempt+'</p></div>';
  }).join('');
 }
@@ -4308,11 +4324,11 @@ function renderRideFieldSettings(){
 }
 function renderLegacyRideHighway(d,mode){
  const r=d.raw;
- if(mode==='実')return hasRealHighway(r)?`<h3>実車分（お客様負担）</h3><div class="form-grid">${highwayRoadNameField(d,'実')}${field('Q',r,{label:'乗インター',highwayIc:true})}${field('T',r,{label:'降インター',highwayIc:true})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div>`:'';
+ if(mode==='実')return hasRealHighway(r)?`<h3>実車分（お客様負担）</h3><div class="form-grid">${field('Q',r,{label:'乗インター',highwayIc:true})}${field('T',r,{label:'降インター',highwayIc:true})}${field('R',r,{label:'乗時間'})}${field('U',r,{label:'降時間'})}${field('S',r,{label:'乗距離（km）'})}${field('V',r,{label:'降距離（km）'})}${field('W',r,{label:'高速代（円・お客様負担）'})}</div>`:'';
  if(!hasEmptyHighway(r))return '';
  const has=k=>number(r[k])!==null;
  const emptyAmountField=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r)}</div>`;
- return `<h3>空車分（雑損・お客様負担なし）</h3><div class="form-grid">${highwayRoadNameField(d,'空')}${field('Z',r,{label:'乗インター',highwayIc:true})}${field('AC',r,{label:'降インター',highwayIc:true})}${field('AA',r,{label:'乗時間'})}${field('AD',r,{label:'降時間'})}${field('AB',r,{label:'乗距離（km）'})}${field('AE',r,{label:'降距離（km）'})}</div><div class="empty-toll-progress" aria-label="空車高速料金の入力"><div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0))}</strong></div></div>`;
+ return `<h3>空車分（雑損・お客様負担なし）</h3><div class="form-grid">${field('Z',r,{label:'乗インター',highwayIc:true})}${field('AC',r,{label:'降インター',highwayIc:true})}${field('AA',r,{label:'乗時間'})}${field('AD',r,{label:'降時間'})}${field('AB',r,{label:'乗距離（km）'})}${field('AE',r,{label:'降距離（km）'})}</div><div class="empty-toll-progress" aria-label="空車高速料金の入力"><div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div><div class="empty-toll-calculated"><span>空車高速の合計</span><strong data-empty-toll-total>${money(['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0))}</strong></div></div>`;
 }
 function renderRideForm(shift,d){
  const r=d.raw,rideUber=r.E==='U',rate=feeSettings(shift.settings);updateDiscountForDraft(d);
@@ -4336,7 +4352,6 @@ function renderEmptyForm(shift,d){
  const emptyAmountField=(key,shown)=>`<div class="empty-progress-item" data-empty-step="${key}" ${shown?'':'hidden'}>${field(key,r)}</div>`;
  const sum=['AF','AG','AH'].reduce((v,k)=>v+amount(r[k]),0);
  return `<div class="panel-strip explainer"><strong>空車高速は雑損</strong><br>乗客には請求せず、日報の空車高速代として記録します。</div>
- ${highwayRoadNameField(d,'空')}
  ${userFields(rideFieldShown('emptyHighwayRoute')?['Z','AA','AB','AC','AD','AE']:['AB','AE'],r,{options:{Z:{highwayIc:true},AC:{highwayIc:true}}})}
  <div class="empty-toll-progress" aria-label="空車高速料金の入力">
   <div class="empty-toll-fields">${emptyAmountField('AF',true)}${emptyAmountField('AG',has('AF')||has('AG')||has('AH'))}${emptyAmountField('AH',has('AG')||has('AH'))}</div>
@@ -4655,7 +4670,7 @@ function historyHighwayControls(draft){
  return '<details data-history-highway-section '+(draft.highwayOpen?'open':'')+'><summary>高速道路の区間別明細（'+draft.highwaySections.length+'区間）</summary>'+
   draft.highwaySections.map((section,index)=>'<div class="card" data-history-highway-form="'+index+'"><strong>'+
    (section.mode==='実'?'実車':'空車')+'高速 '+(index+1)+'区間</strong>'+
-   '<div class="form-grid">'+HISTORY_HIGHWAY_FIELDS.map(key=>field(section,index,key)).join('')+
+   '<div class="form-grid">'+HISTORY_HIGHWAY_FIELDS.filter(key=>key!=='roadName').map(key=>field(section,index,key)).join('')+
    '</div><button class="btn red" '+(draft.busy?'disabled ':'')+'data-action="historyHighwayRemove" data-id="'+index+
    '">この区間を削除</button>'+
    (index===draft.highwayEntryIndex?'<div class="actions">'+historyEditSaveButtons(draft,'高速の修正を保存')+'</div>':'')+
@@ -7961,7 +7976,7 @@ function renderLoginAccountInfo(){
   '<button class="btn" type="button" data-account-settings-action="accountInitialRegister">新規登録</button>'+
   '</div></section>';
 }
-function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced" data-login-account-settings open><summary>ログイン中のアカウント情報</summary><div class="inner">${renderLoginAccountInfo()}</div></details><details class="details settings-advanced" data-highway-nearby-settings><summary>高速ICの近隣候補（初期OFF）</summary><div class="inner"><label class="field"><span class="field-label">近隣ICの検索</span><select class="control" data-highway-nearby-setting><option value="off" ${model.prefs?.highwayNearbyIC===true?'':'selected'}>OFF（従来方式）</option><option value="on" ${model.prefs?.highwayNearbyIC===true?'selected':''}>ON（最寄りICを入力・▼で変更）</option></select></label><p class="caption-note">「近くの入口・出口を探す」を押すと、空欄に最寄りのIC名を入力します。▼から別の候補か手入力を選べます。候補は直線距離順です。進行方向は確認してください。</p><p class="caption-note"><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html" target="_blank" rel="noopener">国土交通省 国土数値情報（CC BY 4.0）を加工</a> ／ <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors（ODbL）</a></p></div></details><details class="details settings-advanced" data-settings-screen><summary>営業入力の画面サイズ・向き</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の操作方式</h2><p class="helper">シンプルモードはメーター型を基に、営業操作・乗降地・メーター金額・支払い方法を中心に初期表示します。詳細と集計は必要に応じて展開できます。データ・計算・GPS計測設定は変更しません。</p>${renderUiChoice('simpleMode',[['on','シンプルモード'],['off','通常表示']])}<p class="caption-note">シンプル時は入力項目のON/OFFを個別に調整できます。通常表示の個別設定は保持します。</p><hr class="divider">${renderUiChoice('driveLayout',[['legacy','既存入力'],['meter','メーター型（試用）']])}<hr class="divider"><h2 class="h2">営業入力の画面サイズと向き</h2><p class="helper">必要な入力項目は「営業画面の表示項目」で選択できます。</p><h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-business-field-settings><summary>営業画面の表示項目</summary><div class="inner">${renderPaymentVisibilitySettings()}<details class="details" data-ride-field-settings><summary>日報入力項目の表示設定</summary><div class="inner">${renderRideFieldSettings()}</div></details><details class="details" data-cruising-summary-settings><summary>空車・流し時の上部表示項目</summary><div class="inner">${renderCruisingSummarySettings()}</div></details><details class="details" data-drive-status-settings><summary>営業情報の表示</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の状況表示</h2><p class="helper">画面上部の営業情報をまとめて表示・非表示にできます。下では項目ごとに選べます。非表示にしても日報記録や計算処理はそのままです。</p>${renderUiChoice('driveStatusDisplay',[['on','表示する'],['off','表示しない']])}<h3 class="subsection">表示する項目を選択</h3>${renderDriveStatusFieldSettings()}<div class="field"><h3 class="subsection">上部固定枠の登録ボタン</h3><p class="caption-note">登録可能なら赤、未入力などで登録できなければグレー。下部の既存ボタンも残します。</p>${renderUiChoice('stickySaveButton',[['off','表示しない'],['on','表示する']])}</div></section></div></details></div></details><details class="details settings-advanced" data-appearance-settings><summary>画面表示のカスタマイズ</summary><div class="inner"><details class="details" data-text-size-settings><summary>文字の大きさ</summary><div class="inner"><section class="card"><p class="helper">画面全体の文字サイズを設定します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-button-size-settings><summary>ボタンの大きさ</summary><div class="inner"><section class="card"><p class="helper">ボタンを押しやすい大きさに変更します。操作は安全に停車した状態で行ってください。</p>${renderUiChoice('buttons',[['ultra','超コンパクト'],['compact','控えめ'],['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-help-settings><summary>説明文の表示</summary><div class="inner"><section class="card">${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}</section></div></details><details class="details" data-theme-settings><summary>画面の配色・コントラスト</summary><div class="inner"><section class="card"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}</section></div></details><details class="details" data-ui-preview-settings><summary>表示サンプル・表示設定の初期化</summary><div class="inner"><section class="card"><div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details></div></details><details class="details settings-advanced" data-settings-keyboard><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced" data-internal-settings><summary>保存先・接続の詳細管理（通常操作不要）</summary><div class="inner"><details class="details settings-advanced" data-admin-backend-settings><summary>${legacyDiary()||accountScope.adminFirestore?'日報原本の保存先を変更':'日報原本の保存先'}</summary><div class="inner">${renderAdminBackendSettings()}</div></details><details class="details settings-advanced"><summary>${legacyDiary()?'Googleスプレッドシート':'本人専用クラウド日報'}</summary><div class="inner">${renderSheetTargetSettings()}</div></details></div></details><details class="details settings-advanced" data-driver-registration><summary>乗務員登録・車両・キャンセル設定</summary><div class="inner">${renderDriverDefaults()}<details class="details" data-cancel-settings><summary>キャンセル設定</summary><div class="inner"><section class="card"><h2 class="h2">キャンセル時のメーター照合</h2><p class="helper">配車アプリ会社からのキャンセル補填金とは無関係です。車両メーターに初乗り相当額が残るかどうかだけを設定します。メーター売上合計には残額を含め、キャンセル控除後の実売上から納金を計算します。</p><label class="field"><span class="field-label">キャンセル後の車両メーター</span><select class="control" data-cancel-meter-mode><option value="retain" ${cancelMeterConfig().mode==='retain'?'selected':''}>初乗り料金が残る</option><option value="reset" ${cancelMeterConfig().mode==='reset'?'selected':''}>0円に戻る（照合補正なし）</option></select></label>${cancelMeterConfig().mode==='retain'?`<label class="field"><span class="field-label">照合用の初乗り料金（円）</span><input class="control" type="number" min="0" max="100000" step="1" data-cancel-meter-amount value="${cancelMeterConfig().amount}"></label>`:''}<p class="caption-note">新たに保存するキャンセルごとに補正額を記録するため、設定を変えても過去の照合額は変わりません。既存の記録は従来の700円で扱います。</p></section></div></details>${shift?`<details class="details" data-fee-settings><summary>計算用金額・手数料設定</summary><div class="inner"><section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section></div></details>`:''}<details class="details" data-duty-plan-settings><summary>勤務形態・1乗務の予定</summary><div class="inner">${renderDutyPlanSettings()}</div></details></div></details><details class="details settings-advanced" data-wait-place-settings><summary>待機場所の設定</summary><div class="inner">${renderWaitPlaceSettings()}</div></details><details class="details settings-advanced" data-distance-address-settings><summary>距離・住所取得</summary><div class="inner"><details class="details" data-gps-settings><summary>走行距離の設定</summary><div class="inner"><section class="card"><h2 class="h2">① 距離を記録しますか？</h2><p class="helper">ONなら距離欄を表示します。手入力や「GPS取得」ボタンが使えます。自動入力するかどうかは次の②で選べます。</p><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（距離を記録する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を記録する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p>${model.prefs.pickupDropDistance!=='off'||model.prefs.highwayDistance!=='off'?`<div class="distance-auto-group"><h2 class="h2">② 距離を自動入力しますか？</h2><p class="helper">手動：距離を自分で入力します。「GPS取得」ボタンも利用できます。自動：時刻・現在地を記録するとき、空欄にGPS距離を入力します。</p><label class="field"><span class="field-label">時刻・現在地の記録時に距離も自動入力</span><select class="control" data-native-auto-distance>
+function renderSettings(shift){const active=getShift();return `${titleBlock('設定','SETTINGS','画面表示や入力方法、データ保存などを管理します。')}<details class="details settings-advanced" data-login-account-settings open><summary>ログイン中のアカウント情報</summary><div class="inner">${renderLoginAccountInfo()}</div></details><details class="details settings-advanced" data-highway-nearby-settings><summary>高速ICの近隣候補</summary><div class="inner"><label class="field"><span class="field-label">近隣ICの検索</span><select class="control" data-highway-nearby-setting><option value="off" ${model.prefs?.highwayNearbyIC===false?'selected':''}>OFF（従来方式）</option><option value="on" ${model.prefs?.highwayNearbyIC===false?'':'selected'}>ON（最寄りICを入力・▼で変更）</option></select></label><p class="caption-note">入口・出口の時計やGPSボタン、または「近くの入口・出口を探す」を押すと、空欄に最寄りのIC名を入れます。▼から別の候補か手入力を選べます。候補は直線距離順です。進行方向は確認してください。</p><p class="caption-note"><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N06-2025.html" target="_blank" rel="noopener">国土交通省 国土数値情報（CC BY 4.0）を加工</a> ／ <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors（ODbL）</a></p></div></details><details class="details settings-advanced" data-settings-screen><summary>営業入力の画面サイズ・向き</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の操作方式</h2><p class="helper">シンプルモードはメーター型を基に、営業操作・乗降地・メーター金額・支払い方法を中心に初期表示します。詳細と集計は必要に応じて展開できます。データ・計算・GPS計測設定は変更しません。</p>${renderUiChoice('simpleMode',[['on','シンプルモード'],['off','通常表示']])}<p class="caption-note">シンプル時は入力項目のON/OFFを個別に調整できます。通常表示の個別設定は保持します。</p><hr class="divider">${renderUiChoice('driveLayout',[['legacy','既存入力'],['meter','メーター型（試用）']])}<hr class="divider"><h2 class="h2">営業入力の画面サイズと向き</h2><p class="helper">必要な入力項目は「営業画面の表示項目」で選択できます。</p><h3 class="subsection">端末・画面幅の表示方式（自動切替なし）</h3>${renderUiChoice('screenMode',[['full','全画面'],['half','半画面'],['phone','スマホ'],['tablet','タブレット'],['pc','PC']])}<div class="device-orientation-settings"><h3 class="subsection">画面の縦横（PC以外）</h3>${renderUiChoice('orientationMode',[['portrait','縦表示'],['landscape','横表示']])}<p class="caption-note">実際の端末の回転とは独立して、縦型・横型の入力欄配置を選びます。</p></div><hr class="divider"><h3 class="subsection">現在の営業情報を画面上部に固定</h3>${renderUiChoice('stickyDutySummary',[['on','固定する'],['off','固定しない']])}<p class="caption-note">営業状態・配車区分・支払い方法・メーター金額・高速利用・乗降地をスクロール中も表示。固定しない場合は通常どおりスクロールします。</p><p class="caption-note">半画面は幅340px相当の1列表示。端末ごとに表示方式を手動で選択します。保存済みの乗務データは変更しません。</p><p class="caption-note">補助集計は折りたたみ表示。複雑な精算や高速入力時はスクロールが必要になる場合があります。</p></section></div></details><details class="details settings-advanced" data-business-field-settings><summary>営業画面の表示項目</summary><div class="inner">${renderPaymentVisibilitySettings()}<details class="details" data-ride-field-settings><summary>日報入力項目の表示設定</summary><div class="inner">${renderRideFieldSettings()}</div></details><details class="details" data-cruising-summary-settings><summary>空車・流し時の上部表示項目</summary><div class="inner">${renderCruisingSummarySettings()}</div></details><details class="details" data-drive-status-settings><summary>営業情報の表示</summary><div class="inner"><section class="card"><h2 class="h2">営業入力の状況表示</h2><p class="helper">画面上部の営業情報をまとめて表示・非表示にできます。下では項目ごとに選べます。非表示にしても日報記録や計算処理はそのままです。</p>${renderUiChoice('driveStatusDisplay',[['on','表示する'],['off','表示しない']])}<h3 class="subsection">表示する項目を選択</h3>${renderDriveStatusFieldSettings()}<div class="field"><h3 class="subsection">上部固定枠の登録ボタン</h3><p class="caption-note">登録可能なら赤、未入力などで登録できなければグレー。下部の既存ボタンも残します。</p>${renderUiChoice('stickySaveButton',[['off','表示しない'],['on','表示する']])}</div></section></div></details></div></details><details class="details settings-advanced" data-appearance-settings><summary>画面表示のカスタマイズ</summary><div class="inner"><details class="details" data-text-size-settings><summary>文字の大きさ</summary><div class="inner"><section class="card"><p class="helper">画面全体の文字サイズを設定します。初期値は「大きめ」です。</p>${renderUiChoice('text',[['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-button-size-settings><summary>ボタンの大きさ</summary><div class="inner"><section class="card"><p class="helper">ボタンを押しやすい大きさに変更します。操作は安全に停車した状態で行ってください。</p>${renderUiChoice('buttons',[['ultra','超コンパクト'],['compact','控えめ'],['normal','標準'],['large','大きめ'],['extra','特大']])}</section></div></details><details class="details" data-help-settings><summary>説明文の表示</summary><div class="inner"><section class="card">${renderUiChoice('help',[['hide','説明なし'],['show','説明あり']])}</section></div></details><details class="details" data-theme-settings><summary>画面の配色・コントラスト</summary><div class="inner"><section class="card"><h2 class="h2">文字と背景のコントラスト</h2>${renderUiChoice('contrast',[['normal','標準'],['high','くっきり']])}<hr class="divider"><h2 class="h2">画面の明るさ</h2>${renderUiChoice('theme',[['day','昼間'],['night','夜間']])}</section></div></details><details class="details" data-ui-preview-settings><summary>表示サンプル・表示設定の初期化</summary><div class="inner"><section class="card"><div class="ui-preview" aria-label="設定の表示サンプル"><strong>見やすさ・押しやすさの確認</strong><p class="helper">この大きさで文字が読めるか、停車中に確認してください。</p><div class="action-grid"><button class="btn big primary" type="button" data-tab="drive">🚕 乗務入力へ</button><button class="btn big teal" type="button" data-tab="history">▤ 営業履歴へ</button></div></div><div class="actions"><button class="btn" type="button" data-action="resetUi">表示設定を初期値へ戻す</button></div></section></div></details></div></details><details class="details settings-advanced" data-settings-keyboard><summary>入力・キーボード設定</summary><div class="inner"><section class="card"><h2 class="h2">入力キーボード</h2><p class="helper">距離・金額の入力方法を選べます。端末標準はAndroidのキーボード、アプリ専用は「.」だけのテンキーです。端末標準で距離に「,」を入力しても「.」に統一します。</p>${renderInputChoice('keyboard',[['custom','アプリ専用テンキー'],['system','端末標準キーボード']])}<hr class="divider"><h2 class="h2">スクロール時のキーボード収納</h2>${renderInputChoice('scrollDismiss',[['on','閉じる'],['off','閉じない']])}</section></div></details><details class="details settings-advanced" data-internal-settings><summary>保存先・接続の詳細管理（通常操作不要）</summary><div class="inner"><details class="details settings-advanced" data-admin-backend-settings><summary>${legacyDiary()||accountScope.adminFirestore?'日報原本の保存先を変更':'日報原本の保存先'}</summary><div class="inner">${renderAdminBackendSettings()}</div></details><details class="details settings-advanced"><summary>${legacyDiary()?'Googleスプレッドシート':'本人専用クラウド日報'}</summary><div class="inner">${renderSheetTargetSettings()}</div></details></div></details><details class="details settings-advanced" data-driver-registration><summary>乗務員登録・車両・キャンセル設定</summary><div class="inner">${renderDriverDefaults()}<details class="details" data-cancel-settings><summary>キャンセル設定</summary><div class="inner"><section class="card"><h2 class="h2">キャンセル時のメーター照合</h2><p class="helper">配車アプリ会社からのキャンセル補填金とは無関係です。車両メーターに初乗り相当額が残るかどうかだけを設定します。メーター売上合計には残額を含め、キャンセル控除後の実売上から納金を計算します。</p><label class="field"><span class="field-label">キャンセル後の車両メーター</span><select class="control" data-cancel-meter-mode><option value="retain" ${cancelMeterConfig().mode==='retain'?'selected':''}>初乗り料金が残る</option><option value="reset" ${cancelMeterConfig().mode==='reset'?'selected':''}>0円に戻る（照合補正なし）</option></select></label>${cancelMeterConfig().mode==='retain'?`<label class="field"><span class="field-label">照合用の初乗り料金（円）</span><input class="control" type="number" min="0" max="100000" step="1" data-cancel-meter-amount value="${cancelMeterConfig().amount}"></label>`:''}<p class="caption-note">新たに保存するキャンセルごとに補正額を記録するため、設定を変えても過去の照合額は変わりません。既存の記録は従来の700円で扱います。</p></section></div></details>${shift?`<details class="details" data-fee-settings><summary>計算用金額・手数料設定</summary><div class="inner"><section class="card"><h2 class="h2">計算用金額・手数料設定</h2><p class="helper">未確認のUber運営会社側料率は計算しません。Uber配車手数料100円はUberアプリ表示額に含まれる場合にのみ計上し、会社への現金納金から除きます。Uberアプリ決済の差額と混同しません。</p><div class="form-grid">${[['goFee','GO車内回収手数料（円）'],['uberSurcharge','Uber配車手数料・納金除外額（円）']].map(([k,l])=>`<label class="field"><span class="field-label">${l}</span><input class="control" type="text" inputmode="none" data-number-kind="money" data-setting="${k}" value="${safeText(feeSettings(shift.settings)[k])}"></label>`).join('')}</div></section></div></details>`:''}<details class="details" data-duty-plan-settings><summary>勤務形態・1乗務の予定</summary><div class="inner">${renderDutyPlanSettings()}</div></details></div></details><details class="details settings-advanced" data-wait-place-settings><summary>待機場所の設定</summary><div class="inner">${renderWaitPlaceSettings()}</div></details><details class="details settings-advanced" data-distance-address-settings><summary>距離・住所取得</summary><div class="inner"><details class="details" data-gps-settings><summary>走行距離の設定</summary><div class="inner"><section class="card"><h2 class="h2">① 距離を記録しますか？</h2><p class="helper">ONなら距離欄を表示します。手入力や「GPS取得」ボタンが使えます。自動入力するかどうかは次の②で選べます。</p><label class="field"><span class="field-label">乗車・降車の距離管理</span><select class="control" data-distance-setting="pickupDropDistance"><option value="on" ${model.prefs.pickupDropDistance!=='off'?'selected':''}>ON（距離を記録する）</option><option value="off" ${model.prefs.pickupDropDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><label class="field"><span class="field-label">高速道路だけの距離管理</span><select class="control" data-distance-setting="highwayDistance"><option value="on" ${model.prefs.highwayDistance!=='off'?'selected':''}>ON（高速の距離を記録する）</option><option value="off" ${model.prefs.highwayDistance==='off'?'selected':''}>OFF（入力欄も表示しない）</option></select></label><p class="helper">設定は独立しています。OFFの場合は距離入力欄を非表示にし、距離は入力・自動取得しません。過去の記録や高速利用料金の入力・集計は残ります。GPS累計の計測自体は別設定です。</p>${model.prefs.pickupDropDistance!=='off'||model.prefs.highwayDistance!=='off'?`<div class="distance-auto-group"><h2 class="h2">② 距離を自動入力しますか？</h2><p class="helper">手動：距離を自分で入力します。「GPS取得」ボタンも利用できます。自動：時刻・現在地を記録するとき、空欄にGPS距離を入力します。</p><label class="field"><span class="field-label">時刻・現在地の記録時に距離も自動入力</span><select class="control" data-native-auto-distance>
 <option value="on" ${nativeAutoDistanceEnabled()?'selected':''}>ON：時刻・現在地の記録と一緒に自動入力</option>
 <option value="off" ${!nativeAutoDistanceEnabled()?'selected':''}>OFF：自動入力しない（手入力・GPS取得ボタンは利用可能）</option></select></label>${nativeAutoDistanceEnabled()?`<div class="gps-source-choice"><h2 class="h2">③ 自動入力に使うGPSを選択</h2><p class="helper">ブラウザGPS：Chromeで測定。GPS距離ラボ：Android専用アプリで測定（別途アプリの起動が必要）。</p><label class="field"><span class="field-label">GPSの取得方法</span><select class="control" data-native-diary-gps>
  <option value="off" ${!nativeDiaryGpsEnabled()?'selected':''}>ブラウザGPS（Chromeの位置情報を利用）</option>
@@ -8720,6 +8735,7 @@ function handleAction(action,id,highwayEntry){
   if(!shift?.draft||shift.draft.editId){toast('過去の営業履歴はGPSで自動変更しません。',true);return;}
   if(!['F','L','S','V','AB','AE'].includes(id))return;
   if(!distanceEnabled(id)){toast('この距離管理は設定でOFFです。必要なら手入力してください。');return;}
+  void searchHighwayIcOnCapture(id);
   const shiftId=shift.id,draftId=shift.draft.id,originalField=String(shift.draft.raw[id]??'');
   const btn=appEl.querySelector('[data-action="gpsTripFill"][data-id="'+id+'"]');
   if(btn)btn.disabled=true;
@@ -8740,6 +8756,7 @@ function handleAction(action,id,highwayEntry){
  }
  if(action==='gpsTripFill'){
   if(!shift?.draft||!gpsTripUI?.active(shift)||!['F','L','S','V','AB','AE'].includes(id)||!distanceEnabled(id))return;
+  void searchHighwayIcOnCapture(id);
   if(!gpsTripUI.trusted(shift)){toast('現在は従来のブラウザGPS方式です。未測位・欠測のため入力できません。v1.3.1を使う場合は「設定 → GPS距離テスト → GPS距離の取得元」でAndroid GPSを選択してください。',true);return;}
   const km=gpsTripUI.fmt(shift.gpsTrip.tripKm);
   shift.draft.raw[id]=km;
@@ -9048,8 +9065,8 @@ function handleAction(action,id,highwayEntry){
  if(action==='breakBoard'||action==='breakDispatch'){
   if(!shift||shift.draft||shift.waiting)return;
   if(shift.records.length>=MAX_RECORDS){toast('60件に達しています',true);return;}
-  breakPageOpen=false;const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');}
-  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');saveOperationalEvent(shift);focusDispatchSourceAfterRender=true;render();}return;
+  breakPageOpen=false;const now=new Date();if(action==='breakBoard'){const d=makeDraft(shift,'ride',now,'乗');endBreak(shift,now);shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);dutyInputAfterRender='ride';render();getGps(shift,d,'pickup');}
+  else{endBreak(shift,now);shift.draft=makeDispatch(shift,now,'G');saveOperationalEvent(shift);dutyInputAfterRender='dispatch';render();}return;
  }
  if(action==='gpsBreakPlace'){if(shift?.breakActive)getBreakPlaceGps(shift.id,shift.breakActive.id);return;}
  if(action==='endBreak'){
@@ -9118,14 +9135,14 @@ function handleAction(action,id,highwayEntry){
  }
  if(action==='beginDispatch'){
   if(!shift||shift.draft)return;
-  try{shift.draft=makeDispatch(shift,new Date(),'G');saveOperationalEvent(shift);focusDispatchSourceAfterRender=true;render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
+  try{shift.draft=makeDispatch(shift,new Date(),'G');saveOperationalEvent(shift);dutyInputAfterRender='dispatch';render();toast('迎車受信を記録。待機履歴も保持しました。');}catch(e){toast(e.message,true);}return;
  }
  if(action==='waitNew'){if(shift?.waiting){shift.waiting.place='';shift.waiting.placeId='';shift.waiting.placeSource='manual';saveLater();render();}return;}
  if(action==='gpsWait'){if(shift?.waiting)getWaitGps(shift,shift.waiting);return;}
  if(action==='registerWaitPlace'){if(shift?.waiting&&!shift.draft)registerCurrentWaitingPlace(shift,shift.waiting);return;}
  if(action==='boardDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
-  flushVisibleDraftInputs(shift);const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');return;
+  flushVisibleDraftInputs(shift);const d=boardDispatch(shift,new Date());gpsTripUI?.board(shift,d);saveOperationalEvent(shift);dutyInputAfterRender='ride';render();getGps(shift,d,'pickup');return;
  }
  if(action==='cancelDispatch'){
   if(!shift?.draft||shift.draft.kind!=='dispatch')return;
@@ -9136,7 +9153,7 @@ function handleAction(action,id,highwayEntry){
   const now=new Date(),before=shift.waiting;
   try{const d=makeDraft(shift,'ride',now,'乗');if(before?.startedAt)d.raw.C=before.startedAt;
    if(action==='beginRide'&&before){d.meta.waitingId=before.id||'';d.meta.waitPlace=before.place||'';d.meta.waitOdometer=before.odometer??'';if(number(before.odometer)!==null){d.raw.F=before.odometer;if(before.gpsAutoOdometer?.km===before.odometer){d.meta.gpsFilledFields??={};d.meta.gpsFilledFields.F={...before.gpsAutoOdometer,source:'waitTransfer'};}}if(before.place){d.raw.AL=before.place;d.meta.pickupWaitProvisional=true;}if(before.geo){d.raw.D=`${before.geo.lat.toFixed(6)},${before.geo.lng.toFixed(6)}`;}}
-   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
+   pauseWaiting(shift,now,'ride');shift.draft=d;gpsTripUI?.board(shift,d);saveOperationalEvent(shift);dutyInputAfterRender='ride';render();getGps(shift,d,'pickup');}catch(e){toast(e.message,true);}return;
  }
  if(action==='gpsPickup'||action==='gpsDrop'){if(shift?.draft)getGps(shift,shift.draft,action==='gpsPickup'?'pickup':'drop');return;}
  if(action==='discardDraft'){if(!shift?.draft)return;if(!confirm('編集中の入力を破棄しますか？ 保存済みの履歴は残ります。'))return;shift.draft=null;gpsTripUI?.mode(shift,'empty');saveOperationalEvent(shift);render();return;}
@@ -9313,6 +9330,7 @@ function fillCurrentTime(col){
  const s=getShift(),d=s?.draft;
  if(!d||!timeFields.has(col))return;
  const now=new Date();d.raw[col]=stamp(now);
+ void searchHighwayIcOnCapture(col);
  const gpsDistanceField={G:'F',M:'L',R:'S',U:'V',AA:'AB',AD:'AE'}[col];
  if(gpsDistanceField&&nativeAutoDistanceEnabled()){
   if(nativeDiaryGpsEnabled())fillNativeDistanceSilently(s,d,gpsDistanceField);
@@ -10056,6 +10074,7 @@ appEl.addEventListener('click',event=>{
   const field=hwyTime.parentElement?.querySelector('[data-hwy-field="'+key+'"]');
   if(field)field.value=seg[key];
   saveLater();
+  void searchHighwayIcOnCapture(key,index);
   if(nativeDiaryGpsEnabled()&&!String(seg[distKey]??'').trim()){
     const shiftId=shift.id,recordId=shift.draft.id,uid=accountScope.uid;
     window.TAXIAPP_EXTERNAL_GPS.read(localStorage,fetch,{shiftId}).then(gps=>{
@@ -10084,7 +10103,9 @@ appEl.addEventListener('click',event=>{
   event.preventDefault();
   const index=Number(hwyGps.dataset.hwyGps),key=hwyGps.dataset.hwyDistanceField;
   const shift=getShift(),draft=shift?.draft,seg=draft?.meta?.highwaySections?.[index];
-  if(!seg||!['entryKm','exitKm'].includes(key)||!nativeDiaryGpsEnabled()){
+  if(!seg||!['entryKm','exitKm'].includes(key))return;
+  void searchHighwayIcOnCapture(key,index);
+  if(!nativeDiaryGpsEnabled()){
    toast('Android GPS距離ラボの接続を確認してください。',true);return;
   }
   const shiftId=shift.id,recordId=draft.id,uid=accountScope.uid,timeKey=key==='entryKm'?'entryTime':'exitTime';

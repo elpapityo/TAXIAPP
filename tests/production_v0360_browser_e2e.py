@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import tempfile
+from itertools import product
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -124,51 +125,56 @@ try:
     # Exercise the production scroll code against the actual sticky CSS with
     # the detail form collapsed and the visible meter controls partly covered.
     source=Path('index.html').read_text()
-    start=source.index(" if(tab==='drive'&&typeof focusDispatchSourceAfterRender")
+    start=source.index(" if(tab==='drive'&&dutyInputAfterRender)")
     end=source.index(" if(tab==='settings'&&rideSettingsJumpRequested)",start)
-    for mode,orientation,width,height in (
+    displays=(
         ('phone','portrait',490,710), ('half','portrait',320,620),
         ('phone','landscape',560,420), ('tablet','landscape',900,600),
         ('full','portrait',390,700), ('pc','landscape',1180,720),
-    ):
+    )
+    for phase,(mode,orientation,width,height) in product(('dispatch','ride'),displays):
         driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{
             'width':width,'height':height,'deviceScaleFactor':1,'mobile':True})
         result=driver.execute_async_script("""
-          const [mode,orientation,scrollSource,done]=arguments;
+          const [phase,mode,orientation,scrollSource,done]=arguments;
           const settings=document.documentElement.dataset;
           settings.uiScreenMode=mode;settings.uiOrientationMode=orientation;
           settings.uiStickyDutySummary='on';settings.uiButtons='extra';
           const appEl=document.querySelector('#app');
           appEl.innerHTML=`<div class="layout"><main id="main-content">
             <div style="height:180px"></div>
-            <section class="preview-duty-summary meter-status-summary" style="height:112px">迎車中</section>
+            <section class="preview-duty-summary meter-status-summary" style="height:${phase==='ride'?178:112}px">
+              ${phase==='ride'?'実車中':'迎車中'}</section>
             <div style="height:100px"></div>
             <section class="card hero meter-console"><div class="meter-actions">
               <button class="btn meter-action" data-action="boardDispatch">実車</button>
               <button class="btn meter-action" data-action="cancelDispatch">キャンセル</button>
+            </div><div class="meter-inline-editor" aria-label="実車入力">
+              <div class="field-label">配車区分</div><div class="selector"><button class="chip">GO</button></div>
             </div></section>
             <details><div data-dispatch-source>配車元</div></details>
             <div style="height:100vh"></div>
           </main></div>`;
           document.documentElement.classList.remove('taxi-auth-locked');
           const summary=appEl.querySelector('.preview-duty-summary');
-          const actions=appEl.querySelector('.meter-actions');
-          window.scrollTo(0,scrollY+actions.getBoundingClientRect().top-52);
-          const covered=actions.getBoundingClientRect().top<summary.getBoundingClientRect().bottom;
-          const run=new Function('appEl','tab','getShift','displayPrefs','syncFloatingDutySummary',
-            'let focusDispatchSourceAfterRender=true;'+scrollSource);
-          run(appEl,'drive',()=>({draft:{kind:'dispatch'}}),()=>({stickyDutySummary:'on'}),()=>{});
+          const target=appEl.querySelector(phase==='dispatch'?'.meter-actions':'[aria-label="実車入力"]');
+          window.scrollTo(0,scrollY+target.getBoundingClientRect().top-52);
+          const covered=target.getBoundingClientRect().top<summary.getBoundingClientRect().bottom;
+          const run=new Function('phase','appEl','tab','getShift','displayPrefs','syncFloatingDutySummary',
+            'let dutyInputAfterRender=phase;'+scrollSource);
+          run(phase,appEl,'drive',()=>({draft:{kind:phase}}),()=>({stickyDutySummary:'on'}),()=>{});
           requestAnimationFrame(()=>{
-            const gap=actions.getBoundingClientRect().top-summary.getBoundingClientRect().bottom;
-            const visible=[...actions.querySelectorAll('button')].every(button=>{
+            const gap=target.getBoundingClientRect().top-summary.getBoundingClientRect().bottom;
+            const visible=[...target.querySelectorAll('button')].every(button=>{
               const r=button.getBoundingClientRect();
               return document.elementFromPoint(r.left+r.width/2,r.top+2)===button&&
                 document.elementFromPoint(r.left+r.width/2,r.bottom-2)===button;
             });
             done({covered,gap,visible});
           });
-        """,mode,orientation,source[start:end])
-        assert result['covered'] and 10<=result['gap']<=14 and result['visible'],(mode,orientation,result)
-    print('PASS Chrome: dispatch controls stay below the fixed summary across display modes')
+        """,phase,mode,orientation,source[start:end])
+        gap=12 if phase=='dispatch' else 8
+        assert result['covered'] and abs(result['gap']-gap)<=2 and result['visible'],(phase,mode,orientation,result)
+    print('PASS Chrome: dispatch controls and ride classification stay below the fixed summary across display modes')
 finally:
     driver.quit()
