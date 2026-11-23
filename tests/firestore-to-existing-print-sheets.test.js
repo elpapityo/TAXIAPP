@@ -32,6 +32,9 @@ class FakeSheet{
  getRange(r,c,n=1,m=1){
   const data=this.data;
   return {
+   getValue:()=>data.get(key(r,c))??'',
+   setValue:value=>{data.set(key(r,c),value);},
+   setNumberFormat:()=>{},
    getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>data.get(key(r+i,c+j))??'')),
    getFormulas:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>{
      const v=data.get(key(r+i,c+j));return typeof v==='string'&&v[0]==='='?v:'';})),
@@ -292,3 +295,42 @@ assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
 assert.equal(values.get('TAXIAPP_印刷データ').get('4:2'),3);
 assert.equal(JSON.parse(journalStorage.get(journalKey)).printProjectionVersion,3);
 console.log('空車高速除外・支払連番・旧印刷形式更新を確認');
+
+// The optional annex uses the same collector as the browser. It publishes
+// only after the four primary sources have passed their versioned transfer.
+const sharedHighway=load('google-apps-script/HighwayReport.gs');
+assert.equal(sharedHighway,load('highway-report.js'));
+vm.runInContext(sharedHighway+'\n'+load('google-apps-script/HighwayPrintProjection.gs'),ctx);
+const highwaySheet='TAXIAPP_高速印刷データ';
+const highwayData=new Map();
+values.set(highwaySheet,highwayData);
+ctx.TAXIAPP_HIGHWAY_PRINT_HEADERS.forEach((value,index)=>highwayData.set(key(1,index+1),value));
+sh[highwaySheet]=new FakeSheet(highwaySheet);
+const other='shift-1792699000000-other';
+highwayData.set(key(2,1),other);
+highwayData.set(key(2,2),'乗務');
+payload.revision=10;
+shift.endingOdo=300;
+shift.records[1].raw={A:2,P:'空',Z:'入口',AB:20,AC:'出口',AE:38,AF:300,AG:440};
+shift.records[1].meta={highwayEmptyRoadName:'阪神高速 3号神戸線'};
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.deepEqual(sh[highwaySheet].getRange(3,1,2,12).getValues(),[
+ [id,'乗務','','','','','','','','',300,0],
+ [id,'区間','2','空車','阪神高速 3号神戸線','入口','出口',18,13.5,740,'','']
+]);
+assert.equal(highwayData.get(key(2,1)),other);
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(sh[highwaySheet].getLastRow(),4,'同じ日報を再転送しても明細を増やさない');
+
+payload.revision=11;
+shift.records[1].meta.highwayEmptyRoadName='変更した道路名';
+syntheticWriteFailure='TAXIAPP_乗務一覧';
+shift.endingOdo=301;
+assert.throws(()=>ctx.firestorePrintSelectedDutyDraft_(id),/旧印刷元に戻しました/);
+assert.equal(highwayData.get(key(3,2)),'転送中','未完了の更新内容は印刷用タブに公開しない');
+assert.match(ctx.firestorePrintSelectedDutyDraft_(id),/保存完了/);
+assert.equal(highwayData.get(key(3,2)),'乗務');
+assert.equal(highwayData.get(key(3,11)),301);
+assert.equal(highwayData.get(key(4,5)),'変更した道路名');
+assert.equal(highwayData.get(key(2,1)),other);
+console.log('高速明細の別紙転送：確定済み区間・距離免除・選択日報・部分失敗からの再転送を確認');

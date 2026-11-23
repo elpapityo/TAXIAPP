@@ -12,11 +12,16 @@
  }
  const written=x=>x===null||x===undefined?'':String(x);
  const sum=items=>rounded(items.reduce((a,b)=>a+b,0));
+ function closedDutyDistance(shift){
+  if(!(shift?.endedAt||shift?.endedIso))return null;
+  const start=value(shift.startingOdo),end=value(shift.endingOdo);
+  return start!==null&&start>=0&&end!==null&&end>=start?rounded(end-start):null;
+ }
  function collect(shift,deriveRaw) {
   const entries=[];
   for(const [i,record] of (shift?.records||[]).entries()){
    if(record?.status!=='complete'||!['ride','empty'].includes(record.kind))continue;
-   const raw=record.raw||{};
+   const raw=record.raw||{},recordId=written(record.id);
    const segments=record.meta?.highwaySections;
    if(Array.isArray(segments)){
     for(const [si,seg] of segments.entries()){
@@ -27,7 +32,7 @@
      const exemptKm=validDistance?rounded(sectionKm*.75):null;
      const chargeYen=value(seg.fee);
      entries.push({
-       id:(written(record.id)||String(i))+'-'+si,no:written(raw.A)||String(i+1),
+       id:(recordId||String(i))+'-'+si,recordId,sectionIndex:si,no:written(raw.A)||String(i+1),
        mode:seg.mode,roadName:written(seg.roadName),entryIC:written(seg.entryIC),entryTime:written(seg.entryTime),
        entryKm,exitIC:written(seg.exitIC),exitTime:written(seg.exitTime),exitKm,
        sectionKm,exemptKm,chargeYen,distanceMissing:!validDistance,
@@ -53,7 +58,7 @@
     const anyFee=amounts.some(n=>n!==null);
     const chargeYen=anyFee?sum(amounts.filter(n=>n!==null)):null;
     entries.push({
-     id:written(record.id)||String(i),
+     id:recordId||String(i),recordId,sectionIndex:!real&&flag.includes('実')?1:0,
      no:written(raw.A)||String(i+1),
      mode,roadName:written(record.meta?.[real?'highwayRealRoadName':'highwayEmptyRoadName']),
      entryIC:written(raw[at[0]]),entryTime:written(raw[at[1]]),
@@ -89,5 +94,5 @@
    unknownCharges:groups['実'].unknownCharges+groups['空'].unknownCharges
   };
  }
- root.TAXIAPP_HIGHWAY_REPORT=Object.freeze({collect,value});
+ root.TAXIAPP_HIGHWAY_REPORT=Object.freeze({collect,value,closedDutyDistance});
 })(typeof window!=='undefined'?window:globalThis);
