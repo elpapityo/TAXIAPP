@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import tempfile
+from itertools import product
+from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -83,9 +85,9 @@ try:
     assert municipalities['path']=='/municipalities.json',municipalities
     # The original 3-column UI must fit a phone without horizontal clipping.
     # This DOM-only synthetic fixture never edits, sends, or replaces a duty.
-    js("""const main=document.querySelector('#main-content');
+    monthly_fixture="""const main=document.querySelector('#main-content');
       const box=document.createElement('details');box.open=true;
-      box.id='monthly-width-fixture';box.className='details monthly-sales-panel';
+      box.className='details monthly-sales-panel';
       box.innerHTML='<summary>月間売上表</summary><div class="inner">'+
        '<h2 class="h2" style="position:absolute;visibility:hidden">クラウド日報管理</h2>'+
        '<div class="monthly-sales-scroll"><table class="monthly-sales-table">'+
@@ -94,24 +96,24 @@ try:
        '<th>日付・曜日・祝日</th><th>税込売上</th><th>税別売上</th></tr></thead>'+
        '<tbody><tr class="monthly-day-holiday"><th>10/12（月・祝）</th>'+
        '<td>123,456</td><td>112,232</td></tr></tbody></table></div></div>';
-      main.appendChild(box);""")
+      main.appendChild(box);"""
     for width in (320,360,420,580):
         driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{
           'width':width,'height':900,'deviceScaleFactor':1,'mobile':True})
-        width_state=js("""const fixture=document.querySelector('#monthly-width-fixture');
-          const wrap=fixture.querySelector('.monthly-sales-scroll');
+        width_state=js(monthly_fixture+"""
+          const wrap=box.querySelector('.monthly-sales-scroll');
           const table=wrap.querySelector('table');
           const last=table.querySelector('tbody tr td:last-child');
           const h1=document.querySelector('#main-content .section-heading .h1');
-          const h2=fixture.querySelector('.h2');
-          return {viewport:innerWidth, wrap:wrap.clientWidth,scroll:wrap.scrollWidth,
+          const result={viewport:innerWidth, wrap:wrap.clientWidth,scroll:wrap.scrollWidth,
             tableRight:table.getBoundingClientRect().right,
             wrapRight:wrap.getBoundingClientRect().right,
             pageRight:document.documentElement.getBoundingClientRect().right,
             lastRight:last.getBoundingClientRect().right,
             lastText:last.textContent,
             titleSize:parseFloat(getComputedStyle(h1).fontSize),
-            itemSize:parseFloat(getComputedStyle(h2).fontSize)};""")
+            itemSize:parseFloat(getComputedStyle(box.querySelector('.h2')).fontSize)};
+          box.remove();return result;""")
         assert width_state['scroll']<=width_state['wrap']+1,(width,width_state)
         assert width_state['tableRight']<=width_state['wrapRight']+1,(width,width_state)
         assert width_state['lastRight']<=width_state['viewport']+1,(width,width_state)
@@ -119,5 +121,60 @@ try:
     print('PASS Chrome: 月間売上3列が320-580pxで切れず、画面タイトルは項目見出し以下')
     assert stored()==sentinel
     print('PASS Chrome: production municipality JSON route resolves; original IDB/localStorage unaffected')
+
+    # Exercise the production scroll code against the actual sticky CSS with
+    # the detail form collapsed and the visible meter controls partly covered.
+    source=Path('index.html').read_text()
+    start=source.index(" if(tab==='drive'&&dutyInputAfterRender)")
+    end=source.index(" if(tab==='settings'&&rideSettingsJumpRequested)",start)
+    displays=(
+        ('phone','portrait',490,710), ('half','portrait',320,620),
+        ('phone','landscape',560,420), ('tablet','landscape',900,600),
+        ('full','portrait',390,700), ('pc','landscape',1180,720),
+    )
+    for phase,(mode,orientation,width,height) in product(('dispatch','ride'),displays):
+        driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{
+            'width':width,'height':height,'deviceScaleFactor':1,'mobile':True})
+        result=driver.execute_async_script("""
+          const [phase,mode,orientation,scrollSource,done]=arguments;
+          const settings=document.documentElement.dataset;
+          settings.uiScreenMode=mode;settings.uiOrientationMode=orientation;
+          settings.uiStickyDutySummary='on';settings.uiButtons='extra';
+          const appEl=document.querySelector('#app');
+          appEl.innerHTML=`<div class="layout"><main id="main-content">
+            <div style="height:180px"></div>
+            <section class="preview-duty-summary meter-status-summary" style="height:${phase==='ride'?178:112}px">
+              ${phase==='ride'?'実車中':'迎車中'}</section>
+            <div style="height:100px"></div>
+            <section class="card hero meter-console"><div class="meter-actions">
+              <button class="btn meter-action" data-action="boardDispatch">実車</button>
+              <button class="btn meter-action" data-action="cancelDispatch">キャンセル</button>
+            </div><div class="meter-inline-editor" aria-label="実車入力">
+              <div class="field-label">配車区分</div><div class="selector"><button class="chip">GO</button></div>
+            </div></section>
+            <details><div data-dispatch-source>配車元</div></details>
+            <div style="height:100vh"></div>
+          </main></div>`;
+          document.documentElement.classList.remove('taxi-auth-locked');
+          const summary=appEl.querySelector('.preview-duty-summary');
+          const target=appEl.querySelector(phase==='dispatch'?'.meter-actions':'[aria-label="実車入力"]');
+          window.scrollTo(0,scrollY+target.getBoundingClientRect().top-52);
+          const covered=target.getBoundingClientRect().top<summary.getBoundingClientRect().bottom;
+          const run=new Function('phase','appEl','tab','getShift','displayPrefs','syncFloatingDutySummary',
+            'let dutyInputAfterRender=phase;'+scrollSource);
+          run(phase,appEl,'drive',()=>({draft:{kind:phase}}),()=>({stickyDutySummary:'on'}),()=>{});
+          requestAnimationFrame(()=>{
+            const gap=target.getBoundingClientRect().top-summary.getBoundingClientRect().bottom;
+            const visible=[...target.querySelectorAll('button')].every(button=>{
+              const r=button.getBoundingClientRect();
+              return document.elementFromPoint(r.left+r.width/2,r.top+2)===button&&
+                document.elementFromPoint(r.left+r.width/2,r.bottom-2)===button;
+            });
+            done({covered,gap,visible});
+          });
+        """,phase,mode,orientation,source[start:end])
+        gap=12 if phase=='dispatch' else 8
+        assert result['covered'] and abs(result['gap']-gap)<=2 and result['visible'],(phase,mode,orientation,result)
+    print('PASS Chrome: dispatch controls and ride classification stay below the fixed summary across display modes')
 finally:
     driver.quit()

@@ -37,7 +37,7 @@ const appEl={
 };
 const context={
  tab:'settings',settingsCategoryActive:'driver',keypadActive:null,saveTouchPress:null,
- pendingRender:false,renderAfterKeypad:false,saveRenderPending:false,
+ pendingRender:false,renderAfterKeypad:false,saveRenderPending:false,dutyInputAfterRender:'',
  window:windowMock,appEl,storageStatus:'IndexedDB',
  operationPanelOpen:{live:true,summary:false},
  applyUi(){},selectedShift(){return null;},header(){return '';},

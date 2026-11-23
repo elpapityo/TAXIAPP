@@ -14,7 +14,7 @@ function source(start,end){
 function fixture(){
  const inputs=new Map(),requests=[],positions=[];
  const responseCode=new Map();
- const settings={highwayNearbyIC:true};
+ const settings={};
  const shift={id:'fixture-shift',gpsTrip:{tripKm:12.4},records:[{id:'saved-original',raw:{Q:'保存済み'}}]};
  let writer=true,clock='20:11:00',saves=0;
  const scope=vm.createContext({
@@ -87,6 +87,7 @@ function fixture(){
  const originals=JSON.stringify(f.shift.records);
  const markup=f.scope.renderHighwaySections(f.shift.draft,'実');
  assert.match(markup,/<select class="control" data-hwy-select aria-label="入口ICの候補"/);
+ assert.doesNotMatch(markup,/data-hwy-field="roadName"|高速道路名/);
  assert.match(markup,/data-hwy-field="fee" data-number-kind="money"/);
  assert.deepEqual(f.requests,[],'opening a ride or rendering a field never starts a lookup');
 
@@ -100,6 +101,7 @@ function fixture(){
  f.locate();
  await request;
  assert.equal(real.entryIC,'池田');
+ assert.equal(real.roadName,'阪神高速11号池田線');
  assert.equal(real.entryTime,'20:11','keep the operation time and not the lookup completion time');
  assert.equal(entryCopy.input.value,'池田');
  assert.match(entry.select.innerHTML,/<option value="0" selected>池田/);
@@ -153,6 +155,7 @@ function fixture(){
  legacy.locate();
  await legacyRequest;
  assert.equal(legacy.shift.draft.raw.Z,'池田');
+ assert.equal(legacy.shift.draft.meta.highwayEmptyRoadName,'阪神高速11号池田線');
  assert.equal(legacy.shift.draft.raw.AA,'20:11');
  assert.equal(legacy.shift.draft.raw.AB,undefined,'distance OFF prevents automatic distance entry');
  assert.deepEqual([legacy.shift.draft.raw.AF,legacy.shift.draft.raw.AG],['300','440']);
@@ -209,6 +212,28 @@ function fixture(){
  await attempt;
  assert.match(onlyOfficial.note.textContent,/5km以内に候補がありません/);
  assert.equal(failure.shift.draft.raw.Z,'');
+
+ const capture=fixture();
+ const segment={mode:'実',entryTime:'21:18',entryKm:'14.7',exitTime:'21:35'};
+ capture.shift.draft={kind:'ride',raw:{P:'実'},meta:{highwaySections:[segment]}};
+ capture.picker('entryIC',0);
+ capture.picker('exitIC',0);
+ let captured=capture.scope.searchHighwayIcOnCapture('entryKm',0);
+ capture.locate();
+ await captured;
+ assert.equal(segment.entryIC,'池田');
+ assert.equal(segment.roadName,'阪神高速11号池田線');
+ assert.equal(segment.entryTime,'21:18');
+ assert.equal(segment.entryKm,'14.7','IC lookup must not replace separately captured GPS distance');
+ captured=capture.scope.searchHighwayIcOnCapture('exitTime',0);
+ capture.locate();
+ await captured;
+ assert.equal(segment.exitIC,'池田');
+ assert.equal(segment.exitTime,'21:35');
+ segment.exitIC='';
+ capture.shift.draft.editId='older';
+ assert.equal(capture.scope.searchHighwayIcOnCapture('exitTime',0),undefined);
+ assert.equal(capture.positions.length,0,'editing a historical entry never uses the current location automatically');
 
  console.log('高速IC本体統合：最寄り、標準選択、手入力保護、実車・空車、失敗時、別乗務保護を確認');
 })().catch(error=>{console.error(error);process.exitCode=1;});
