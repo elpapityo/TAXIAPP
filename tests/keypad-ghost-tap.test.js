@@ -87,4 +87,35 @@ assert.equal(timers.size,0,'pending dismiss timer cleared');
 // Click after keypad closure has no effect.
 click(digit('1'));
 assert.deepEqual(digits,['7','7','8','4','9']);
+
+const pressStart=html.indexOf('function keypadPress(');
+const pressEnd=html.indexOf('// A tap on a different form control',pressStart);
+const display={textContent:''}, events=[];
+const input={value:'3',isConnected:true,dispatchEvent:event=>events.push(event.type)};
+const numberScope=vm.createContext({
+ keypadActive:{input,isDistance:false},Event,
+ document:{querySelector:()=>display}
+});
+vm.runInContext(html.slice(pressStart,pressEnd),numberScope);
+numberScope.keypadPress('00');
+assert.equal(input.value,'300');
+assert.equal(display.textContent,'300');
+assert.deepEqual(events,['input'],'00 commits both digits in one input event');
+numberScope.keypadPress('⌫');
+assert.equal(input.value,'30');
+numberScope.keypadPress('clear');
+assert.equal(input.value,'');
+numberScope.keypadPress('00');
+assert.equal(input.value,'0','00 alone uses a single leading zero');
+input.value='12345678901';
+numberScope.keypadPress('00');
+assert.equal(input.value,'12345678901','00 respects the digit limit without partial insertion');
+numberScope.keypadActive.isDistance=true;
+input.value='12';
+numberScope.keypadPress('00');
+assert.equal(input.value,'12');
+numberScope.keypadPress('.');
+numberScope.keypadPress('5');
+assert.equal(input.value,'12.5');
+assert.match(html,/isDistance\?'\.':'00','0','⌫'/);
 console.log('Keypad ghost-tap regression passed: opening click ignored; deliberate digits, Done and keyboard work.');
