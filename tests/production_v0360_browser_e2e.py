@@ -132,7 +132,7 @@ try:
         ('phone','landscape',560,420), ('tablet','landscape',900,600),
         ('full','portrait',390,700), ('pc','landscape',1180,720),
     )
-    for phase,(mode,orientation,width,height) in product(('dispatch','ride'),displays):
+    for phase,(mode,orientation,width,height) in product(('waiting','dispatch','ride'),displays):
         driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{
             'width':width,'height':height,'deviceScaleFactor':1,'mobile':True})
         result=driver.execute_async_script("""
@@ -144,11 +144,12 @@ try:
           appEl.innerHTML=`<div class="layout"><main id="main-content">
             <div style="height:180px"></div>
             <section class="preview-duty-summary meter-status-summary" style="height:${phase==='ride'?178:112}px">
-              ${phase==='ride'?'実車中':'迎車中'}</section>
+              ${{waiting:'待機中',dispatch:'迎車中',ride:'実車中'}[phase]}</section>
             <div style="height:100px"></div>
             <section class="card hero meter-console"><div class="meter-actions">
-              <button class="btn meter-action" data-action="boardDispatch">実車</button>
-              <button class="btn meter-action" data-action="cancelDispatch">キャンセル</button>
+              ${phase==='waiting'?'<button class="btn meter-action">迎車</button>':''}
+              <button class="btn meter-action">実車</button>
+              <button class="btn meter-action">${phase==='waiting'?'待機終了':'キャンセル'}</button>
             </div><div class="meter-inline-editor" aria-label="実車入力">
               <div class="field-label">配車区分</div><div class="selector"><button class="chip">GO</button></div>
             </div></section>
@@ -157,12 +158,13 @@ try:
           </main></div>`;
           document.documentElement.classList.remove('taxi-auth-locked');
           const summary=appEl.querySelector('.preview-duty-summary');
-          const target=appEl.querySelector(phase==='dispatch'?'.meter-actions':'[aria-label="実車入力"]');
+          const target=appEl.querySelector(phase==='ride'?'[aria-label="実車入力"]':'.meter-actions');
           window.scrollTo(0,scrollY+target.getBoundingClientRect().top-52);
           const covered=target.getBoundingClientRect().top<summary.getBoundingClientRect().bottom;
           const run=new Function('phase','appEl','tab','getShift','displayPrefs','syncFloatingDutySummary',
             'let dutyInputAfterRender=phase;'+scrollSource);
-          run(phase,appEl,'drive',()=>({draft:{kind:phase}}),()=>({stickyDutySummary:'on'}),()=>{});
+          const shift=phase==='waiting'?{waiting:{id:'wait-1'}}:{draft:{kind:phase}};
+          run(phase,appEl,'drive',()=>shift,()=>({stickyDutySummary:'on'}),()=>{});
           requestAnimationFrame(()=>{
             const gap=target.getBoundingClientRect().top-summary.getBoundingClientRect().bottom;
             const visible=[...target.querySelectorAll('button')].every(button=>{
@@ -175,6 +177,6 @@ try:
         """,phase,mode,orientation,source[start:end])
         gap=12 if phase=='dispatch' else 8
         assert result['covered'] and abs(result['gap']-gap)<=2 and result['visible'],(phase,mode,orientation,result)
-    print('PASS Chrome: dispatch controls and ride classification stay below the fixed summary across display modes')
+    print('PASS Chrome: waiting and dispatch controls and ride classification stay below the fixed summary across display modes')
 finally:
     driver.quit()
