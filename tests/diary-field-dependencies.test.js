@@ -87,6 +87,7 @@ for(let mask=0;mask<(1<<keys.length);mask++){
   assert.equal(dispatchOut.includes('data-meta="dispatchNote"'),model.prefs.rideFieldVisibility.dispatchNote,'既存入力のメモ設定を維持');
   assert.match(dispatchOut,/data-col="E"/);
   assert.match(dispatchOut,/data-col="AL"/);
+  assert.match(dispatchOut,/data-dispatch-start-km/,'dispatch start remains visible with either ride distance preference');
   assert.match(dispatchOut,/data-action="boardDispatch"/);
   const cancel={...draft,kind:'cancel',raw:{...raw,AL:''}};
   const cancelOut=call('renderCancelForm',shift,cancel);
