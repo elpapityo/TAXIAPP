@@ -8730,12 +8730,12 @@ function handleAction(action,id,highwayEntry){
   }).catch(e=>toast('GPS距離を取得できません：'+e.message,true));
   return;
  }
+ if(action==='gpsTripFill'&&['S','V','AB','AE'].includes(id)&&distanceEnabled(id))void searchHighwayIcOnCapture(id);
  if(action==='gpsTripFill'&&nativeDiaryGpsEnabled()){
   const bridge=window.TAXIAPP_EXTERNAL_GPS;
   if(!shift?.draft||shift.draft.editId){toast('過去の営業履歴はGPSで自動変更しません。',true);return;}
   if(!['F','L','S','V','AB','AE'].includes(id))return;
   if(!distanceEnabled(id)){toast('この距離管理は設定でOFFです。必要なら手入力してください。');return;}
-  void searchHighwayIcOnCapture(id);
   const shiftId=shift.id,draftId=shift.draft.id,originalField=String(shift.draft.raw[id]??'');
   const btn=appEl.querySelector('[data-action="gpsTripFill"][data-id="'+id+'"]');
   if(btn)btn.disabled=true;
@@ -8756,7 +8756,6 @@ function handleAction(action,id,highwayEntry){
  }
  if(action==='gpsTripFill'){
   if(!shift?.draft||!gpsTripUI?.active(shift)||!['F','L','S','V','AB','AE'].includes(id)||!distanceEnabled(id))return;
-  void searchHighwayIcOnCapture(id);
   if(!gpsTripUI.trusted(shift)){toast('現在は従来のブラウザGPS方式です。未測位・欠測のため入力できません。v1.3.1を使う場合は「設定 → GPS距離テスト → GPS距離の取得元」でAndroid GPSを選択してください。',true);return;}
   const km=gpsTripUI.fmt(shift.gpsTrip.tripKm);
   shift.draft.raw[id]=km;
