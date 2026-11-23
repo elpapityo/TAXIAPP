@@ -31,10 +31,11 @@ for(const p of [/function fillDistance\(/,/function fillWaitDistance\(/,/fillDis
 assert.doesNotMatch(html,/data-preview-simulator/);
 
 async function verifyDispatchCapture(){
- const start=html.indexOf('function captureDispatchStartDistance(');
+ const start=html.indexOf('const dispatchStartGpsRequests=');
  const end=html.indexOf('function gpsTarget(',start);
  const input={value:''};
  let resolveRead,auto=true,native=true,editable=true,saves=0;
+ const notices=[];
  const ctx=vm.createContext({
   accountScopeGeneration:0,accountScope:{uid:'driver'},tab:'drive',
   canEditNow:()=>editable,nativeAutoDistanceEnabled:()=>auto,nativeDiaryGpsEnabled:()=>native,
@@ -42,7 +43,7 @@ async function verifyDispatchCapture(){
   window:{TAXIAPP_EXTERNAL_GPS:{read:()=>new Promise(resolve=>{resolveRead=resolve;}),
    calculated:(raw,base)=>base+(raw-5)}},
   nativeDistanceBase:()=>20,kmOne:value=>value.toFixed(1),
-  appEl:{querySelectorAll:()=>[input]},document:{activeElement:null},saveLater:()=>saves++
+  appEl:{querySelectorAll:()=>[input]},document:{activeElement:null},saveLater:()=>saves++,toast:(...args)=>notices.push(args)
  });
  vm.runInContext(html.slice(start,end),ctx);
  const record=()=>({kind:'dispatch',raw:{F:'42.0'},meta:{}});
@@ -80,6 +81,27 @@ async function verifyDispatchCapture(){
  capture();
  assert.equal(shift.draft.meta.dispatchStartKm,'30.5');
  assert.equal(saves,2);
+ auto=false;
+ native=true;
+ pending=ctx.captureDispatchStartDistance(shift,shift.draft,true);
+ const oldRead=resolveRead;
+ const latest=ctx.captureDispatchStartDistance(shift,shift.draft,true);
+ oldRead({tripKm:16,runId:'native'});
+ await pending;
+ assert.equal(shift.draft.meta.dispatchStartKm,'30.5');
+ resolveRead({tripKm:17,runId:'native'});
+ await latest;
+ assert.equal(input.value,'32.0','GPS button can refresh an existing value with auto-fill off');
+ assert.equal(shift.draft.raw.F,'42.0');
+ pending=ctx.captureDispatchStartDistance(shift,shift.draft,true);
+ vm.runInContext('dispatchStartGpsRequests.delete(getShift().draft)',ctx);
+ resolveRead({tripKm:18,runId:'native'});
+ await pending;
+ assert.equal(shift.draft.meta.dispatchStartKm,'32.0','manual edit cancels a GPS request even when the field is unchanged');
+ shift.externalGpsManualPending=true;
+ ctx.captureDispatchStartDistance(shift,shift.draft,true);
+ assert.equal(notices.at(-1)[1],true);
+ assert.equal(shift.draft.meta.dispatchStartKm,'32.0');
 }
 verifyDispatchCapture().then(()=>console.log('PASS: GPS distance wiring, dispatch start capture and manual-entry safety')).catch(error=>{
  console.error(error);

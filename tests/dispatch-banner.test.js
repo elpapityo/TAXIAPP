@@ -17,6 +17,7 @@ const ctx={
  renderAllFields:()=>'<div>全項目</div>',
  displayPrefs:()=>({driveLayout:'legacy'}),
  numberInputMode:()=> 'none',
+ kmControl:input=>'<div class="km-step-control">'+input+'<button data-km-step="-1"></button><button data-km-step="1"></button></div>',
  kmOne:v=>v===undefined?'':Number(v).toFixed(1),
  rideFieldDataShown:(_key,existing)=>true,
  rideFieldShown:()=>true,distanceEnabled:()=>true,
@@ -33,7 +34,8 @@ assert.ok(out.includes('配車元'));
 assert.ok(out.includes('迎車受信時刻（変更可）'));
 assert.ok(out.includes('data-field="C"'));
 assert.ok(out.includes('data-field="F"'));
-assert.match(out,/data-dispatch-start-km value="12.3"/);
+assert.match(out,/data-dispatch-start-km[^>]* value="12\.3"/);
+assert.match(out,/data-km-step="-1".*data-km-step="1".*data-action="gpsDispatchStart"/);
 assert.ok(out.includes('data-location="AL"'));
 assert.ok(out.includes('data-action="boardDispatch"'));
 assert.ok(out.includes('data-action="cancelDispatch"'));
