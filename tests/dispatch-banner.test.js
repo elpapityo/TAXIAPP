@@ -16,6 +16,8 @@ const ctx={
  safeText:s=>String(s).replaceAll('<','&lt;').replaceAll('>','&gt;'),
  renderAllFields:()=>'<div>全項目</div>',
  displayPrefs:()=>({driveLayout:'legacy'}),
+ numberInputMode:()=> 'none',
+ kmOne:v=>v===undefined?'':Number(v).toFixed(1),
  rideFieldDataShown:(_key,existing)=>true,
  rideFieldShown:()=>true,distanceEnabled:()=>true,
  DISPATCH_TYPES:[]
@@ -24,13 +26,14 @@ vm.createContext(ctx);
 vm.runInContext(html.slice(pos,end),ctx);
 const out=ctx.renderDispatchForm({},{
  raw:{C:'16:25',E:'G',F:'1000',AL:'神戸'},
- meta:{dispatchNote:'テスト'}
+ meta:{dispatchNote:'テスト',dispatchStartKm:'12.3'}
 });
 assert.ok(!out.includes('class="panel-strip"'));
 assert.ok(out.includes('配車元'));
 assert.ok(out.includes('迎車受信時刻（変更可）'));
 assert.ok(out.includes('data-field="C"'));
 assert.ok(out.includes('data-field="F"'));
+assert.match(out,/data-dispatch-start-km value="12.3"/);
 assert.ok(out.includes('data-location="AL"'));
 assert.ok(out.includes('data-action="boardDispatch"'));
 assert.ok(out.includes('data-action="cancelDispatch"'));
