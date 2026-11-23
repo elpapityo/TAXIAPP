@@ -28,6 +28,8 @@ const original=JSON.stringify(shift);
 const output=report.collect(shift);
 assert.equal(output.count,5); // 1 + (real and empty for #2) + 1 + missing
 assert.deepEqual(output.entries.map(e=>e.no+'-'+e.mode),['1-実','2-実','2-空','3-空','6-実']);
+assert.deepEqual(output.entries.map(e=>[e.recordId,e.sectionIndex]),[
+ ['one',0],['two',0],['two',1],['three',0],['missing',0]]);
 assert.deepEqual(output.entries.map(e=>[e.entryIC,e.exitIC]),[
  ['吹田','豊中'],['豊中','西宮'],['西宮','尼崎'],['尼崎','吹田'],['有馬口','西宮北']]);
 assert.deepEqual(output.entries.filter(e=>!e.distanceMissing).map(e=>e.sectionKm),[8.4,13.1,12.4,9.3]);
@@ -69,7 +71,8 @@ sample.records[0]={...sample.records[0],meta:{highwaySections:[
 const context=vm.createContext({
  window:{TAXIAPP_HIGHWAY_REPORT:report,TAXIAPP_DAILY_REFERENCE:globalThis.TAXIAPP_DAILY_REFERENCE,
   TAXIAPP_HIGHWAY_SECTIONS:require('../highway-sections.js')},
- money:value=>value+'円',deriveRaw:r=>r.raw,
+ money:value=>value+'円',deriveRaw:r=>r.raw,historyCloudBusy:false,
+ opsCard:(title,body)=>title+body,opsRow:(label,value)=>label+value,
  safeText:value=>String(value??'').replaceAll('<','&lt;').replaceAll('>','&gt;')
 });
 const begin=html.indexOf('function highwayExemptionPrintButton(');
@@ -86,4 +89,12 @@ assert.match(context.renderHighwayExemptionSheet({...sample,records}),
  /除外規定適用後　走行距離<\/th><td>未確定/);
 assert.equal(context.highwayExemptionPrintButton({id:'ongoing'}),'');
 assert.match(context.highwayExemptionPrintButton(sample),/printHighwayExemption/);
+const opsStart=html.indexOf('function opsHighwayPanel(');
+vm.runInContext(html.slice(opsStart,html.indexOf('const MONTHLY_HOLIDAYS=',opsStart)),context);
+const direct=context.opsHighwayPanel(sample,{edit:true,editor:'<section>修正欄</section>'});
+assert.match(direct,/data-id="two" data-highway-entry-index="1">この区間を修正/);
+assert.match(direct,/<section>修正欄<\/section>/);
+assert.match(direct,/名神高速道路/);
+assert.doesNotMatch(context.opsHighwayPanel(sample),/editHistoryHighway|loadCloudHistory/);
+assert.match(context.opsHighwayPanel(sample,{load:true}),/data-action="loadCloudHistory"/);
 console.log('Highway register passed: each ride record, combined real/empty, IC route, totals, 75%, missing data, no mutation, HTML wiring.');

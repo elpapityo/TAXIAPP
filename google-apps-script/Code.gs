@@ -465,6 +465,10 @@ function savePacket_(data,options) {
   numeric_(summary.goFee),numeric_(summary.uberSurcharge),
   numeric_(summary.cashRemittance),numeric_(summary.etcRemittance),
   numeric_(summary.totalRemittance),now,printOnly?'Firestore印刷済':'受信済み',shift.startingOdo||'',shift.endingOdo||'']];
+ // Publish the highway annex only after the existing transfer has completed.
+ // Older installations can still run the four original print-source writes.
+ var finishHighwayPrint=(!printOnly&&typeof stageHighwayPrint_==='function')?
+  stageHighwayPrint_(ss,shift):null;
  if(!printOnly)replaceRowsForShift_(ss,'TAXIAPP_乗務一覧',id,shiftRows,19);
  var storage=[],payments=[],print=[],printNumber=0;
  records.forEach(function(record) {
@@ -520,7 +524,10 @@ function savePacket_(data,options) {
       options.firestoreOwnerUid)
    firestorePrintPublishVersionedDraft_(ss,id,printBatches,
     options.firestoreRevision,options.firestoreOwnerUid,
-    options&&options.verifyCurrentSource);
+    function(){
+     if(typeof options.verifyCurrentSource==='function')options.verifyCurrentSource();
+     if(typeof stageHighwayPrint_==='function')finishHighwayPrint=stageHighwayPrint_(ss,shift);
+    });
   else throw Error('Firestore印刷元の更新番号・本人UIDが不足しています');
  }
  // Only the legacy Google workflow stores a lossless original snapshot.
@@ -536,6 +543,7 @@ function savePacket_(data,options) {
   var originals = [id,now,chunks.length].concat(chunks);
   replaceRowsForShift_(ss,'TAXIAPP_同期原本',id,[originals],TAXIAPP_MAX_CHUNKS+3);
  }
+ if(finishHighwayPrint)finishHighwayPrint();
  return '保存完了：' + shift.date + ' / ' + records.length + '件';
 }
 

@@ -6,7 +6,7 @@ const source=fs.readFileSync('index.html','utf8');
 const begin=source.indexOf('function historyProtectedEdits(');
 const end=source.indexOf('function startHistoryLocationEdit(',begin);
 assert.ok(begin>0&&end>begin,'未保存修正の表示・保護処理が必要');
-assert.match(source,/\$\{historyProtectedEditsHtml\(shift\)\}\$\{historyLocationEditHtml\(shift\)\}/,
+assert.match(source,/\$\{historyProtectedEditsHtml\(shift\)\}\$\{directHighwayEditor\?'':historyLocationEditHtml\(shift\)\}/,
  '過去日報の既存営業一覧に未保存修正を表示する');
 const uid='u-1',id='shift-1792700000000';
 const shift={id,date:'2026-10-22',records:[
