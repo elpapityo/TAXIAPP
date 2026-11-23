@@ -150,6 +150,7 @@ try:
             <details><div data-dispatch-source>配車元</div></details>
             <div style="height:100vh"></div>
           </main></div>`;
+          document.documentElement.classList.remove('taxi-auth-locked');
           const summary=appEl.querySelector('.preview-duty-summary');
           const actions=appEl.querySelector('.meter-actions');
           window.scrollTo(0,scrollY+actions.getBoundingClientRect().top-52);
