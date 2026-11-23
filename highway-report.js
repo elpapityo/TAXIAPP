@@ -28,7 +28,7 @@
      const chargeYen=value(seg.fee);
      entries.push({
        id:(written(record.id)||String(i))+'-'+si,no:written(raw.A)||String(i+1),
-       mode:seg.mode,entryIC:written(seg.entryIC),entryTime:written(seg.entryTime),
+       mode:seg.mode,roadName:written(seg.roadName),entryIC:written(seg.entryIC),entryTime:written(seg.entryTime),
        entryKm,exitIC:written(seg.exitIC),exitTime:written(seg.exitTime),exitKm,
        sectionKm,exemptKm,chargeYen,distanceMissing:!validDistance,
        chargeMissing:chargeYen===null,legacyDerivedKm:null
@@ -55,7 +55,8 @@
     entries.push({
      id:written(record.id)||String(i),
      no:written(raw.A)||String(i+1),
-     mode,entryIC:written(raw[at[0]]),entryTime:written(raw[at[1]]),
+     mode,roadName:written(record.meta?.[real?'highwayRealRoadName':'highwayEmptyRoadName']),
+     entryIC:written(raw[at[0]]),entryTime:written(raw[at[1]]),
      entryKm,exitIC:written(raw[at[3]]),exitTime:written(raw[at[4]]),exitKm,
      sectionKm,exemptKm,chargeYen,
      distanceMissing:!validDistance,

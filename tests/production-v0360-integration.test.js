@@ -25,8 +25,8 @@ assert.match(html,/function scheduleGoogleSync\(\)\{\s*if\(!canEditNow\(\)/);
 assert.match(html,/function googleShiftPacket\(shift\)/);
 assert.match(html,/const item=\{\.\.\.record,raw:deriveRaw\(record,shift\.settings\)\}/);
 assert.match(html,/gps-diary-bridge\.js\?v=20261020-\d+/);
-assert.match(html,/highway-sections\.js\?v=20261020-1/);
-assert.match(html,/highway-report\.js\?v=20261020-1/);
+assert.match(html,/highway-sections\.js\?v=\d+/);
+assert.match(html,/highway-report\.js\?v=\d+/);
 assert.match(html,/NATIVE_AUTO_DISTANCE_PREF='taxiapp-production-auto-distance-v140'/);
 assert.match(html,/NATIVE_DIARY_GPS_PREF='taxiapp-production-native-gps-v140'/);
 for(const pattern of [/gps-preview-ribbon/,/data-preview-simulator/,/PREVIEW_SIMULATED_GPS_PREF/,

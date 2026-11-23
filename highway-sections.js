@@ -11,12 +11,14 @@
  const km=x=>Math.round(x*10)/10;
  const precise=x=>Math.round(x*1000)/1000;
  const escapeMode=m=>m==='実'||m==='空'?m:null;
- function fromLegacy(raw,mode){
+ const roadNameKey=mode=>mode==='実'?'highwayRealRoadName':'highwayEmptyRoadName';
+ function fromLegacy(raw,mode,meta){
    if(!escapeMode(mode))throw Error('高速区分が不正です');
    const fields=KEYS[mode],data={mode};
    NAMES.forEach((n,i)=>data[n]=String(raw?.[fields[i]]??''));
    data.fee=mode==='実'?String(raw?.W??''):String(['AF','AG','AH'].reduce((a,k)=>a+(num(raw?.[k])??0),0));
    if(mode==='空'&&['AF','AG','AH'].every(k=>num(raw?.[k])===null))data.fee='';
+   if(meta?.[roadNameKey(mode)])data.roadName=String(meta[roadNameKey(mode)]);
    return data;
  }
  function list(row){
@@ -29,8 +31,36 @@
    if(Array.isArray(row.meta.highwaySections))return row.meta.highwaySections;
    row.meta.highwaySections=[];
    const flags=String(row.raw.P??'');
-   for(const m of ['実','空'])if(flags.includes(m))row.meta.highwaySections.push(fromLegacy(row.raw,m));
+   for(const m of ['実','空'])if(flags.includes(m))row.meta.highwaySections.push(fromLegacy(row.raw,m,row.meta));
    return row.meta.highwaySections;
+ }
+ // Keep the 44-column format when it can represent the edited routes.
+ // Replacing just an IC or a road name must retain the old separate toll amounts.
+ function applyLegacy(row,items){
+   if(Array.isArray(row.meta?.highwaySections)||
+     ['実','空'].some(mode=>items.filter(section=>section.mode===mode).length>1))return false;
+   const {raw,meta}=row,flags=String(raw.P??'');
+   for(const mode of ['実','空']){
+     const section=items.find(item=>item.mode===mode);
+     const previous=fromLegacy(raw,mode,meta);
+     if(!section&&!flags.includes(mode))continue;
+     NAMES.forEach((key,index)=>{
+       const next=section?.[key]??'';
+       if(next!==previous[key])raw[KEYS[mode][index]]=next;
+     });
+     if(!section||section.entryKm!==previous.entryKm||section.exitKm!==previous.exitKm){
+       for(const key of (mode==='実'?['X','Y']:['AJ','AK']))raw[key]='';
+     }
+     if(!section||section.fee!==previous.fee){
+       if(mode==='実')raw.W=section?.fee??'';
+       else Object.assign(raw,{AF:section?.fee??'',AG:'',AH:'',AI:''});
+     }
+     if(section?.roadName)meta[roadNameKey(mode)]=section.roadName;
+     else delete meta[roadNameKey(mode)];
+   }
+   raw.P=(items.some(section=>section.mode==='実')?'実':'')+
+     (items.some(section=>section.mode==='空')?'空':'');
+   return true;
  }
  function entryValid(seg){
    const entry=num(seg.entryKm),exit=num(seg.exitKm);
@@ -79,5 +109,5 @@
   }
   return issues;
  }
- return Object.freeze({KEYS,NAMES,num,km,precise,fromLegacy,list,initialize,entryValid,entryDistance,aggregate,project,validate});
+ return Object.freeze({KEYS,NAMES,num,km,precise,roadNameKey,fromLegacy,list,initialize,applyLegacy,entryValid,entryDistance,aggregate,project,validate});
 });

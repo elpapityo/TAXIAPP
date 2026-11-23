@@ -11,7 +11,7 @@ const source=[
  cut('function numberInputMode(','function applyInputKeyboardMode('),
  cut('function validateDraft(','function deepCopy('),
  cut('function renderDispatchForm(','function amountDiscount('),
- cut('function renderHighwaySections(','function renderEmptyForm('),
+ cut('function highwayRoadNameField(','function renderEmptyForm('),
  cut('function renderEmptyForm(','function renderAllFields(')
 ].join('\n');
 const model={prefs:{rideFieldVisibility:{},pickupDropDistance:'on',highwayDistance:'on'}};
@@ -94,6 +94,7 @@ for(let mask=0;mask<(1<<keys.length);mask++){
   for(const key of ['C','B','N'])assert.ok(cancelOut.includes('data-col="'+key+'"'));
   const empty={...draft,kind:'empty'};
   const emptyOut=call('renderEmptyForm',shift,empty);
+  assert.match(emptyOut,/data-meta="highwayEmptyRoadName"/);
   for(const fee of ['AF','AG','AH'])assert.ok(emptyOut.includes('data-col="'+fee+'"'));
   assert.equal(emptyOut.includes('data-col="Z"'),model.prefs.rideFieldVisibility.emptyHighwayRoute);
   assert.equal(emptyOut.includes('data-col="AB"'),highwayFlag==='on',
