@@ -2009,6 +2009,7 @@ html[data-ui-theme="night"] .first-run-step.done{background:#245a45;border-color
 <script src="./account-auto-sync.js?v=20261115-handoff-1"></script>
 <script src="./account-diary-store.js?v=20261022-9"></script>
 <script src="./meter-confirm.js?v=20261025-174"></script>
+<script src="./duty-analysis.js?v=1"></script>
 <script>
 (async function () {
   'use strict';
@@ -2416,10 +2417,204 @@ function deepCopy(obj){return JSON.parse(JSON.stringify(obj));}
 
 const DB_NAME='taxiapp-store-v1';const STORE='state';const KEY='taxiapp';
 const appEl=document.getElementById('app'), noticeEl=document.getElementById('notice');
-const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],handoff:['⇄','データの引き継ぎ'],settings:['⚙','設定']};
+function newDutyAnalysisState(){
+ return {draft:null,query:null,rows:null,shiftCount:0,busy:false,message:'',page:0};
+}
+let dutyAnalysisState=newDutyAnalysisState();
+
+function renderDutyAnalysis(){
+ const analysis=window.TAXIAPP_DUTY_ANALYSIS;
+ const heading='<section class="card"><h1 class="h1">日報解析</h1></section>';
+ if(!analysis)return heading+'<p role="alert">解析機能を読み込めませんでした。ページを再読み込みしてください。</p>';
+ const state=dutyAnalysisState;
+ const today=selectedShift()?.date||dateStamp();
+ const cloudLabel=legacyDiary()?'Google原本':'本人Firestore';
+ const cloudAvailable=legacyDiary()?googleIsConfigured():monthlyCanReadFirestore();
+ const q=state.draft||state.query||{
+  mode:'day',startDate:today,endDate:today,source:cloudAvailable?'cloud':'device',
+  kinds:['wait','ride','dispatch','rest','shift'],area:'',where:'any',from:'',to:'',group:'none'
+ };
+ const field=(label,name,type,value,attrs='')=>
+  '<label class="field"><span class="field-label">'+label+'</span><input class="control" name="'+name+
+  '" type="'+type+'" value="'+safeText(value)+'" '+attrs+'></label>';
+ const options=(items,value)=>items.map(([key,label])=>'<option value="'+key+'"'+
+  (key===value?' selected':'')+'>'+label+'</option>').join('');
+ const select=(name,label,items,value)=>'<label class="field"><span class="field-label">'+label+
+  '</span><select class="control" name="'+name+'">'+options(items,value)+'</select></label>';
+ const types=Object.entries(analysis.kinds).map(([key,item])=>'<label><input type="checkbox" name="kind" value="'+
+  key+'"'+(q.kinds.includes(key)?' checked':'')+'> '+item.label+'</label>').join('');
+ return heading+'<form class="card" data-duty-analysis><fieldset '+(state.busy?'disabled':'')+
+  ' style="border:0;padding:0;margin:0;min-width:0"><legend class="h2">解析条件</legend>'+
+  '<div class="form-grid" style="margin:12px 0">'+select('source','日報の保存先',[
+   ...(cloudAvailable?[['cloud',cloudLabel]]:[]),['device','この端末に保存済み']
+  ],q.source)+select('mode','集計期間',[['day','1日'],['range','期間指定']],q.mode)+
+  field('営業日・開始日','startDate','date',q.startDate,'required')+
+  '<div data-analysis-end '+(q.mode==='day'?'hidden':'')+'>'+
+  field('終了日','endDate','date',q.endDate,q.mode==='day'?'disabled':'required')+'</div>'+
+  field('エリア・場所（市区町村名や地名）','area','search',q.area,'placeholder="例　伊丹市"')+
+  select('where','場所の照合先',[['any','出発・到着のいずれか、または記録場所'],
+   ['start','出発・乗車・待機・休憩場所'],['end','到着・降車場所']],q.where)+
+  field('開始時刻','from','time',q.from)+field('終了時刻','to','time',q.to)+
+  select('group','内訳表示',[['none','全体のみ'],['date','営業日別'],['hour','開始時間帯別（1時間刻み）']],q.group)+'</div>'+
+  '<fieldset style="border:0;padding:0;margin:0"><legend class="field-label">解析する記録</legend>'+
+  '<div class="selector" style="gap:12px">'+types+'</div></fieldset>'+
+  '<p class="caption-note">営業日は出庫日です。時間帯は各記録の開始時刻（日本時間）で絞ります。例 22:00〜02:00。待機時間は日報に記録された区間の長さです。</p>'+
+  '<button class="btn primary" type="submit">解析する</button></fieldset></form>'+
+  (state.message?'<p class="card" role="status">'+safeText(state.message)+'</p>':'')+
+  (state.rows?renderDutyAnalysisResult(state,analysis):'');
+}
+
+function renderDutyAnalysisResult(state,analysis){
+ if(!state.rows.length)return '<section class="card"><p>条件に一致する記録がありません。</p></section>';
+ const rows=state.rows;
+ const formatKm=km=>km.toLocaleString('ja-JP',{maximumFractionDigits:3})+' km';
+ const values=analysis.summarise(rows);
+ const summaryRows=values=>Object.entries(analysis.kinds).filter(([key])=>values[key]).map(([key,item])=>{
+  const {count,seconds,timed,km,measured}=values[key];
+  return '<tr><th scope="row">'+item.label+'</th><td>'+count+'</td><td>'+
+   (timed?durationHms(seconds):'未記録')+'</td><td>'+
+   (timed?durationHms(Math.floor(seconds/timed)):'未記録')+'</td><td>'+
+   (item.distance?(measured?formatKm(km):'未記録'):'—')+'</td><td>'+
+   (item.distance?(measured?formatKm(km/measured):'未記録'):'—')+'</td><td>'+
+   (count-timed)+(item.distance?' / '+(count-measured):' / —')+'</td></tr>';
+ }).join('');
+ const group=state.query.group;
+ const grouped=new Map();
+ if(group!=='none')for(const row of rows){
+  const label=group==='date'?row.date:row.from?row.from.slice(0,2)+'時台':'開始時刻未記録';
+  if(!grouped.has(label))grouped.set(label,[]);
+  grouped.get(label).push(row);
+ }
+ const pageSize=100,first=state.page*pageSize;
+ const details=rows.slice(first,first+pageSize).map(row=>'<tr><td>'+safeText(row.date)+
+  '</td><td>'+analysis.kinds[row.kind].label+'</td><td>'+safeText(row.from||'—')+'</td><td>'+
+  safeText(row.to||'—')+'</td><td>'+safeText([row.place,row.destination].filter(Boolean).join(' → ')||'—')+
+  '</td><td>'+(row.seconds===null?'未記録':durationHms(row.seconds))+'</td><td>'+
+  (analysis.kinds[row.kind].distance?(row.km===null?'未記録':formatKm(row.km)):'—')+'</td></tr>').join('');
+ const table=(head,body)=>'<div class="table-wrap" tabindex="0"><table class="data-table"><thead><tr>'+
+  head.map(label=>'<th scope="col">'+label+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>';
+ const summaryHeaders=['記録','件数','時間の合計','平均時間','距離の合計','平均距離','未記録（時間 / 距離）'];
+ const breakdown=[...grouped].sort(([a],[b])=>a.localeCompare(b)).map(([label,items])=>
+  '<details class="details"><summary>'+safeText(label)+'（'+items.length+'件）</summary><div class="inner">'+
+  table(summaryHeaders,summaryRows(analysis.summarise(items)))+'</div></details>').join('');
+ return '<section class="card"><h2 class="h2">集計結果</h2><p class="helper">'+
+  safeText(state.query.startDate+(state.query.startDate===state.query.endDate?'':' ～ '+state.query.endDate))+
+  ' · 読み込み '+state.shiftCount+'乗務 · 該当 '+rows.length+'件</p>'+
+  table(summaryHeaders,summaryRows(values))+
+  '<p class="caption-note">合計と平均には記録のある値を使用します。乗務全体には実車、待機などの区間を含みます。</p></section>'+
+  (breakdown?'<section class="card"><h2 class="h2">'+(group==='date'?'営業日別':'開始時間帯別')+'の内訳</h2>'+breakdown+'</section>':'')+
+  '<section class="card" data-analysis-details><h2 class="h2">該当する明細</h2>'+
+  table(['営業日','記録','開始','終了','記録場所・乗降地','時間','距離'],details)+
+  (rows.length>pageSize?'<div class="actions"><button class="btn" type="button" data-analysis-page="-1" '+
+   (state.page===0?'disabled':'')+'>前の100件</button><span class="meta">'+(first+1)+'〜'+
+   Math.min(first+pageSize,rows.length)+' / '+rows.length+'件</span><button class="btn" type="button" data-analysis-page="1" '+
+   (first+pageSize>=rows.length?'disabled':'')+'>次の100件</button></div>':'')+'</section>';
+}
+
+function dutyAnalysisQuery(form){
+ const data=new FormData(form);
+ const mode=data.get('mode'),startDate=data.get('startDate');
+ return {source:data.get('source'),mode,startDate,endDate:mode==='day'?startDate:data.get('endDate'),
+  kinds:data.getAll('kind'),area:data.get('area'),where:data.get('where'),
+  from:data.get('from'),to:data.get('to'),group:data.get('group')};
+}
+async function loadDutyAnalysis(form){
+ const analysis=window.TAXIAPP_DUTY_ANALYSIS,state=dutyAnalysisState;
+ if(!analysis||state.busy||tab!=='analysis')return;
+ const query=dutyAnalysisQuery(form);
+ const {source,startDate,endDate}=query;
+ query.kinds=query.kinds.filter(kind=>Object.hasOwn(analysis.kinds,kind));
+ if(!analysis.validDate(startDate)||!analysis.validDate(endDate)||endDate<startDate){
+  toast('営業日と終了日を確認してください。',true);return;
+ }
+ if(!query.kinds.length){toast('解析する記録を1つ以上選んでください。',true);return;}
+ const uid=accountScope.uid,generation=accountScopeGeneration,login=currentLoginScope;
+ const current=()=>state===dutyAnalysisState&&generation===accountScopeGeneration&&
+  accountScopeLoaded&&Boolean(uid)&&accountScope.uid===uid&&currentLoginScope===login&&
+  login?.firebase?.auth?.currentUser?.uid===uid;
+ if(!current()){toast('日報を保存したアカウントでログインしてください。',true);return;}
+ Object.assign(state,{draft:null,query,rows:null,shiftCount:0,busy:true,message:'日報を取得しています…',page:0});render();
+ try{
+  const inRange=shift=>analysis.validDate(shift?.date)&&startDate<=shift.date&&shift.date<=endDate;
+  let shifts;
+  if(source==='device'){
+   shifts=deviceRetainedDuties().filter(inRange);
+  }else if(source==='cloud'&&legacyDiary()){
+   if(!googleIsConfigured()||!login.admin)throw Error('Google原本の接続設定を確認してください。');
+   const listing=(await googlePostRequest('syncList'))?.data?.shifts;
+   if(!current())return;
+   if(!Array.isArray(listing)||listing.length>120)throw Error('Google原本一覧を確認できません（既存の閲覧上限は120乗務です）。');
+   shifts=[];
+   const seen=new Set();
+   for(const entry of listing){
+    if(!/^shift-[0-9]+(?:-[a-zA-Z0-9]+)?$/.test(entry?.id||'')||seen.has(entry.id)||
+       !Number.isSafeInteger(Number(entry.revision))||Number(entry.revision)<1)
+     throw Error('Google原本の乗務IDまたは更新番号を確認できません。');
+    seen.add(entry.id);
+    if(entry.deleted)continue;
+    const row=(await googlePostRequest('syncGet',{shiftId:entry.id}))?.data;
+    if(!current())return;
+    if(row?.id!==entry.id||row.shift?.id!==entry.id||Number(row.revision)!==Number(entry.revision)||
+       !analysis.validDate(row.shift.date)||!Array.isArray(row.shift.records))
+     throw Error('Google原本の取得内容が一覧と一致しません。');
+    if(inRange(row.shift))shifts.push(row.shift);
+   }
+  }else if(source==='cloud'&&monthlyCanReadFirestore()){
+   const reader=window.TAXIAPP_ACCOUNT_DIARY.create();
+   reader.bind({uid},{...login.firebase,admin:Boolean(login.admin),storageBackend:'firestore',readOnly:true});
+   shifts=[];
+   for(const range of analysis.ranges(startDate,endDate)){
+    const response=await reader.request('syncHistoryRange',range);
+    if(!current())return;
+    if(response?.startDate!==range.startDate||response?.endDate!==range.endDate||
+       !Array.isArray(response.shifts))throw Error('指定期間の取得結果を照合できません。');
+    for(const row of response.shifts)shifts.push(row.shift);
+   }
+  }else throw Error('日報の保存先を確認してください。');
+  if(!current())return;
+  state.rows=analysis.filter(analysis.rows(shifts),query);
+  state.shiftCount=shifts.length;
+  state.message=source==='device'?'この端末に残っている日報を集計しました。':'保存済みの日報を取得しました。';
+ }catch(error){
+  if(current())state.message='日報を取得できません。'+String(error?.message||error);
+ }finally{
+  if(state===dutyAnalysisState){state.busy=false;render();}
+ }
+}
+
+appEl.addEventListener('submit',event=>{
+ const form=event.target;
+ if(!form.matches('form[data-duty-analysis]'))return;
+ event.preventDefault();void loadDutyAnalysis(form);
+});
+appEl.addEventListener('change',event=>{
+ const field=event.target,form=field.closest('form[data-duty-analysis]');
+ if(!form)return;
+ if(field.name==='mode'){
+  const end=form.querySelector('[data-analysis-end]');
+  end.hidden=field.value==='day';
+  form.elements.endDate.disabled=end.hidden;
+  form.elements.endDate.required=!end.hidden;
+  if(!end.hidden&&form.elements.endDate.value<form.elements.startDate.value)
+   form.elements.endDate.value=form.elements.startDate.value;
+ }
+ dutyAnalysisState.draft=dutyAnalysisQuery(form);
+});
+appEl.addEventListener('input',event=>{
+ const form=event.target.closest('form[data-duty-analysis]');
+ if(form)dutyAnalysisState.draft=dutyAnalysisQuery(form);
+});
+appEl.addEventListener('click',event=>{
+ const button=event.target.closest('[data-analysis-page]');
+ if(!button||tab!=='analysis'||!dutyAnalysisState.rows)return;
+ dutyAnalysisState.page+=Number(button.dataset.analysisPage);
+ render();
+});
+
+const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],analysis:['▥','日報解析'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],handoff:['⇄','データの引き継ぎ'],settings:['⚙','設定']};
 const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE','AF','AG','AH','AI','AJ','AK','AN','AO','AP','AQ','AR']);
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
-let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab='drive',db=null,persistTimer=0,toastTimer=0;
+let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab=new URLSearchParams(window.location.search).get('view')==='duty-analysis'?'analysis':'drive',db=null,persistTimer=0,toastTimer=0;
 const distanceEnabled=field=>field==='F'||field==='L'?model.prefs.pickupDropDistance!=='off':['S','V','AB','AE','X','Y','AJ','AK'].includes(field)?model.prefs.highwayDistance!=='off':true;
 window.TAXIAPP_DISTANCE_ENABLED=distanceEnabled;
 let accountSettingsAuto=null,deviceMode='pending',deviceNoticeAt=0;
@@ -2770,7 +2965,8 @@ function blockViewerEdit(event){
   target.closest?.('[data-action="firestorePrintToGoogle"],[data-action="firestorePrintProbe"]')||
   target.matches?.('[data-firestore-print-setting]'));
  const safe=target.closest?.('[data-handoff-action],[data-tab],[data-settings-category-choice],[data-account-settings-action],summary,a[href],[data-action="bidirectionalSyncNow"],[data-action="viewerRefresh"],[data-action="writerRefresh"],[data-action="loadCloudHistory"],[data-action="historyCalendarPrev"],[data-action="historyCalendarNext"],[data-action="historyCalendarPick"],[data-action="historyFetchOne"],[data-action="cloudManageFetchOne"],[data-action="historyIndexLoad"],[data-action="historyCalendarFetchDate"],[data-action="historyCalendarFetchSelected"],[data-action="monthlyPlanPick"],[data-action="monthlyManagementMode"],[data-action="monthlyDayView"],[data-action="monthlyViewerRefresh"]')||
-  readOnlySelection||pcPrintControl||target.closest?.('[data-action="loadMonthlySales"],[data-action="printHighwayExemption"]')||
+  readOnlySelection||pcPrintControl||target.closest?.('[data-duty-analysis],[data-analysis-page]')||
+  target.closest?.('[data-action="loadMonthlySales"],[data-action="printHighwayExemption"]')||
   (target.closest?.('[data-action="migrateOctober16GoogleDuty"]')&&deviceMode==='writer'&&legacyDiary()&&currentLoginScope?.admin&&currentLoginScope.firebase?.auth?.currentUser?.uid===accountScope.uid)||
   (deviceMode==='writer'&&syncUI.status().conflicts.length>0&&
    (target.closest?.('[data-sync-compare],[data-sync-resolve],[data-sync-trash-local]')||target.matches?.('[data-sync-backup-password]')));
@@ -3134,6 +3330,7 @@ async function switchAccountScope(scope){
  const generation=++accountScopeGeneration;
  firstRunGuide=null;firstRunGuideBusy=false;
  resetMonthlySales(); // The previous UID's report must never be displayed after a login change.
+ dutyAnalysisState=newDutyAnalysisState();
  monthlyViewerPrefs=null;monthlyViewerPrefsMessage='';
  monthlyPlanDate='';monthlyPlanMessage=''; // The next account starts with no prior UI selection.
  // Do not migrate a legacy owner's records to another user.
@@ -3246,7 +3443,7 @@ function renderNav(){
  const desktop=buttons.map(([id,[icon,title]])=>
   `<button type="button" data-tab="${id}" class="${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico">${icon}</span><span class="nav-label">${title}</span></button>`).join('');
  const mobileItem=(id,icon,title)=>`<button type="button" data-tab="${id}" class="taxi-mobile-item ${selected(id)?'selected':''}" ${selected(id)?'aria-current="page"':''}><span class="nav-ico" aria-hidden="true">${icon}</span><span class="nav-label">${title}</span></button>`;
- const moreSelected=['manage','cloud','local','files','handoff','settings'].includes(tab);
+ const moreSelected=['manage','cloud','local','files','handoff','settings','analysis'].includes(tab);
  return `<div class="sidebar">
  <nav class="card nav" aria-label="メインメニュー">${desktop}</nav>
  <div class="sidebar-note">端末内に自動保存します。<br>定期的にJSONバックアップも保存してください。</div>
@@ -3260,6 +3457,7 @@ function renderNav(){
    <summary aria-label="その他のメニューを開く"><span class="nav-ico" aria-hidden="true">☷</span><span class="nav-label">その他</span></summary>
    <div class="taxi-mobile-more-panel" role="group" aria-label="その他の画面">
     <strong>その他の画面</strong>
+    ${mobileItem('analysis','▥','日報解析')}
     ${mobileItem('settings','⚙','設定')}
     ${mobileItem('manage','▣','管理')}
     ${mobileItem('handoff','⇄','データの引き継ぎ')}
@@ -3375,7 +3573,7 @@ function renderNow(){
  applyUi();
  appEl.classList?.toggle('drive-compact',tab==='drive'&&displayPrefs().driveLayout==='compact');
  const shift=selectedShift();
- appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='monthly'?renderMonthlyManagement():tab==='manage'?renderManagementHome():tab==='handoff'?renderHandoffPage():tab==='cloud'?renderCloudManagement():tab==='local'?renderLocalManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):(typeof renderSettingsCategorized==='function'?renderSettingsCategorized(shift):renderSettings(shift))}</main></div></div>`;
+ appEl.innerHTML=`<div class="layout">${header()}<div class="content-layout">${renderNav()}<main id="main-content">${storageStatus==='保存できない環境'?'<div class="danger-note" role="alert">自動保存が利用できません。記録を失わないよう、設定からJSONバックアップを保存してください。</div>':''}${window.location.protocol==='file:'?'<div class="local-warning">このHTMLは単体で起動します。ただしGPS機能は開き方によって制限されます。確実に使うにはHTTPS公開が必要です。ブラウザ内のデータも消える場合があります。乗務後は「設定・保管」からJSONバックアップを保存してください。</div>':''}${tab==='drive'?renderDrive(shift):(tab==='live'||tab==='summary')?renderOperations(shift):tab==='history'?renderHistory(shift):tab==='analysis'?renderDutyAnalysis():tab==='monthly'?renderMonthlyManagement():tab==='manage'?renderManagementHome():tab==='handoff'?renderHandoffPage():tab==='cloud'?renderCloudManagement():tab==='local'?renderLocalManagement():tab==='files'?renderFileManagement():tab==='highway'?renderHighwayReport():tab==='print'?renderPrint(selectedPrintShift()):tab==='shift'?renderShiftManager(shift):(typeof renderSettingsCategorized==='function'?renderSettingsCategorized(shift):renderSettings(shift))}</main></div></div>`;
  // A fixed mirror sits outside the scrolling duty form so legacy desktop grids
  // and mobile keyboard containers cannot clip its sticky positioning.
  if(tab==='drive'&&shift&&displayPrefs().stickyDutySummary==='on'&&(shift.draft||shift.waiting)){
@@ -6599,7 +6797,7 @@ function monthlyPlanSave(){
 
 function renderOperations(shift){
  const head=titleBlock('営業状況・日報集計','OPERATIONS',shift?friendlyDate(shift.date):'乗務データを確認できます。');
- const monthShortcut='<div class="actions"><button type="button" class="btn" data-tab="monthly">▦ 月間営業計画・実績を開く</button></div>';
+ const monthShortcut='<div class="actions"><button type="button" class="btn" data-tab="monthly">▦ 月間営業計画・実績を開く</button><button type="button" class="btn" data-tab="analysis">日報解析を開く</button></div>';
  if(!shift)return head+monthShortcut+opsCard('乗務記録なし','<p class="subtle">営業履歴から対象の乗務を確認してください。</p>');
  const now=new Date(),v=liveBusinessNumbers(shift,now),t=v.t;
  const tile=(label,value,attr='')=>'<div class="operations-kpi"><small>'+label+'</small><strong '+attr+'>'+value+'</strong></div>';
