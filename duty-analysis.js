@@ -53,14 +53,14 @@
   const a=Number(start),b=Number(end);
   return Number.isFinite(a)&&Number.isFinite(b)&&a>=0&&b>=a?Math.round((b-a)*1000)/1000:null;
  }
- function rows(shifts){
+ function rows(shifts,meterForRide=()=>null){
   const result=[];
   for(const shift of shifts){
    const date=shift.date;
-   const add=(kind,{start,end,startIso,endIso,place='',destination='',km=null})=>{
+   const add=(kind,{start,end,startIso,endIso,place='',destination='',km=null,source='',meter=null,pickupKm=null})=>{
     const from=recordedClock(start,startIso),to=recordedClock(end,endIso);
     result.push({date,kind,from,to,place:String(place||''),destination:String(destination||''),
-     seconds:elapsed(from,to,startIso,endIso),km});
+     seconds:elapsed(from,to,startIso,endIso),km,source,meter,pickupKm});
    };
    if(shift.endedAt||shift.endedIso)add('shift',{
     start:shift.startedAt,end:shift.endedAt,startIso:shift.startedIso,endIso:shift.endedIso,
@@ -76,12 +76,14 @@
     if(record.status!=='complete')continue;
     const raw=record.raw||{},meta=record.meta||{};
     if(record.kind==='ride'){
+     const pickupKm=distance(meta.dispatchStartKm,raw.F);
      if(meta.boardedFromDispatch||meta.dispatchAt||meta.dispatchIso)add('dispatch',{
       start:meta.dispatchAt||raw.C,end:raw.G,startIso:meta.dispatchIso,endIso:meta.boardedIso,
-      destination:raw.AL,km:distance(meta.dispatchStartKm,raw.F)
+      destination:raw.AL,km:pickupKm
      });
      add('ride',{start:raw.G,end:raw.M,startIso:meta.boardedIso,endIso:meta.alightIso,
-      place:raw.AL,destination:raw.AM,km:distance(raw.F,raw.L)});
+      place:raw.AL,destination:raw.AM,km:distance(raw.F,raw.L),
+      source:String(raw.E||''),meter:meterForRide(record,shift),pickupKm});
     }
     if(record.kind==='cancel')add('cancel',{
      start:meta.dispatchAt,end:meta.cancelAt,startIso:meta.dispatchIso,endIso:meta.cancelIso,destination:raw.AL
@@ -119,7 +121,20 @@
   }
   return result;
  }
- const api={kinds,validDate,ranges,rows,filter,summarise};
+ function bySource(rows,sourceCodes){
+  const results=new Map();
+  for(const row of rows){
+   if(row.kind!=='ride')continue;
+   const code=sourceCodes.includes(row.source)?row.source:'';
+   if(!results.has(code))results.set(code,{rides:0,sales:0,fareCount:0,pickupKm:0,pickupCount:0});
+   const item=results.get(code);
+   item.rides++;
+   if(Number.isFinite(row.meter)){item.sales+=row.meter;item.fareCount++;}
+   if(Number.isFinite(row.pickupKm)){item.pickupKm+=row.pickupKm;item.pickupCount++;}
+  }
+  return results;
+ }
+ const api={kinds,validDate,ranges,rows,filter,summarise,bySource};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  else global.TAXIAPP_DUTY_ANALYSIS=api;
 })(globalThis);
