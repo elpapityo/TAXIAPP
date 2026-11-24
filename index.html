@@ -2458,7 +2458,7 @@ function renderDutyAnalysis(){
   select('group','内訳表示',[['none','全体のみ'],['date','営業日別'],['hour','開始時間帯別（1時間刻み）']],q.group)+'</div>'+
   '<fieldset style="border:0;padding:0;margin:0"><legend class="field-label">解析する記録</legend>'+
   '<div class="selector" style="gap:12px">'+types+'</div></fieldset>'+
-  '<p class="caption-note">営業日は出庫日です。時間帯は各記録の開始時刻（日本時間）で絞ります。例 22:00〜02:00。待機時間は日報に記録された区間の長さです。</p>'+
+  '<p class="caption-note">営業日は出庫日です。時間帯は各記録の開始時刻（日本時間）で絞ります。例 22:00〜02:00。待機時間は記録上の待機開始から終了までです。途中で流しに移った時間を含む場合があります。</p>'+
   '<button class="btn primary" type="submit">解析する</button></fieldset></form>'+
   (state.message?'<p class="card" role="status">'+safeText(state.message)+'</p>':'')+
   (state.rows?renderDutyAnalysisResult(state,analysis):'');
@@ -2611,7 +2611,7 @@ appEl.addEventListener('click',event=>{
  render();
 });
 
-const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],analysis:['▥','日報解析'],print:['▧','印刷準備'],shift:['◷','出庫・入庫'],manage:['▣','管理'],handoff:['⇄','データの引き継ぎ'],settings:['⚙','設定']};
+const labels={drive:['🚕','乗務入力'],live:['◴','集計'],monthly:['▦','月間営業計画・実績'],history:['▤','営業履歴'],print:['▧','印刷準備'],analysis:['▥','日報解析'],shift:['◷','出庫・入庫'],manage:['▣','管理'],handoff:['⇄','データの引き継ぎ'],settings:['⚙','設定']};
 const numberFields=new Set(['A','F','I','J','K','L','S','V','W','X','Y','AB','AE','AF','AG','AH','AI','AJ','AK','AN','AO','AP','AQ','AR']);
 const timeFields=new Set(['C','G','M','R','U','AA','AD']);
 let model={version:1,shifts:[],activeId:null,prefs:{driver:'',driverNo:'',vehicle:'',startingOdo:'',waitPlaces:[],ui:{text:'large',buttons:'large',contrast:'high',theme:'day'}}},tab=new URLSearchParams(window.location.search).get('view')==='duty-analysis'?'analysis':'drive',db=null,persistTimer=0,toastTimer=0;
