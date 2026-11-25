@@ -9,6 +9,31 @@ class TripAccumulatorTest {
     private fun fix(lat: Double, time: Long, speed: Double? = 10.0, accuracy: Double = 5.0) =
         Fix(lat, 135.0, accuracy, time, speed)
 
+    @Test fun missingIntervalTracksWhenItActuallyRecovered() {
+        var now = 1000L
+        val meter = TripAccumulator(nowMillis = { now })
+        meter.start()
+        meter.interrupted("old gap")
+        assertTrue(meter.snapshot().gapOpen)
+        val restored = TripAccumulator(meter.snapshot(), nowMillis = { now })
+        restored.start()
+        now = 2000L
+        restored.interrupted("same gap across restart")
+        assertEquals(1, restored.snapshot().gapCount)
+        now = 3000L
+        restored.ingest(fix(35.0, 100000L), 100000L)
+        assertFalse(restored.snapshot().gapOpen)
+        assertEquals(3000L, restored.snapshot().lastGapAt)
+        assertTrue(restored.snapshot().unresolvedGap)
+        now = 4000L
+        restored.interrupted("new gap")
+        assertEquals(2, restored.snapshot().gapCount)
+        assertEquals(4000L, restored.snapshot().lastGapAt)
+        restored.correctWithVehicleTrip(3.2)
+        assertFalse(restored.snapshot().unresolvedGap)
+        assertFalse(restored.snapshot().gapOpen)
+    }
+
     @Test fun continuousTravelMeasuresAboutTenKilometres() {
         val meter = TripAccumulator()
         meter.start()

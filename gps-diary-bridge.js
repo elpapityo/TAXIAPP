@@ -15,12 +15,15 @@
  const EXPECTED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_4_0_100';
  const EXPECTED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv140';
  const EXPECTED_WEB_VERSION='1.4.0';
+ const FIXED_MARKER='GPS_DISTANCE_LAB_DIARY_V1_4_1_100';
+ const FIXED_PACKAGE='jp.taxiapp.gpsprototype.distancelabv141';
  const LEGACY_MARKER='GPS_DISTANCE_LAB_DIARY_V1_3_1_100';
  const LEGACY_PACKAGE='jp.taxiapp.gpsprototype.distancelabv131';
  function correctIdentity(value,endpoint=ENDPOINT){
    if(!value)return false;
    return endpoint===ENDPOINT
-     ?value.marker===EXPECTED_MARKER&&value.packageId===EXPECTED_PACKAGE&&value.webVersion===EXPECTED_WEB_VERSION
+     ?((value.marker===EXPECTED_MARKER&&value.packageId===EXPECTED_PACKAGE&&value.webVersion===EXPECTED_WEB_VERSION)||
+       (value.marker===FIXED_MARKER&&value.packageId===FIXED_PACKAGE&&value.webVersion==='1.4.1'))
      :endpoint===LEGACY_ENDPOINT&&value.marker===LEGACY_MARKER&&
        value.packageId===LEGACY_PACKAGE&&value.webVersion==='1.3.1';
  }
@@ -64,6 +67,17 @@
  }
  function gapAcknowledged(storage,id,gaps){
    try{return getStorage(storage).getItem(GAP+String(id))===String(gaps);}catch{return false;}
+ }
+ // A fresh departure checkpoint can ignore only a completed pre-departure gap.
+ // Old APKs cannot prove timing: retain the limited immediate baseline rule,
+ // requiring the gap to have already been reported and the count to be stable.
+ function departureGapIsPrior(data,departedAt,now=Date.now()){
+   if(!Number.isFinite(departedAt)||!Number.isFinite(now)||now<departedAt||
+      now-departedAt>10000||data.unresolvedGap!==true)return false;
+   if(data.gpsSource==='v1.4.1')
+     return data.gapOpen===false&&Number.isFinite(data.lastGapAt)&&
+       data.lastGapAt>0&&data.lastGapAt<departedAt;
+   return data.legacyGapStable===true;
  }
  function nonce(){
    if(typeof crypto==='undefined'||!crypto.getRandomValues)throw Error('安全なGPS取得識別子がありません');
@@ -110,15 +124,39 @@
           !Number.isFinite(x.capturedAt)||
           !Number.isFinite(x.gpsAgeMs)||x.gpsAgeMs<0||x.gpsAgeMs>15000)
          throw Error('GPS応答の内容が不正または古いです');
-       const gaps=Number.isInteger(state.gaps)?state.gaps:0;
+       if(x.marker!==state.marker||x.packageId!==state.packageId||x.webVersion!==state.webVersion)
+         throw Error('GPSアプリが切り替わりました。再取得してください');
+       const fixed=x.webVersion==='1.4.1';
+       let gaps,legacyGapStable=false;
+       if(fixed){
+         if(!Number.isInteger(x.gaps)||x.gaps<0||typeof x.gapOpen!=='boolean'||
+            !Number.isFinite(x.lastGapAt)||x.lastGapAt<0||x.gapOpen)
+           throw Error('GPS欠測情報が不正または未確定です');
+         gaps=x.gaps;
+       }else{
+         if(!Number.isInteger(state.gaps)||state.gaps<0)throw Error('GPS欠測件数が不正です');
+         gaps=state.gaps;
+         if(x.unresolvedGap===true){
+           // Older APKs omit capture-time gap counts. Re-read status so an
+           // interruption between the two calls cannot reuse an old count.
+           const after=await getJson('api/status',call,endpoint);
+           if(!correctIdentity(after,endpoint)||after.runId!==x.runId||
+              after.marker!==x.marker||after.running!==true||after.gaps!==gaps||
+              after.unresolvedGap!==true||state.unresolvedGap!==true)
+             throw Error('GPS取得中に欠測状態が変化しました。再取得してください');
+           legacyGapStable=true;
+         }
+       }
+       const base=baseline(storage,options.shiftId);
        if(x.unresolvedGap===true&&!options.allowUnresolvedGap&&
-          !gapAcknowledged(storage,options.shiftId,gaps))
+          !(base?.runId===x.runId&&gapAcknowledged(storage,options.shiftId,gaps)))
          throw Error('GPS欠測が未補正です。車両トリップを確認して手入力してください');
        return {format:'TAXIAPP_GPS_DIARY_V131',tripKm:x.tripKm,runId:x.runId,
                capturedAt:x.capturedAt,gpsAgeMs:x.gpsAgeMs,
                gapCount:gaps,unresolvedGap:x.unresolvedGap===true,
+               lastGapAt:fixed?x.lastGapAt:null,gapOpen:fixed?x.gapOpen:null,legacyGapStable,
                simulated:x.simulated===true,accuracyMeters:state.accuracyMeters,
-               gpsSource:endpoint===ENDPOINT?'v1.4.0':'v1.3.1'};
+               gpsSource:endpoint===ENDPOINT?'v'+x.webVersion:'v1.3.1'};
      }
      last=p.message||'再取得中';
      if(attempt<4)await pause(800);
@@ -126,5 +164,5 @@
    throw Error('新しいGPS地点を取得できません：'+last);
  }
  return {read,baseline,ensureStart,recordManual,calculated,acknowledgeGap,
-         gapAcknowledged,endpoint:ENDPOINT,legacyEndpoint:LEGACY_ENDPOINT,format:'TAXIAPP_GPS_DIARY_V131'};
+         gapAcknowledged,departureGapIsPrior,endpoint:ENDPOINT,legacyEndpoint:LEGACY_ENDPOINT,format:'TAXIAPP_GPS_DIARY_V131'};
 });
