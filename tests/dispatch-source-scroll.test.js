@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync('index.html','utf8');
 assert.match(source,/let dutyInputAfterRender='';/);
 assert.match(source,/data-dispatch-source/);
-assert.match(source,/shift\.draft=makeDispatch\(shift,new Date\(\),'G'\);saveOperationalEvent\(shift\);dutyInputAfterRender='dispatch';render\(\);/);
+assert.match(source,/shift\.draft=makeDispatch\(shift,new Date\(\),''\);saveOperationalEvent\(shift\);dutyInputAfterRender='dispatch';render\(\);/);
 assert.match(source,/const d=boardDispatch\(shift,new Date\(\)\);gpsTripUI\?\.board\(shift,d\);saveOperationalEvent\(shift\);dutyInputAfterRender='ride';render\(\);/);
 assert.match(source,/saveOperationalEvent\(shift\);dutyInputAfterRender='waiting';render\(\);getWaitGps\(shift,w\);/);
 assert.match(source,/appEl\.querySelector\('#main-content \[data-dispatch-source\]'\)/);
