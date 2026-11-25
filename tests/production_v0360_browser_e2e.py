@@ -178,5 +178,53 @@ try:
         gap=12 if phase=='dispatch' else 8
         assert result['covered'] and abs(result['gap']-gap)<=2 and result['visible'],(phase,mode,orientation,result)
     print('PASS Chrome: waiting and dispatch controls and ride classification stay below the fixed summary across display modes')
+    # Use the real production dialog functions with synthetic records and
+    # direct browser clicks. Never edit a live duty.
+    popup_source=source[source.index('let dispatchSourcePopup=null;'):source.index('function renderNow(){')]
+    for width,height,choice in ((320,620,'G'),(300,420,'D'),(560,420,'U'),(900,600,'乗')):
+        driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride',{
+            'width':width,'height':height,'deviceScaleFactor':1,'mobile':True})
+        js("""
+          const popupSource=arguments[0];
+          const fixture=new Function('document',popupSource+`
+            const DISPATCH_TYPES=[['G','GO'],['D','DiDi'],['U','Uber'],['乗','その他・無線']];
+            let tab='drive',accountScopeGeneration=1,accountScope={uid:'test'};
+            const shift={draft:{kind:'dispatch',raw:{E:''},meta:{dispatchIso:'fixed'}}};
+            const getShift=()=>shift,canEditNow=()=>true,safeText=v=>String(v);
+            const handleSetCol=(key,value)=>{shift.draft.raw[key]=value;};
+            syncDispatchSourcePopup();
+            return {shift,syncDispatchSourcePopup};
+          `)(document);
+          window.__dispatchPopupFixture=fixture;
+          """,popup_source)
+        dialog=driver.find_element(By.CSS_SELECTOR,'dialog.dispatch-source-popup[open]')
+        state=js("""
+          const dialog=document.querySelector('dialog.dispatch-source-popup');
+          const buttons=[...dialog.querySelectorAll('button')].map(b=>{
+            const r=b.getBoundingClientRect();
+            return {x:r.x,y:r.y,w:r.width,h:r.height,visible:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===b};
+          });
+          const r=dialog.getBoundingClientRect();
+          return {buttons,fit:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,
+            source:window.__dispatchPopupFixture.shift.draft.raw.E};
+        """)
+        buttons=state['buttons']
+        assert state['fit'] and state['source']=='' and len(buttons)==4,state
+        assert buttons[0]['y']==buttons[1]['y'] and buttons[2]['y']==buttons[3]['y'] and buttons[0]['y']<buttons[2]['y'],state
+        assert all(b['w']>=80 and b['h']>=72 and b['visible'] for b in buttons),state
+        assert js("""
+          const d=document.querySelector('dialog.dispatch-source-popup');
+          const canceled=!d.dispatchEvent(new Event('cancel',{cancelable:true}));
+          window.__dispatchPopupFixture.syncDispatchSourcePopup();
+          return canceled&&d.open&&d===document.querySelector('dialog.dispatch-source-popup');
+        """)
+        dialog.find_element(By.CSS_SELECTOR,f'button[data-source="{choice}"]').click()
+        assert js("""
+          return !document.querySelector('dialog.dispatch-source-popup')&&
+            window.__dispatchPopupFixture.shift.draft.raw.E===arguments[0]&&
+            window.__dispatchPopupFixture.shift.draft.meta.dispatchIso==='fixed';
+        """,choice)
+    assert stored()==sentinel
+    print('PASS Chrome: required 2x2 dispatch-source modal, touch-size, repeat render, all four choices, no data mutation')
 finally:
     driver.quit()
