@@ -32,7 +32,10 @@ data class Snapshot(
     val status: String = "停止中",
     val rideStartRealKm: Double? = null,
     val lastRideKm: Double? = null,
-    val completedRides: Int = 0
+    val completedRides: Int = 0,
+    // Last instant affected by a missing interval (including its recovery).
+    val lastGapAt: Long = 0L,
+    val gapOpen: Boolean = false
 )
 
 data class Measure(val deltaKm: Double, val status: String)
@@ -41,7 +44,7 @@ data class Measure(val deltaKm: Double, val status: String)
  * GPS distance is an estimate. Interruption is recorded as a gap, not made up
  * using a straight-line shortcut or a multiplication factor.
  */
-class TripAccumulator(initial: Snapshot = Snapshot()) {
+class TripAccumulator(initial: Snapshot = Snapshot(), private val nowMillis: () -> Long = System::currentTimeMillis) {
     private var state = initial
     private var anchor: Fix? = null
 
@@ -75,10 +78,12 @@ class TripAccumulator(initial: Snapshot = Snapshot()) {
 
     fun interrupted(reason: String) {
         anchor = null
-        val stillSameGap = state.unresolvedGap && state.status.startsWith("未計測区間：")
+        val stillSameGap = state.gapOpen
         state = state.copy(
             gapCount = state.gapCount + if (stillSameGap) 0 else 1,
             unresolvedGap = true,
+            lastGapAt = nowMillis(),
+            gapOpen = true,
             status = "未計測区間：" + reason
         )
     }
@@ -91,6 +96,7 @@ class TripAccumulator(initial: Snapshot = Snapshot()) {
             tripKm = roundKm(km),
             correctionKm = roundKm(state.correctionKm + difference),
             unresolvedGap = false,
+            gapOpen = false,
             status = "実測値で補正済み・再測位待ち"
         )
         return true
@@ -117,6 +123,11 @@ class TripAccumulator(initial: Snapshot = Snapshot()) {
             return Measure(0.0, state.status)
         }
 
+        // A gap that started before departure but recovers after departure
+        // is not a pre-departure gap. Preserve its latest affected instant.
+        if (state.gapOpen) {
+            state = state.copy(gapOpen = false, lastGapAt = nowMillis())
+        }
         val previous = anchor
         if (previous == null) {
             anchor = fix

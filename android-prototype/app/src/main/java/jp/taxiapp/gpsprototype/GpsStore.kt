@@ -10,7 +10,7 @@ object GpsStore {
     private fun prefs(context: Context) =
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
-    fun load(context: Context): Snapshot {
+    @Synchronized fun load(context: Context): Snapshot {
         val p = prefs(context)
         val mode = runCatching {
             TripMode.valueOf(p.getString("mode", TripMode.EMPTY.name) ?: TripMode.EMPTY.name)
@@ -29,18 +29,22 @@ object GpsStore {
             status = p.getString("status", "停止中") ?: "停止中",
             rideStartRealKm = p.getString("rideStartReal", null)?.toDoubleOrNull(),
             lastRideKm = p.getString("lastRide", null)?.toDoubleOrNull(),
-            completedRides = p.getInt("completedRides", 0)
+            completedRides = p.getInt("completedRides", 0),
+            lastGapAt = p.getLong("lastGapAt", 0L),
+            gapOpen = p.getBoolean("gapOpen", p.getBoolean("unresolvedGap", false))
         )
     }
 
-    fun save(context: Context, state: Snapshot) {
-        prefs(context).edit()
+    @Synchronized fun save(context: Context, state: Snapshot, validFix: Boolean = false) {
+        val editor = prefs(context).edit()
             .putString("trip", state.tripKm.toString())
             .putString("real", state.realKm.toString())
             .putString("empty", state.emptyKm.toString())
             .putString("correction", state.correctionKm.toString())
             .putInt("gaps", state.gapCount)
             .putBoolean("unresolvedGap", state.unresolvedGap)
+            .putLong("lastGapAt", state.lastGapAt)
+            .putBoolean("gapOpen", state.gapOpen)
             .putBoolean("running", state.running)
             .putString("mode", state.mode.name)
             .putString("accuracy", state.lastAccuracyMeters?.toString())
@@ -49,7 +53,8 @@ object GpsStore {
             .putString("lastRide", state.lastRideKm?.toString())
             .putInt("completedRides", state.completedRides)
             .putLong("updatedAt", System.currentTimeMillis())
-            .apply()
+        if (validFix) editor.putLong("lastValidGpsFixAt", System.currentTimeMillis())
+        editor.apply()
     }
 
     /**
@@ -86,6 +91,10 @@ object GpsStore {
         return (rawTripKm - base).coerceAtLeast(0.0)
     }
 
+    data class CaptureState(val snapshot: Snapshot, val lastValidFixAt: Long, val runId: String)
+    @Synchronized fun captureState(context: Context): CaptureState =
+        CaptureState(load(context), lastValidGpsFixAt(context), currentRunId(context))
+
     fun clear(context: Context) { prefs(context).edit().clear().apply() }
     fun noteGpsCallback(context: Context) {
         prefs(context).edit().putLong("lastGpsCallbackAt", System.currentTimeMillis()).apply()
@@ -97,13 +106,13 @@ object GpsStore {
     }
 
     /** A new service start requires a fresh fix, never the previous journey. */
-    fun clearValidFix(context: Context) {
+    @Synchronized fun clearValidFix(context: Context) {
         prefs(context).edit().remove("lastValidGpsFixAt").apply()
     }
 
     /** Identifies one Android GPS measurement run so a previous browser 0km
      * baseline cannot silently be used with a restarted native odometer. */
-    fun startNewRun(context: Context) {
+    @Synchronized fun startNewRun(context: Context) {
         prefs(context).edit()
             .putString("currentRunId", java.util.UUID.randomUUID().toString())
             .remove("displayZeroRunId")

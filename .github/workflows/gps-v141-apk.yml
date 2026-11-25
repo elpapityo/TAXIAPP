@@ -1,0 +1,66 @@
+name: GPS v1.4.1 APK build
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android-prototype/**'
+      - '.github/workflows/gps-v141-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Departure and GPS integration tests
+        run: |
+          node tests/gps-first-zero-departure-simulation.test.js
+          node tests/production-v0360-integration.test.js
+          node tests/gps-distance-lab.test.js
+      - name: Android SDK 35
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Android core tests and APK
+        working-directory: android-prototype
+        run: gradle --no-daemon :core:test :app:assembleDebug
+      - name: Verify APK package and signature
+        run: |
+          APK=android-prototype/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='jp.taxiapp.gpsprototype.distancelabv141'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='1.4.1'"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          cp "$APK" "$RUNNER_TEMP/GPS-Distance-Lab-v1.4.1.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GPS-Distance-Lab-v1.4.1-APK
+          path: ${{ runner.temp }}/GPS-Distance-Lab-v1.4.1.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish versioned APK without replacing old releases
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=gps-distance-lab-v1.4.1
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo '既存リリースを上書きしません'
+            exit 0
+          fi
+          gh release create "$TAG" "$RUNNER_TEMP/GPS-Distance-Lab-v1.4.1.apk" --target "$GITHUB_SHA" --title "GPS距離ラボ v1.4.1 — 出庫時欠測判定修正" --notes "旧GPSアプリの保存データを保護するため別パッケージです。旧版を削除せず、新規乗務の前に旧版のGPS計測を停止して本アプリを起動してください。TAXIAPP v0.3.262以降に対応。欠測の復旧時刻と距離・欠測件数を同じ応答で返します。実機確認は未実施です。"

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GpsLoopbackServer(private val context: Context) {
     companion object {
-        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_DIARY_V1_4_0_100"
+        const val IDENTITY_MARKER = "GPS_DISTANCE_LAB_DIARY_V1_4_1_100"
         const val PORT = 48769
         const val URL = "http://127.0.0.1:48769/"
     }
@@ -105,7 +105,7 @@ class GpsLoopbackServer(private val context: Context) {
                     route=="/api/identity"->respond(200,"application/json; charset=utf-8",
                         JSONObject().put("marker",IDENTITY_MARKER)
                             .put("packageId",context.packageName)
-                            .put("webVersion","1.4.0")
+                            .put("webVersion","1.4.1")
                             .toString())
                     route=="/api/status"->respond(200,"application/json; charset=utf-8",status())
                     route.startsWith("/api/capture?")->{
@@ -134,30 +134,34 @@ class GpsLoopbackServer(private val context: Context) {
         }.toMap()
     }
     private fun status():String{
-        val s=GpsStore.load(context)
-        val last=GpsStore.lastValidGpsFixAt(context)
+        val saved=GpsStore.captureState(context)
+        val s=saved.snapshot
+        val last=saved.lastValidFixAt
         val age=if(last<=0L)null else(System.currentTimeMillis()-last).coerceAtLeast(0L)
         return JSONObject()
             .put("marker",IDENTITY_MARKER)
             .put("packageId",context.packageName)
-            .put("webVersion","1.4.0")
+            .put("webVersion","1.4.1")
             .put("running",s.running)
-            .put("runId",GpsStore.currentRunId(context))
+            .put("runId",saved.runId)
             .put("tripKm",s.tripKm)
             .put("simulated",GpsStore.isSimulating(context))
             .put("simSpeedKmh",GpsStore.simSpeedKmh(context))
             .put("ageMs",age?:JSONObject.NULL)
             .put("accuracyMeters",s.lastAccuracyMeters?:JSONObject.NULL)
             .put("gaps",s.gapCount)
+            .put("lastGapAt",s.lastGapAt)
+            .put("gapOpen",s.gapOpen)
             .put("unresolvedGap",s.unresolvedGap).toString()
     }
     private fun capture(nonce:String,target:String):String{
-        val s:Snapshot=GpsStore.load(context)
-        val last=GpsStore.lastValidGpsFixAt(context)
+        val saved=GpsStore.captureState(context)
+        val s:Snapshot=saved.snapshot
+        val last=saved.lastValidFixAt
         val now=System.currentTimeMillis()
         val age=if(last<=0L)Long.MAX_VALUE else(now-last).coerceAtLeast(0L)
         val accuracy=s.lastAccuracyMeters
-        val ready=s.running&&last>0L&&age<=15000L&&
+        val ready=s.running&&!s.gapOpen&&last>0L&&age<=15000L&&
             accuracy!=null&&accuracy.isFinite()&&accuracy in 0.01..45.0
         val res=JSONObject().put("ready",ready)
         if(!ready) {
@@ -179,17 +183,20 @@ class GpsLoopbackServer(private val context: Context) {
         return res.put("snapshot",JSONObject()
             .put("marker",IDENTITY_MARKER)
             .put("packageId",context.packageName)
-            .put("webVersion","1.4.0")
+            .put("webVersion","1.4.1")
             .put("format","GPS_DISTANCE_LAB_V1")
             .put("nonce",nonce)
             .put("target",target)
             .put("tripKm",s.tripKm)
-            .put("runId",GpsStore.currentRunId(context))
+            .put("runId",saved.runId)
             .put("simulated",GpsStore.isSimulating(context))
             .put("simSpeedKmh",GpsStore.simSpeedKmh(context))
             .put("capturedAt",now)
             .put("gpsAgeMs",age)
             .put("running",true)
+            .put("gaps",s.gapCount)
+            .put("lastGapAt",s.lastGapAt)
+            .put("gapOpen",s.gapOpen)
             .put("unresolvedGap",s.unresolvedGap)).toString()
     }
     private fun reply(s:Socket,code:Int,type:String,body:String,

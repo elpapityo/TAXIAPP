@@ -85,7 +85,7 @@ class MainActivity : Activity() {
                 topMargin=(topDp*dp).toInt()
             })
         }
-        add(label("GPS DISTANCE LAB · v1.4.0 · 実GPS／模擬走行", 12f, 0xFF63EAD2.toInt()), 0)
+        add(label("GPS DISTANCE LAB · v1.4.1 · 実GPS／模擬走行", 12f, 0xFF63EAD2.toInt()), 0)
         add(label("GPS距離ラボ\n日報距離連携テスト", 29f), 3)
         add(label("通常は実GPS測定を使用します。模擬走行は下の折り畳み欄から操作してください。日報の距離基準・手入力補正はHTML側で別に管理します。", 13f, 0xFFC1D9E5.toInt()), 8)
         meterPanel = LinearLayout(this).apply {
@@ -263,7 +263,7 @@ class MainActivity : Activity() {
                     val result=JSONObject(reply)
                     verified=result.optString("marker")==GpsLoopbackServer.IDENTITY_MARKER &&
                         result.optString("packageId")==applicationContext.packageName &&
-                        result.optString("webVersion")=="1.4.0"
+                        result.optString("webVersion")=="1.4.1"
                     if(!verified)detail="別バージョンの計測画面が接続先を使用中です。"
                 }else detail="旧バージョンのアプリが接続先を使用している可能性があります。"
             }catch(e:Exception){

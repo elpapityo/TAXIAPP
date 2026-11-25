@@ -96,12 +96,10 @@ class GpsTrackingService : Service() {
         )
         GpsStore.noteGpsCallback(this)
         val result = engine.ingest(sample, SystemClock.elapsedRealtime())
-        if (result.status in setOf("距離加算", "基準点取得", "停止中", "小移動・保留")) {
-            GpsStore.noteValidFix(this)
-        }
-        GpsStore.save(this, engine.snapshot())
+        val valid = result.status in setOf("距離加算", "基準点取得", "停止中", "小移動・保留")
+        GpsStore.save(this, engine.snapshot(), validFix = valid)
         updateNotification()
-        return result.status in setOf("距離加算", "基準点取得", "停止中", "小移動・保留")
+        return valid
     }
 
     private fun acceptedNewAlightFix(location: Location, valid: Boolean): Boolean =
